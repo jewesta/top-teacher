@@ -163,8 +163,20 @@ vaadin-app-layout::part(drawer) {
 }
 
 .tt-eh-toolbar {
+	align-items: center;
 	flex: 0 0 auto;
 	gap: var(--lumo-space-m);
+	width: 100%;
+}
+
+.tt-eh-toolbar::after {
+	content: "";
+	flex: 1 1 auto;
+	order: 1;
+}
+
+.tt-eh-toolbar .tt-eh-points {
+	order: 2;
 }
 
 .tt-eh-details {
@@ -224,9 +236,8 @@ vaadin-app-layout::part(drawer) {
 }
 
 .tt-eh-summary-title-field {
-	flex: 1 1 auto;
+	flex: 1 1 0;
 	font-weight: 600;
-	max-width: 32rem;
 	min-width: 12rem;
 }
 
@@ -243,7 +254,9 @@ vaadin-app-layout::part(drawer) {
 	flex: 0 0 auto;
 	font-size: var(--lumo-font-size-s);
 	font-weight: 600;
+	margin-left: auto;
 	padding: 0 var(--lumo-space-s);
+	margin-right: var(--lumo-space-m);
 }
 
 .tt-eh-requirement {
@@ -253,6 +266,10 @@ vaadin-app-layout::part(drawer) {
 	gap: var(--lumo-space-m);
 	margin-left: var(--lumo-space-m);
 	padding: var(--lumo-space-m);
+}
+
+.tt-eh-requirement > .tt-eh-summary > .tt-eh-points {
+	margin-right: 0px;
 }
 
 .tt-eh-requirement-fields {
