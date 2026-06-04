@@ -128,12 +128,23 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 
 	private Details createPartDetails(final EhPart part) {
 		final List<EhPart> siblings = parts;
-		final TextField title = textField("Titel", part.title());
+		final TextField title = summaryTitleField(part.title());
+		title.addValueChangeListener(event -> {
+			if (!event.isFromClient()) {
+				return;
+			}
+			if (isBlank(event.getValue())) {
+				Notification.show("Titel ist erforderlich.");
+				title.setValue(part.title());
+				return;
+			}
+			expectationHorizonRepository.savePart(new EhPart(part.id(), part.examId(), event.getValue(), part.sortOrder()));
+		});
 		final VerticalLayout content = sectionContent();
 		content.add(createEditorActions(title, part, siblings));
 		categoriesFor(part).forEach(category -> content.add(createCategoryDetails(category)));
 
-		final Details details = new Details(summary("Klausurteil", part.title(), pointsForPart(part)), content);
+		final Details details = new Details(summary("Klausurteil", title, pointsForPart(part)), content);
 		details.addClassNames("tt-eh-details", "tt-eh-part");
 		details.setOpened(true);
 		return details;
@@ -160,7 +171,7 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 		actions.addClassName("tt-eh-actions");
 		actions.setPadding(false);
 
-		final VerticalLayout layout = new VerticalLayout(title, actions);
+		final VerticalLayout layout = new VerticalLayout(actions);
 		layout.addClassName("tt-eh-editor-block");
 		layout.setPadding(false);
 		layout.setWidthFull();
@@ -169,13 +180,25 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 
 	private Details createCategoryDetails(final EhCategory category) {
 		final List<EhCategory> siblings = categoriesFor(partFor(category));
-		final TextField title = textField("Titel", category.title());
+		final TextField title = summaryTitleField(category.title());
+		title.addValueChangeListener(event -> {
+			if (!event.isFromClient()) {
+				return;
+			}
+			if (isBlank(event.getValue())) {
+				Notification.show("Titel ist erforderlich.");
+				title.setValue(category.title());
+				return;
+			}
+			expectationHorizonRepository.saveCategory(new EhCategory(category.id(), category.partId(), event.getValue(),
+					category.descriptionMarkdown(), category.sortOrder()));
+		});
 		final MarkdownEditor description = markdownEditor(category.descriptionMarkdown(), "Beschreibung");
 		final VerticalLayout content = sectionContent();
 		content.add(markdownBlock("Beschreibung", description), createCategoryActions(title, description, category, siblings));
 		tasksFor(category).forEach(task -> content.add(createTaskDetails(task)));
 
-		final Details details = new Details(summary("Leistungskategorie", category.title(), pointsForCategory(category)),
+		final Details details = new Details(summary("Leistungskategorie", title, pointsForCategory(category)),
 				content);
 		details.addClassNames("tt-eh-details", "tt-eh-category");
 		details.setOpened(true);
@@ -205,7 +228,7 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 		actions.addClassName("tt-eh-actions");
 		actions.setPadding(false);
 
-		final VerticalLayout layout = new VerticalLayout(title, actions);
+		final VerticalLayout layout = new VerticalLayout(actions);
 		layout.addClassName("tt-eh-editor-block");
 		layout.setPadding(false);
 		layout.setWidthFull();
@@ -214,12 +237,23 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 
 	private Details createTaskDetails(final EhTask task) {
 		final List<EhTask> siblings = tasksFor(categoryFor(task));
-		final TextField title = textField("Titel", task.title());
+		final TextField title = summaryTitleField(task.title());
+		title.addValueChangeListener(event -> {
+			if (!event.isFromClient()) {
+				return;
+			}
+			if (isBlank(event.getValue())) {
+				Notification.show("Titel ist erforderlich.");
+				title.setValue(task.title());
+				return;
+			}
+			expectationHorizonRepository.saveTask(new EhTask(task.id(), task.categoryId(), event.getValue(), task.sortOrder()));
+		});
 		final VerticalLayout content = sectionContent();
 		content.add(createTaskActions(title, task, siblings));
 		requirementsFor(task).forEach(requirement -> content.add(createRequirementEditor(requirement)));
 
-		final Details details = new Details(summary("Teilaufgabe", task.title(), pointsForTask(task)), content);
+		final Details details = new Details(summary("Teilaufgabe", title, pointsForTask(task)), content);
 		details.addClassNames("tt-eh-details", "tt-eh-task");
 		details.setOpened(true);
 		return details;
@@ -246,7 +280,7 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 		actions.addClassName("tt-eh-actions");
 		actions.setPadding(false);
 
-		final VerticalLayout layout = new VerticalLayout(title, actions);
+		final VerticalLayout layout = new VerticalLayout(actions);
 		layout.addClassName("tt-eh-editor-block");
 		layout.setPadding(false);
 		layout.setWidthFull();
@@ -368,13 +402,16 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 	}
 
 	private Component summary(final String type, final String title, final Points points) {
+		final Span titleLabel = new Span(title);
+		titleLabel.addClassName("tt-eh-summary-title");
+		return summary(type, titleLabel, points);
+	}
+
+	private Component summary(final String type, final Component title, final Points points) {
 		final Span typeLabel = new Span(type);
 		typeLabel.addClassName("tt-eh-summary-type");
 
-		final Span titleLabel = new Span(title);
-		titleLabel.addClassName("tt-eh-summary-title");
-
-		final HorizontalLayout summary = new HorizontalLayout(typeLabel, titleLabel, summaryBadge("Summe", points));
+		final HorizontalLayout summary = new HorizontalLayout(typeLabel, title, summaryBadge("Summe", points));
 		summary.addClassName("tt-eh-summary");
 		summary.setPadding(false);
 		summary.setWidthFull();
@@ -404,11 +441,16 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 		return layout;
 	}
 
-	private TextField textField(final String label, final String value) {
-		final TextField field = new TextField(label);
+	private TextField summaryTitleField(final String value) {
+		final TextField field = new TextField();
+		field.addClassName("tt-eh-summary-title-field");
 		field.setValue(value);
 		field.setWidthFull();
-		field.setMaxWidth("32rem");
+		field.getElement().setAttribute("aria-label", "Titel");
+		field.addAttachListener(event -> field.getElement().executeJs("""
+				this.addEventListener('click', event => event.stopPropagation());
+				this.addEventListener('keydown', event => event.stopPropagation());
+				"""));
 		return field;
 	}
 

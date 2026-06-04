@@ -3,9 +3,9 @@ package de.topteacher.ui.component;
 import java.util.List;
 
 import com.flowingcode.vaadin.addons.markdown.MarkdownEditor;
+import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentEventListener;
-import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.details.Details;
@@ -74,10 +74,27 @@ public class ExamNotesEditor extends VerticalLayout {
 	}
 
 	private Details createNoteSectionDetails(final ExamNoteSection noteSection) {
-		final TextField title = new TextField("Titel");
+		final TextField title = new TextField();
+		title.addClassName("tt-eh-summary-title-field");
 		title.setValue(noteSection.title());
 		title.setWidthFull();
-		title.setMaxWidth("32rem");
+		title.getElement().setAttribute("aria-label", "Titel");
+		title.addAttachListener(event -> title.getElement().executeJs("""
+				this.addEventListener('click', event => event.stopPropagation());
+				this.addEventListener('keydown', event => event.stopPropagation());
+				"""));
+		title.addValueChangeListener(event -> {
+			if (!event.isFromClient()) {
+				return;
+			}
+			if (event.getValue() == null || event.getValue().isBlank()) {
+				Notification.show("Titel ist erforderlich.");
+				title.setValue(noteSection.title());
+				return;
+			}
+			expectationHorizonRepository.saveNoteSection(new ExamNoteSection(noteSection.id(), noteSection.examId(),
+					event.getValue(), noteSection.descriptionMarkdown(), noteSection.sortOrder()));
+		});
 
 		final MarkdownEditor description = new MarkdownEditor(noteSection.descriptionMarkdown());
 		description.addClassName("tt-markdown-editor");
@@ -112,25 +129,22 @@ public class ExamNotesEditor extends VerticalLayout {
 		actions.addClassName("tt-eh-actions");
 		actions.setPadding(false);
 
-		final VerticalLayout content = new VerticalLayout(title, markdownBlock, actions);
+		final VerticalLayout content = new VerticalLayout(markdownBlock, actions);
 		content.addClassName("tt-eh-section-content");
 		content.setPadding(false);
 		content.setWidthFull();
 
-		final Details details = new Details(summary(noteSection.title()), content);
+		final Details details = new Details(summary(title), content);
 		details.addClassNames("tt-eh-details", "tt-exam-note-section");
 		details.setOpened(true);
 		return details;
 	}
 
-	private Component summary(final String title) {
+	private Component summary(final Component title) {
 		final Span typeLabel = new Span("Notiz");
 		typeLabel.addClassName("tt-eh-summary-type");
 
-		final Span titleLabel = new Span(title);
-		titleLabel.addClassName("tt-eh-summary-title");
-
-		final HorizontalLayout summary = new HorizontalLayout(typeLabel, titleLabel);
+		final HorizontalLayout summary = new HorizontalLayout(typeLabel, title);
 		summary.addClassName("tt-eh-summary");
 		summary.setAlignItems(Alignment.CENTER);
 		summary.setPadding(false);

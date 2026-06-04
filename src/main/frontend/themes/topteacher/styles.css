@@ -223,6 +223,19 @@ vaadin-app-layout::part(drawer) {
 	white-space: nowrap;
 }
 
+.tt-eh-summary-title-field {
+	flex: 1 1 auto;
+	font-weight: 600;
+	max-width: 32rem;
+	min-width: 12rem;
+}
+
+.tt-eh-summary-title-field::part(input-field) {
+	background: var(--lumo-base-color);
+	box-shadow: inset 0 0 0 1px var(--lumo-contrast-10pct);
+	min-height: var(--lumo-size-s);
+}
+
 .tt-eh-points {
 	background: var(--lumo-primary-color-10pct);
 	border-radius: var(--lumo-border-radius-s);
