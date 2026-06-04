@@ -12,3 +12,22 @@ Planned technology:
 - JDBC
 - H2 database
 
+## Development
+
+Run the application:
+
+```shell
+mvn spring-boot:run
+```
+
+Open the app at <http://localhost:8080>.
+
+The local H2 database is stored at `./data/topteacher.mv.db`. For DBeaver, use
+an H2 Embedded connection with this JDBC URL:
+
+```text
+jdbc:h2:file:/Users/jens/repositories/TopTeacher/data/topteacher;AUTO_SERVER=TRUE
+```
+
+The H2 console is available in development at
+<http://localhost:8080/h2-console>.
