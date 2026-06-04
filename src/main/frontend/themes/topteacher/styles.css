@@ -146,6 +146,126 @@ vaadin-app-layout::part(drawer) {
 	width: var(--lumo-icon-size-s);
 }
 
+.tt-eh-editor,
+.tt-exam-notes-editor {
+	box-sizing: border-box;
+	height: 100%;
+	width: 100%;
+}
+
+.tt-eh-scroll-area {
+	box-sizing: border-box;
+	gap: var(--lumo-space-m);
+	height: 100%;
+	overflow: auto;
+	padding: var(--lumo-space-m);
+	width: 100%;
+}
+
+.tt-eh-toolbar {
+	flex: 0 0 auto;
+	gap: var(--lumo-space-m);
+}
+
+.tt-eh-details {
+	border: 1px solid var(--lumo-contrast-10pct);
+	border-radius: var(--lumo-border-radius-m);
+	box-sizing: border-box;
+	width: 100%;
+}
+
+.tt-eh-details::part(summary) {
+	padding: var(--lumo-space-s) var(--lumo-space-m);
+}
+
+.tt-eh-details::part(content) {
+	padding: 0 var(--lumo-space-m) var(--lumo-space-m);
+}
+
+.tt-eh-category,
+.tt-eh-task {
+	margin-left: var(--lumo-space-m);
+}
+
+.tt-eh-section-content {
+	gap: var(--lumo-space-m);
+}
+
+.tt-eh-editor-block {
+	gap: var(--lumo-space-s);
+}
+
+.tt-eh-actions {
+	flex-wrap: wrap;
+	gap: var(--lumo-space-s);
+}
+
+.tt-eh-summary {
+	align-items: center;
+	gap: var(--lumo-space-s);
+	min-width: 0;
+}
+
+.tt-eh-summary-type {
+	color: var(--lumo-secondary-text-color);
+	flex: 0 0 auto;
+	font-size: var(--lumo-font-size-xs);
+	font-weight: 600;
+	text-transform: uppercase;
+}
+
+.tt-eh-summary-title {
+	flex: 1 1 auto;
+	font-weight: 600;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.tt-eh-points {
+	background: var(--lumo-primary-color-10pct);
+	border-radius: var(--lumo-border-radius-s);
+	color: var(--lumo-primary-text-color);
+	flex: 0 0 auto;
+	font-size: var(--lumo-font-size-s);
+	font-weight: 600;
+	padding: 0 var(--lumo-space-s);
+}
+
+.tt-eh-requirement {
+	background: var(--lumo-contrast-5pct);
+	border-radius: var(--lumo-border-radius-m);
+	box-sizing: border-box;
+	gap: var(--lumo-space-m);
+	margin-left: var(--lumo-space-m);
+	padding: var(--lumo-space-m);
+}
+
+.tt-eh-requirement-fields {
+	flex-wrap: wrap;
+	gap: var(--lumo-space-m);
+}
+
+.tt-markdown-block {
+	gap: var(--lumo-space-xs);
+}
+
+.tt-field-label {
+	color: var(--lumo-secondary-text-color);
+	font-size: var(--lumo-font-size-s);
+	font-weight: 500;
+}
+
+.tt-markdown-editor {
+	min-height: 12rem;
+}
+
+.tt-empty-state {
+	color: var(--lumo-secondary-text-color);
+	font-size: var(--lumo-font-size-s);
+}
+
 vaadin-grid.tt-multi-selection-grid::part(cell) {
 	user-select: none;
 }

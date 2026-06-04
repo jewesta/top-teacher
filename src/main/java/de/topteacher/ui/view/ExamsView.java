@@ -15,14 +15,18 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 
 import de.topteacher.backend.repo.CourseRepository;
 import de.topteacher.backend.repo.ExamRepository;
+import de.topteacher.backend.repo.ExpectationHorizonRepository;
 import de.topteacher.model.Course;
 import de.topteacher.model.Exam;
 import de.topteacher.ui.MainLayout;
+import de.topteacher.ui.component.ExamNotesEditor;
+import de.topteacher.ui.component.ExpectationHorizonEditor;
 import de.topteacher.ui.component.MultiSelectionGrid;
 
 @Route(value = "exams", layout = MainLayout.class)
@@ -32,6 +36,8 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 
 	private final CourseRepository courseRepository;
 	private final ExamRepository examRepository;
+	private final ExpectationHorizonEditor expectationHorizonEditor;
+	private final ExamNotesEditor examNotesEditor;
 	private final ComboBox<Course> courseFilter = new ComboBox<>("Kurs");
 	private final TextField title = new TextField("Titel");
 	private final DatePicker date = new DatePicker("Datum");
@@ -41,11 +47,16 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 
 	private Course selectedCourse;
 	private Exam selectedExam;
+	private Tab expectationHorizonTab;
+	private Tab notesTab;
 
-	public ExamsView(final CourseRepository courseRepository, final ExamRepository examRepository) {
+	public ExamsView(final CourseRepository courseRepository, final ExamRepository examRepository,
+			final ExpectationHorizonRepository expectationHorizonRepository) {
 		super("Klausuren", "tt-exams-view", new MultiSelectionGrid<>(Exam.class, false));
 		this.courseRepository = courseRepository;
 		this.examRepository = examRepository;
+		this.expectationHorizonEditor = new ExpectationHorizonEditor(expectationHorizonRepository);
+		this.examNotesEditor = new ExamNotesEditor(expectationHorizonRepository);
 
 		configureCourseFilter();
 		configureEditors();
@@ -98,14 +109,26 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 	}
 
 	@Override
+	protected double getSplitterPosition() {
+		return 30;
+	}
+
+	@Override
+	protected String getContextAreaMinWidth() {
+		return "34rem";
+	}
+
+	@Override
 	protected void onEditorModeChanged(final EditorMode editorMode, final List<Exam> selectedItems) {
 		if (editorMode == EditorMode.MULTI_SELECT) {
+			removeExamContextTabs();
 			showMultiSelectEditor(selectedItems);
 			return;
 		}
 
 		final Exam exam = selectedItems.isEmpty() ? null : selectedItems.get(0);
 		showSingleSelectEditor(exam);
+		updateExamContextTabs(exam);
 	}
 
 	private void configureCourseFilter() {
@@ -117,6 +140,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 			selectedCourse = event.getValue();
 			clearSelection();
 			clearSingleEditor();
+			removeExamContextTabs();
 			refreshGrid();
 		});
 	}
@@ -133,6 +157,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		newButton.addClickListener(event -> {
 			clearSelection();
 			clearSingleEditor();
+			removeExamContextTabs();
 		});
 	}
 
@@ -190,6 +215,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 
 		refreshGrid();
 		clearSingleEditor();
+		removeExamContextTabs();
 	}
 
 	private void refreshGrid() {
@@ -206,6 +232,39 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		title.clear();
 		date.clear();
 		updateEditorEnabled();
+	}
+
+	private void updateExamContextTabs(final Exam exam) {
+		if (exam == null) {
+			removeExamContextTabs();
+			return;
+		}
+
+		if (expectationHorizonTab == null) {
+			expectationHorizonTab = getContextTabs().add("EH", expectationHorizonEditor);
+			notesTab = getContextTabs().add("Notizen", examNotesEditor);
+		}
+
+		expectationHorizonEditor.setExam(exam);
+		examNotesEditor.setExam(exam);
+	}
+
+	private void removeExamContextTabs() {
+		if (expectationHorizonTab == null) {
+			expectationHorizonEditor.setExam(null);
+			examNotesEditor.setExam(null);
+			return;
+		}
+
+		if (getContextTabs().getSelectedTab() == expectationHorizonTab || getContextTabs().getSelectedTab() == notesTab) {
+			getContextTabs().setSelectedIndex(0);
+		}
+		getContextTabs().remove(expectationHorizonTab);
+		getContextTabs().remove(notesTab);
+		expectationHorizonTab = null;
+		notesTab = null;
+		expectationHorizonEditor.setExam(null);
+		examNotesEditor.setExam(null);
 	}
 
 	private void updateEditorEnabled() {
