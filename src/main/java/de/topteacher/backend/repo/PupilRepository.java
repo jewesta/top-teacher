@@ -1,4 +1,4 @@
-package de.topteacher.backend.pupil;
+package de.topteacher.backend.repo;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -12,6 +12,9 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
+
+import de.topteacher.model.Lifecycle;
+import de.topteacher.model.Pupil;
 
 @Repository
 public class PupilRepository {
@@ -53,7 +56,7 @@ public class PupilRepository {
 				update pupil
 				set lifecycle = :lifecycle
 				where id = :id
-				""", Map.of("id", id, "lifecycle", PupilLifecycle.INACTIVE.name()));
+				""", Map.of("id", id, "lifecycle", Lifecycle.INACTIVE.name()));
 	}
 
 	private Pupil insert(final Pupil pupil) {
@@ -87,6 +90,6 @@ public class PupilRepository {
 
 	private Pupil mapPupil(final ResultSet resultSet, final int rowNumber) throws SQLException {
 		return new Pupil(resultSet.getInt("id"), resultSet.getString("name"), resultSet.getString("surname"),
-				PupilLifecycle.valueOf(resultSet.getString("lifecycle")));
+				Lifecycle.valueOf(resultSet.getString("lifecycle")));
 	}
 }

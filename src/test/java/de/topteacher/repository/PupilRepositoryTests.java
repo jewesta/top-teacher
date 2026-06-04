@@ -1,10 +1,14 @@
-package de.topteacher.backend.pupil;
+package de.topteacher.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+
+import de.topteacher.backend.repo.PupilRepository;
+import de.topteacher.model.Lifecycle;
+import de.topteacher.model.Pupil;
 
 @SpringBootTest
 class PupilRepositoryTests {
@@ -14,12 +18,12 @@ class PupilRepositoryTests {
 
 	@Test
 	void savesUpdatesAndArchivesPupils() {
-		final Pupil saved = pupilRepository.save(new Pupil(null, "Ada", "Lovelace", PupilLifecycle.ACTIVE));
+		final Pupil saved = pupilRepository.save(new Pupil(null, "Ada", "Lovelace", Lifecycle.ACTIVE));
 
 		assertThat(saved.id()).isNotNull();
 		assertThat(pupilRepository.findById(saved.id())).contains(saved);
 
-		final Pupil updated = new Pupil(saved.id(), "Ada", "Byron", PupilLifecycle.ACTIVE);
+		final Pupil updated = new Pupil(saved.id(), "Ada", "Byron", Lifecycle.ACTIVE);
 		pupilRepository.save(updated);
 
 		assertThat(pupilRepository.findById(saved.id())).contains(updated);
@@ -27,6 +31,6 @@ class PupilRepositoryTests {
 		pupilRepository.archive(saved.id());
 
 		assertThat(pupilRepository.findById(saved.id()))
-				.hasValueSatisfying(pupil -> assertThat(pupil.lifecycle()).isEqualTo(PupilLifecycle.INACTIVE));
+				.hasValueSatisfying(pupil -> assertThat(pupil.lifecycle()).isEqualTo(Lifecycle.INACTIVE));
 	}
 }

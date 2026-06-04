@@ -16,9 +16,9 @@ import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteAlias;
 
-import de.topteacher.backend.pupil.Pupil;
-import de.topteacher.backend.pupil.PupilLifecycle;
-import de.topteacher.backend.pupil.PupilRepository;
+import de.topteacher.backend.repo.PupilRepository;
+import de.topteacher.model.Lifecycle;
+import de.topteacher.model.Pupil;
 import de.topteacher.ui.MainLayout;
 
 @Route(value = "", layout = MainLayout.class)
@@ -29,7 +29,7 @@ public class PupilsView extends VerticalLayout implements HasDynamicTitle {
 	private final Grid<Pupil> grid = new Grid<>(Pupil.class, false);
 	private final TextField name = new TextField("Name");
 	private final TextField surname = new TextField("Surname");
-	private final ComboBox<PupilLifecycle> lifecycle = new ComboBox<>("Lifecycle");
+	private final ComboBox<Lifecycle> lifecycle = new ComboBox<>("Lifecycle");
 	private final Button saveButton = new Button("Save");
 	private final Button newButton = new Button("New");
 	private final Button archiveButton = new Button("Archive");
@@ -69,7 +69,7 @@ public class PupilsView extends VerticalLayout implements HasDynamicTitle {
 	private void configureForm() {
 		name.setRequiredIndicatorVisible(true);
 		surname.setRequiredIndicatorVisible(true);
-		lifecycle.setItems(PupilLifecycle.values());
+		lifecycle.setItems(Lifecycle.values());
 
 		saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 		saveButton.addClickListener(event -> savePupil());
@@ -148,8 +148,7 @@ public class PupilsView extends VerticalLayout implements HasDynamicTitle {
 			return;
 		}
 
-		final PupilLifecycle selectedLifecycle = lifecycle.getValue() == null ? PupilLifecycle.ACTIVE
-				: lifecycle.getValue();
+		final Lifecycle selectedLifecycle = lifecycle.getValue() == null ? Lifecycle.ACTIVE : lifecycle.getValue();
 		final Integer id = selectedPupil == null ? null : selectedPupil.id();
 		pupilRepository.save(new Pupil(id, trimmedName, trimmedSurname, selectedLifecycle));
 
@@ -175,11 +174,11 @@ public class PupilsView extends VerticalLayout implements HasDynamicTitle {
 		selectedPupil = null;
 		name.clear();
 		surname.clear();
-		lifecycle.setValue(PupilLifecycle.ACTIVE);
+		lifecycle.setValue(Lifecycle.ACTIVE);
 		updateArchiveButton();
 	}
 
 	private void updateArchiveButton() {
-		archiveButton.setEnabled(selectedPupil != null && selectedPupil.lifecycle() == PupilLifecycle.ACTIVE);
+		archiveButton.setEnabled(selectedPupil != null && selectedPupil.lifecycle() == Lifecycle.ACTIVE);
 	}
 }

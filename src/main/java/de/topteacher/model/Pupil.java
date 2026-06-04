@@ -1,6 +1,6 @@
-package de.topteacher.backend.pupil;
+package de.topteacher.model;
 
-public record Pupil(Integer id, String name, String surname, PupilLifecycle lifecycle) {
+public record Pupil(Integer id, String name, String surname, Lifecycle lifecycle) {
 
 	public Pupil {
 		if (name == null || name.isBlank()) {

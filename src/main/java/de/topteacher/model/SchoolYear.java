@@ -4,28 +4,28 @@ import java.util.Objects;
 
 public final class SchoolYear {
 
-	private static final int MIN_START_YEAR = 1900;
-	private static final int MAX_START_YEAR = 9998;
+	private static final int MIN_CALENDAR_YEAR = 1900;
+	private static final int MAX_CALENDAR_YEAR = 9998;
 
-	private final int startYear;
+	private final int calendarYear;
 
-	public SchoolYear(final int startYear) {
-		if (startYear < MIN_START_YEAR || startYear > MAX_START_YEAR) {
-			throw new IllegalArgumentException("startYear must be between 1900 and 9998");
+	public SchoolYear(final int calendarYear) {
+		if (calendarYear < MIN_CALENDAR_YEAR || calendarYear > MAX_CALENDAR_YEAR) {
+			throw new IllegalArgumentException("calendarYear must be between 1900 and 9998");
 		}
-		this.startYear = startYear;
+		this.calendarYear = calendarYear;
 	}
 
-	public int getStartYear() {
-		return startYear;
+	public int getCalendarYear() {
+		return calendarYear;
 	}
 
 	public int getEndYear() {
-		return startYear + 1;
+		return calendarYear + 1;
 	}
 
 	public String getDisplayName() {
-		return startYear + "/" + getEndYear();
+		return calendarYear + "/" + getEndYear();
 	}
 
 	@Override
@@ -36,12 +36,12 @@ public final class SchoolYear {
 		if (!(other instanceof final SchoolYear schoolYear)) {
 			return false;
 		}
-		return startYear == schoolYear.startYear;
+		return calendarYear == schoolYear.calendarYear;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(startYear);
+		return Objects.hash(calendarYear);
 	}
 
 	@Override

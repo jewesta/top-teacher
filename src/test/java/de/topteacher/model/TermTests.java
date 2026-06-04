@@ -22,7 +22,6 @@ class TermTests {
 	void rejectsMissingValues() {
 		assertThatNullPointerException().isThrownBy(() -> new Term(null, Half.FIRST))
 				.withMessage("schoolYear must not be null");
-
 		assertThatNullPointerException().isThrownBy(() -> new Term(new SchoolYear(2025), null))
 				.withMessage("half must not be null");
 	}

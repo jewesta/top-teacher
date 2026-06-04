@@ -8,18 +8,18 @@ import org.junit.jupiter.api.Test;
 class SchoolYearTests {
 
 	@Test
-	void exposesStartEndAndDisplayName() {
+	void exposesCalendarYearEndYearAndDisplayName() {
 		final SchoolYear schoolYear = new SchoolYear(2025);
 
-		assertThat(schoolYear.getStartYear()).isEqualTo(2025);
+		assertThat(schoolYear.getCalendarYear()).isEqualTo(2025);
 		assertThat(schoolYear.getEndYear()).isEqualTo(2026);
 		assertThat(schoolYear.getDisplayName()).isEqualTo("2025/2026");
 		assertThat(schoolYear).hasToString("2025/2026");
 	}
 
 	@Test
-	void rejectsInvalidStartYear() {
+	void rejectsInvalidCalendarYear() {
 		assertThatThrownBy(() -> new SchoolYear(1899)).isInstanceOf(IllegalArgumentException.class)
-				.hasMessage("startYear must be between 1900 and 9998");
+				.hasMessage("calendarYear must be between 1900 and 9998");
 	}
 }
