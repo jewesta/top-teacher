@@ -3,19 +3,19 @@ vaadin-app-layout::part(drawer) {
 }
 
 .tt-header {
-    align-items: center;
-    background: var(--lumo-base-color);
-    box-sizing: border-box;
-    display: flex;
-    gap: 0;
-    min-height: var(--lumo-size-xl);
-    width: 100%;
+	align-items: center;
+	background: var(--lumo-base-color);
+	box-sizing: border-box;
+	display: flex;
+	gap: 0;
+	min-height: var(--lumo-size-xl);
+	width: 100%;
 }
 
 .tt-view-title {
-    font-size: var(--lumo-font-size-l);
-    line-height: var(--lumo-line-height-m);
-    margin: 0;
+	font-size: var(--lumo-font-size-l);
+	line-height: var(--lumo-line-height-m);
+	margin: 0;
 }
 
 .tt-drawer-header {
@@ -36,108 +36,111 @@ vaadin-app-layout::part(drawer) {
 }
 
 .tt-navigation {
-    box-sizing: border-box;
-    padding: var(--lumo-space-s);
+	box-sizing: border-box;
+	padding: var(--lumo-space-s);
 }
 
 .tt-side-nav {
-    width: 100%;
+	width: 100%;
 }
 
 .tt-master-data-view {
-    box-sizing: border-box;
-    height: 100%;
-    width: 100%;
+	box-sizing: border-box;
+	height: 100%;
+	width: 100%;
 }
 
 .tt-master-data-split {
-    height: 100%;
-    width: 100%;
+	height: 100%;
+	width: 100%;
 }
 
 .tt-master-list {
-    box-sizing: border-box;
-    gap: var(--lumo-space-s);
-    height: 100%;
-    padding: var(--lumo-space-m);
-    width: 100%;
+	box-sizing: border-box;
+	gap: var(--lumo-space-s);
+	height: 100%;
+	padding: var(--lumo-space-m);
+	width: 100%;
 }
 
 .tt-master-search {
-    flex: 0 0 auto;
-    max-width: 24rem;
-    width: 100%;
+	flex: 0 0 auto;
+	max-width: 24rem;
+	width: 100%;
 }
 
 .tt-master-toolbar {
-    flex: 0 0 auto;
-    gap: 0;
-    margin-top: calc(-1 * var(--lumo-space-s));
-    max-width: 100%;
-    min-width: 0;
+	column-gap: var(--lumo-space-m);
+	flex: 0 0 auto;
+	/* Compensate for top padding of tt-master-list. We usually want the padding,
+	   but the boxes in tt-master-toolbar bring their own top padding which adds up. */
+	margin-top: calc(-1 * var(--lumo-space-m));
+	max-width: 100%;
+	min-width: 0;
+	row-gap: 0;
 }
 
 .tt-master-list vaadin-grid {
-    flex: 1 1 auto;
-    min-height: 0;
+	flex: 1 1 auto;
+	min-height: 0;
 }
 
 .tt-context-area {
-    background: var(--lumo-base-color);
-    box-sizing: border-box;
-    height: 100%;
-    min-width: 0;
-    width: 100%;
+	background: var(--lumo-base-color);
+	box-sizing: border-box;
+	height: 100%;
+	min-width: 0;
+	width: 100%;
 }
 
 .tt-context-tabs {
-    box-sizing: border-box;
-    height: 100%;
-    width: 100%;
+	box-sizing: border-box;
+	height: 100%;
+	width: 100%;
 }
 
 .tt-editor-host {
-    box-sizing: border-box;
-    height: 100%;
-    width: 100%;
+	box-sizing: border-box;
+	height: 100%;
+	width: 100%;
 }
 
 .tt-editor {
-    box-sizing: border-box;
-    padding: var(--lumo-space-m);
-    width: 100%;
+	box-sizing: border-box;
+	padding: var(--lumo-space-m);
+	width: 100%;
 }
 
 .tt-selection-summary {
-    color: var(--lumo-secondary-text-color);
-    font-size: var(--lumo-font-size-s);
+	color: var(--lumo-secondary-text-color);
+	font-size: var(--lumo-font-size-s);
 }
 
 .tt-course-assignments {
-    box-sizing: border-box;
-    gap: var(--lumo-space-m);
-    height: 100%;
-    padding: var(--lumo-space-m);
-    width: 100%;
+	box-sizing: border-box;
+	gap: var(--lumo-space-m);
+	height: 100%;
+	padding: var(--lumo-space-m);
+	width: 100%;
 }
 
 .tt-assignment-search {
-    flex: 0 0 auto;
+	flex: 0 0 auto;
 }
 
 .tt-assignment-grid {
-    flex: 1 1 auto;
-    min-height: 0;
+	flex: 1 1 auto;
+	min-height: 0;
 }
 
 vaadin-grid.tt-multi-selection-grid::part(cell) {
-    user-select: none;
+	user-select: none;
 }
 
 vaadin-grid.tt-multi-selection-grid::part(tt-selected-row) {
-    background: var(--lumo-primary-color-10pct);
+	background: var(--lumo-primary-color-10pct);
 }
 
 vaadin-grid.tt-multi-selection-grid::part(tt-selected-row):hover {
-    background: var(--lumo-primary-color-10pct);
+	background: var(--lumo-primary-color-10pct);
 }
