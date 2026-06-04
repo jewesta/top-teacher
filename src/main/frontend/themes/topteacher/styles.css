@@ -247,16 +247,24 @@ vaadin-app-layout::part(drawer) {
 	min-height: var(--lumo-size-s);
 }
 
-.tt-eh-points {
+.tt-eh-points,
+.tt-eh-percentage {
 	background: var(--lumo-primary-color-10pct);
 	border-radius: var(--lumo-border-radius-s);
 	color: var(--lumo-primary-text-color);
 	flex: 0 0 auto;
 	font-size: var(--lumo-font-size-s);
 	font-weight: 600;
-	margin-left: auto;
 	padding: 0 var(--lumo-space-s);
+}
+
+.tt-eh-points {
+	margin-left: auto;
 	margin-right: var(--lumo-space-m);
+}
+
+.tt-eh-summary-with-percentage .tt-eh-points {
+	margin-left: 0;
 }
 
 .tt-eh-requirement {

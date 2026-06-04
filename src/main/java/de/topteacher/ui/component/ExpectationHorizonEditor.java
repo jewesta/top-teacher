@@ -1,7 +1,11 @@
 package de.topteacher.ui.component;
 
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.function.Supplier;
 
 import com.flowingcode.vaadin.addons.markdown.MarkdownEditor;
 import com.vaadin.flow.component.ClickEvent;
@@ -30,6 +34,9 @@ import de.topteacher.model.Exam;
 public class ExpectationHorizonEditor extends VerticalLayout {
 
 	private final ExpectationHorizonRepository expectationHorizonRepository;
+	private final Set<String> collapsedDetails = new HashSet<>();
+	private final List<PointBadge> pointBadges = new ArrayList<>();
+	private final List<PercentageBadge> percentageBadges = new ArrayList<>();
 
 	private Exam exam;
 	private List<EhPart> parts = List.of();
@@ -47,11 +54,16 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 	}
 
 	public void setExam(final Exam exam) {
+		if (this.exam == null || exam == null || !this.exam.id().equals(exam.id())) {
+			collapsedDetails.clear();
+		}
 		this.exam = exam;
 		refresh();
 	}
 
 	private void refresh() {
+		pointBadges.clear();
+		percentageBadges.clear();
 		removeAll();
 		if (exam == null) {
 			add(new Span("Bitte wählen Sie eine Klausur aus."));
@@ -118,7 +130,7 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 		});
 		addPart.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-		final HorizontalLayout toolbar = new HorizontalLayout(addPart, summaryBadge("Gesamtpunktzahl", pointsForExam()));
+		final HorizontalLayout toolbar = new HorizontalLayout(addPart, summaryBadge("Gesamtpunktzahl", this::pointsForExam));
 		toolbar.addClassName("tt-eh-toolbar");
 		toolbar.setAlignItems(Alignment.CENTER);
 		toolbar.setPadding(false);
@@ -138,15 +150,18 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 				title.setValue(part.title());
 				return;
 			}
-			expectationHorizonRepository.savePart(new EhPart(part.id(), part.examId(), event.getValue(), part.sortOrder()));
+			final EhPart updatedPart = new EhPart(part.id(), part.examId(), event.getValue(), part.sortOrder());
+			expectationHorizonRepository.savePart(updatedPart);
+			replacePart(updatedPart);
 		});
 		final VerticalLayout content = sectionContent();
 		content.add(createEditorActions(title, part, siblings));
 		categoriesFor(part).forEach(category -> content.add(createCategoryDetails(category)));
 
-		final Details details = new Details(summary("Klausurteil", title, pointsForPart(part)), content);
+		final Details details = new Details(partSummary(title, () -> percentageForPart(part), () -> pointsForPart(part)),
+				content);
 		details.addClassNames("tt-eh-details", "tt-eh-part");
-		details.setOpened(true);
+		configureOpenedState(details, detailKey("part", part.id()));
 		return details;
 	}
 
@@ -156,8 +171,9 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 				Notification.show("Titel ist erforderlich.");
 				return;
 			}
-			expectationHorizonRepository.savePart(new EhPart(part.id(), part.examId(), title.getValue(), part.sortOrder()));
-			refresh();
+			final EhPart updatedPart = new EhPart(part.id(), part.examId(), title.getValue(), part.sortOrder());
+			expectationHorizonRepository.savePart(updatedPart);
+			replacePart(updatedPart);
 		});
 		final Button addCategory = commandButton("Leistungskategorie hinzufügen", VaadinIcon.PLUS, event -> {
 			addDefaultCategory(part);
@@ -190,18 +206,21 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 				title.setValue(category.title());
 				return;
 			}
-			expectationHorizonRepository.saveCategory(new EhCategory(category.id(), category.partId(), event.getValue(),
-					category.descriptionMarkdown(), category.sortOrder()));
+			final EhCategory currentCategory = categoryById(category.id());
+			final EhCategory updatedCategory = new EhCategory(category.id(), category.partId(), event.getValue(),
+					currentCategory.descriptionMarkdown(), category.sortOrder());
+			expectationHorizonRepository.saveCategory(updatedCategory);
+			replaceCategory(updatedCategory);
 		});
 		final MarkdownEditor description = markdownEditor(category.descriptionMarkdown(), "Beschreibung");
 		final VerticalLayout content = sectionContent();
 		content.add(markdownBlock("Beschreibung", description), createCategoryActions(title, description, category, siblings));
 		tasksFor(category).forEach(task -> content.add(createTaskDetails(task)));
 
-		final Details details = new Details(summary("Leistungskategorie", title, pointsForCategory(category)),
+		final Details details = new Details(summary("Leistungskategorie", title, () -> pointsForCategory(category)),
 				content);
 		details.addClassNames("tt-eh-details", "tt-eh-category");
-		details.setOpened(true);
+		configureOpenedState(details, detailKey("category", category.id()));
 		return details;
 	}
 
@@ -212,9 +231,10 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 				Notification.show("Titel ist erforderlich.");
 				return;
 			}
-			expectationHorizonRepository.saveCategory(new EhCategory(category.id(), category.partId(), title.getValue(),
-					value(description), category.sortOrder()));
-			refresh();
+			final EhCategory updatedCategory = new EhCategory(category.id(), category.partId(), title.getValue(),
+					value(description), category.sortOrder());
+			expectationHorizonRepository.saveCategory(updatedCategory);
+			replaceCategory(updatedCategory);
 		});
 		final Button addTask = commandButton("Teilaufgabe hinzufügen", VaadinIcon.PLUS, event -> {
 			addDefaultTask(category);
@@ -247,15 +267,17 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 				title.setValue(task.title());
 				return;
 			}
-			expectationHorizonRepository.saveTask(new EhTask(task.id(), task.categoryId(), event.getValue(), task.sortOrder()));
+			final EhTask updatedTask = new EhTask(task.id(), task.categoryId(), event.getValue(), task.sortOrder());
+			expectationHorizonRepository.saveTask(updatedTask);
+			replaceTask(updatedTask);
 		});
 		final VerticalLayout content = sectionContent();
 		content.add(createTaskActions(title, task, siblings));
 		requirementsFor(task).forEach(requirement -> content.add(createRequirementEditor(requirement)));
 
-		final Details details = new Details(summary("Teilaufgabe", title, pointsForTask(task)), content);
+		final Details details = new Details(summary("Teilaufgabe", title, () -> pointsForTask(task)), content);
 		details.addClassNames("tt-eh-details", "tt-eh-task");
-		details.setOpened(true);
+		configureOpenedState(details, detailKey("task", task.id()));
 		return details;
 	}
 
@@ -265,8 +287,9 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 				Notification.show("Titel ist erforderlich.");
 				return;
 			}
-			expectationHorizonRepository.saveTask(new EhTask(task.id(), task.categoryId(), title.getValue(), task.sortOrder()));
-			refresh();
+			final EhTask updatedTask = new EhTask(task.id(), task.categoryId(), title.getValue(), task.sortOrder());
+			expectationHorizonRepository.saveTask(updatedTask);
+			replaceTask(updatedTask);
 		});
 		final Button addRequirement = commandButton("Anforderung hinzufügen", VaadinIcon.PLUS, event -> {
 			addDefaultRequirement(task);
@@ -290,6 +313,8 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 	private Component createRequirementEditor(final EhRequirement requirement) {
 		final List<EhRequirement> siblings = requirementsFor(taskFor(requirement));
 		final MarkdownEditor description = markdownEditor(requirement.descriptionMarkdown(), "Beschreibung");
+		final Span requirementTitle = new Span(requirementSummary(requirement));
+		requirementTitle.addClassName("tt-eh-summary-title");
 		final IntegerField maxPoints = new IntegerField("Max. Punkte");
 		maxPoints.setMin(0);
 		maxPoints.setStepButtonsVisible(true);
@@ -302,9 +327,12 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 				Notification.show("Max. Punkte müssen 0 oder größer sein.");
 				return;
 			}
-			expectationHorizonRepository.saveRequirement(new EhRequirement(requirement.id(), requirement.taskId(),
-					value(description), maxPoints.getValue(), bonus.getValue(), requirement.sortOrder()));
-			refresh();
+			final EhRequirement updatedRequirement = new EhRequirement(requirement.id(), requirement.taskId(),
+					value(description), maxPoints.getValue(), bonus.getValue(), requirement.sortOrder());
+			expectationHorizonRepository.saveRequirement(updatedRequirement);
+			replaceRequirement(updatedRequirement);
+			requirementTitle.setText(requirementSummary(updatedRequirement));
+			refreshBadges();
 		});
 
 		final HorizontalLayout fields = new HorizontalLayout(maxPoints, bonus);
@@ -320,8 +348,9 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 		actions.addClassName("tt-eh-actions");
 		actions.setPadding(false);
 
-		final VerticalLayout editor = new VerticalLayout(summary("Anforderung", requirementSummary(requirement),
-				pointsForRequirement(requirement)), markdownBlock("Beschreibung", description), fields, actions);
+		final VerticalLayout editor = new VerticalLayout(summary("Anforderung", requirementTitle,
+				() -> pointsForRequirementById(requirement.id())), markdownBlock("Beschreibung", description), fields,
+				actions);
 		editor.addClassName("tt-eh-requirement");
 		editor.setPadding(false);
 		editor.setWidthFull();
@@ -397,31 +426,82 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 		return requirement.bonus() ? new Points(0, requirement.maxPoints()) : new Points(requirement.maxPoints(), 0);
 	}
 
+	private Points pointsForRequirementById(final Integer id) {
+		return requirements.stream().filter(requirement -> requirement.id().equals(id)).findFirst()
+				.map(this::pointsForRequirement).orElse(new Points(0, 0));
+	}
+
+	private int percentageForPart(final EhPart part) {
+		final int totalPoints = pointsForExam().total();
+		if (totalPoints == 0) {
+			return 0;
+		}
+		return Math.round(pointsForPart(part).total() * 100.0f / totalPoints);
+	}
+
 	private Points sum(final List<EhRequirement> requirements) {
 		return requirements.stream().map(this::pointsForRequirement).reduce(new Points(0, 0), Points::plus);
 	}
 
-	private Component summary(final String type, final String title, final Points points) {
+	private Component summary(final String type, final String title, final Supplier<Points> pointsSupplier) {
 		final Span titleLabel = new Span(title);
 		titleLabel.addClassName("tt-eh-summary-title");
-		return summary(type, titleLabel, points);
+		return summary(type, titleLabel, pointsSupplier);
 	}
 
-	private Component summary(final String type, final Component title, final Points points) {
+	private Component summary(final String type, final Component title, final Supplier<Points> pointsSupplier) {
 		final Span typeLabel = new Span(type);
 		typeLabel.addClassName("tt-eh-summary-type");
 
-		final HorizontalLayout summary = new HorizontalLayout(typeLabel, title, summaryBadge("Summe", points));
+		final HorizontalLayout summary = new HorizontalLayout(typeLabel, title, summaryBadge("Summe", pointsSupplier));
 		summary.addClassName("tt-eh-summary");
 		summary.setPadding(false);
 		summary.setWidthFull();
 		return summary;
 	}
 
-	private Span summaryBadge(final String label, final Points points) {
-		final Span badge = new Span(label + ": " + points.label());
+	private Component partSummary(final Component title, final Supplier<Integer> percentageSupplier,
+			final Supplier<Points> pointsSupplier) {
+		final Span typeLabel = new Span("Klausurteil");
+		typeLabel.addClassName("tt-eh-summary-type");
+
+		final HorizontalLayout summary = new HorizontalLayout(typeLabel, title, percentageBadge(percentageSupplier),
+				summaryBadge("Summe", pointsSupplier));
+		summary.addClassNames("tt-eh-summary", "tt-eh-summary-with-percentage");
+		summary.setPadding(false);
+		summary.setWidthFull();
+		return summary;
+	}
+
+	private Span summaryBadge(final String label, final Supplier<Points> pointsSupplier) {
+		final Span badge = new Span();
 		badge.addClassName("tt-eh-points");
+		pointBadges.add(new PointBadge(label, badge, pointsSupplier));
+		updatePointBadge(label, badge, pointsSupplier.get());
 		return badge;
+	}
+
+	private Span percentageBadge(final Supplier<Integer> percentageSupplier) {
+		final Span badge = new Span();
+		badge.addClassName("tt-eh-percentage");
+		percentageBadges.add(new PercentageBadge(badge, percentageSupplier));
+		updatePercentageBadge(badge, percentageSupplier.get());
+		return badge;
+	}
+
+	private void refreshBadges() {
+		pointBadges.forEach(pointBadge -> updatePointBadge(pointBadge.label(), pointBadge.badge(),
+				pointBadge.pointsSupplier().get()));
+		percentageBadges.forEach(percentageBadge -> updatePercentageBadge(percentageBadge.badge(),
+				percentageBadge.percentageSupplier().get()));
+	}
+
+	private void updatePointBadge(final String label, final Span badge, final Points points) {
+		badge.setText(label + ": " + points.label());
+	}
+
+	private void updatePercentageBadge(final Span badge, final int percentage) {
+		badge.setText(percentage + " %");
 	}
 
 	private String requirementSummary(final EhRequirement requirement) {
@@ -452,6 +532,46 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 				this.addEventListener('keydown', event => event.stopPropagation());
 				"""));
 		return field;
+	}
+
+	private void configureOpenedState(final Details details, final String key) {
+		details.setOpened(!collapsedDetails.contains(key));
+		details.addOpenedChangeListener(event -> {
+			if (event.isOpened()) {
+				collapsedDetails.remove(key);
+			} else {
+				collapsedDetails.add(key);
+			}
+		});
+	}
+
+	private String detailKey(final String type, final Integer id) {
+		return type + ":" + id;
+	}
+
+	private EhCategory categoryById(final Integer id) {
+		return categories.stream().filter(category -> category.id().equals(id)).findFirst()
+				.orElseThrow(() -> new IllegalStateException("Missing EH category: " + id));
+	}
+
+	private void replacePart(final EhPart part) {
+		parts = parts.stream().map(currentPart -> currentPart.id().equals(part.id()) ? part : currentPart).toList();
+	}
+
+	private void replaceCategory(final EhCategory category) {
+		categories = categories.stream()
+				.map(currentCategory -> currentCategory.id().equals(category.id()) ? category : currentCategory).toList();
+	}
+
+	private void replaceTask(final EhTask task) {
+		tasks = tasks.stream().map(currentTask -> currentTask.id().equals(task.id()) ? task : currentTask).toList();
+	}
+
+	private void replaceRequirement(final EhRequirement requirement) {
+		requirements = requirements.stream()
+				.map(currentRequirement -> currentRequirement.id().equals(requirement.id()) ? requirement
+						: currentRequirement)
+				.toList();
 	}
 
 	private MarkdownEditor markdownEditor(final String value, final String placeholder) {
@@ -559,11 +679,21 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 			return new Points(regular + other.regular, bonus + other.bonus);
 		}
 
+		int total() {
+			return regular + bonus;
+		}
+
 		String label() {
 			if (bonus == 0) {
 				return regular + " P.";
 			}
 			return regular + " P. + " + bonus + " Bonus";
 		}
+	}
+
+	private record PointBadge(String label, Span badge, Supplier<Points> pointsSupplier) {
+	}
+
+	private record PercentageBadge(Span badge, Supplier<Integer> percentageSupplier) {
 	}
 }

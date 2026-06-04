@@ -1,6 +1,8 @@
 package de.topteacher.ui.component;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.flowingcode.vaadin.addons.markdown.MarkdownEditor;
 import com.vaadin.flow.component.ClickEvent;
@@ -24,6 +26,7 @@ import de.topteacher.model.ExamNoteSection;
 public class ExamNotesEditor extends VerticalLayout {
 
 	private final ExpectationHorizonRepository expectationHorizonRepository;
+	private final Set<String> collapsedDetails = new HashSet<>();
 
 	private Exam exam;
 	private List<ExamNoteSection> noteSections = List.of();
@@ -38,6 +41,9 @@ public class ExamNotesEditor extends VerticalLayout {
 	}
 
 	public void setExam(final Exam exam) {
+		if (this.exam == null || exam == null || !this.exam.id().equals(exam.id())) {
+			collapsedDetails.clear();
+		}
 		this.exam = exam;
 		refresh();
 	}
@@ -92,8 +98,11 @@ public class ExamNotesEditor extends VerticalLayout {
 				title.setValue(noteSection.title());
 				return;
 			}
-			expectationHorizonRepository.saveNoteSection(new ExamNoteSection(noteSection.id(), noteSection.examId(),
-					event.getValue(), noteSection.descriptionMarkdown(), noteSection.sortOrder()));
+			final ExamNoteSection currentNoteSection = noteSectionById(noteSection.id());
+			final ExamNoteSection updatedNoteSection = new ExamNoteSection(noteSection.id(), noteSection.examId(),
+					event.getValue(), currentNoteSection.descriptionMarkdown(), noteSection.sortOrder());
+			expectationHorizonRepository.saveNoteSection(updatedNoteSection);
+			replaceNoteSection(updatedNoteSection);
 		});
 
 		final MarkdownEditor description = new MarkdownEditor(noteSection.descriptionMarkdown());
@@ -115,9 +124,10 @@ public class ExamNotesEditor extends VerticalLayout {
 				Notification.show("Titel ist erforderlich.");
 				return;
 			}
-			expectationHorizonRepository.saveNoteSection(new ExamNoteSection(noteSection.id(), noteSection.examId(),
-					title.getValue(), value(description), noteSection.sortOrder()));
-			refresh();
+			final ExamNoteSection updatedNoteSection = new ExamNoteSection(noteSection.id(), noteSection.examId(),
+					title.getValue(), value(description), noteSection.sortOrder());
+			expectationHorizonRepository.saveNoteSection(updatedNoteSection);
+			replaceNoteSection(updatedNoteSection);
 		});
 		save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
@@ -136,7 +146,7 @@ public class ExamNotesEditor extends VerticalLayout {
 
 		final Details details = new Details(summary(title), content);
 		details.addClassNames("tt-eh-details", "tt-exam-note-section");
-		details.setOpened(true);
+		configureOpenedState(details, detailKey("note", noteSection.id()));
 		return details;
 	}
 
@@ -192,5 +202,32 @@ public class ExamNotesEditor extends VerticalLayout {
 
 	private String value(final MarkdownEditor editor) {
 		return editor.getValue() == null ? "" : editor.getValue();
+	}
+
+	private ExamNoteSection noteSectionById(final Integer id) {
+		return noteSections.stream().filter(noteSection -> noteSection.id().equals(id)).findFirst()
+				.orElseThrow(() -> new IllegalStateException("Missing note section: " + id));
+	}
+
+	private void configureOpenedState(final Details details, final String key) {
+		details.setOpened(!collapsedDetails.contains(key));
+		details.addOpenedChangeListener(event -> {
+			if (event.isOpened()) {
+				collapsedDetails.remove(key);
+			} else {
+				collapsedDetails.add(key);
+			}
+		});
+	}
+
+	private String detailKey(final String type, final Integer id) {
+		return type + ":" + id;
+	}
+
+	private void replaceNoteSection(final ExamNoteSection noteSection) {
+		noteSections = noteSections.stream()
+				.map(currentNoteSection -> currentNoteSection.id().equals(noteSection.id()) ? noteSection
+						: currentNoteSection)
+				.toList();
 	}
 }
