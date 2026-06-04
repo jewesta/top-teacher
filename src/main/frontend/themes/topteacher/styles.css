@@ -1,3 +1,11 @@
+:root {
+	--lumo-primary-color: hsl(350, 48%, 34%);
+	--lumo-primary-color-50pct: hsla(350, 48%, 34%, 0.5);
+	--lumo-primary-color-10pct: hsla(350, 48%, 34%, 0.1);
+	--lumo-primary-text-color: hsl(350, 54%, 30%);
+	--lumo-primary-contrast-color: #fff;
+}
+
 vaadin-app-layout::part(drawer) {
 	background-image: none;
 }
