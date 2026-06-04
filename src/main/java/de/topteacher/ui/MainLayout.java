@@ -50,7 +50,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
 		final Header header = new Header();
 		header.addClassName("tt-drawer-header");
 
-		final Image appName = new Image("images/topteacher-logo.svg", "TopTeacher!");
+		final Image appName = new Image("images/topteacher-logo.png", "TopTeacher!");
 		appName.addClassName("tt-app-logo");
 
 		header.add(appName);
@@ -60,7 +60,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
 	private Component createNavigation() {
 		final SideNav navigation = new SideNav();
 		navigation.addClassName("tt-side-nav");
-		navigation.addItem(new SideNavItem("Pupils", PupilsView.class, VaadinIcon.USERS.create()));
+		navigation.addItem(new SideNavItem("Pupils", PupilsView.class, VaadinIcon.ACADEMY_CAP.create()));
 		navigation.addItem(new SideNavItem("Courses", CoursesView.class, VaadinIcon.BOOK.create()));
 
 		final Main wrapper = new Main(navigation);
