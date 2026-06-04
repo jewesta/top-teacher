@@ -116,14 +116,6 @@
     min-height: 0;
 }
 
-vaadin-grid.tt-assignment-grid::part(tt-assignment-action-cell) {
-    padding-inline: 0;
-}
-
-vaadin-grid.tt-assignment-grid::part(header-cell last-column) {
-    padding-inline: 0;
-}
-
 vaadin-grid.tt-multi-selection-grid::part(cell) {
     user-select: none;
 }

@@ -8,6 +8,7 @@ import java.util.stream.Stream;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.ColumnTextAlign;
@@ -40,8 +41,8 @@ import de.topteacher.ui.component.MultiSelectionGrid;
 public class CoursesView extends AbstractMasterDataView<Course> {
 
 	private static final Comparator<AssignmentRow> ASSIGNMENT_ROW_ORDER = Comparator
-			.comparing((AssignmentRow row) -> row.pupil().name(), String.CASE_INSENSITIVE_ORDER)
-			.thenComparing(row -> row.pupil().surname(), String.CASE_INSENSITIVE_ORDER)
+			.comparing((final AssignmentRow row) -> row.pupil().surname(), String.CASE_INSENSITIVE_ORDER)
+			.thenComparing(row -> row.pupil().name(), String.CASE_INSENSITIVE_ORDER)
 			.thenComparing(row -> row.pupil().id());
 
 	private final CourseRepository courseRepository;
@@ -197,9 +198,8 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 		assignmentGrid.addColumn(row -> row.pupil().id()).setHeader("ID").setAutoWidth(true).setFlexGrow(0);
 		assignmentGrid.addColumn(row -> row.pupil().surname()).setHeader("Surname").setAutoWidth(true);
 		assignmentGrid.addColumn(row -> row.pupil().name()).setHeader("Name").setAutoWidth(true);
-		assignmentGrid.addComponentColumn(this::createAssignmentActionButton).setHeader("").setAutoWidth(true)
-				.setFlexGrow(0).setFrozenToEnd(true).setTextAlign(ColumnTextAlign.CENTER)
-				.setPartNameGenerator(row -> "tt-assignment-action-cell");
+		assignmentGrid.addComponentColumn(this::createAssignmentCheckbox).setHeader("Assigned").setAutoWidth(true)
+				.setFlexGrow(0).setFrozenToEnd(true).setTextAlign(ColumnTextAlign.CENTER);
 		assignmentGrid.addClassName("tt-assignment-grid");
 		assignmentGrid.setSelectionMode(Grid.SelectionMode.NONE);
 		assignmentGrid.setSizeFull();
@@ -215,21 +215,23 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 		return layout;
 	}
 
-	private Button createAssignmentActionButton(final AssignmentRow row) {
-		final Button button = new Button();
-		button.addThemeVariants(ButtonVariant.LUMO_SMALL);
-		button.setIcon(row.assigned() ? VaadinIcon.MINUS_CIRCLE.create() : VaadinIcon.PLUS_CIRCLE.create());
-		button.addThemeVariants(ButtonVariant.LUMO_ICON, ButtonVariant.LUMO_PRIMARY,
-				row.assigned() ? ButtonVariant.LUMO_ERROR : ButtonVariant.LUMO_SUCCESS);
-		button.setTooltipText(row.assigned() ? "Remove pupil from course" : "Assign pupil to course");
-		button.addClickListener(event -> {
-			if (row.assigned()) {
-				removePupil(row.pupil());
-			} else {
+	private Checkbox createAssignmentCheckbox(final AssignmentRow row) {
+		final Checkbox checkbox = new Checkbox(row.assigned());
+		checkbox.setAriaLabel(row.assigned() ? "Remove pupil from course" : "Assign pupil to course");
+		checkbox.getElement().setAttribute("title",
+				row.assigned() ? "Remove pupil from course" : "Assign pupil to course");
+		checkbox.addValueChangeListener(event -> {
+			if (!event.isFromClient()) {
+				return;
+			}
+
+			if (event.getValue()) {
 				assignPupil(row.pupil());
+			} else {
+				removePupil(row.pupil());
 			}
 		});
-		return button;
+		return checkbox;
 	}
 
 	private void showSingleSelectEditor(final Course course) {
@@ -332,8 +334,8 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 				.map(pupil -> new AssignmentRow(pupil, true)).toList();
 		final List<AssignmentRow> availableRows = courseRepository.findAssignablePupils(selectedCourse.id()).stream()
 				.map(pupil -> new AssignmentRow(pupil, false)).toList();
-		setAssignmentRows(Stream.concat(assignedRows.stream(), availableRows.stream()).sorted(ASSIGNMENT_ROW_ORDER)
-				.toList());
+		setAssignmentRows(
+				Stream.concat(assignedRows.stream(), availableRows.stream()).sorted(ASSIGNMENT_ROW_ORDER).toList());
 	}
 
 	private void updateAssignmentsTab(final Course course) {
