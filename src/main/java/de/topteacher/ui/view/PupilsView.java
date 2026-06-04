@@ -115,10 +115,7 @@ public class PupilsView extends VerticalLayout implements HasDynamicTitle {
 
 	private Component createEditor() {
 		final FormLayout form = new FormLayout(name, surname, lifecycle);
-		form.setResponsiveSteps(
-				new FormLayout.ResponsiveStep("0", 1),
-				new FormLayout.ResponsiveStep("32rem", 2)
-		);
+		form.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("32rem", 2));
 
 		final var buttons = new HorizontalLayout(saveButton, newButton, archiveButton);
 		buttons.setSpacing(true);

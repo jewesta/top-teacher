@@ -53,23 +53,18 @@ public class PupilRepository {
 				update pupil
 				set lifecycle = :lifecycle
 				where id = :id
-				""", Map.of(
-				"id", id,
-				"lifecycle", PupilLifecycle.INACTIVE.name()
-		));
+				""", Map.of("id", id, "lifecycle", PupilLifecycle.INACTIVE.name()));
 	}
 
 	private Pupil insert(final Pupil pupil) {
 		final KeyHolder keyHolder = new GeneratedKeyHolder();
-		final MapSqlParameterSource parameters = new MapSqlParameterSource()
-				.addValue("name", pupil.name())
-				.addValue("surname", pupil.surname())
-				.addValue("lifecycle", pupil.lifecycle().name());
+		final MapSqlParameterSource parameters = new MapSqlParameterSource().addValue("name", pupil.name())
+				.addValue("surname", pupil.surname()).addValue("lifecycle", pupil.lifecycle().name());
 
 		jdbc.update("""
 				insert into pupil (name, surname, lifecycle)
 				values (:name, :surname, :lifecycle)
-				""", parameters, keyHolder, new String[] {"id"});
+				""", parameters, keyHolder, new String[] { "id" });
 
 		final Number id = keyHolder.getKey();
 		if (id == null) {
@@ -86,21 +81,12 @@ public class PupilRepository {
 				    surname = :surname,
 				    lifecycle = :lifecycle
 				where id = :id
-				""", Map.of(
-				"id", pupil.id(),
-				"name", pupil.name(),
-				"surname", pupil.surname(),
-				"lifecycle", pupil.lifecycle().name()
-		));
+				""", Map.of("id", pupil.id(), "name", pupil.name(), "surname", pupil.surname(), "lifecycle",
+				pupil.lifecycle().name()));
 	}
 
 	private Pupil mapPupil(final ResultSet resultSet, final int rowNumber) throws SQLException {
-		return new Pupil(
-				resultSet.getInt("id"),
-				resultSet.getString("name"),
-				resultSet.getString("surname"),
-				PupilLifecycle.valueOf(resultSet.getString("lifecycle"))
-		);
+		return new Pupil(resultSet.getInt("id"), resultSet.getString("name"), resultSet.getString("surname"),
+				PupilLifecycle.valueOf(resultSet.getString("lifecycle")));
 	}
 }
-

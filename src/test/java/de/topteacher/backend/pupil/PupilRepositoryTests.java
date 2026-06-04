@@ -30,4 +30,3 @@ class PupilRepositoryTests {
 				.hasValueSatisfying(pupil -> assertThat(pupil.lifecycle()).isEqualTo(PupilLifecycle.INACTIVE));
 	}
 }
-

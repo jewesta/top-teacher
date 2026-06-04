@@ -14,4 +14,3 @@ public record Pupil(Integer id, String name, String surname, PupilLifecycle life
 		}
 	}
 }
-
