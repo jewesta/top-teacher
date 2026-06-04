@@ -14,7 +14,8 @@ public record Course(Integer id, SchoolClass schoolClass, Subject subject, Schoo
 	}
 
 	public String getDisplayName() {
-		return subject.getDisplayName() + " " + schoolClass.getDisplayName() + ", " + schoolYear.getDisplayName() + ", "
-				+ coursePeriod.getDisplayName();
+		final String courseLabel = subject.getDisplayName() + " " + schoolClass.getDisplayName() + ", "
+				+ schoolYear.getShortDisplayName();
+		return coursePeriod == CoursePeriod.FULL_YEAR ? courseLabel : courseLabel + ", " + coursePeriod.getDisplayName();
 	}
 }

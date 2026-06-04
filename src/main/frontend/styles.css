@@ -65,6 +65,14 @@ vaadin-app-layout::part(drawer) {
 
 .tt-master-search {
     flex: 0 0 auto;
+    max-width: 24rem;
+    width: 100%;
+}
+
+.tt-master-toolbar {
+    flex: 0 0 auto;
+    max-width: 100%;
+    min-width: 0;
 }
 
 .tt-master-list vaadin-grid {

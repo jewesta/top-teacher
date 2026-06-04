@@ -68,4 +68,15 @@ class CourseRepositoryTests {
 		assertThat(courseRepository.findPupils(course.id())).isEmpty();
 		assertThat(courseRepository.findAssignablePupils(course.id())).extracting(Pupil::id).contains(ada.id());
 	}
+
+	@Test
+	void findsOnlyActiveCourses() {
+		final Course active = courseRepository.save(new Course(null, SchoolClass.CLS_9A, Subject.ENGLISH,
+				new SchoolYear(2032), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE));
+		final Course inactive = courseRepository.save(new Course(null, SchoolClass.CLS_9A, Subject.SPANISH,
+				new SchoolYear(2032), CoursePeriod.FULL_YEAR, Lifecycle.INACTIVE));
+
+		assertThat(courseRepository.findActive()).extracting(Course::id).contains(active.id())
+				.doesNotContain(inactive.id());
+	}
 }

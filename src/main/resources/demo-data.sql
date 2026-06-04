@@ -49,6 +49,28 @@ where not exists (
       and c.course_period = demo.course_period
 );
 
+insert into exam (course_id, title, exam_date)
+select c.id, demo.title, demo.exam_date
+from (
+    values
+        ('CLS_5A', 'ENGLISH', 2026, 'FULL_YEAR', '1. Klausur', date '2026-09-22'),
+        ('CLS_5A', 'ENGLISH', 2026, 'FULL_YEAR', '2. Klausur', date '2026-12-08'),
+        ('CLS_5A', 'SPANISH', 2026, 'FULL_YEAR', '1. Klausur', date '2026-09-29'),
+        ('CLS_6A', 'ENGLISH', 2026, 'FULL_YEAR', '1. Klausur', date '2026-10-06'),
+        ('CLS_EF', 'ENGLISH', 2026, 'FULL_YEAR', '1. Klausur', date '2026-09-24')
+) demo(school_class, subject, calendar_year, course_period, title, exam_date)
+join course c
+    on c.school_class = demo.school_class
+   and c.subject = demo.subject
+   and c.calendar_year = demo.calendar_year
+   and c.course_period = demo.course_period
+where not exists (
+    select 1
+    from exam e
+    where e.course_id = c.id
+      and e.title = demo.title
+);
+
 insert into course_pupil (course_id, pupil_id)
 select c.id, p.id
 from (

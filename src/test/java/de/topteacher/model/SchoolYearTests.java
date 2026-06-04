@@ -14,6 +14,7 @@ class SchoolYearTests {
 		assertThat(schoolYear.getCalendarYear()).isEqualTo(2025);
 		assertThat(schoolYear.getEndYear()).isEqualTo(2026);
 		assertThat(schoolYear.getDisplayName()).isEqualTo("2025/2026");
+		assertThat(schoolYear.getShortDisplayName()).isEqualTo("'25/'26");
 		assertThat(schoolYear).hasToString("2025/2026");
 	}
 

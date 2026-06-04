@@ -10,6 +10,8 @@ import java.util.Set;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
 import com.vaadin.flow.component.tabs.TabSheet;
@@ -127,10 +129,15 @@ public abstract class AbstractMasterDataView<T> extends VerticalLayout implement
 		return "20rem";
 	}
 
+	protected Component createListToolbarPrefix() {
+		return null;
+	}
+
 	private void configureSearchField() {
 		searchField.addClassName("tt-master-search");
 		searchField.setClearButtonVisible(true);
-		searchField.setPlaceholder("Suchen");
+		searchField.setLabel("Suchen");
+		searchField.setPlaceholder("Suchbegriff");
 		searchField.setPrefixComponent(VaadinIcon.SEARCH.create());
 		searchField.setValueChangeMode(ValueChangeMode.EAGER);
 		searchField.setWidthFull();
@@ -138,7 +145,7 @@ public abstract class AbstractMasterDataView<T> extends VerticalLayout implement
 	}
 
 	private Component createPageContent() {
-		final VerticalLayout listArea = new VerticalLayout(searchField, grid);
+		final VerticalLayout listArea = new VerticalLayout(createListToolbar(), grid);
 		listArea.addClassName("tt-master-list");
 		listArea.setPadding(false);
 		listArea.setSpacing(false);
@@ -152,6 +159,24 @@ public abstract class AbstractMasterDataView<T> extends VerticalLayout implement
 		splitLayout.setPrimaryStyle("min-width", getListAreaMinWidth());
 		splitLayout.setSecondaryStyle("min-width", getContextAreaMinWidth());
 		return splitLayout;
+	}
+
+	private Component createListToolbar() {
+		final Component toolbarPrefix = createListToolbarPrefix();
+		if (toolbarPrefix == null) {
+			return searchField;
+		}
+
+		final HorizontalLayout toolbar = new HorizontalLayout(toolbarPrefix, searchField);
+		toolbar.addClassName("tt-master-toolbar");
+		toolbar.setAlignItems(Alignment.END);
+		toolbar.setPadding(false);
+		toolbar.setSpacing(true);
+		toolbar.setWidthFull();
+		toolbar.getStyle().set("flex-wrap", "wrap");
+		toolbar.setFlexGrow(0, toolbarPrefix);
+		toolbar.setFlexGrow(0, searchField);
+		return toolbar;
 	}
 
 	private Component createContextArea() {

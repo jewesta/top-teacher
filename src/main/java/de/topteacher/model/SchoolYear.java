@@ -28,6 +28,14 @@ public final class SchoolYear {
 		return calendarYear + "/" + getEndYear();
 	}
 
+	public String getShortDisplayName() {
+		return "'" + twoDigitYear(calendarYear) + "/'" + twoDigitYear(getEndYear());
+	}
+
+	private String twoDigitYear(final int year) {
+		return String.format("%02d", year % 100);
+	}
+
 	@Override
 	public boolean equals(final Object other) {
 		if (this == other) {

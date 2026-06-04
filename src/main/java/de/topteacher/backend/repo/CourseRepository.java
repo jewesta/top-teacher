@@ -40,6 +40,15 @@ public class CourseRepository {
 				""", rowMapper);
 	}
 
+	public List<Course> findActive() {
+		return jdbc.query("""
+				select id, school_class, subject, calendar_year, course_period, lifecycle
+				from course
+				where lifecycle = :lifecycle
+				order by calendar_year desc, course_period, school_class, subject, id
+				""", Map.of("lifecycle", Lifecycle.ACTIVE.name()), rowMapper);
+	}
+
 	public Optional<Course> findById(final int id) {
 		return jdbc.query("""
 				select id, school_class, subject, calendar_year, course_period, lifecycle
