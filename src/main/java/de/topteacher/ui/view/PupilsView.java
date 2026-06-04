@@ -1,18 +1,17 @@
 package de.topteacher.ui.view;
 
+import java.util.List;
+
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.formlayout.FormLayout;
-import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.splitlayout.SplitLayout;
-import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteAlias;
 
@@ -20,53 +19,88 @@ import de.topteacher.backend.repo.PupilRepository;
 import de.topteacher.model.Lifecycle;
 import de.topteacher.model.Pupil;
 import de.topteacher.ui.MainLayout;
+import de.topteacher.ui.component.MultiSelectionGrid;
 
 @Route(value = "", layout = MainLayout.class)
 @RouteAlias(value = "pupils", layout = MainLayout.class)
-public class PupilsView extends VerticalLayout implements HasDynamicTitle {
+public class PupilsView extends AbstractMasterDataView<Pupil> {
 
 	private final PupilRepository pupilRepository;
-	private final Grid<Pupil> grid = new Grid<>(Pupil.class, false);
 	private final TextField name = new TextField("Name");
 	private final TextField surname = new TextField("Surname");
 	private final ComboBox<Lifecycle> lifecycle = new ComboBox<>("Lifecycle");
 	private final Button saveButton = new Button("Save");
 	private final Button newButton = new Button("New");
 	private final Button archiveButton = new Button("Archive");
+	private final Span multiSelectionSummary = new Span();
+	private final ComboBox<Lifecycle> bulkLifecycle = new ComboBox<>("Lifecycle");
+	private final Button applyLifecycleButton = new Button("Apply");
 
 	private Pupil selectedPupil;
+	private List<Pupil> selectedPupils = List.of();
 
 	public PupilsView(final PupilRepository pupilRepository) {
+		super("Pupils", "tt-pupils-view", new MultiSelectionGrid<>(Pupil.class, false));
 		this.pupilRepository = pupilRepository;
 
-		setSizeFull();
-		setPadding(false);
-		setSpacing(false);
-		addClassName("tt-pupils-view");
-
-		configureGrid();
-		configureForm();
+		configureEditors();
+		initializeView();
 		refreshGrid();
-		clearForm();
-
-		add(createPageContent());
+		clearSingleEditor();
 	}
 
 	@Override
-	public String getPageTitle() {
-		return "Pupils";
-	}
-
-	private void configureGrid() {
+	protected void configureGrid(final MultiSelectionGrid<Pupil> grid) {
 		grid.addColumn(Pupil::id).setHeader("ID").setAutoWidth(true).setFlexGrow(0);
 		grid.addColumn(Pupil::name).setHeader("Name").setAutoWidth(true);
 		grid.addColumn(Pupil::surname).setHeader("Surname").setAutoWidth(true);
 		grid.addColumn(Pupil::lifecycle).setHeader("Lifecycle").setAutoWidth(true);
-		grid.setSizeFull();
-		grid.asSingleSelect().addValueChangeListener(event -> editPupil(event.getValue()));
 	}
 
-	private void configureForm() {
+	@Override
+	protected Component createSingleSelectEditor() {
+		final FormLayout form = new FormLayout(name, surname, lifecycle);
+		form.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("32rem", 2));
+
+		final HorizontalLayout buttons = new HorizontalLayout(saveButton, newButton, archiveButton);
+		buttons.setSpacing(true);
+
+		final VerticalLayout editor = new VerticalLayout(form, buttons);
+		editor.addClassNames("tt-editor", "tt-pupil-editor");
+		editor.setPadding(false);
+		editor.setWidthFull();
+		return editor;
+	}
+
+	@Override
+	protected Component createMultiSelectEditor() {
+		multiSelectionSummary.addClassName("tt-selection-summary");
+
+		final FormLayout form = new FormLayout(bulkLifecycle);
+		form.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 1));
+
+		final HorizontalLayout buttons = new HorizontalLayout(applyLifecycleButton);
+		buttons.setSpacing(true);
+
+		final VerticalLayout editor = new VerticalLayout(multiSelectionSummary, form, buttons);
+		editor.addClassNames("tt-editor", "tt-pupil-bulk-editor");
+		editor.setPadding(false);
+		editor.setWidthFull();
+		return editor;
+	}
+
+	@Override
+	protected void onEditorModeChanged(final EditorMode editorMode, final List<Pupil> selectedItems) {
+		if (editorMode == EditorMode.MULTI_SELECT) {
+			showMultiSelectEditor(selectedItems);
+			return;
+		}
+
+		final Pupil pupil = selectedItems.isEmpty() ? null : selectedItems.get(0);
+		showSingleSelectEditor(pupil);
+	}
+
+	private void configureEditors() {
 		name.setRequiredIndicatorVisible(true);
 		surname.setRequiredIndicatorVisible(true);
 		lifecycle.setItems(Lifecycle.values());
@@ -75,62 +109,27 @@ public class PupilsView extends VerticalLayout implements HasDynamicTitle {
 		saveButton.addClickListener(event -> savePupil());
 
 		newButton.addClickListener(event -> {
-			grid.deselectAll();
-			clearForm();
+			clearSelection();
+			clearSingleEditor();
 		});
 
 		archiveButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
 		archiveButton.addClickListener(event -> archiveSelectedPupil());
+
+		bulkLifecycle.setItems(Lifecycle.values());
+		bulkLifecycle.setClearButtonVisible(true);
+		bulkLifecycle.addValueChangeListener(event -> updateBulkApplyButton());
+
+		applyLifecycleButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+		applyLifecycleButton.addClickListener(event -> applyLifecycleToSelectedPupils());
+		updateBulkApplyButton();
 	}
 
-	private Component createPageContent() {
-		final VerticalLayout listArea = new VerticalLayout(grid);
-		listArea.addClassName("tt-pupils-list");
-		listArea.setPadding(false);
-		listArea.setSpacing(false);
-		listArea.setSizeFull();
-
-		final SplitLayout splitLayout = new SplitLayout(listArea, createContextArea());
-		splitLayout.addClassName("tt-pupils-split");
-		splitLayout.setSizeFull();
-		splitLayout.setSplitterPosition(70);
-		splitLayout.setPrimaryStyle("min-width", "24rem");
-		splitLayout.setSecondaryStyle("min-width", "20rem");
-		return splitLayout;
-	}
-
-	private Component createContextArea() {
-		final TabSheet tabs = new TabSheet();
-		tabs.addClassName("tt-context-tabs");
-		tabs.setSizeFull();
-		tabs.add("Editor", createEditor());
-
-		final VerticalLayout contextArea = new VerticalLayout(tabs);
-		contextArea.addClassName("tt-context-area");
-		contextArea.setPadding(false);
-		contextArea.setSpacing(false);
-		contextArea.setSizeFull();
-		return contextArea;
-	}
-
-	private Component createEditor() {
-		final FormLayout form = new FormLayout(name, surname, lifecycle);
-		form.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("32rem", 2));
-
-		final var buttons = new HorizontalLayout(saveButton, newButton, archiveButton);
-		buttons.setSpacing(true);
-
-		final VerticalLayout editor = new VerticalLayout(form, buttons);
-		editor.addClassName("tt-pupil-editor");
-		editor.setPadding(false);
-		editor.setWidthFull();
-		return editor;
-	}
-
-	private void editPupil(final Pupil pupil) {
+	private void showSingleSelectEditor(final Pupil pupil) {
+		selectedPupils = List.of();
 		selectedPupil = pupil;
 		if (pupil == null) {
-			clearForm();
+			clearSingleEditor();
 			return;
 		}
 
@@ -138,6 +137,14 @@ public class PupilsView extends VerticalLayout implements HasDynamicTitle {
 		surname.setValue(pupil.surname());
 		lifecycle.setValue(pupil.lifecycle());
 		updateArchiveButton();
+	}
+
+	private void showMultiSelectEditor(final List<Pupil> pupils) {
+		selectedPupil = null;
+		selectedPupils = List.copyOf(pupils);
+		multiSelectionSummary.setText(selectedPupils.size() + " pupils selected");
+		setBulkLifecycleValue(commonLifecycle(selectedPupils));
+		updateBulkApplyButton();
 	}
 
 	private void savePupil() {
@@ -153,7 +160,7 @@ public class PupilsView extends VerticalLayout implements HasDynamicTitle {
 		pupilRepository.save(new Pupil(id, trimmedName, trimmedSurname, selectedLifecycle));
 
 		refreshGrid();
-		clearForm();
+		clearSingleEditor();
 	}
 
 	private void archiveSelectedPupil() {
@@ -163,14 +170,26 @@ public class PupilsView extends VerticalLayout implements HasDynamicTitle {
 
 		pupilRepository.archive(selectedPupil.id());
 		refreshGrid();
-		clearForm();
+		clearSingleEditor();
+	}
+
+	private void applyLifecycleToSelectedPupils() {
+		final Lifecycle selectedLifecycle = bulkLifecycle.getValue();
+		if (selectedPupils.isEmpty() || selectedLifecycle == null) {
+			return;
+		}
+
+		selectedPupils.forEach(
+				pupil -> pupilRepository.save(new Pupil(pupil.id(), pupil.name(), pupil.surname(), selectedLifecycle)));
+		Notification.show("Updated lifecycle for " + selectedPupils.size() + " pupils.");
+		refreshGrid();
 	}
 
 	private void refreshGrid() {
-		grid.setItems(pupilRepository.findAll());
+		setGridItems(pupilRepository.findAll());
 	}
 
-	private void clearForm() {
+	private void clearSingleEditor() {
 		selectedPupil = null;
 		name.clear();
 		surname.clear();
@@ -180,5 +199,26 @@ public class PupilsView extends VerticalLayout implements HasDynamicTitle {
 
 	private void updateArchiveButton() {
 		archiveButton.setEnabled(selectedPupil != null && selectedPupil.lifecycle() == Lifecycle.ACTIVE);
+	}
+
+	private Lifecycle commonLifecycle(final List<Pupil> pupils) {
+		if (pupils.isEmpty()) {
+			return null;
+		}
+
+		final Lifecycle firstLifecycle = pupils.get(0).lifecycle();
+		return pupils.stream().allMatch(pupil -> pupil.lifecycle() == firstLifecycle) ? firstLifecycle : null;
+	}
+
+	private void setBulkLifecycleValue(final Lifecycle value) {
+		if (value == null) {
+			bulkLifecycle.clear();
+			return;
+		}
+		bulkLifecycle.setValue(value);
+	}
+
+	private void updateBulkApplyButton() {
+		applyLifecycleButton.setEnabled(!selectedPupils.isEmpty() && bulkLifecycle.getValue() != null);
 	}
 }

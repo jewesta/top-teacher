@@ -40,18 +40,18 @@
     width: 100%;
 }
 
-.tt-pupils-view {
+.tt-master-data-view {
     box-sizing: border-box;
     height: 100%;
     width: 100%;
 }
 
-.tt-pupils-split {
+.tt-master-data-split {
     height: 100%;
     width: 100%;
 }
 
-.tt-pupils-list {
+.tt-master-list {
     box-sizing: border-box;
     height: 100%;
     padding: var(--lumo-space-m);
@@ -72,8 +72,31 @@
     width: 100%;
 }
 
-.tt-pupil-editor {
+.tt-editor-host {
+    box-sizing: border-box;
+    height: 100%;
+    width: 100%;
+}
+
+.tt-editor {
     box-sizing: border-box;
     padding: var(--lumo-space-m);
     width: 100%;
+}
+
+.tt-selection-summary {
+    color: var(--lumo-secondary-text-color);
+    font-size: var(--lumo-font-size-s);
+}
+
+vaadin-grid.tt-multi-selection-grid::part(cell) {
+    user-select: none;
+}
+
+vaadin-grid.tt-multi-selection-grid::part(tt-selected-row) {
+    background: var(--lumo-primary-color-10pct);
+}
+
+vaadin-grid.tt-multi-selection-grid::part(tt-selected-row):hover {
+    background: var(--lumo-primary-color-10pct);
 }
