@@ -1,5 +1,10 @@
+vaadin-app-layout::part(drawer) {
+	background-image: none;
+}
+
 .tt-header {
     align-items: center;
+    background: var(--lumo-base-color);
     box-sizing: border-box;
     display: flex;
     gap: 0;
@@ -24,7 +29,7 @@
 
 .tt-app-logo {
     display: block;
-    height: 44px;
+    height: 60px;
     max-width: 190px;
     object-fit: contain;
     width: 100%;

@@ -60,8 +60,8 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
 	private Component createNavigation() {
 		final SideNav navigation = new SideNav();
 		navigation.addClassName("tt-side-nav");
-		navigation.addItem(new SideNavItem("Pupils", PupilsView.class, VaadinIcon.ACADEMY_CAP.create()));
-		navigation.addItem(new SideNavItem("Courses", CoursesView.class, VaadinIcon.BOOK.create()));
+		navigation.addItem(new SideNavItem("Schüler", PupilsView.class, VaadinIcon.ACADEMY_CAP.create()));
+		navigation.addItem(new SideNavItem("Kurse", CoursesView.class, VaadinIcon.BOOK.create()));
 
 		final Main wrapper = new Main(navigation);
 		wrapper.addClassName("tt-navigation");

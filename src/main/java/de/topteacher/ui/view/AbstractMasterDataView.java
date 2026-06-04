@@ -130,7 +130,7 @@ public abstract class AbstractMasterDataView<T> extends VerticalLayout implement
 	private void configureSearchField() {
 		searchField.addClassName("tt-master-search");
 		searchField.setClearButtonVisible(true);
-		searchField.setPlaceholder("Search");
+		searchField.setPlaceholder("Suchen");
 		searchField.setPrefixComponent(VaadinIcon.SEARCH.create());
 		searchField.setValueChangeMode(ValueChangeMode.EAGER);
 		searchField.setWidthFull();
@@ -160,7 +160,7 @@ public abstract class AbstractMasterDataView<T> extends VerticalLayout implement
 
 		contextTabs.addClassName("tt-context-tabs");
 		contextTabs.setSizeFull();
-		contextTabs.add("Editor", editorHost);
+		contextTabs.add("Bearbeiten", editorHost);
 
 		final VerticalLayout contextArea = new VerticalLayout(contextTabs);
 		contextArea.addClassName("tt-context-area");

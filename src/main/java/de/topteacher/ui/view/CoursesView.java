@@ -46,17 +46,17 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 			.thenComparing(row -> row.pupil().id());
 
 	private final CourseRepository courseRepository;
-	private final ComboBox<SchoolClass> schoolClass = new ComboBox<>("School class");
-	private final ComboBox<Subject> subject = new ComboBox<>("Subject");
-	private final IntegerField calendarYear = new IntegerField("Calendar year");
-	private final ComboBox<CoursePeriod> coursePeriod = new ComboBox<>("Period");
-	private final ComboBox<Lifecycle> lifecycle = new ComboBox<>("Lifecycle");
-	private final Button saveButton = new Button("Save");
-	private final Button newButton = new Button("New");
-	private final Button archiveButton = new Button("Archive");
+	private final ComboBox<SchoolClass> schoolClass = new ComboBox<>("Klasse");
+	private final ComboBox<Subject> subject = new ComboBox<>("Fach");
+	private final IntegerField calendarYear = new IntegerField("Startjahr");
+	private final ComboBox<CoursePeriod> coursePeriod = new ComboBox<>("Zeitraum");
+	private final ComboBox<Lifecycle> lifecycle = new ComboBox<>("Status");
+	private final Button saveButton = new Button("Speichern");
+	private final Button newButton = new Button("Neu");
+	private final Button archiveButton = new Button("Archivieren");
 	private final Span multiSelectionSummary = new Span();
-	private final ComboBox<Lifecycle> bulkLifecycle = new ComboBox<>("Lifecycle");
-	private final Button applyLifecycleButton = new Button("Apply");
+	private final ComboBox<Lifecycle> bulkLifecycle = new ComboBox<>("Status");
+	private final Button applyLifecycleButton = new Button("Anwenden");
 	private final TextField assignmentSearch = new TextField();
 	private final Grid<AssignmentRow> assignmentGrid = new Grid<>(AssignmentRow.class, false);
 
@@ -67,7 +67,7 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 	private Component assignmentsContent;
 
 	public CoursesView(final CourseRepository courseRepository) {
-		super("Courses", "tt-courses-view", new MultiSelectionGrid<>(Course.class, false));
+		super("Kurse", "tt-courses-view", new MultiSelectionGrid<>(Course.class, false));
 		this.courseRepository = courseRepository;
 
 		configureEditors();
@@ -80,11 +80,11 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 	@Override
 	protected void configureGrid(final MultiSelectionGrid<Course> grid) {
 		grid.addColumn(Course::id).setHeader("ID").setAutoWidth(true).setFlexGrow(0);
-		grid.addColumn(course -> course.schoolYear().getDisplayName()).setHeader("School year").setAutoWidth(true);
-		grid.addColumn(course -> course.coursePeriod().getDisplayName()).setHeader("Period").setAutoWidth(true);
-		grid.addColumn(course -> course.schoolClass().getDisplayName()).setHeader("Class").setAutoWidth(true);
-		grid.addColumn(course -> course.subject().getDisplayName()).setHeader("Subject").setAutoWidth(true);
-		grid.addColumn(course -> course.lifecycle().getDisplayName()).setHeader("Lifecycle").setAutoWidth(true);
+		grid.addColumn(course -> course.schoolYear().getDisplayName()).setHeader("Schuljahr").setAutoWidth(true);
+		grid.addColumn(course -> course.coursePeriod().getDisplayName()).setHeader("Zeitraum").setAutoWidth(true);
+		grid.addColumn(course -> course.schoolClass().getDisplayName()).setHeader("Klasse").setAutoWidth(true);
+		grid.addColumn(course -> course.subject().getDisplayName()).setHeader("Fach").setAutoWidth(true);
+		grid.addColumn(course -> course.lifecycle().getDisplayName()).setHeader("Status").setAutoWidth(true);
 	}
 
 	@Override
@@ -189,16 +189,16 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 	private void configureAssignments() {
 		assignmentSearch.addClassName("tt-assignment-search");
 		assignmentSearch.setClearButtonVisible(true);
-		assignmentSearch.setPlaceholder("Search pupils");
+		assignmentSearch.setPlaceholder("Schüler suchen");
 		assignmentSearch.setPrefixComponent(VaadinIcon.SEARCH.create());
 		assignmentSearch.setValueChangeMode(ValueChangeMode.EAGER);
 		assignmentSearch.setWidthFull();
 		assignmentSearch.addValueChangeListener(event -> applyAssignmentFilter());
 
 		assignmentGrid.addColumn(row -> row.pupil().id()).setHeader("ID").setAutoWidth(true).setFlexGrow(0);
-		assignmentGrid.addColumn(row -> row.pupil().surname()).setHeader("Surname").setAutoWidth(true);
-		assignmentGrid.addColumn(row -> row.pupil().name()).setHeader("Name").setAutoWidth(true);
-		assignmentGrid.addComponentColumn(this::createAssignmentCheckbox).setHeader("Assigned").setAutoWidth(true)
+		assignmentGrid.addColumn(row -> row.pupil().surname()).setHeader("Nachname").setAutoWidth(true);
+		assignmentGrid.addColumn(row -> row.pupil().name()).setHeader("Vorname").setAutoWidth(true);
+		assignmentGrid.addComponentColumn(this::createAssignmentCheckbox).setHeader("Zugeordnet").setAutoWidth(true)
 				.setFlexGrow(0).setFrozenToEnd(true).setTextAlign(ColumnTextAlign.CENTER);
 		assignmentGrid.addClassName("tt-assignment-grid");
 		assignmentGrid.setSelectionMode(Grid.SelectionMode.NONE);
@@ -217,9 +217,9 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 
 	private Checkbox createAssignmentCheckbox(final AssignmentRow row) {
 		final Checkbox checkbox = new Checkbox(row.assigned());
-		checkbox.setAriaLabel(row.assigned() ? "Remove pupil from course" : "Assign pupil to course");
+		checkbox.setAriaLabel(row.assigned() ? "Schüler aus Kurs entfernen" : "Schüler dem Kurs zuordnen");
 		checkbox.getElement().setAttribute("title",
-				row.assigned() ? "Remove pupil from course" : "Assign pupil to course");
+				row.assigned() ? "Schüler aus Kurs entfernen" : "Schüler dem Kurs zuordnen");
 		checkbox.addValueChangeListener(event -> {
 			if (!event.isFromClient()) {
 				return;
@@ -253,14 +253,14 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 	private void showMultiSelectEditor(final List<Course> courses) {
 		selectedCourse = null;
 		selectedCourses = List.copyOf(courses);
-		multiSelectionSummary.setText(selectedCourses.size() + " courses selected");
+		multiSelectionSummary.setText(selectedCourses.size() + " Kurse ausgewählt");
 		setBulkLifecycleValue(commonLifecycle(selectedCourses));
 		updateBulkApplyButton();
 	}
 
 	private void saveCourse() {
 		if (!hasRequiredCourseValues()) {
-			Notification.show("School class, subject, calendar year, period and lifecycle are required.");
+			Notification.show("Klasse, Fach, Startjahr, Zeitraum und Status sind erforderlich.");
 			return;
 		}
 
@@ -298,7 +298,7 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 
 		selectedCourses.forEach(course -> courseRepository.save(new Course(course.id(), course.schoolClass(),
 				course.subject(), course.schoolYear(), course.coursePeriod(), selectedLifecycle)));
-		Notification.show("Updated lifecycle for " + selectedCourses.size() + " courses.");
+		Notification.show("Status für " + selectedCourses.size() + " Kurse aktualisiert.");
 		refreshGrid();
 	}
 
@@ -348,7 +348,7 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 			if (assignmentsContent == null) {
 				assignmentsContent = createAssignmentsContent();
 			}
-			assignmentsTab = getContextTabs().add("Assignments", assignmentsContent);
+			assignmentsTab = getContextTabs().add("Schüler", assignmentsContent);
 		}
 		refreshAssignments();
 	}

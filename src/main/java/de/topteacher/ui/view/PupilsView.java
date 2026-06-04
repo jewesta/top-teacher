@@ -26,21 +26,21 @@ import de.topteacher.ui.component.MultiSelectionGrid;
 public class PupilsView extends AbstractMasterDataView<Pupil> {
 
 	private final PupilRepository pupilRepository;
-	private final TextField name = new TextField("Name");
-	private final TextField surname = new TextField("Surname");
-	private final ComboBox<Lifecycle> lifecycle = new ComboBox<>("Lifecycle");
-	private final Button saveButton = new Button("Save");
-	private final Button newButton = new Button("New");
-	private final Button archiveButton = new Button("Archive");
+	private final TextField name = new TextField("Vorname");
+	private final TextField surname = new TextField("Nachname");
+	private final ComboBox<Lifecycle> lifecycle = new ComboBox<>("Status");
+	private final Button saveButton = new Button("Speichern");
+	private final Button newButton = new Button("Neu");
+	private final Button archiveButton = new Button("Archivieren");
 	private final Span multiSelectionSummary = new Span();
-	private final ComboBox<Lifecycle> bulkLifecycle = new ComboBox<>("Lifecycle");
-	private final Button applyLifecycleButton = new Button("Apply");
+	private final ComboBox<Lifecycle> bulkLifecycle = new ComboBox<>("Status");
+	private final Button applyLifecycleButton = new Button("Anwenden");
 
 	private Pupil selectedPupil;
 	private List<Pupil> selectedPupils = List.of();
 
 	public PupilsView(final PupilRepository pupilRepository) {
-		super("Pupils", "tt-pupils-view", new MultiSelectionGrid<>(Pupil.class, false));
+		super("Schüler", "tt-pupils-view", new MultiSelectionGrid<>(Pupil.class, false));
 		this.pupilRepository = pupilRepository;
 
 		configureEditors();
@@ -52,9 +52,9 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 	@Override
 	protected void configureGrid(final MultiSelectionGrid<Pupil> grid) {
 		grid.addColumn(Pupil::id).setHeader("ID").setAutoWidth(true).setFlexGrow(0);
-		grid.addColumn(Pupil::name).setHeader("Name").setAutoWidth(true);
-		grid.addColumn(Pupil::surname).setHeader("Surname").setAutoWidth(true);
-		grid.addColumn(pupil -> pupil.lifecycle().getDisplayName()).setHeader("Lifecycle").setAutoWidth(true);
+		grid.addColumn(Pupil::name).setHeader("Vorname").setAutoWidth(true);
+		grid.addColumn(Pupil::surname).setHeader("Nachname").setAutoWidth(true);
+		grid.addColumn(pupil -> pupil.lifecycle().getDisplayName()).setHeader("Status").setAutoWidth(true);
 	}
 
 	@Override
@@ -150,7 +150,7 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 	private void showMultiSelectEditor(final List<Pupil> pupils) {
 		selectedPupil = null;
 		selectedPupils = List.copyOf(pupils);
-		multiSelectionSummary.setText(selectedPupils.size() + " pupils selected");
+		multiSelectionSummary.setText(selectedPupils.size() + " Schüler ausgewählt");
 		setBulkLifecycleValue(commonLifecycle(selectedPupils));
 		updateBulkApplyButton();
 	}
@@ -159,7 +159,7 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 		final String trimmedName = name.getValue().trim();
 		final String trimmedSurname = surname.getValue().trim();
 		if (trimmedName.isBlank() || trimmedSurname.isBlank()) {
-			Notification.show("Name and surname are required.");
+			Notification.show("Vorname und Nachname sind erforderlich.");
 			return;
 		}
 
@@ -189,7 +189,7 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 
 		selectedPupils.forEach(
 				pupil -> pupilRepository.save(new Pupil(pupil.id(), pupil.name(), pupil.surname(), selectedLifecycle)));
-		Notification.show("Updated lifecycle for " + selectedPupils.size() + " pupils.");
+		Notification.show("Status für " + selectedPupils.size() + " Schüler aktualisiert.");
 		refreshGrid();
 	}
 
