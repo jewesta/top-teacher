@@ -16,6 +16,7 @@ import org.springframework.stereotype.Repository;
 import de.topteacher.model.Course;
 import de.topteacher.model.Half;
 import de.topteacher.model.Lifecycle;
+import de.topteacher.model.Pupil;
 import de.topteacher.model.SchoolClass;
 import de.topteacher.model.SchoolYear;
 import de.topteacher.model.Subject;
@@ -26,6 +27,7 @@ public class CourseRepository {
 
 	private final NamedParameterJdbcTemplate jdbc;
 	private final RowMapper<Course> rowMapper = this::mapCourse;
+	private final RowMapper<Pupil> pupilRowMapper = this::mapPupil;
 
 	public CourseRepository(final NamedParameterJdbcTemplate jdbc) {
 		this.jdbc = jdbc;
@@ -62,6 +64,52 @@ public class CourseRepository {
 				set lifecycle = :lifecycle
 				where id = :id
 				""", Map.of("id", id, "lifecycle", Lifecycle.INACTIVE.name()));
+	}
+
+	public List<Pupil> findPupils(final int courseId) {
+		return jdbc.query("""
+				select p.id, p.name, p.surname, p.lifecycle
+				from pupil p
+				join course_pupil cp on cp.pupil_id = p.id
+				where cp.course_id = :courseId
+				order by p.surname, p.name, p.id
+				""", Map.of("courseId", courseId), pupilRowMapper);
+	}
+
+	public List<Pupil> findAssignablePupils(final int courseId) {
+		return jdbc.query("""
+				select p.id, p.name, p.surname, p.lifecycle
+				from pupil p
+				where p.lifecycle = :lifecycle
+				  and exists (
+				      select 1
+				      from course c
+				      where c.id = :courseId
+				  )
+				  and not exists (
+				      select 1
+				      from course_pupil cp
+				      where cp.course_id = :courseId
+				        and cp.pupil_id = p.id
+				  )
+				order by p.surname, p.name, p.id
+				""", Map.of("courseId", courseId, "lifecycle", Lifecycle.ACTIVE.name()), pupilRowMapper);
+	}
+
+	public void assignPupil(final int courseId, final int pupilId) {
+		jdbc.update("""
+				merge into course_pupil (course_id, pupil_id)
+				key (course_id, pupil_id)
+				values (:courseId, :pupilId)
+				""", Map.of("courseId", courseId, "pupilId", pupilId));
+	}
+
+	public void removePupil(final int courseId, final int pupilId) {
+		jdbc.update("""
+				delete from course_pupil
+				where course_id = :courseId
+				  and pupil_id = :pupilId
+				""", Map.of("courseId", courseId, "pupilId", pupilId));
 	}
 
 	private Course insert(final Course course) {
@@ -106,6 +154,11 @@ public class CourseRepository {
 		return new Course(resultSet.getInt("id"), SchoolClass.valueOf(resultSet.getString("school_class")),
 				Subject.valueOf(resultSet.getString("subject")),
 				new Term(new SchoolYear(resultSet.getInt("calendar_year")), Half.valueOf(resultSet.getString("half"))),
+				Lifecycle.valueOf(resultSet.getString("lifecycle")));
+	}
+
+	private Pupil mapPupil(final ResultSet resultSet, final int rowNumber) throws SQLException {
+		return new Pupil(resultSet.getInt("id"), resultSet.getString("name"), resultSet.getString("surname"),
 				Lifecycle.valueOf(resultSet.getString("lifecycle")));
 	}
 }

@@ -30,3 +30,11 @@ create table if not exists course (
     constraint course_lifecycle_check check (lifecycle in ('ACTIVE', 'INACTIVE')),
     constraint course_unique unique (school_class, subject, calendar_year, half)
 );
+
+create table if not exists course_pupil (
+    course_id integer not null,
+    pupil_id integer not null,
+    primary key (course_id, pupil_id),
+    constraint course_pupil_course_fk foreign key (course_id) references course(id),
+    constraint course_pupil_pupil_fk foreign key (pupil_id) references pupil(id)
+);
