@@ -91,6 +91,29 @@ class ExpectationHorizonEditorTests {
 		assertThat(components(editor, Span.class).stream().map(Span::getText)).contains("25 %", "75 %");
 	}
 
+	@Test
+	void toolbarCollapseButtonCollapsesWholeTree() {
+		final ExpectationHorizonRepository repository = repositoryWithTwoPartHierarchy();
+		final ExpectationHorizonEditor editor = new ExpectationHorizonEditor(repository);
+		editor.setExam(EXAM);
+
+		collapseButtons(editor).getFirst().click();
+
+		assertThat(components(editor, Details.class)).extracting(Details::isOpened).containsOnly(false);
+	}
+
+	@Test
+	void partCollapseButtonCollapsesDescendantsOnly() {
+		final ExpectationHorizonRepository repository = repositoryWithHierarchy();
+		final ExpectationHorizonEditor editor = new ExpectationHorizonEditor(repository);
+		editor.setExam(EXAM);
+		assertThat(collapseButtons(editor)).hasSize(4);
+
+		collapseButtons(editor).get(1).click();
+
+		assertThat(components(editor, Details.class)).extracting(Details::isOpened).containsExactly(true, false, false);
+	}
+
 	private static ExpectationHorizonRepository repositoryWithHierarchy() {
 		final ExpectationHorizonRepository repository = mock(ExpectationHorizonRepository.class);
 		when(repository.findPartsByExamId(EXAM.id())).thenReturn(List.of(PART));
@@ -112,5 +135,10 @@ class ExpectationHorizonEditorTests {
 	private static <T extends Component> List<T> components(final Component root, final Class<T> type) {
 		return Stream.concat(Stream.of(root), root.getChildren().flatMap(child -> components(child, type).stream()))
 				.filter(type::isInstance).map(type::cast).toList();
+	}
+
+	private static List<Button> collapseButtons(final Component root) {
+		return components(root, Button.class).stream()
+				.filter(button -> "collapse-below".equals(button.getElement().getAttribute("data-action"))).toList();
 	}
 }

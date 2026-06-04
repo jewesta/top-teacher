@@ -2,8 +2,10 @@ package de.topteacher.ui.component;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -35,6 +37,7 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 
 	private final ExpectationHorizonRepository expectationHorizonRepository;
 	private final Set<String> collapsedDetails = new HashSet<>();
+	private final Map<String, Details> detailsByKey = new HashMap<>();
 	private final List<PointBadge> pointBadges = new ArrayList<>();
 	private final List<PercentageBadge> percentageBadges = new ArrayList<>();
 
@@ -64,6 +67,7 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 	private void refresh() {
 		pointBadges.clear();
 		percentageBadges.clear();
+		detailsByKey.clear();
 		removeAll();
 		if (exam == null) {
 			add(new Span("Bitte wählen Sie eine Klausur aus."));
@@ -130,7 +134,8 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 		});
 		addPart.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-		final HorizontalLayout toolbar = new HorizontalLayout(addPart, summaryBadge("Gesamtpunktzahl", this::pointsForExam));
+		final HorizontalLayout toolbar = new HorizontalLayout(addPart, collapseBelowButton(allDetailKeys()),
+				summaryBadge("Gesamtpunktzahl", this::pointsForExam));
 		toolbar.addClassName("tt-eh-toolbar");
 		toolbar.setAlignItems(Alignment.CENTER);
 		toolbar.setPadding(false);
@@ -158,8 +163,8 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 		content.add(createEditorActions(title, part, siblings));
 		categoriesFor(part).forEach(category -> content.add(createCategoryDetails(category)));
 
-		final Details details = new Details(partSummary(title, () -> percentageForPart(part), () -> pointsForPart(part)),
-				content);
+		final Details details = new Details(
+				partSummary(title, () -> percentageForPart(part), () -> pointsForPart(part)), content);
 		details.addClassNames("tt-eh-details", "tt-eh-part");
 		configureOpenedState(details, detailKey("part", part.id()));
 		return details;
@@ -179,8 +184,9 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 			addDefaultCategory(part);
 			refresh();
 		});
-		final HorizontalLayout actions = new HorizontalLayout(save, addCategory, moveButton("Nach oben", -1, siblings, part),
-				moveButton("Nach unten", 1, siblings, part), deleteButton(event -> {
+		final HorizontalLayout actions = new HorizontalLayout(save, addCategory,
+				moveButton("Nach oben", -1, siblings, part), moveButton("Nach unten", 1, siblings, part),
+				collapseBelowButton(partDescendantDetailKeys(part)), deleteButton(event -> {
 					expectationHorizonRepository.deletePart(part.id());
 					refresh();
 				}));
@@ -214,7 +220,8 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 		});
 		final MarkdownEditor description = markdownEditor(category.descriptionMarkdown(), "Beschreibung");
 		final VerticalLayout content = sectionContent();
-		content.add(markdownBlock("Beschreibung", description), createCategoryActions(title, description, category, siblings));
+		content.add(markdownBlock("Beschreibung", description),
+				createCategoryActions(title, description, category, siblings));
 		tasksFor(category).forEach(task -> content.add(createTaskDetails(task)));
 
 		final Details details = new Details(summary("Leistungskategorie", title, () -> pointsForCategory(category)),
@@ -240,8 +247,9 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 			addDefaultTask(category);
 			refresh();
 		});
-		final HorizontalLayout actions = new HorizontalLayout(save, addTask, moveButton("Nach oben", -1, siblings, category),
-				moveButton("Nach unten", 1, siblings, category), deleteButton(event -> {
+		final HorizontalLayout actions = new HorizontalLayout(save, addTask,
+				moveButton("Nach oben", -1, siblings, category), moveButton("Nach unten", 1, siblings, category),
+				collapseBelowButton(categoryDescendantDetailKeys(category)), deleteButton(event -> {
 					expectationHorizonRepository.deleteCategory(category.id());
 					refresh();
 				}));
@@ -295,8 +303,9 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 			addDefaultRequirement(task);
 			refresh();
 		});
-		final HorizontalLayout actions = new HorizontalLayout(save, addRequirement, moveButton("Nach oben", -1, siblings, task),
-				moveButton("Nach unten", 1, siblings, task), deleteButton(event -> {
+		final HorizontalLayout actions = new HorizontalLayout(save, addRequirement,
+				moveButton("Nach oben", -1, siblings, task), moveButton("Nach unten", 1, siblings, task),
+				collapseBelowButton(List.of(detailKey("task", task.id()))), deleteButton(event -> {
 					expectationHorizonRepository.deleteTask(task.id());
 					refresh();
 				}));
@@ -348,9 +357,9 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 		actions.addClassName("tt-eh-actions");
 		actions.setPadding(false);
 
-		final VerticalLayout editor = new VerticalLayout(summary("Anforderung", requirementTitle,
-				() -> pointsForRequirementById(requirement.id())), markdownBlock("Beschreibung", description), fields,
-				actions);
+		final VerticalLayout editor = new VerticalLayout(
+				summary("Anforderung", requirementTitle, () -> pointsForRequirementById(requirement.id())),
+				markdownBlock("Beschreibung", description), fields, actions);
 		editor.addClassName("tt-eh-requirement");
 		editor.setPadding(false);
 		editor.setWidthFull();
@@ -535,6 +544,7 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 	}
 
 	private void configureOpenedState(final Details details, final String key) {
+		detailsByKey.put(key, details);
 		details.setOpened(!collapsedDetails.contains(key));
 		details.addOpenedChangeListener(event -> {
 			if (event.isOpened()) {
@@ -549,6 +559,37 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 		return type + ":" + id;
 	}
 
+	private List<String> allDetailKeys() {
+		final List<String> keys = new ArrayList<>();
+		parts.forEach(part -> keys.add(detailKey("part", part.id())));
+		categories.forEach(category -> keys.add(detailKey("category", category.id())));
+		tasks.forEach(task -> keys.add(detailKey("task", task.id())));
+		return keys;
+	}
+
+	private List<String> partDescendantDetailKeys(final EhPart part) {
+		final List<String> keys = new ArrayList<>();
+		for (final EhCategory category : categoriesFor(part)) {
+			keys.add(detailKey("category", category.id()));
+			tasksFor(category).forEach(task -> keys.add(detailKey("task", task.id())));
+		}
+		return keys;
+	}
+
+	private List<String> categoryDescendantDetailKeys(final EhCategory category) {
+		return tasksFor(category).stream().map(task -> detailKey("task", task.id())).toList();
+	}
+
+	private void collapseDetails(final List<String> keys) {
+		keys.forEach(key -> {
+			collapsedDetails.add(key);
+			final Details details = detailsByKey.get(key);
+			if (details != null) {
+				details.setOpened(false);
+			}
+		});
+	}
+
 	private EhCategory categoryById(final Integer id) {
 		return categories.stream().filter(category -> category.id().equals(id)).findFirst()
 				.orElseThrow(() -> new IllegalStateException("Missing EH category: " + id));
@@ -560,7 +601,8 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 
 	private void replaceCategory(final EhCategory category) {
 		categories = categories.stream()
-				.map(currentCategory -> currentCategory.id().equals(category.id()) ? category : currentCategory).toList();
+				.map(currentCategory -> currentCategory.id().equals(category.id()) ? category : currentCategory)
+				.toList();
 	}
 
 	private void replaceTask(final EhTask task) {
@@ -597,6 +639,14 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 	private Button saveButton(final ComponentEventListener<ClickEvent<Button>> listener) {
 		final Button button = commandButton("Speichern", VaadinIcon.CHECK, listener);
 		button.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+		return button;
+	}
+
+	private Button collapseBelowButton(final List<String> detailKeys) {
+		final Button button = iconButton("Alles darunter einklappen", VaadinIcon.ANGLE_DOUBLE_RIGHT,
+				event -> collapseDetails(detailKeys));
+		button.getElement().setAttribute("data-action", "collapse-below");
+		button.setEnabled(!detailKeys.isEmpty());
 		return button;
 	}
 
