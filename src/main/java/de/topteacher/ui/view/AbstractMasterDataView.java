@@ -163,18 +163,17 @@ public abstract class AbstractMasterDataView<T> extends VerticalLayout implement
 
 	private Component createListToolbar() {
 		final Component toolbarPrefix = createListToolbarPrefix();
-		if (toolbarPrefix == null) {
-			return searchField;
-		}
-
-		final HorizontalLayout toolbar = new HorizontalLayout(toolbarPrefix, searchField);
+		final HorizontalLayout toolbar = toolbarPrefix == null ? new HorizontalLayout(searchField)
+				: new HorizontalLayout(toolbarPrefix, searchField);
 		toolbar.addClassName("tt-master-toolbar");
 		toolbar.setAlignItems(Alignment.END);
 		toolbar.setPadding(false);
-		toolbar.setSpacing(true);
+		toolbar.setSpacing(false);
 		toolbar.setWidthFull();
 		toolbar.getStyle().set("flex-wrap", "wrap");
-		toolbar.setFlexGrow(0, toolbarPrefix);
+		if (toolbarPrefix != null) {
+			toolbar.setFlexGrow(0, toolbarPrefix);
+		}
 		toolbar.setFlexGrow(0, searchField);
 		return toolbar;
 	}
