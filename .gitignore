@@ -1,0 +1,17 @@
+# Java / Maven
+target/
+*.class
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+
+# OS metadata
+.DS_Store
+
+# Local runtime data
+*.db
+*.mv.db
+*.trace.db
+
