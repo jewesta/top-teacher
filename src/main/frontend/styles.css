@@ -16,7 +16,6 @@
 
 .tt-drawer-header {
     align-items: center;
-    border-bottom: 1px solid var(--lumo-contrast-10pct);
     box-sizing: border-box;
     display: flex;
     height: var(--lumo-size-xl);
