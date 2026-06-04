@@ -115,7 +115,6 @@ vaadin-app-layout::part(drawer) {
 
 .tt-editor {
 	box-sizing: border-box;
-	padding: var(--lumo-space-m);
 	width: 100%;
 }
 
@@ -139,6 +138,12 @@ vaadin-app-layout::part(drawer) {
 .tt-assignment-grid {
 	flex: 1 1 auto;
 	min-height: 0;
+}
+
+.tt-assignment-header-icon {
+	color: var(--lumo-secondary-text-color);
+	height: var(--lumo-icon-size-s);
+	width: var(--lumo-icon-size-s);
 }
 
 vaadin-grid.tt-multi-selection-grid::part(cell) {

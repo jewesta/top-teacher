@@ -136,7 +136,7 @@ public abstract class AbstractMasterDataView<T> extends VerticalLayout implement
 	private void configureSearchField() {
 		searchField.addClassName("tt-master-search");
 		searchField.setClearButtonVisible(true);
-		searchField.setLabel("Suchen");
+		searchField.setLabel("Schnellfilter");
 		searchField.setPlaceholder("Suchbegriff");
 		searchField.setPrefixComponent(VaadinIcon.SEARCH.create());
 		searchField.setValueChangeMode(ValueChangeMode.EAGER);

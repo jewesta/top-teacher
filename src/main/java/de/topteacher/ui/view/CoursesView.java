@@ -14,10 +14,12 @@ import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.ColumnTextAlign;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.shared.Tooltip;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
@@ -198,11 +200,19 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 		assignmentGrid.addColumn(row -> row.pupil().id()).setHeader("ID").setAutoWidth(true).setFlexGrow(0);
 		assignmentGrid.addColumn(row -> row.pupil().surname()).setHeader("Nachname").setAutoWidth(true);
 		assignmentGrid.addColumn(row -> row.pupil().name()).setHeader("Vorname").setAutoWidth(true);
-		assignmentGrid.addComponentColumn(this::createAssignmentCheckbox).setHeader("Zugeordnet").setAutoWidth(true)
+		assignmentGrid.addComponentColumn(this::createAssignmentCheckbox).setHeader(createAssignmentHeader()).setAutoWidth(true)
 				.setFlexGrow(0).setFrozenToEnd(true).setTextAlign(ColumnTextAlign.CENTER);
 		assignmentGrid.addClassName("tt-assignment-grid");
 		assignmentGrid.setSelectionMode(Grid.SelectionMode.NONE);
 		assignmentGrid.setSizeFull();
+	}
+
+	private Component createAssignmentHeader() {
+		final Icon icon = VaadinIcon.INFO_CIRCLE_O.create();
+		icon.addClassName("tt-assignment-header-icon");
+		icon.getElement().setAttribute("aria-label", "Zugeordnet");
+		Tooltip.forComponent(icon).withText("Zugeordnet");
+		return icon;
 	}
 
 	private Component createAssignmentsContent() {
