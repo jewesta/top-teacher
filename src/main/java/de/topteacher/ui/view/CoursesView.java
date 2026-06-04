@@ -1,6 +1,7 @@
 package de.topteacher.ui.view;
 
 import java.time.Year;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -37,6 +38,11 @@ import de.topteacher.ui.component.MultiSelectionGrid;
 
 @Route(value = "courses", layout = MainLayout.class)
 public class CoursesView extends AbstractMasterDataView<Course> {
+
+	private static final Comparator<AssignmentRow> ASSIGNMENT_ROW_ORDER = Comparator
+			.comparing((AssignmentRow row) -> row.pupil().name(), String.CASE_INSENSITIVE_ORDER)
+			.thenComparing(row -> row.pupil().surname(), String.CASE_INSENSITIVE_ORDER)
+			.thenComparing(row -> row.pupil().id());
 
 	private final CourseRepository courseRepository;
 	private final ComboBox<SchoolClass> schoolClass = new ComboBox<>("School class");
@@ -326,7 +332,8 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 				.map(pupil -> new AssignmentRow(pupil, true)).toList();
 		final List<AssignmentRow> availableRows = courseRepository.findAssignablePupils(selectedCourse.id()).stream()
 				.map(pupil -> new AssignmentRow(pupil, false)).toList();
-		setAssignmentRows(Stream.concat(assignedRows.stream(), availableRows.stream()).toList());
+		setAssignmentRows(Stream.concat(assignedRows.stream(), availableRows.stream()).sorted(ASSIGNMENT_ROW_ORDER)
+				.toList());
 	}
 
 	private void updateAssignmentsTab(final Course course) {
