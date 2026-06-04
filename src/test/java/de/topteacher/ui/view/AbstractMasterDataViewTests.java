@@ -37,6 +37,28 @@ class AbstractMasterDataViewTests {
 		assertThatThrownBy(view::initializeAgain).isInstanceOf(IllegalStateException.class);
 	}
 
+	@Test
+	void filtersGridItemsBySearchText() {
+		final TestMasterDataView view = new TestMasterDataView();
+		view.setGridItemsForTest(List.of("Ada Lovelace active", "Grace Hopper inactive"));
+
+		view.search("ada active");
+
+		assertThat(view.visibleItems()).containsExactly("Ada Lovelace active");
+	}
+
+	@Test
+	void clearsSelectionWhenSearchFiltersSelectedItemOut() {
+		final TestMasterDataView view = new TestMasterDataView();
+		view.setGridItemsForTest(List.of("Ada Lovelace active", "Grace Hopper inactive"));
+		view.grid().select("Grace Hopper inactive");
+
+		view.search("ada");
+
+		assertThat(view.grid().getSelectedItems()).isEmpty();
+		assertThat(view.selectedItems()).isEmpty();
+	}
+
 	private static class TestMasterDataView extends AbstractMasterDataView<String> {
 
 		private EditorMode editorMode;
@@ -69,6 +91,18 @@ class AbstractMasterDataViewTests {
 
 		private MultiSelectionGrid<String> grid() {
 			return getGrid();
+		}
+
+		private void setGridItemsForTest(final List<String> items) {
+			setGridItems(items);
+		}
+
+		private List<String> visibleItems() {
+			return grid().getListDataView().getItems().toList();
+		}
+
+		private void search(final String value) {
+			getSearchField().setValue(value);
 		}
 
 		private EditorMode editorMode() {

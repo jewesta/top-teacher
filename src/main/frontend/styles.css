@@ -53,9 +53,19 @@
 
 .tt-master-list {
     box-sizing: border-box;
+    gap: var(--lumo-space-s);
     height: 100%;
     padding: var(--lumo-space-m);
     width: 100%;
+}
+
+.tt-master-search {
+    flex: 0 0 auto;
+}
+
+.tt-master-list vaadin-grid {
+    flex: 1 1 auto;
+    min-height: 0;
 }
 
 .tt-context-area {
@@ -87,6 +97,56 @@
 .tt-selection-summary {
     color: var(--lumo-secondary-text-color);
     font-size: var(--lumo-font-size-s);
+}
+
+.tt-course-assignments {
+    box-sizing: border-box;
+    gap: var(--lumo-space-m);
+    height: 100%;
+    padding: var(--lumo-space-m);
+    width: 100%;
+}
+
+.tt-assignment-search {
+    flex: 0 0 auto;
+}
+
+.tt-assignment-grid {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+vaadin-grid.tt-assignment-grid::part(tt-assignment-action-cell) {
+    padding-inline: 0;
+}
+
+vaadin-grid.tt-assignment-grid::part(header-cell last-column) {
+    padding-inline: 0;
+}
+
+.tt-assignment-action-button {
+    align-items: center;
+    box-sizing: border-box;
+    display: inline-flex;
+    justify-content: center;
+    height: var(--lumo-size-m);
+    margin: 0 auto;
+    min-width: var(--lumo-size-m);
+    padding: 0;
+    width: var(--lumo-size-m);
+}
+
+vaadin-button.tt-assignment-action-button::part(label) {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.tt-assignment-action-button vaadin-icon {
+    height: var(--lumo-icon-size-m);
+    margin: 0;
+    width: var(--lumo-icon-size-m);
 }
 
 vaadin-grid.tt-multi-selection-grid::part(cell) {

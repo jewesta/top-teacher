@@ -54,7 +54,7 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 		grid.addColumn(Pupil::id).setHeader("ID").setAutoWidth(true).setFlexGrow(0);
 		grid.addColumn(Pupil::name).setHeader("Name").setAutoWidth(true);
 		grid.addColumn(Pupil::surname).setHeader("Surname").setAutoWidth(true);
-		grid.addColumn(Pupil::lifecycle).setHeader("Lifecycle").setAutoWidth(true);
+		grid.addColumn(pupil -> pupil.lifecycle().getDisplayName()).setHeader("Lifecycle").setAutoWidth(true);
 	}
 
 	@Override
@@ -90,6 +90,12 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 	}
 
 	@Override
+	protected String getSearchText(final Pupil pupil) {
+		return String.join(" ", String.valueOf(pupil.id()), pupil.name(), pupil.surname(),
+				pupil.lifecycle().getDisplayName(), pupil.lifecycle().name());
+	}
+
+	@Override
 	protected void onEditorModeChanged(final EditorMode editorMode, final List<Pupil> selectedItems) {
 		if (editorMode == EditorMode.MULTI_SELECT) {
 			showMultiSelectEditor(selectedItems);
@@ -104,6 +110,7 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 		name.setRequiredIndicatorVisible(true);
 		surname.setRequiredIndicatorVisible(true);
 		lifecycle.setItems(Lifecycle.values());
+		lifecycle.setItemLabelGenerator(Lifecycle::getDisplayName);
 
 		saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 		saveButton.addClickListener(event -> savePupil());
@@ -117,6 +124,7 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 		archiveButton.addClickListener(event -> archiveSelectedPupil());
 
 		bulkLifecycle.setItems(Lifecycle.values());
+		bulkLifecycle.setItemLabelGenerator(Lifecycle::getDisplayName);
 		bulkLifecycle.setClearButtonVisible(true);
 		bulkLifecycle.addValueChangeListener(event -> updateBulkApplyButton());
 

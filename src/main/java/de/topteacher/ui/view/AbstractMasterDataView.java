@@ -1,15 +1,22 @@
 package de.topteacher.ui.view;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
 import com.vaadin.flow.component.tabs.TabSheet;
+import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.provider.DataProvider;
+import com.vaadin.flow.data.provider.ListDataProvider;
+import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.HasDynamicTitle;
 
 import de.topteacher.ui.component.MultiSelectionGrid;
@@ -19,9 +26,11 @@ public abstract class AbstractMasterDataView<T> extends VerticalLayout implement
 	private final String pageTitle;
 	private final String viewClassName;
 	private final MultiSelectionGrid<T> grid;
+	private final TextField searchField = new TextField();
 	private final Div editorHost = new Div();
 	private final TabSheet contextTabs = new TabSheet();
 
+	private ListDataProvider<T> dataProvider;
 	private boolean initialized;
 	private EditorMode editorMode = EditorMode.SINGLE_SELECT;
 	private List<T> selectedItems = List.of();
@@ -51,6 +60,7 @@ public abstract class AbstractMasterDataView<T> extends VerticalLayout implement
 		setSpacing(false);
 		addClassNames("tt-master-data-view", viewClassName);
 
+		configureSearchField();
 		configureGrid(grid);
 		grid.setSizeFull();
 
@@ -71,6 +81,10 @@ public abstract class AbstractMasterDataView<T> extends VerticalLayout implement
 	protected void onEditorModeChanged(final EditorMode editorMode, final List<T> selectedItems) {
 	}
 
+	protected String getSearchText(final T item) {
+		return item == null ? "" : item.toString();
+	}
+
 	protected final MultiSelectionGrid<T> getGrid() {
 		return grid;
 	}
@@ -87,8 +101,14 @@ public abstract class AbstractMasterDataView<T> extends VerticalLayout implement
 		return selectedItems;
 	}
 
+	protected final TextField getSearchField() {
+		return searchField;
+	}
+
 	protected final void setGridItems(final Collection<T> items) {
-		grid.setItems(items);
+		dataProvider = DataProvider.ofCollection(List.copyOf(Objects.requireNonNull(items, "Items can not be null")));
+		applySearchFilter();
+		grid.setItems(dataProvider);
 	}
 
 	protected final void clearSelection() {
@@ -107,12 +127,23 @@ public abstract class AbstractMasterDataView<T> extends VerticalLayout implement
 		return "20rem";
 	}
 
+	private void configureSearchField() {
+		searchField.addClassName("tt-master-search");
+		searchField.setClearButtonVisible(true);
+		searchField.setPlaceholder("Search");
+		searchField.setPrefixComponent(VaadinIcon.SEARCH.create());
+		searchField.setValueChangeMode(ValueChangeMode.EAGER);
+		searchField.setWidthFull();
+		searchField.addValueChangeListener(event -> applySearchFilter());
+	}
+
 	private Component createPageContent() {
-		final VerticalLayout listArea = new VerticalLayout(grid);
+		final VerticalLayout listArea = new VerticalLayout(searchField, grid);
 		listArea.addClassName("tt-master-list");
 		listArea.setPadding(false);
 		listArea.setSpacing(false);
 		listArea.setSizeFull();
+		listArea.expand(grid);
 
 		final SplitLayout splitLayout = new SplitLayout(listArea, createContextArea());
 		splitLayout.addClassName("tt-master-data-split");
@@ -137,6 +168,39 @@ public abstract class AbstractMasterDataView<T> extends VerticalLayout implement
 		contextArea.setSpacing(false);
 		contextArea.setSizeFull();
 		return contextArea;
+	}
+
+	private void applySearchFilter() {
+		if (dataProvider == null) {
+			return;
+		}
+
+		final List<String> searchTokens = getSearchTokens();
+		dataProvider.setFilter(item -> matchesSearch(item, searchTokens));
+		deselectFilteredOutItems(searchTokens);
+	}
+
+	private List<String> getSearchTokens() {
+		return Arrays.stream(normalize(searchField.getValue()).split("\\s+")).filter(token -> !token.isBlank())
+				.toList();
+	}
+
+	private boolean matchesSearch(final T item, final List<String> searchTokens) {
+		if (searchTokens.isEmpty()) {
+			return true;
+		}
+
+		final String searchableText = normalize(getSearchText(item));
+		return searchTokens.stream().allMatch(searchableText::contains);
+	}
+
+	private String normalize(final String value) {
+		return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+	}
+
+	private void deselectFilteredOutItems(final List<String> searchTokens) {
+		List.copyOf(grid.getSelectedItems()).stream().filter(item -> !matchesSearch(item, searchTokens))
+				.forEach(grid::deselect);
 	}
 
 	private void updateEditorMode(final Set<T> selection) {

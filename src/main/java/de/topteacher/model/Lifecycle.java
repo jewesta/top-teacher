@@ -1,5 +1,16 @@
 package de.topteacher.model;
 
 public enum Lifecycle {
-	ACTIVE, INACTIVE
+
+	ACTIVE("Aktiv"), INACTIVE("Inaktiv");
+
+	private final String displayName;
+
+	Lifecycle(final String displayName) {
+		this.displayName = displayName;
+	}
+
+	public String getDisplayName() {
+		return displayName;
+	}
 }

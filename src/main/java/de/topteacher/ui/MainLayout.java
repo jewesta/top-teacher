@@ -16,6 +16,7 @@ import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.PageTitle;
 
+import de.topteacher.ui.view.CoursesView;
 import de.topteacher.ui.view.PupilsView;
 
 public class MainLayout extends AppLayout implements AfterNavigationObserver {
@@ -60,6 +61,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
 		final SideNav navigation = new SideNav();
 		navigation.addClassName("tt-side-nav");
 		navigation.addItem(new SideNavItem("Pupils", PupilsView.class, VaadinIcon.USERS.create()));
+		navigation.addItem(new SideNavItem("Courses", CoursesView.class, VaadinIcon.BOOK.create()));
 
 		final Main wrapper = new Main(navigation);
 		wrapper.addClassName("tt-navigation");
