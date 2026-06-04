@@ -3,6 +3,8 @@ target/
 *.class
 
 # Vaadin generated frontend artifacts
+node_modules/
+vite.generated.ts
 src/main/bundles/
 src/main/frontend/generated/
 src/main/frontend/index.html

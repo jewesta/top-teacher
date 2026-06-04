@@ -36,3 +36,41 @@
 .tt-side-nav {
     width: 100%;
 }
+
+.tt-pupils-view {
+    box-sizing: border-box;
+    height: 100%;
+    width: 100%;
+}
+
+.tt-pupils-split {
+    height: 100%;
+    width: 100%;
+}
+
+.tt-pupils-list {
+    box-sizing: border-box;
+    height: 100%;
+    padding: var(--lumo-space-m);
+    width: 100%;
+}
+
+.tt-context-area {
+    background: var(--lumo-base-color);
+    box-sizing: border-box;
+    height: 100%;
+    min-width: 0;
+    width: 100%;
+}
+
+.tt-context-tabs {
+    box-sizing: border-box;
+    height: 100%;
+    width: 100%;
+}
+
+.tt-pupil-editor {
+    box-sizing: border-box;
+    padding: var(--lumo-space-m);
+    width: 100%;
+}
