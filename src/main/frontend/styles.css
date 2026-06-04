@@ -23,9 +23,12 @@
     padding: 0 var(--lumo-space-m);
 }
 
-.tt-app-name {
-    font-size: var(--lumo-font-size-l);
-    font-weight: 600;
+.tt-app-logo {
+    display: block;
+    height: 44px;
+    max-width: 190px;
+    object-fit: contain;
+    width: 100%;
 }
 
 .tt-navigation {

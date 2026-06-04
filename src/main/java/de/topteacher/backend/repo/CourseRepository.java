@@ -14,13 +14,12 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
 import de.topteacher.model.Course;
-import de.topteacher.model.Half;
+import de.topteacher.model.CoursePeriod;
 import de.topteacher.model.Lifecycle;
 import de.topteacher.model.Pupil;
 import de.topteacher.model.SchoolClass;
 import de.topteacher.model.SchoolYear;
 import de.topteacher.model.Subject;
-import de.topteacher.model.Term;
 
 @Repository
 public class CourseRepository {
@@ -35,15 +34,15 @@ public class CourseRepository {
 
 	public List<Course> findAll() {
 		return jdbc.query("""
-				select id, school_class, subject, calendar_year, half, lifecycle
+				select id, school_class, subject, calendar_year, course_period, lifecycle
 				from course
-				order by calendar_year desc, half, school_class, subject, id
+				order by calendar_year desc, course_period, school_class, subject, id
 				""", rowMapper);
 	}
 
 	public Optional<Course> findById(final int id) {
 		return jdbc.query("""
-				select id, school_class, subject, calendar_year, half, lifecycle
+				select id, school_class, subject, calendar_year, course_period, lifecycle
 				from course
 				where id = :id
 				""", Map.of("id", id), rowMapper).stream().findFirst();
@@ -117,8 +116,8 @@ public class CourseRepository {
 		final MapSqlParameterSource parameters = parameters(course);
 
 		jdbc.update("""
-				insert into course (school_class, subject, calendar_year, half, lifecycle)
-				values (:schoolClass, :subject, :calendarYear, :half, :lifecycle)
+				insert into course (school_class, subject, calendar_year, course_period, lifecycle)
+				values (:schoolClass, :subject, :calendarYear, :coursePeriod, :lifecycle)
 				""", parameters, keyHolder, new String[] { "id" });
 
 		final Number id = keyHolder.getKey();
@@ -126,7 +125,8 @@ public class CourseRepository {
 			throw new IllegalStateException("Course insert did not return a generated id");
 		}
 
-		return new Course(id.intValue(), course.schoolClass(), course.subject(), course.term(), course.lifecycle());
+		return new Course(id.intValue(), course.schoolClass(), course.subject(), course.schoolYear(),
+				course.coursePeriod(), course.lifecycle());
 	}
 
 	private void update(final Course course) {
@@ -137,7 +137,7 @@ public class CourseRepository {
 				set school_class = :schoolClass,
 				    subject = :subject,
 				    calendar_year = :calendarYear,
-				    half = :half,
+				    course_period = :coursePeriod,
 				    lifecycle = :lifecycle
 				where id = :id
 				""", parameters);
@@ -146,14 +146,15 @@ public class CourseRepository {
 	private MapSqlParameterSource parameters(final Course course) {
 		return new MapSqlParameterSource().addValue("schoolClass", course.schoolClass().name())
 				.addValue("subject", course.subject().name())
-				.addValue("calendarYear", course.term().getSchoolYear().getCalendarYear())
-				.addValue("half", course.term().getHalf().name()).addValue("lifecycle", course.lifecycle().name());
+				.addValue("calendarYear", course.schoolYear().getCalendarYear())
+				.addValue("coursePeriod", course.coursePeriod().name())
+				.addValue("lifecycle", course.lifecycle().name());
 	}
 
 	private Course mapCourse(final ResultSet resultSet, final int rowNumber) throws SQLException {
 		return new Course(resultSet.getInt("id"), SchoolClass.valueOf(resultSet.getString("school_class")),
-				Subject.valueOf(resultSet.getString("subject")),
-				new Term(new SchoolYear(resultSet.getInt("calendar_year")), Half.valueOf(resultSet.getString("half"))),
+				Subject.valueOf(resultSet.getString("subject")), new SchoolYear(resultSet.getInt("calendar_year")),
+				CoursePeriod.valueOf(resultSet.getString("course_period")),
 				Lifecycle.valueOf(resultSet.getString("lifecycle")));
 	}
 

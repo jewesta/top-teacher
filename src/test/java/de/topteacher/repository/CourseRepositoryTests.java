@@ -9,13 +9,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import de.topteacher.backend.repo.CourseRepository;
 import de.topteacher.backend.repo.PupilRepository;
 import de.topteacher.model.Course;
-import de.topteacher.model.Half;
+import de.topteacher.model.CoursePeriod;
 import de.topteacher.model.Lifecycle;
 import de.topteacher.model.Pupil;
 import de.topteacher.model.SchoolClass;
 import de.topteacher.model.SchoolYear;
 import de.topteacher.model.Subject;
-import de.topteacher.model.Term;
 
 @SpringBootTest
 class CourseRepositoryTests {
@@ -29,13 +28,13 @@ class CourseRepositoryTests {
 	@Test
 	void savesUpdatesAndArchivesCourses() {
 		final Course saved = courseRepository.save(new Course(null, SchoolClass.CLS_5A, Subject.ENGLISH,
-				new Term(new SchoolYear(2026), Half.FIRST), Lifecycle.ACTIVE));
+				new SchoolYear(2026), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE));
 
 		assertThat(saved.id()).isNotNull();
 		assertThat(courseRepository.findById(saved.id())).contains(saved);
 
-		final Course updated = new Course(saved.id(), SchoolClass.CLS_5A, Subject.SPANISH,
-				new Term(new SchoolYear(2026), Half.SECOND), Lifecycle.ACTIVE);
+		final Course updated = new Course(saved.id(), SchoolClass.CLS_5A, Subject.SPANISH, new SchoolYear(2026),
+				CoursePeriod.FIRST_HALF, Lifecycle.ACTIVE);
 		courseRepository.save(updated);
 
 		assertThat(courseRepository.findById(saved.id())).contains(updated);
@@ -49,7 +48,7 @@ class CourseRepositoryTests {
 	@Test
 	void assignsFindsAndRemovesPupilsFromCourse() {
 		final Course course = courseRepository.save(new Course(null, SchoolClass.CLS_6A, Subject.ENGLISH,
-				new Term(new SchoolYear(2027), Half.FIRST), Lifecycle.ACTIVE));
+				new SchoolYear(2027), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE));
 		final Pupil ada = pupilRepository.save(new Pupil(null, "Ada", "Lovelace", Lifecycle.ACTIVE));
 		final Pupil grace = pupilRepository.save(new Pupil(null, "Grace", "Hopper", Lifecycle.ACTIVE));
 		final Pupil archived = pupilRepository.save(new Pupil(null, "Inactive", "Pupil", Lifecycle.INACTIVE));

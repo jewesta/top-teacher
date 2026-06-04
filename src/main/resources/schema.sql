@@ -11,7 +11,7 @@ create table if not exists course (
     school_class varchar(16) not null,
     subject varchar(32) not null,
     calendar_year integer not null,
-    half varchar(16) not null,
+    course_period varchar(16) not null,
     lifecycle varchar(16) default 'ACTIVE' not null,
     constraint course_school_class_check check (
         school_class in (
@@ -26,9 +26,9 @@ create table if not exists course (
     ),
     constraint course_subject_check check (subject in ('ENGLISH', 'SPANISH')),
     constraint course_calendar_year_check check (calendar_year between 1900 and 9998),
-    constraint course_half_check check (half in ('FIRST', 'SECOND')),
+    constraint course_period_check check (course_period in ('FIRST_HALF', 'SECOND_HALF', 'FULL_YEAR')),
     constraint course_lifecycle_check check (lifecycle in ('ACTIVE', 'INACTIVE')),
-    constraint course_unique unique (school_class, subject, calendar_year, half)
+    constraint course_unique unique (school_class, subject, calendar_year, course_period)
 );
 
 create table if not exists course_pupil (

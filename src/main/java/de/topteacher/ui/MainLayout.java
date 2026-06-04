@@ -5,8 +5,8 @@ import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Header;
+import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Main;
-import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.sidenav.SideNav;
@@ -49,8 +49,8 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
 		final Header header = new Header();
 		header.addClassName("tt-drawer-header");
 
-		final Span appName = new Span("TopTeacher");
-		appName.addClassName("tt-app-name");
+		final Image appName = new Image("images/topteacher-logo.svg", "TopTeacher!");
+		appName.addClassName("tt-app-logo");
 
 		header.add(appName);
 		return header;
