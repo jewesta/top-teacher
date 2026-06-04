@@ -1,0 +1,38 @@
+.tt-header {
+    align-items: center;
+    box-sizing: border-box;
+    display: flex;
+    gap: 0;
+    min-height: var(--lumo-size-xl);
+    padding: 0 var(--lumo-space-m);
+    width: 100%;
+}
+
+.tt-view-title {
+    font-size: var(--lumo-font-size-l);
+    line-height: var(--lumo-line-height-m);
+    margin: 0;
+}
+
+.tt-drawer-header {
+    align-items: center;
+    border-bottom: 1px solid var(--lumo-contrast-10pct);
+    box-sizing: border-box;
+    display: flex;
+    height: var(--lumo-size-xl);
+    padding: 0 var(--lumo-space-m);
+}
+
+.tt-app-name {
+    font-size: var(--lumo-font-size-l);
+    font-weight: 600;
+}
+
+.tt-navigation {
+    box-sizing: border-box;
+    padding: var(--lumo-space-s);
+}
+
+.tt-side-nav {
+    width: 100%;
+}

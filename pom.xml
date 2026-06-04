@@ -43,11 +43,6 @@
 
         <dependency>
             <groupId>com.vaadin</groupId>
-            <artifactId>vaadin-aura-theme</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.vaadin</groupId>
             <artifactId>vaadin-dev</artifactId>
             <optional>true</optional>
         </dependency>

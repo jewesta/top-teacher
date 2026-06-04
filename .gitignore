@@ -3,6 +3,7 @@ target/
 *.class
 
 # Vaadin generated frontend artifacts
+src/main/bundles/
 src/main/frontend/generated/
 src/main/frontend/index.html
 
