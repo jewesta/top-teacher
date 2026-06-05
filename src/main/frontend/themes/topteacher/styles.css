@@ -205,6 +205,14 @@ vaadin-app-layout::part(drawer) {
 	padding-right: 0;
 }
 
+.tt-eh-category::part(content) {
+	padding-right: 0;
+}
+
+.tt-eh-part::part(content) {
+	padding-right: 0;
+}
+
 .tt-eh-category,
 .tt-eh-task {
 /*	margin-right: 0px;*/
