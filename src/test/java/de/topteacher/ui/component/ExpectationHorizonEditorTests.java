@@ -19,6 +19,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 
 import de.topteacher.backend.repo.ExpectationHorizonRepository;
@@ -187,6 +188,24 @@ class ExpectationHorizonEditorTests {
 		collapseButtons(editor).get(1).click();
 
 		assertThat(components(editor, Details.class)).extracting(Details::isOpened).containsExactly(true, false, false);
+	}
+
+	@Test
+	void preservesEhSectionCssHooks() {
+		final ExpectationHorizonRepository repository = repositoryWithHierarchy();
+		final ExpectationHorizonEditor editor = new ExpectationHorizonEditor(repository);
+		editor.setExam(EXAM);
+
+		final List<Details> details = components(editor, Details.class);
+
+		assertThat(details).hasSize(3);
+		assertThat(details.get(0).getClassNames()).contains("tt-eh-details", "tt-eh-part");
+		assertThat(details.get(1).getClassNames()).contains("tt-eh-details", "tt-eh-category");
+		assertThat(details.get(2).getClassNames()).contains("tt-eh-details", "tt-eh-task");
+		assertThat(components(editor, VerticalLayout.class).stream()
+				.filter(layout -> layout.getClassNames().contains("tt-eh-section-content"))).hasSize(3);
+		assertThat(components(editor, VerticalLayout.class).stream()
+				.filter(layout -> layout.getClassNames().contains("tt-eh-requirement"))).hasSize(1);
 	}
 
 	@Test

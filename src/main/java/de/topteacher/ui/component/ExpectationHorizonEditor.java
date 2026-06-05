@@ -91,7 +91,7 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 		if (parts.isEmpty()) {
 			content.add(emptyState("Noch kein Erwartungshorizont angelegt."));
 		} else {
-			parts.forEach(part -> content.add(createPartDetails(part)));
+			parts.forEach(part -> content.add(createPartSection(part)));
 			content.add(expectationHorizonLight());
 		}
 
@@ -148,7 +148,7 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 		return toolbar;
 	}
 
-	private Details createPartDetails(final EhPart part) {
+	private Component createPartSection(final EhPart part) {
 		final List<EhPart> siblings = parts;
 		final TextField title = summaryTitleField(part.title());
 		title.addValueChangeListener(event -> {
@@ -164,15 +164,12 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 			expectationHorizonRepository.savePart(updatedPart);
 			replacePart(updatedPart);
 		});
-		final VerticalLayout content = sectionContent();
-		content.add(createEditorActions(title, part, siblings));
-		categoriesFor(part).forEach(category -> content.add(createCategoryDetails(category)));
-
-		final Details details = new Details(
-				partSummary(title, () -> percentageForPart(part), () -> pointsForPart(part)), content);
-		details.addClassNames("tt-eh-details", "tt-eh-part");
-		configureOpenedState(details, detailKey("part", part.id()));
-		return details;
+		final List<Component> categorySections = categoriesFor(part).stream().map(this::createCategorySection).toList();
+		final EhPartSection section = new EhPartSection(part,
+				partSummary(title, () -> percentageForPart(part), () -> pointsForPart(part)),
+				createEditorActions(title, part, siblings), categorySections);
+		configureOpenedState(section.getContent(), detailKey("part", part.id()));
+		return section;
 	}
 
 	private Component createEditorActions(final TextField title, final EhPart part, final List<EhPart> siblings) {
@@ -205,7 +202,7 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 		return layout;
 	}
 
-	private Details createCategoryDetails(final EhCategory category) {
+	private Component createCategorySection(final EhCategory category) {
 		final List<EhCategory> siblings = categoriesFor(partFor(category));
 		final TextField title = summaryTitleField(category.title());
 		title.addValueChangeListener(event -> {
@@ -224,16 +221,13 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 			replaceCategory(updatedCategory);
 		});
 		final MarkdownEditor description = markdownEditor(category.descriptionMarkdown(), "Beschreibung");
-		final VerticalLayout content = sectionContent();
-		content.add(markdownBlock("Beschreibung", description),
-				createCategoryActions(title, description, category, siblings));
-		tasksFor(category).forEach(task -> content.add(createTaskDetails(task)));
-
-		final Details details = new Details(summary("Leistungskategorie", title, () -> pointsForCategory(category)),
-				content);
-		details.addClassNames("tt-eh-details", "tt-eh-category");
-		configureOpenedState(details, detailKey("category", category.id()));
-		return details;
+		final List<Component> taskSections = tasksFor(category).stream().map(this::createTaskSection).toList();
+		final EhCategorySection section = new EhCategorySection(category,
+				summary("Leistungskategorie", title, () -> pointsForCategory(category)),
+				markdownBlock("Beschreibung", description), createCategoryActions(title, description, category, siblings),
+				taskSections);
+		configureOpenedState(section.getContent(), detailKey("category", category.id()));
+		return section;
 	}
 
 	private Component createCategoryActions(final TextField title, final MarkdownEditor description,
@@ -268,7 +262,7 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 		return layout;
 	}
 
-	private Details createTaskDetails(final EhTask task) {
+	private Component createTaskSection(final EhTask task) {
 		final List<EhTask> siblings = tasksFor(categoryFor(task));
 		final TextField title = summaryTitleField(task.title());
 		title.addValueChangeListener(event -> {
@@ -284,14 +278,12 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 			expectationHorizonRepository.saveTask(updatedTask);
 			replaceTask(updatedTask);
 		});
-		final VerticalLayout content = sectionContent();
-		content.add(createTaskActions(title, task, siblings));
-		requirementsFor(task).forEach(requirement -> content.add(createRequirementEditor(requirement)));
-
-		final Details details = new Details(summary("Teilaufgabe", title, () -> pointsForTask(task)), content);
-		details.addClassNames("tt-eh-details", "tt-eh-task");
-		configureOpenedState(details, detailKey("task", task.id()));
-		return details;
+		final List<Component> requirementSections = requirementsFor(task).stream().map(this::createRequirementSection)
+				.toList();
+		final EhTaskSection section = new EhTaskSection(task, summary("Teilaufgabe", title, () -> pointsForTask(task)),
+				createTaskActions(title, task, siblings), requirementSections);
+		configureOpenedState(section.getContent(), detailKey("task", task.id()));
+		return section;
 	}
 
 	private Component createTaskActions(final TextField title, final EhTask task, final List<EhTask> siblings) {
@@ -324,7 +316,7 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 		return layout;
 	}
 
-	private Component createRequirementEditor(final EhRequirement requirement) {
+	private Component createRequirementSection(final EhRequirement requirement) {
 		final List<EhRequirement> siblings = requirementsFor(taskFor(requirement));
 		final MarkdownEditor description = markdownEditor(requirement.descriptionMarkdown(), "Beschreibung");
 		final Span requirementNumber = new Span(requirementNumber(siblings, requirement));
@@ -361,13 +353,9 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 		actions.addClassName("tt-eh-actions");
 		actions.setPadding(false);
 
-		final VerticalLayout editor = new VerticalLayout(
+		return new EhRequirementSection(requirement,
 				requirementSummary(requirementNumber, () -> requirementPointsLabelById(requirement.id())),
 				markdownBlock("Beschreibung", description), fields, actions);
-		editor.addClassName("tt-eh-requirement");
-		editor.setPadding(false);
-		editor.setWidthFull();
-		return editor;
 	}
 
 	private void addDefaultCategory(final EhPart part) {
@@ -562,14 +550,6 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 			}
 		}
 		throw new IllegalStateException("Missing EH requirement: " + requirement.id());
-	}
-
-	private VerticalLayout sectionContent() {
-		final VerticalLayout layout = new VerticalLayout();
-		layout.addClassName("tt-eh-section-content");
-		layout.setPadding(false);
-		layout.setWidthFull();
-		return layout;
 	}
 
 	private TextField summaryTitleField(final String value) {
