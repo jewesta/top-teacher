@@ -20,18 +20,108 @@ import de.topteacher.model.EhRequirement;
 import de.topteacher.model.EhTask;
 import de.topteacher.model.Exam;
 
-public class ExpectationHorizonEditor extends VerticalLayout implements EhPartSection.Handler, EhCategorySection.Handler,
-		EhTaskSection.Handler, EhRequirementSection.Handler {
+public class ExpectationHorizonEditor extends VerticalLayout {
 
 	private final ExpectationHorizonRepository expectationHorizonRepository;
 	private final EhSectionComponents components = new EhSectionComponents();
 	private final EhCollapseState collapseState = new EhCollapseState(components);
+	private final EhPartSection.Handler partHandler = new EhPartSection.Handler() {
+
+		@Override
+		public void saveTitle(final EhPart part, final String title) {
+			ExpectationHorizonEditor.this.saveTitle(part, title);
+		}
+
+		@Override
+		public void addCategory(final EhPart part) {
+			ExpectationHorizonEditor.this.addCategory(part);
+		}
+
+		@Override
+		public void move(final EhPart part, final int offset) {
+			ExpectationHorizonEditor.this.move(part, offset);
+		}
+
+		@Override
+		public void delete(final EhPart part) {
+			ExpectationHorizonEditor.this.delete(part);
+		}
+	};
+	private final EhCategorySection.Handler categoryHandler = new EhCategorySection.Handler() {
+
+		@Override
+		public void saveTitle(final EhCategory category, final String title) {
+			ExpectationHorizonEditor.this.saveTitle(category, title);
+		}
+
+		@Override
+		public void save(final EhCategory category, final String title, final String descriptionMarkdown) {
+			ExpectationHorizonEditor.this.save(category, title, descriptionMarkdown);
+		}
+
+		@Override
+		public void addTask(final EhCategory category) {
+			ExpectationHorizonEditor.this.addTask(category);
+		}
+
+		@Override
+		public void move(final EhCategory category, final int offset) {
+			ExpectationHorizonEditor.this.move(category, offset);
+		}
+
+		@Override
+		public void delete(final EhCategory category) {
+			ExpectationHorizonEditor.this.delete(category);
+		}
+	};
+	private final EhTaskSection.Handler taskHandler = new EhTaskSection.Handler() {
+
+		@Override
+		public void saveTitle(final EhTask task, final String title) {
+			ExpectationHorizonEditor.this.saveTitle(task, title);
+		}
+
+		@Override
+		public void addRequirement(final EhTask task) {
+			ExpectationHorizonEditor.this.addRequirement(task);
+		}
+
+		@Override
+		public void move(final EhTask task, final int offset) {
+			ExpectationHorizonEditor.this.move(task, offset);
+		}
+
+		@Override
+		public void delete(final EhTask task) {
+			ExpectationHorizonEditor.this.delete(task);
+		}
+	};
+	private final EhRequirementSection.Handler requirementHandler = new EhRequirementSection.Handler() {
+
+		@Override
+		public void save(final EhRequirement requirement, final String descriptionMarkdown, final int maxPoints,
+				final boolean bonus) {
+			ExpectationHorizonEditor.this.save(requirement, descriptionMarkdown, maxPoints, bonus);
+		}
+
+		@Override
+		public void move(final EhRequirement requirement, final int offset) {
+			ExpectationHorizonEditor.this.move(requirement, offset);
+		}
+
+		@Override
+		public void delete(final EhRequirement requirement) {
+			ExpectationHorizonEditor.this.delete(requirement);
+		}
+	};
 
 	private Exam exam;
 	private List<EhPart> parts = List.of();
 	private List<EhCategory> categories = List.of();
 	private List<EhTask> tasks = List.of();
 	private List<EhRequirement> requirements = List.of();
+	private EhPointBadge examPointsBadge;
+	private List<EhPartSection> partSections = List.of();
 
 	public ExpectationHorizonEditor(final ExpectationHorizonRepository expectationHorizonRepository) {
 		this.expectationHorizonRepository = expectationHorizonRepository;
@@ -51,8 +141,9 @@ public class ExpectationHorizonEditor extends VerticalLayout implements EhPartSe
 	}
 
 	private void refresh() {
-		components.clearBadges();
 		collapseState.clearRenderedComponents();
+		examPointsBadge = null;
+		partSections = List.of();
 		removeAll();
 		if (exam == null) {
 			add(new Span("Bitte wählen Sie eine Klausur aus."));
@@ -72,7 +163,8 @@ public class ExpectationHorizonEditor extends VerticalLayout implements EhPartSe
 		if (parts.isEmpty()) {
 			content.add(emptyState("Noch kein Erwartungshorizont angelegt."));
 		} else {
-			parts.forEach(part -> content.add(createPartSection(part)));
+			partSections = parts.stream().map(this::createPartSection).toList();
+			partSections.forEach(content::add);
 			content.add(expectationHorizonLight());
 		}
 
@@ -120,8 +212,9 @@ public class ExpectationHorizonEditor extends VerticalLayout implements EhPartSe
 		});
 		addPart.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
+		examPointsBadge = components.pointBadge("Gesamtpunktzahl", this::pointsForExam);
 		final HorizontalLayout toolbar = new HorizontalLayout(addPart, collapseState.toggleButton(allDetailKeys()),
-				components.summaryBadge("Gesamtpunktzahl", this::pointsForExam));
+				examPointsBadge);
 		toolbar.addClassName("tt-eh-toolbar");
 		toolbar.setAlignItems(Alignment.CENTER);
 		toolbar.setPadding(false);
@@ -129,35 +222,36 @@ public class ExpectationHorizonEditor extends VerticalLayout implements EhPartSe
 		return toolbar;
 	}
 
-	private Component createPartSection(final EhPart part) {
-		final List<Component> categorySections = categoriesFor(part).stream().map(this::createCategorySection).toList();
-		final EhPartSection section = new EhPartSection(part, parts, categorySections, components, collapseState, this,
-				() -> percentageForPart(part), () -> pointsForPart(part), partDescendantDetailKeys(part));
+	private EhPartSection createPartSection(final EhPart part) {
+		final List<EhCategorySection> categorySections = categoriesFor(part).stream().map(this::createCategorySection)
+				.toList();
+		final EhPartSection section = new EhPartSection(part, parts, categorySections, components, collapseState,
+				partHandler, () -> percentageForPart(part), () -> pointsForPart(part), partDescendantDetailKeys(part));
 		collapseState.configure(section.getContent(), detailKey("part", part.id()));
 		return section;
 	}
 
-	private Component createCategorySection(final EhCategory category) {
-		final List<Component> taskSections = tasksFor(category).stream().map(this::createTaskSection).toList();
+	private EhCategorySection createCategorySection(final EhCategory category) {
+		final List<EhTaskSection> taskSections = tasksFor(category).stream().map(this::createTaskSection).toList();
 		final EhCategorySection section = new EhCategorySection(category, categoriesFor(partFor(category)), taskSections,
-				components, collapseState, this, () -> pointsForCategory(category),
+				components, collapseState, categoryHandler, () -> pointsForCategory(category),
 				categoryDescendantDetailKeys(category));
 		collapseState.configure(section.getContent(), detailKey("category", category.id()));
 		return section;
 	}
 
-	private Component createTaskSection(final EhTask task) {
-		final List<Component> requirementSections = requirementsFor(task).stream().map(this::createRequirementSection)
-				.toList();
+	private EhTaskSection createTaskSection(final EhTask task) {
+		final List<EhRequirementSection> requirementSections = requirementsFor(task).stream()
+				.map(this::createRequirementSection).toList();
 		final EhTaskSection section = new EhTaskSection(task, tasksFor(categoryFor(task)), requirementSections,
-				components, collapseState, this, () -> pointsForTask(task), List.of(detailKey("task", task.id())));
+				components, collapseState, taskHandler, () -> pointsForTask(task), List.of(detailKey("task", task.id())));
 		collapseState.configure(section.getContent(), detailKey("task", task.id()));
 		return section;
 	}
 
-	private Component createRequirementSection(final EhRequirement requirement) {
+	private EhRequirementSection createRequirementSection(final EhRequirement requirement) {
 		final List<EhRequirement> siblings = requirementsFor(taskFor(requirement));
-		return new EhRequirementSection(requirement, siblings, components, this,
+		return new EhRequirementSection(requirement, siblings, components, requirementHandler,
 				requirementNumber(siblings, requirement), () -> requirementPointsLabelById(requirement.id()));
 	}
 
@@ -320,33 +414,28 @@ public class ExpectationHorizonEditor extends VerticalLayout implements EhPartSe
 				.toList();
 	}
 
-	@Override
-	public void saveTitle(final EhPart part, final String title) {
+	private void saveTitle(final EhPart part, final String title) {
 		final EhPart updatedPart = new EhPart(part.id(), part.examId(), title, part.sortOrder());
 		expectationHorizonRepository.savePart(updatedPart);
 		replacePart(updatedPart);
 	}
 
-	@Override
-	public void addCategory(final EhPart part) {
+	private void addCategory(final EhPart part) {
 		addDefaultCategory(part);
 		refresh();
 	}
 
-	@Override
-	public void move(final EhPart part, final int offset) {
+	private void move(final EhPart part, final int offset) {
 		expectationHorizonRepository.movePart(part, offset);
 		refresh();
 	}
 
-	@Override
-	public void delete(final EhPart part) {
+	private void delete(final EhPart part) {
 		expectationHorizonRepository.deletePart(part.id());
 		refresh();
 	}
 
-	@Override
-	public void saveTitle(final EhCategory category, final String title) {
+	private void saveTitle(final EhCategory category, final String title) {
 		final EhCategory currentCategory = categoryById(category.id());
 		final EhCategory updatedCategory = new EhCategory(category.id(), category.partId(), title,
 				currentCategory.descriptionMarkdown(), category.sortOrder());
@@ -354,75 +443,64 @@ public class ExpectationHorizonEditor extends VerticalLayout implements EhPartSe
 		replaceCategory(updatedCategory);
 	}
 
-	@Override
-	public void save(final EhCategory category, final String title, final String descriptionMarkdown) {
+	private void save(final EhCategory category, final String title, final String descriptionMarkdown) {
 		final EhCategory updatedCategory = new EhCategory(category.id(), category.partId(), title, descriptionMarkdown,
 				category.sortOrder());
 		expectationHorizonRepository.saveCategory(updatedCategory);
 		replaceCategory(updatedCategory);
 	}
 
-	@Override
-	public void addTask(final EhCategory category) {
+	private void addTask(final EhCategory category) {
 		addDefaultTask(category);
 		refresh();
 	}
 
-	@Override
-	public void move(final EhCategory category, final int offset) {
+	private void move(final EhCategory category, final int offset) {
 		expectationHorizonRepository.moveCategory(category, categoriesFor(partFor(category)), offset);
 		refresh();
 	}
 
-	@Override
-	public void delete(final EhCategory category) {
+	private void delete(final EhCategory category) {
 		expectationHorizonRepository.deleteCategory(category.id());
 		refresh();
 	}
 
-	@Override
-	public void saveTitle(final EhTask task, final String title) {
+	private void saveTitle(final EhTask task, final String title) {
 		final EhTask updatedTask = new EhTask(task.id(), task.categoryId(), title, task.sortOrder());
 		expectationHorizonRepository.saveTask(updatedTask);
 		replaceTask(updatedTask);
 	}
 
-	@Override
-	public void addRequirement(final EhTask task) {
+	private void addRequirement(final EhTask task) {
 		addDefaultRequirement(task);
 		refresh();
 	}
 
-	@Override
-	public void move(final EhTask task, final int offset) {
+	private void move(final EhTask task, final int offset) {
 		expectationHorizonRepository.moveTask(task, tasksFor(categoryFor(task)), offset);
 		refresh();
 	}
 
-	@Override
-	public void delete(final EhTask task) {
+	private void delete(final EhTask task) {
 		expectationHorizonRepository.deleteTask(task.id());
 		refresh();
 	}
 
-	@Override
-	public void save(final EhRequirement requirement, final String descriptionMarkdown, final int maxPoints,
+	private void save(final EhRequirement requirement, final String descriptionMarkdown, final int maxPoints,
 			final boolean bonus) {
 		final EhRequirement updatedRequirement = new EhRequirement(requirement.id(), requirement.taskId(),
 				descriptionMarkdown, maxPoints, bonus, requirement.sortOrder());
 		expectationHorizonRepository.saveRequirement(updatedRequirement);
 		replaceRequirement(updatedRequirement);
-		components.refreshBadges();
+		refreshBadges();
 	}
 
-	@Override
-	public void move(final EhRequirement requirement, final int offset) {
+	private void move(final EhRequirement requirement, final int offset) {
 		expectationHorizonRepository.moveRequirement(requirement, requirementsFor(taskFor(requirement)), offset);
 		refresh();
 	}
 
-	@Override
-	public void delete(final EhRequirement requirement) {
+	private void delete(final EhRequirement requirement) {
 		expectationHorizonRepository.deleteRequirement(requirement.id());
 		refresh();
 	}
@@ -431,6 +509,13 @@ public class ExpectationHorizonEditor extends VerticalLayout implements EhPartSe
 		final Span emptyState = new Span(text);
 		emptyState.addClassName("tt-empty-state");
 		return emptyState;
+	}
+
+	private void refreshBadges() {
+		if (examPointsBadge != null) {
+			examPointsBadge.refreshBadges();
+		}
+		partSections.forEach(EhPartSection::refreshBadges);
 	}
 
 	private String partLetter(final int index) {

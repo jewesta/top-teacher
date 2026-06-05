@@ -1,11 +1,9 @@
 package de.topteacher.ui.component;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
 
 import com.flowingcode.vaadin.addons.markdown.MarkdownEditor;
-import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.textfield.TextField;
@@ -14,28 +12,29 @@ import de.topteacher.model.EhCategory;
 
 final class EhCategorySection extends AbstractEhSection<EhCategory> {
 
-	EhCategorySection(final EhCategory category, final List<EhCategory> siblings,
-			final Collection<? extends Component> tasks, final EhSectionComponents components,
-			final EhCollapseState collapseState, final Handler handler, final Supplier<EhPoints> pointsSupplier,
-			final List<String> descendantKeys) {
-		this(category, siblings, tasks, components, collapseState, handler, pointsSupplier, descendantKeys,
+	EhCategorySection(final EhCategory category, final List<EhCategory> siblings, final List<EhTaskSection> tasks,
+			final EhSectionComponents components, final EhCollapseState collapseState, final Handler handler,
+			final Supplier<EhPoints> pointsSupplier, final List<String> descendantKeys) {
+		this(category, siblings, tasks, components, collapseState, handler, descendantKeys,
 				components.summaryTitleField(category.title()),
-				components.markdownEditor(category.descriptionMarkdown(), "Beschreibung"));
+				components.markdownEditor(category.descriptionMarkdown(), "Beschreibung"),
+				components.pointBadge("Summe", pointsSupplier));
 	}
 
 	private EhCategorySection(final EhCategory category, final List<EhCategory> siblings,
-			final Collection<? extends Component> tasks, final EhSectionComponents components,
-			final EhCollapseState collapseState, final Handler handler, final Supplier<EhPoints> pointsSupplier,
-			final List<String> descendantKeys, final TextField title, final MarkdownEditor description) {
-		super(category, "tt-eh-category", components.summary("Leistungskategorie", title, pointsSupplier));
+			final List<EhTaskSection> tasks, final EhSectionComponents components, final EhCollapseState collapseState,
+			final Handler handler, final List<String> descendantKeys, final TextField title,
+			final MarkdownEditor description, final EhPointBadge pointBadge) {
+		super(category, "tt-eh-category", components.summary("Leistungskategorie", title, pointBadge), pointBadge,
+				tasks);
 		title.addValueChangeListener(event -> {
 			if (event.isFromClient()) {
 				saveTitle(category, title, handler);
 			}
 		});
 		addToBody(components.markdownBlock("Beschreibung", description),
-				components.editorBlock(components.saveButton(
-						event -> save(category, title, description, components, handler)),
+				components.editorBlock(
+						components.saveButton(event -> save(category, title, description, components, handler)),
 						components.commandButton("Teilaufgabe hinzufügen", VaadinIcon.PLUS,
 								event -> handler.addTask(category)),
 						components.moveButton("Nach oben", -1, siblings, category, event -> handler.move(category, -1)),
@@ -67,16 +66,10 @@ final class EhCategorySection extends AbstractEhSection<EhCategory> {
 		return value == null || value.isBlank();
 	}
 
-	interface Handler {
-
-		void saveTitle(EhCategory category, String title);
+	interface Handler extends EhTitledSectionHandler<EhCategory> {
 
 		void save(EhCategory category, String title, String descriptionMarkdown);
 
 		void addTask(EhCategory category);
-
-		void move(EhCategory category, int offset);
-
-		void delete(EhCategory category);
 	}
 }

@@ -14,9 +14,10 @@ import com.vaadin.flow.component.textfield.IntegerField;
 
 import de.topteacher.model.EhRequirement;
 
-final class EhRequirementSection extends Composite<VerticalLayout> {
+final class EhRequirementSection extends Composite<VerticalLayout> implements EhRefreshable {
 
 	private final EhRequirement requirement;
+	private final EhRequirementPointBadge pointsBadge;
 	private final Component summary;
 	private final Component description;
 	private final Component fields;
@@ -26,14 +27,15 @@ final class EhRequirementSection extends Composite<VerticalLayout> {
 			final EhSectionComponents components, final Handler handler, final String requirementNumber,
 			final Supplier<String> pointsLabelSupplier) {
 		this(requirement, components, handler, components.markdownEditor(requirement.descriptionMarkdown(), "Beschreibung"),
-				requirementNumber, pointsLabelSupplier, siblings);
+				requirementNumber, components.requirementPointBadge(pointsLabelSupplier), siblings);
 	}
 
 	private EhRequirementSection(final EhRequirement requirement, final EhSectionComponents components,
 			final Handler handler, final MarkdownEditor descriptionEditor, final String requirementNumber,
-			final Supplier<String> pointsLabelSupplier, final List<EhRequirement> siblings) {
+			final EhRequirementPointBadge pointsBadge, final List<EhRequirement> siblings) {
 		this.requirement = requirement;
-		this.summary = components.requirementSummary(requirementNumber(requirementNumber), pointsLabelSupplier);
+		this.pointsBadge = pointsBadge;
+		this.summary = components.requirementSummary(requirementNumber(requirementNumber), pointsBadge);
 		this.description = components.markdownBlock("Beschreibung", descriptionEditor);
 		final IntegerField maxPoints = maxPoints(requirement);
 		final Checkbox bonus = new Checkbox("Bonusaufgabe", requirement.bonus());
@@ -57,6 +59,11 @@ final class EhRequirementSection extends Composite<VerticalLayout> {
 
 	EhRequirement requirement() {
 		return requirement;
+	}
+
+	@Override
+	public void refreshBadges() {
+		pointsBadge.refreshBadges();
 	}
 
 	private static Span requirementNumber(final String requirementNumber) {
@@ -84,12 +91,8 @@ final class EhRequirementSection extends Composite<VerticalLayout> {
 		handler.save(requirement, components.value(description), maxPoints.getValue(), bonus.getValue());
 	}
 
-	interface Handler {
+	interface Handler extends EhSectionHandler<EhRequirement> {
 
 		void save(EhRequirement requirement, String descriptionMarkdown, int maxPoints, boolean bonus);
-
-		void move(EhRequirement requirement, int offset);
-
-		void delete(EhRequirement requirement);
 	}
 }

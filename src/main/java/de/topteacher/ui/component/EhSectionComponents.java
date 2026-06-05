@@ -1,6 +1,5 @@
 package de.topteacher.ui.component;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -20,16 +19,6 @@ import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 
 final class EhSectionComponents {
-
-	private final List<PointBadge> pointBadges = new ArrayList<>();
-	private final List<PercentageBadge> percentageBadges = new ArrayList<>();
-	private final List<RequirementBadge> requirementBadges = new ArrayList<>();
-
-	void clearBadges() {
-		pointBadges.clear();
-		percentageBadges.clear();
-		requirementBadges.clear();
-	}
 
 	TextField summaryTitleField(final String value) {
 		final TextField field = new TextField();
@@ -64,47 +53,49 @@ final class EhSectionComponents {
 		return block;
 	}
 
-	Component summary(final String type, final Component title, final Supplier<EhPoints> pointsSupplier) {
+	Component summary(final String type, final Component title, final Component pointBadge) {
 		final Span typeLabel = new Span(type);
 		typeLabel.addClassName("tt-eh-summary-type");
 
-		final HorizontalLayout summary = new HorizontalLayout(typeLabel, title, summaryBadge("Summe", pointsSupplier));
+		final HorizontalLayout summary = new HorizontalLayout(typeLabel, title, pointBadge);
 		summary.addClassName("tt-eh-summary");
 		summary.setPadding(false);
 		summary.setWidthFull();
 		return summary;
 	}
 
-	Component partSummary(final Component title, final Supplier<Integer> percentageSupplier,
-			final Supplier<EhPoints> pointsSupplier) {
+	Component partSummary(final Component title, final Component percentageBadge, final Component pointBadge) {
 		final Span typeLabel = new Span("Klausurteil");
 		typeLabel.addClassName("tt-eh-summary-type");
 
-		final HorizontalLayout summary = new HorizontalLayout(typeLabel, title, percentageBadge(percentageSupplier),
-				summaryBadge("Summe", pointsSupplier));
+		final HorizontalLayout summary = new HorizontalLayout(typeLabel, title, percentageBadge, pointBadge);
 		summary.addClassNames("tt-eh-summary", "tt-eh-summary-with-percentage");
 		summary.setPadding(false);
 		summary.setWidthFull();
 		return summary;
 	}
 
-	Component requirementSummary(final Component title, final Supplier<String> pointsLabelSupplier) {
+	Component requirementSummary(final Component title, final Component pointsBadge) {
 		final Span typeLabel = new Span("Anforderung");
 		typeLabel.addClassName("tt-eh-summary-type");
 
-		final HorizontalLayout summary = new HorizontalLayout(typeLabel, title, requirementPointsBadge(pointsLabelSupplier));
+		final HorizontalLayout summary = new HorizontalLayout(typeLabel, title, pointsBadge);
 		summary.addClassName("tt-eh-summary");
 		summary.setPadding(false);
 		summary.setWidthFull();
 		return summary;
 	}
 
-	Span summaryBadge(final String label, final Supplier<EhPoints> pointsSupplier) {
-		final Span badge = new Span();
-		badge.addClassName("tt-eh-points");
-		pointBadges.add(new PointBadge(label, badge, pointsSupplier));
-		updatePointBadge(label, badge, pointsSupplier.get());
-		return badge;
+	EhPointBadge pointBadge(final String label, final Supplier<EhPoints> pointsSupplier) {
+		return new EhPointBadge(label, pointsSupplier);
+	}
+
+	EhPercentageBadge percentageBadge(final Supplier<Integer> percentageSupplier) {
+		return new EhPercentageBadge(percentageSupplier);
+	}
+
+	EhRequirementPointBadge requirementPointBadge(final Supplier<String> pointsLabelSupplier) {
+		return new EhRequirementPointBadge(pointsLabelSupplier);
 	}
 
 	Button saveButton(final ComponentEventListener<ClickEvent<Button>> listener) {
@@ -166,53 +157,7 @@ final class EhSectionComponents {
 		return fields;
 	}
 
-	void refreshBadges() {
-		pointBadges.forEach(pointBadge -> updatePointBadge(pointBadge.label(), pointBadge.badge(),
-				pointBadge.pointsSupplier().get()));
-		percentageBadges.forEach(percentageBadge -> updatePercentageBadge(percentageBadge.badge(),
-				percentageBadge.percentageSupplier().get()));
-		requirementBadges.forEach(requirementBadge -> updateRequirementBadge(requirementBadge.badge(),
-				requirementBadge.pointsLabelSupplier().get()));
-	}
-
 	String value(final MarkdownEditor editor) {
 		return editor.getValue() == null ? "" : editor.getValue();
-	}
-
-	private Span percentageBadge(final Supplier<Integer> percentageSupplier) {
-		final Span badge = new Span();
-		badge.addClassName("tt-eh-percentage");
-		percentageBadges.add(new PercentageBadge(badge, percentageSupplier));
-		updatePercentageBadge(badge, percentageSupplier.get());
-		return badge;
-	}
-
-	private Span requirementPointsBadge(final Supplier<String> pointsLabelSupplier) {
-		final Span badge = new Span();
-		badge.addClassName("tt-eh-points");
-		requirementBadges.add(new RequirementBadge(badge, pointsLabelSupplier));
-		updateRequirementBadge(badge, pointsLabelSupplier.get());
-		return badge;
-	}
-
-	private void updatePointBadge(final String label, final Span badge, final EhPoints points) {
-		badge.setText(label + ": " + points.label());
-	}
-
-	private void updatePercentageBadge(final Span badge, final int percentage) {
-		badge.setText(percentage + " %");
-	}
-
-	private void updateRequirementBadge(final Span badge, final String pointsLabel) {
-		badge.setText(pointsLabel);
-	}
-
-	private record PointBadge(String label, Span badge, Supplier<EhPoints> pointsSupplier) {
-	}
-
-	private record PercentageBadge(Span badge, Supplier<Integer> percentageSupplier) {
-	}
-
-	private record RequirementBadge(Span badge, Supplier<String> pointsLabelSupplier) {
 	}
 }
