@@ -176,6 +176,7 @@ vaadin-app-layout::part(drawer) {
 }
 
 .tt-eh-toolbar .tt-eh-points {
+	margin-right: var(--lumo-space-m);
 	order: 2;
 }
 
