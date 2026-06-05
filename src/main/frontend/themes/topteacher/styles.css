@@ -210,6 +210,10 @@ vaadin-app-layout::part(drawer) {
 	padding-right: 0;
 }
 
+.tt-exam-note-section::part(content) {
+	padding-right: 0;
+}
+
 .tt-eh-category,
 .tt-eh-task {
 /*	margin-right: 0px;*/
