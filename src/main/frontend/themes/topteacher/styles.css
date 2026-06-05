@@ -194,11 +194,7 @@ vaadin-app-layout::part(drawer) {
 }
 
 .tt-eh-details::part(content) {
-	padding: 0 var(--lumo-space-m);
-	/*	padding-top: 0px;*/
-	/*	padding-bottom: 0px;*/
-	/*	padding-left: 0px;*/
-	/*	padding-right: 0px;*/
+	padding: var(--lumo-space-m) var(--lumo-space-m) 0;
 }
 
 .tt-eh-task::part(content) {
