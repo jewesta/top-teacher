@@ -186,6 +186,19 @@ vaadin-app-layout::part(navbar) {
 	order: 2;
 }
 
+.tt-eh-gag {
+	color: var(--lumo-secondary-text-color);
+	font-size: var(--lumo-font-size-s);
+	gap: var(--lumo-space-xs);
+	white-space: nowrap;
+}
+
+.tt-eh-gag vaadin-icon {
+	color: var(--lumo-primary-text-color);
+	height: var(--lumo-icon-size-s);
+	width: var(--lumo-icon-size-s);
+}
+
 .tt-eh-details {
 	border: 1px solid var(--lumo-contrast-10pct);
 	border-left-width: 3px;

@@ -40,6 +40,8 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 	private final Map<String, Details> detailsByKey = new HashMap<>();
 	private final List<PointBadge> pointBadges = new ArrayList<>();
 	private final List<PercentageBadge> percentageBadges = new ArrayList<>();
+	private final List<RequirementBadge> requirementBadges = new ArrayList<>();
+	private final List<CollapseToggleButton> collapseToggleButtons = new ArrayList<>();
 
 	private Exam exam;
 	private List<EhPart> parts = List.of();
@@ -67,6 +69,8 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 	private void refresh() {
 		pointBadges.clear();
 		percentageBadges.clear();
+		requirementBadges.clear();
+		collapseToggleButtons.clear();
 		detailsByKey.clear();
 		removeAll();
 		if (exam == null) {
@@ -88,6 +92,7 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 			content.add(emptyState("Noch kein Erwartungshorizont angelegt."));
 		} else {
 			parts.forEach(part -> content.add(createPartDetails(part)));
+			content.add(expectationHorizonLight());
 		}
 
 		add(content);
@@ -357,7 +362,7 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 		actions.setPadding(false);
 
 		final VerticalLayout editor = new VerticalLayout(
-				summary("Anforderung", requirementNumber, () -> pointsForRequirementById(requirement.id())),
+				requirementSummary(requirementNumber, () -> requirementPointsLabelById(requirement.id())),
 				markdownBlock("Beschreibung", description), fields, actions);
 		editor.addClassName("tt-eh-requirement");
 		editor.setPadding(false);
@@ -434,11 +439,6 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 		return requirement.bonus() ? new Points(0, requirement.maxPoints()) : new Points(requirement.maxPoints(), 0);
 	}
 
-	private Points pointsForRequirementById(final Integer id) {
-		return requirements.stream().filter(requirement -> requirement.id().equals(id)).findFirst()
-				.map(this::pointsForRequirement).orElse(new Points(0, 0));
-	}
-
 	private int percentageForPart(final EhPart part) {
 		final int totalPoints = pointsForExam().total();
 		if (totalPoints == 0) {
@@ -481,6 +481,17 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 		return summary;
 	}
 
+	private Component requirementSummary(final Component title, final Supplier<String> pointsLabelSupplier) {
+		final Span typeLabel = new Span("Anforderung");
+		typeLabel.addClassName("tt-eh-summary-type");
+
+		final HorizontalLayout summary = new HorizontalLayout(typeLabel, title, requirementPointsBadge(pointsLabelSupplier));
+		summary.addClassName("tt-eh-summary");
+		summary.setPadding(false);
+		summary.setWidthFull();
+		return summary;
+	}
+
 	private Span summaryBadge(final String label, final Supplier<Points> pointsSupplier) {
 		final Span badge = new Span();
 		badge.addClassName("tt-eh-points");
@@ -497,11 +508,30 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 		return badge;
 	}
 
+	private Span requirementPointsBadge(final Supplier<String> pointsLabelSupplier) {
+		final Span badge = new Span();
+		badge.addClassName("tt-eh-points");
+		requirementBadges.add(new RequirementBadge(badge, pointsLabelSupplier));
+		updateRequirementBadge(badge, pointsLabelSupplier.get());
+		return badge;
+	}
+
+	private Component expectationHorizonLight() {
+		final Span text = new Span("Licht am Ende des Erwartungshorizonts");
+		final HorizontalLayout gag = new HorizontalLayout(text, VaadinIcon.SUN_RISE.create());
+		gag.addClassName("tt-eh-gag");
+		gag.setAlignItems(Alignment.CENTER);
+		gag.setPadding(false);
+		return gag;
+	}
+
 	private void refreshBadges() {
 		pointBadges.forEach(pointBadge -> updatePointBadge(pointBadge.label(), pointBadge.badge(),
 				pointBadge.pointsSupplier().get()));
 		percentageBadges.forEach(percentageBadge -> updatePercentageBadge(percentageBadge.badge(),
 				percentageBadge.percentageSupplier().get()));
+		requirementBadges.forEach(requirementBadge -> updateRequirementBadge(requirementBadge.badge(),
+				requirementBadge.pointsLabelSupplier().get()));
 	}
 
 	private void updatePointBadge(final String label, final Span badge, final Points points) {
@@ -510,6 +540,19 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 
 	private void updatePercentageBadge(final Span badge, final int percentage) {
 		badge.setText(percentage + " %");
+	}
+
+	private void updateRequirementBadge(final Span badge, final String pointsLabel) {
+		badge.setText(pointsLabel);
+	}
+
+	private String requirementPointsLabelById(final Integer id) {
+		return requirements.stream().filter(requirement -> requirement.id().equals(id)).findFirst()
+				.map(this::requirementPointsLabel).orElse("0");
+	}
+
+	private String requirementPointsLabel(final EhRequirement requirement) {
+		return requirement.bonus() ? "(+ " + requirement.maxPoints() + ")" : String.valueOf(requirement.maxPoints());
 	}
 
 	private String requirementNumber(final List<EhRequirement> siblings, final EhRequirement requirement) {
@@ -551,6 +594,7 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 			} else {
 				collapsedDetails.add(key);
 			}
+			updateCollapseToggleButtons();
 		});
 	}
 
@@ -587,6 +631,30 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 				details.setOpened(false);
 			}
 		});
+		updateCollapseToggleButtons();
+	}
+
+	private void expandDetails(final List<String> keys) {
+		keys.forEach(key -> {
+			collapsedDetails.remove(key);
+			final Details details = detailsByKey.get(key);
+			if (details != null) {
+				details.setOpened(true);
+			}
+		});
+		updateCollapseToggleButtons();
+	}
+
+	private void toggleDetails(final List<String> keys) {
+		if (allCollapsed(keys)) {
+			expandDetails(keys);
+		} else {
+			collapseDetails(keys);
+		}
+	}
+
+	private boolean allCollapsed(final List<String> keys) {
+		return !keys.isEmpty() && keys.stream().allMatch(collapsedDetails::contains);
 	}
 
 	private EhCategory categoryById(final Integer id) {
@@ -642,11 +710,26 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 	}
 
 	private Button collapseBelowButton(final List<String> detailKeys) {
-		final Button button = iconButton("Alles darunter einklappen", VaadinIcon.ANGLE_DOUBLE_RIGHT,
-				event -> collapseDetails(detailKeys));
+		final Button button = iconButton("Alles darunter einklappen", VaadinIcon.ANGLE_DOUBLE_DOWN,
+				event -> toggleDetails(detailKeys));
 		button.getElement().setAttribute("data-action", "collapse-below");
-		button.setEnabled(!detailKeys.isEmpty());
+		collapseToggleButtons.add(new CollapseToggleButton(button, detailKeys));
+		updateCollapseToggleButton(button, detailKeys);
 		return button;
+	}
+
+	private void updateCollapseToggleButtons() {
+		collapseToggleButtons
+				.forEach(toggleButton -> updateCollapseToggleButton(toggleButton.button(), toggleButton.detailKeys()));
+	}
+
+	private void updateCollapseToggleButton(final Button button, final List<String> detailKeys) {
+		final boolean expandsAll = allCollapsed(detailKeys);
+		final String label = expandsAll ? "Alles darunter ausklappen" : "Alles darunter einklappen";
+		button.setIcon((expandsAll ? VaadinIcon.ANGLE_DOUBLE_RIGHT : VaadinIcon.ANGLE_DOUBLE_DOWN).create());
+		button.setAriaLabel(label);
+		button.setTooltipText(label);
+		button.setEnabled(!detailKeys.isEmpty());
 	}
 
 	private <T> Button moveButton(final String label, final int offset, final List<T> siblings, final T item) {
@@ -729,14 +812,14 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 		}
 
 		int total() {
-			return regular + bonus;
+			return regular;
 		}
 
 		String label() {
 			if (bonus == 0) {
-				return regular + " P.";
+				return String.valueOf(regular);
 			}
-			return regular + " P. + " + bonus + " Bonus";
+			return regular + " (+ " + bonus + ")";
 		}
 	}
 
@@ -744,5 +827,11 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 	}
 
 	private record PercentageBadge(Span badge, Supplier<Integer> percentageSupplier) {
+	}
+
+	private record RequirementBadge(Span badge, Supplier<String> pointsLabelSupplier) {
+	}
+
+	private record CollapseToggleButton(Button button, List<String> detailKeys) {
 	}
 }
