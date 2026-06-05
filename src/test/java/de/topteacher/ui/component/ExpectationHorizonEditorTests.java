@@ -39,6 +39,8 @@ class ExpectationHorizonEditorTests {
 	private static final EhTask SECOND_TASK = new EhTask(7, SECOND_CATEGORY.id(), "Teilaufgabe 2", 0);
 	private static final EhRequirement SECOND_REQUIREMENT = new EhRequirement(8, SECOND_TASK.id(), "Second requirement",
 			15, false, 0);
+	private static final EhRequirement FOLLOWING_REQUIREMENT = new EhRequirement(9, TASK.id(),
+			"Very long user-entered requirement text that should not become a summary title", 2, false, 1);
 
 	@Test
 	void preservesCollapsedDetailsWhenRefreshingSameExam() {
@@ -92,6 +94,18 @@ class ExpectationHorizonEditorTests {
 	}
 
 	@Test
+	void numbersRequirementsInsteadOfUsingDescriptionInSummary() {
+		final ExpectationHorizonRepository repository = repositoryWithTwoRequirements();
+		final ExpectationHorizonEditor editor = new ExpectationHorizonEditor(repository);
+
+		editor.setExam(EXAM);
+
+		final List<String> spanTexts = components(editor, Span.class).stream().map(Span::getText).toList();
+		assertThat(spanTexts).contains("1", "2");
+		assertThat(spanTexts).doesNotContain(REQUIREMENT.descriptionMarkdown(), FOLLOWING_REQUIREMENT.descriptionMarkdown());
+	}
+
+	@Test
 	void toolbarCollapseButtonCollapsesWholeTree() {
 		final ExpectationHorizonRepository repository = repositoryWithTwoPartHierarchy();
 		final ExpectationHorizonEditor editor = new ExpectationHorizonEditor(repository);
@@ -129,6 +143,15 @@ class ExpectationHorizonEditorTests {
 		when(repository.findCategoriesByExamId(EXAM.id())).thenReturn(List.of(CATEGORY, SECOND_CATEGORY));
 		when(repository.findTasksByExamId(EXAM.id())).thenReturn(List.of(TASK, SECOND_TASK));
 		when(repository.findRequirementsByExamId(EXAM.id())).thenReturn(List.of(REQUIREMENT, SECOND_REQUIREMENT));
+		return repository;
+	}
+
+	private static ExpectationHorizonRepository repositoryWithTwoRequirements() {
+		final ExpectationHorizonRepository repository = mock(ExpectationHorizonRepository.class);
+		when(repository.findPartsByExamId(EXAM.id())).thenReturn(List.of(PART));
+		when(repository.findCategoriesByExamId(EXAM.id())).thenReturn(List.of(CATEGORY));
+		when(repository.findTasksByExamId(EXAM.id())).thenReturn(List.of(TASK));
+		when(repository.findRequirementsByExamId(EXAM.id())).thenReturn(List.of(REQUIREMENT, FOLLOWING_REQUIREMENT));
 		return repository;
 	}
 

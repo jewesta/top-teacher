@@ -322,8 +322,8 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 	private Component createRequirementEditor(final EhRequirement requirement) {
 		final List<EhRequirement> siblings = requirementsFor(taskFor(requirement));
 		final MarkdownEditor description = markdownEditor(requirement.descriptionMarkdown(), "Beschreibung");
-		final Span requirementTitle = new Span(requirementSummary(requirement));
-		requirementTitle.addClassName("tt-eh-summary-title");
+		final Span requirementNumber = new Span(requirementNumber(siblings, requirement));
+		requirementNumber.addClassName("tt-eh-summary-title");
 		final IntegerField maxPoints = new IntegerField("Max. Punkte");
 		maxPoints.setMin(0);
 		maxPoints.setStepButtonsVisible(true);
@@ -340,7 +340,6 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 					value(description), maxPoints.getValue(), bonus.getValue(), requirement.sortOrder());
 			expectationHorizonRepository.saveRequirement(updatedRequirement);
 			replaceRequirement(updatedRequirement);
-			requirementTitle.setText(requirementSummary(updatedRequirement));
 			refreshBadges();
 		});
 
@@ -358,7 +357,7 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 		actions.setPadding(false);
 
 		final VerticalLayout editor = new VerticalLayout(
-				summary("Anforderung", requirementTitle, () -> pointsForRequirementById(requirement.id())),
+				summary("Anforderung", requirementNumber, () -> pointsForRequirementById(requirement.id())),
 				markdownBlock("Beschreibung", description), fields, actions);
 		editor.addClassName("tt-eh-requirement");
 		editor.setPadding(false);
@@ -513,13 +512,13 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 		badge.setText(percentage + " %");
 	}
 
-	private String requirementSummary(final EhRequirement requirement) {
-		final String value = requirement.descriptionMarkdown().strip();
-		if (value.isBlank()) {
-			return "Neue Anforderung";
+	private String requirementNumber(final List<EhRequirement> siblings, final EhRequirement requirement) {
+		for (int index = 0; index < siblings.size(); index++) {
+			if (siblings.get(index).id().equals(requirement.id())) {
+				return String.valueOf(index + 1);
+			}
 		}
-		final String firstLine = value.lines().findFirst().orElse(value);
-		return firstLine.length() <= 80 ? firstLine : firstLine.substring(0, 77) + "...";
+		throw new IllegalStateException("Missing EH requirement: " + requirement.id());
 	}
 
 	private VerticalLayout sectionContent() {
