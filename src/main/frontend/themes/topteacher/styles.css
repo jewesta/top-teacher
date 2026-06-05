@@ -158,7 +158,7 @@ vaadin-app-layout::part(drawer) {
 	gap: var(--lumo-space-m);
 	height: 100%;
 	overflow: auto;
-	padding: var(--lumo-space-m);
+	padding-top: var(--lumo-space-m);
 	width: 100%;
 }
 
@@ -183,6 +183,7 @@ vaadin-app-layout::part(drawer) {
 	border: 1px solid var(--lumo-contrast-10pct);
 	border-radius: var(--lumo-border-radius-m);
 	box-sizing: border-box;
+	margin-bottom: 0;
 	width: 100%;
 }
 
@@ -272,7 +273,6 @@ vaadin-app-layout::part(drawer) {
 	border-radius: var(--lumo-border-radius-m);
 	box-sizing: border-box;
 	gap: var(--lumo-space-m);
-	margin-left: var(--lumo-space-m);
 	padding: var(--lumo-space-m);
 }
 
