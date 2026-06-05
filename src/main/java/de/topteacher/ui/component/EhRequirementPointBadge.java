@@ -2,20 +2,18 @@ package de.topteacher.ui.component;
 
 import java.util.function.Supplier;
 
-import com.vaadin.flow.component.html.Span;
-
-final class EhRequirementPointBadge extends Span implements EhRefreshable {
+final class EhRequirementPointBadge extends EhBadge {
 
 	private final Supplier<String> pointsLabelSupplier;
 
 	EhRequirementPointBadge(final Supplier<String> pointsLabelSupplier) {
+		super("tt-eh-points");
 		this.pointsLabelSupplier = pointsLabelSupplier;
-		addClassName("tt-eh-points");
 		refreshBadges();
 	}
 
 	@Override
 	public void refreshBadges() {
-		setText(pointsLabelSupplier.get());
+		setBadgeText(pointsLabelSupplier.get());
 	}
 }

@@ -83,8 +83,7 @@ class ExpectationHorizonEditorTests {
 		verify(repository, never()).findTasksByExamId(anyInt());
 		verify(repository, never()).findRequirementsByExamId(anyInt());
 		assertThat(components(editor, Details.class).getFirst()).isSameAs(partDetails);
-		assertThat(components(editor, Span.class).stream().map(Span::getText)).contains("Gesamtpunktzahl: 7");
-		assertThat(components(editor, Span.class).stream().map(Span::getText)).contains("100 %");
+		assertThat(badgeTexts(editor)).contains("Gesamtpunktzahl: 7", "100 %");
 	}
 
 	@Test
@@ -108,8 +107,7 @@ class ExpectationHorizonEditorTests {
 		verify(repository, never()).findTasksByExamId(anyInt());
 		verify(repository, never()).findRequirementsByExamId(anyInt());
 		assertThat(components(editor, Details.class).getFirst()).isSameAs(partDetails);
-		assertThat(components(editor, Span.class).stream().map(Span::getText)).contains("(+ 7)",
-				"Gesamtpunktzahl: 0 (+ 7)");
+		assertThat(badgeTexts(editor)).contains("(+ 7)", "Gesamtpunktzahl: 0 (+ 7)");
 	}
 
 	@Test
@@ -119,8 +117,8 @@ class ExpectationHorizonEditorTests {
 
 		editor.setExam(EXAM);
 
-		assertThat(components(editor, Span.class).stream().map(Span::getText)).contains("5", "(+ 4)",
-				"Summe: 5 (+ 4)", "Gesamtpunktzahl: 5 (+ 4)", "100 %");
+		assertThat(badgeTexts(editor)).contains("5", "(+ 4)", "Summe: 5 (+ 4)",
+				"Gesamtpunktzahl: 5 (+ 4)", "100 %");
 	}
 
 	@Test
@@ -130,7 +128,7 @@ class ExpectationHorizonEditorTests {
 
 		editor.setExam(EXAM);
 
-		assertThat(components(editor, Span.class).stream().map(Span::getText)).contains("25 %", "75 %");
+		assertThat(badgeTexts(editor)).contains("25 %", "75 %");
 	}
 
 	@Test
@@ -170,7 +168,7 @@ class ExpectationHorizonEditorTests {
 		final ExpectationHorizonEditor editorWithHierarchy = new ExpectationHorizonEditor(repositoryWithHierarchy());
 		editorWithHierarchy.setExam(EXAM);
 		assertThat(components(editorWithHierarchy, Span.class).stream().map(Span::getText))
-				.contains("Licht am Ende des Erwartungshorizonts");
+				.anyMatch(text -> text.contains("Licht am Ende des Erwartungshorizonts"));
 
 		final ExpectationHorizonEditor emptyEditor = new ExpectationHorizonEditor(emptyRepository());
 		emptyEditor.setExam(EXAM);
@@ -206,6 +204,7 @@ class ExpectationHorizonEditorTests {
 				.filter(layout -> layout.getClassNames().contains("tt-eh-section-content"))).hasSize(3);
 		assertThat(components(editor, VerticalLayout.class).stream()
 				.filter(layout -> layout.getClassNames().contains("tt-eh-requirement"))).hasSize(1);
+		assertThat(components(editor, EhBadge.class)).hasSize(6);
 	}
 
 	@Test
@@ -273,6 +272,10 @@ class ExpectationHorizonEditorTests {
 	private static <T extends Component> List<T> components(final Component root, final Class<T> type) {
 		return Stream.concat(Stream.of(root), root.getChildren().flatMap(child -> components(child, type).stream()))
 				.filter(type::isInstance).map(type::cast).toList();
+	}
+
+	private static List<String> badgeTexts(final Component root) {
+		return components(root, EhBadge.class).stream().map(EhBadge::getText).toList();
 	}
 
 	private static List<Button> collapseButtons(final Component root) {

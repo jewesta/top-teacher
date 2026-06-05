@@ -288,12 +288,17 @@ vaadin-app-layout::part(navbar) {
 
 .tt-eh-points,
 .tt-eh-percentage {
+	align-items: center;
 	background: var(--lumo-primary-color-10pct);
 	border-radius: var(--lumo-border-radius-s);
+	box-sizing: border-box;
 	color: var(--lumo-primary-text-color);
+	display: inline-flex;
 	flex: 0 0 auto;
 	font-size: var(--lumo-font-size-s);
 	font-weight: 600;
+	justify-content: center;
+	min-height: var(--lumo-size-xs);
 	padding: 0 var(--lumo-space-s);
 }
 

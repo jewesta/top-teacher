@@ -2,20 +2,18 @@ package de.topteacher.ui.component;
 
 import java.util.function.Supplier;
 
-import com.vaadin.flow.component.html.Span;
-
-final class EhPercentageBadge extends Span implements EhRefreshable {
+final class EhPercentageBadge extends EhBadge {
 
 	private final Supplier<Integer> percentageSupplier;
 
 	EhPercentageBadge(final Supplier<Integer> percentageSupplier) {
+		super("tt-eh-percentage");
 		this.percentageSupplier = percentageSupplier;
-		addClassName("tt-eh-percentage");
 		refreshBadges();
 	}
 
 	@Override
 	public void refreshBadges() {
-		setText(percentageSupplier.get() + " %");
+		setBadgeText(percentageSupplier.get() + " %");
 	}
 }
