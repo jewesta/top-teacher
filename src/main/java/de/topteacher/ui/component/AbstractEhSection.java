@@ -8,16 +8,16 @@ import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 
-abstract class AbstractEhSection<T> extends Composite<Details> implements EhRefreshable {
+abstract class AbstractEhSection<T> extends Composite<Details> implements EhEditable {
 
 	private final T item;
 	private final Component summary;
 	private final VerticalLayout body;
 	private final EhPointBadge pointBadge;
-	private final List<? extends EhRefreshable> children;
+	private final List<? extends EhEditable> children;
 
 	protected AbstractEhSection(final T item, final String sectionClassName, final Component summary,
-			final EhPointBadge pointBadge, final List<? extends EhRefreshable> children) {
+			final EhPointBadge pointBadge, final List<? extends EhEditable> children) {
 		this.item = item;
 		this.summary = summary;
 		this.pointBadge = pointBadge;
@@ -61,7 +61,33 @@ abstract class AbstractEhSection<T> extends Composite<Details> implements EhRefr
 		children.forEach(EhRefreshable::refreshBadges);
 	}
 
+	@Override
+	public boolean isDirty() {
+		return isSectionDirty() || children.stream().anyMatch(EhEditable::isDirty);
+	}
+
+	@Override
+	public boolean save() {
+		if (isSectionDirty() && !saveSection()) {
+			return false;
+		}
+		for (final EhEditable child : children) {
+			if (!child.save()) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	protected void refreshSectionBadges() {
+	}
+
+	protected boolean isSectionDirty() {
+		return false;
+	}
+
+	protected boolean saveSection() {
+		return true;
 	}
 
 }

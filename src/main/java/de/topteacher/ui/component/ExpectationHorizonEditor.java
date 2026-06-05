@@ -23,7 +23,8 @@ import de.topteacher.model.Exam;
 public class ExpectationHorizonEditor extends VerticalLayout {
 
 	private final ExpectationHorizonRepository expectationHorizonRepository;
-	private final EhSectionComponents components = new EhSectionComponents();
+	private final EhSaveController saveController = new EhSaveController();
+	private final EhSectionComponents components = new EhSectionComponents(saveController);
 	private final EhCollapseState collapseState = new EhCollapseState(components);
 	private final EhPartSection.Handler partHandler = new EhPartSection.Handler() {
 
@@ -130,6 +131,8 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 		setPadding(false);
 		setSpacing(false);
 		setSizeFull();
+		saveController.setDirtySupplier(this::isDirty);
+		saveController.setSaveAction(this::saveDirtySections);
 	}
 
 	public void setExam(final Exam exam) {
@@ -141,6 +144,7 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 	}
 
 	private void refresh() {
+		saveController.clearButtons();
 		collapseState.clearRenderedComponents();
 		examPointsBadge = null;
 		partSections = List.of();
@@ -170,6 +174,7 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 
 		add(content);
 		expand(content);
+		saveController.update();
 	}
 
 	private void loadItems() {
@@ -519,6 +524,19 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 			examPointsBadge.refreshBadges();
 		}
 		partSections.forEach(EhPartSection::refreshBadges);
+	}
+
+	private boolean isDirty() {
+		return partSections.stream().anyMatch(EhPartSection::isDirty);
+	}
+
+	private void saveDirtySections() {
+		for (final EhPartSection partSection : partSections) {
+			if (!partSection.save()) {
+				return;
+			}
+		}
+		refreshBadges();
 	}
 
 	private String partLetter(final int index) {

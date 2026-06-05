@@ -21,6 +21,8 @@ import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
+import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.value.ValueChangeMode;
 
 import de.topteacher.backend.repo.ExpectationHorizonRepository;
 import de.topteacher.model.EhCategory;
@@ -71,8 +73,7 @@ class ExpectationHorizonEditorTests {
 		clearInvocations(repository);
 
 		components(editor, IntegerField.class).getFirst().setValue(7);
-		final List<Button> saveButtons = components(editor, Button.class).stream()
-				.filter(button -> "Speichern".equals(button.getText())).toList();
+		final List<Button> saveButtons = saveButtons(editor);
 		assertThat(saveButtons).hasSize(4);
 		saveButtons.getLast().click();
 
@@ -96,8 +97,7 @@ class ExpectationHorizonEditorTests {
 
 		components(editor, IntegerField.class).getFirst().setValue(7);
 		components(editor, Checkbox.class).getFirst().setValue(true);
-		final List<Button> saveButtons = components(editor, Button.class).stream()
-				.filter(button -> "Speichern".equals(button.getText())).toList();
+		final List<Button> saveButtons = saveButtons(editor);
 		saveButtons.getLast().click();
 
 		verify(repository).saveRequirement(new EhRequirement(REQUIREMENT.id(), REQUIREMENT.taskId(),
@@ -108,6 +108,48 @@ class ExpectationHorizonEditorTests {
 		verify(repository, never()).findRequirementsByExamId(anyInt());
 		assertThat(components(editor, Details.class).getFirst()).isSameAs(partDetails);
 		assertThat(badgeTexts(editor)).contains("(+ 7)", "Gesamtpunktzahl: 0 (+ 7)");
+	}
+
+	@Test
+	void enablesAllSaveButtonsOnlyWhileExpectationHorizonIsDirty() {
+		final ExpectationHorizonRepository repository = repositoryWithHierarchy();
+		final ExpectationHorizonEditor editor = new ExpectationHorizonEditor(repository);
+		editor.setExam(EXAM);
+		final List<Button> saveButtons = saveButtons(editor);
+
+		assertThat(saveButtons).hasSize(4).extracting(Button::isEnabled).containsOnly(false);
+
+		components(editor, IntegerField.class).getFirst().setValue(7);
+
+		assertThat(saveButtons).extracting(Button::isEnabled).containsOnly(true);
+
+		saveButtons.getFirst().click();
+
+		verify(repository).saveRequirement(new EhRequirement(REQUIREMENT.id(), REQUIREMENT.taskId(),
+				REQUIREMENT.descriptionMarkdown(), 7, REQUIREMENT.bonus(), REQUIREMENT.sortOrder()));
+		assertThat(saveButtons).extracting(Button::isEnabled).containsOnly(false);
+	}
+
+	@Test
+	void titleFieldsAlsoControlSaveButtonState() {
+		final ExpectationHorizonRepository repository = repositoryWithHierarchy();
+		final ExpectationHorizonEditor editor = new ExpectationHorizonEditor(repository);
+		editor.setExam(EXAM);
+		clearInvocations(repository);
+		final List<Button> saveButtons = saveButtons(editor);
+		final TextField partTitle = titleField(editor, PART.title());
+
+		assertThat(partTitle.getValueChangeMode()).isEqualTo(ValueChangeMode.EAGER);
+		assertThat(saveButtons).extracting(Button::isEnabled).containsOnly(false);
+
+		partTitle.setValue("Klausurteil X");
+
+		assertThat(saveButtons).extracting(Button::isEnabled).containsOnly(true);
+
+		saveButtons.getLast().click();
+
+		verify(repository).savePart(new EhPart(PART.id(), PART.examId(), "Klausurteil X", PART.sortOrder()));
+		assertThat(saveButtons).extracting(Button::isEnabled).containsOnly(false);
 	}
 
 	@Test
@@ -276,6 +318,15 @@ class ExpectationHorizonEditorTests {
 
 	private static List<String> badgeTexts(final Component root) {
 		return components(root, EhBadge.class).stream().map(EhBadge::getText).toList();
+	}
+
+	private static List<Button> saveButtons(final Component root) {
+		return components(root, Button.class).stream().filter(button -> "Speichern".equals(button.getText())).toList();
+	}
+
+	private static TextField titleField(final Component root, final String value) {
+		return components(root, TextField.class).stream().filter(field -> value.equals(field.getValue())).findFirst()
+				.orElseThrow();
 	}
 
 	private static List<Button> collapseButtons(final Component root) {

@@ -1,6 +1,7 @@
 package de.topteacher.ui.component;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 import com.flowingcode.vaadin.addons.markdown.MarkdownEditor;
@@ -14,14 +15,21 @@ import com.vaadin.flow.component.textfield.IntegerField;
 
 import de.topteacher.model.EhRequirement;
 
-final class EhRequirementSection extends Composite<VerticalLayout> implements EhRefreshable {
+final class EhRequirementSection extends Composite<VerticalLayout> implements EhEditable {
 
 	private final EhRequirement requirement;
+	private final Handler handler;
 	private final EhRequirementPointBadge pointsBadge;
+	private final MarkdownEditor descriptionEditor;
+	private final IntegerField maxPoints;
+	private final Checkbox bonus;
 	private final Component summary;
 	private final Component description;
 	private final Component fields;
 	private final Component actions;
+	private String savedDescriptionMarkdown;
+	private int savedMaxPoints;
+	private boolean savedBonus;
 
 	EhRequirementSection(final EhRequirement requirement, final List<EhRequirement> siblings,
 			final EhSectionComponents components, final Handler handler, final String requirementNumber,
@@ -34,15 +42,22 @@ final class EhRequirementSection extends Composite<VerticalLayout> implements Eh
 			final Handler handler, final MarkdownEditor descriptionEditor, final String requirementNumber,
 			final EhRequirementPointBadge pointsBadge, final List<EhRequirement> siblings) {
 		this.requirement = requirement;
+		this.handler = handler;
 		this.pointsBadge = pointsBadge;
+		this.descriptionEditor = descriptionEditor;
 		this.summary = components.requirementSummary(requirementNumber(requirementNumber), pointsBadge);
 		this.description = components.markdownBlock("Beschreibung", descriptionEditor);
-		final IntegerField maxPoints = maxPoints(requirement);
-		final Checkbox bonus = new Checkbox("Bonusaufgabe", requirement.bonus());
+		this.maxPoints = maxPoints(requirement);
+		this.bonus = new Checkbox("Bonusaufgabe", requirement.bonus());
+		this.savedDescriptionMarkdown = normalized(requirement.descriptionMarkdown());
+		this.savedMaxPoints = requirement.maxPoints();
+		this.savedBonus = requirement.bonus();
+		components.trackDirty(descriptionEditor);
+		components.trackDirty(maxPoints);
+		components.trackDirty(bonus);
 		this.fields = components.requirementFields(maxPoints, bonus);
 		this.actions = components.actionRow(components.actionComponentsWithMoveButtons(siblings, requirement, handler,
-				List.of(components.saveButton(
-						event -> save(requirement, descriptionEditor, maxPoints, bonus, components, handler))),
+				List.of(components.saveButton()),
 				List.of(components.deleteButton(event -> handler.delete(requirement)))));
 		getContent();
 	}
@@ -65,6 +80,31 @@ final class EhRequirementSection extends Composite<VerticalLayout> implements Eh
 		pointsBadge.refreshBadges();
 	}
 
+	@Override
+	public boolean isDirty() {
+		return !Objects.equals(savedDescriptionMarkdown, componentsValue(descriptionEditor))
+				|| !Objects.equals(savedMaxPoints, maxPoints.getValue()) || savedBonus != bonus.getValue();
+	}
+
+	@Override
+	public boolean save() {
+		if (!isDirty()) {
+			return true;
+		}
+		if (maxPoints.getValue() == null || maxPoints.getValue() < 0) {
+			Notification.show("Max. Punkte müssen 0 oder größer sein.");
+			return false;
+		}
+		final String descriptionMarkdown = componentsValue(descriptionEditor);
+		final int maxPointsValue = maxPoints.getValue();
+		final boolean bonusValue = bonus.getValue();
+		handler.save(requirement, descriptionMarkdown, maxPointsValue, bonusValue);
+		savedDescriptionMarkdown = descriptionMarkdown;
+		savedMaxPoints = maxPointsValue;
+		savedBonus = bonusValue;
+		return true;
+	}
+
 	private static Span requirementNumber(final String requirementNumber) {
 		final Span number = new Span(requirementNumber);
 		number.addClassName("tt-eh-summary-title");
@@ -80,14 +120,12 @@ final class EhRequirementSection extends Composite<VerticalLayout> implements Eh
 		return maxPoints;
 	}
 
-	private static void save(final EhRequirement requirement, final MarkdownEditor description,
-			final IntegerField maxPoints, final Checkbox bonus, final EhSectionComponents components,
-			final Handler handler) {
-		if (maxPoints.getValue() == null || maxPoints.getValue() < 0) {
-			Notification.show("Max. Punkte müssen 0 oder größer sein.");
-			return;
-		}
-		handler.save(requirement, components.value(description), maxPoints.getValue(), bonus.getValue());
+	private static String componentsValue(final MarkdownEditor editor) {
+		return normalized(editor.getValue());
+	}
+
+	private static String normalized(final String value) {
+		return value == null ? "" : value;
 	}
 
 	interface Handler extends EhSectionHandler<EhRequirement> {

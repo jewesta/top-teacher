@@ -1,6 +1,7 @@
 package de.topteacher.ui.component;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 import com.vaadin.flow.component.notification.Notification;
@@ -12,6 +13,9 @@ import de.topteacher.model.EhPart;
 final class EhPartSection extends AbstractEhSection<EhPart> {
 
 	private final EhPercentageBadge percentageBadge;
+	private final Handler handler;
+	private final TextField title;
+	private String savedTitle;
 
 	EhPartSection(final EhPart part, final List<EhPart> siblings, final List<EhCategorySection> categories,
 			final EhSectionComponents components, final EhCollapseState collapseState, final Handler handler,
@@ -28,13 +32,12 @@ final class EhPartSection extends AbstractEhSection<EhPart> {
 			final EhPercentageBadge percentageBadge, final EhPointBadge pointBadge) {
 		super(part, "tt-eh-part", components.partSummary(title, percentageBadge, pointBadge), pointBadge, categories);
 		this.percentageBadge = percentageBadge;
-		title.addValueChangeListener(event -> {
-			if (event.isFromClient()) {
-				saveTitle(part, title, handler);
-			}
-		});
+		this.handler = handler;
+		this.title = title;
+		this.savedTitle = part.title();
+		components.trackDirty(title);
 		addToBody(editorBlockWithMoveButtons(components, siblings, handler,
-				List.of(components.saveButton(event -> saveTitle(part, title, handler)),
+				List.of(components.saveButton(),
 						components.commandButton("Leistungskategorie hinzufügen", VaadinIcon.PLUS,
 								event -> handler.addCategory(part))),
 				List.of(collapseState.toggleButton(descendantKeys), components.deleteButton(event -> handler.delete(part)))));
@@ -46,13 +49,21 @@ final class EhPartSection extends AbstractEhSection<EhPart> {
 		percentageBadge.refreshBadges();
 	}
 
-	private static void saveTitle(final EhPart part, final TextField title, final Handler handler) {
+	@Override
+	protected boolean isSectionDirty() {
+		return !Objects.equals(savedTitle, title.getValue());
+	}
+
+	@Override
+	protected boolean saveSection() {
 		if (isBlank(title.getValue())) {
 			Notification.show("Titel ist erforderlich.");
-			title.setValue(part.title());
-			return;
+			title.setValue(savedTitle);
+			return false;
 		}
-		handler.saveTitle(part, title.getValue());
+		handler.saveTitle(item(), title.getValue());
+		savedTitle = title.getValue();
+		return true;
 	}
 
 	private static boolean isBlank(final String value) {

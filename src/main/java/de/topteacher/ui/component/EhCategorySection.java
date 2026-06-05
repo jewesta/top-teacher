@@ -1,6 +1,7 @@
 package de.topteacher.ui.component;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 import com.flowingcode.vaadin.addons.markdown.MarkdownEditor;
@@ -11,6 +12,12 @@ import com.vaadin.flow.component.textfield.TextField;
 import de.topteacher.model.EhCategory;
 
 final class EhCategorySection extends AbstractEhSection<EhCategory> {
+
+	private final TextField title;
+	private final MarkdownEditor description;
+	private final Handler handler;
+	private String savedTitle;
+	private String savedDescriptionMarkdown;
 
 	EhCategorySection(final EhCategory category, final List<EhCategory> siblings, final List<EhTaskSection> tasks,
 			final EhSectionComponents components, final EhCollapseState collapseState, final Handler handler,
@@ -27,14 +34,16 @@ final class EhCategorySection extends AbstractEhSection<EhCategory> {
 			final MarkdownEditor description, final EhPointBadge pointBadge) {
 		super(category, "tt-eh-category", components.summary("Leistungskategorie", title, pointBadge), pointBadge,
 				tasks);
-		title.addValueChangeListener(event -> {
-			if (event.isFromClient()) {
-				saveTitle(category, title, handler);
-			}
-		});
+		this.title = title;
+		this.description = description;
+		this.handler = handler;
+		this.savedTitle = category.title();
+		this.savedDescriptionMarkdown = normalized(category.descriptionMarkdown());
+		components.trackDirty(title);
+		components.trackDirty(description);
 		addToBody(components.markdownBlock("Beschreibung", description),
 				editorBlockWithMoveButtons(components, siblings, handler,
-						List.of(components.saveButton(event -> save(category, title, description, components, handler)),
+						List.of(components.saveButton(),
 								components.commandButton("Teilaufgabe hinzufügen", VaadinIcon.PLUS,
 										event -> handler.addTask(category))),
 						List.of(collapseState.toggleButton(descendantKeys),
@@ -42,26 +51,35 @@ final class EhCategorySection extends AbstractEhSection<EhCategory> {
 		addToBody(tasks);
 	}
 
-	private static void saveTitle(final EhCategory category, final TextField title, final Handler handler) {
-		if (isBlank(title.getValue())) {
-			Notification.show("Titel ist erforderlich.");
-			title.setValue(category.title());
-			return;
-		}
-		handler.saveTitle(category, title.getValue());
+	@Override
+	protected boolean isSectionDirty() {
+		return !Objects.equals(savedTitle, title.getValue())
+				|| !Objects.equals(savedDescriptionMarkdown, componentsValue(description));
 	}
 
-	private static void save(final EhCategory category, final TextField title, final MarkdownEditor description,
-			final EhSectionComponents components, final Handler handler) {
+	@Override
+	protected boolean saveSection() {
 		if (isBlank(title.getValue())) {
 			Notification.show("Titel ist erforderlich.");
-			return;
+			return false;
 		}
-		handler.save(category, title.getValue(), components.value(description));
+		final String descriptionMarkdown = componentsValue(description);
+		handler.save(item(), title.getValue(), descriptionMarkdown);
+		savedTitle = title.getValue();
+		savedDescriptionMarkdown = descriptionMarkdown;
+		return true;
 	}
 
 	private static boolean isBlank(final String value) {
 		return value == null || value.isBlank();
+	}
+
+	private static String componentsValue(final MarkdownEditor editor) {
+		return normalized(editor.getValue());
+	}
+
+	private static String normalized(final String value) {
+		return value == null ? "" : value;
 	}
 
 	interface Handler extends EhTitledSectionHandler<EhCategory> {

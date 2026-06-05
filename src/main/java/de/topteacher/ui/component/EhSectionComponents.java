@@ -9,6 +9,7 @@ import com.flowingcode.vaadin.addons.markdown.MarkdownEditor;
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentEventListener;
+import com.vaadin.flow.component.HasValue;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -19,13 +20,21 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.value.ValueChangeMode;
 
 final class EhSectionComponents {
+
+	private final EhSaveController saveController;
+
+	EhSectionComponents(final EhSaveController saveController) {
+		this.saveController = saveController;
+	}
 
 	TextField summaryTitleField(final String value) {
 		final TextField field = new TextField();
 		field.addClassName("tt-eh-summary-title-field");
 		field.setValue(value);
+		field.setValueChangeMode(ValueChangeMode.EAGER);
 		field.setWidthFull();
 		field.getElement().setAttribute("aria-label", "Titel");
 		field.addAttachListener(event -> field.getElement().executeJs("""
@@ -100,10 +109,10 @@ final class EhSectionComponents {
 		return new EhRequirementPointBadge(pointsLabelSupplier);
 	}
 
-	Button saveButton(final ComponentEventListener<ClickEvent<Button>> listener) {
-		final Button button = commandButton("Speichern", VaadinIcon.CHECK, listener);
+	Button saveButton() {
+		final Button button = commandButton("Speichern", VaadinIcon.CHECK, event -> saveController.save());
 		button.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-		return button;
+		return saveController.register(button);
 	}
 
 	Button commandButton(final String text, final VaadinIcon icon,
@@ -179,7 +188,7 @@ final class EhSectionComponents {
 		return fields;
 	}
 
-	String value(final MarkdownEditor editor) {
-		return editor.getValue() == null ? "" : editor.getValue();
+	void trackDirty(final HasValue<?, ?> field) {
+		field.addValueChangeListener(event -> saveController.update());
 	}
 }
