@@ -188,22 +188,26 @@ vaadin-app-layout::part(drawer) {
 	width: 100%;
 }
 
-.tt-eh-details > vaadin-details-summary {
+.tt-eh-details>vaadin-details-summary {
 	background: var(--lumo-contrast-5pct);
 	padding: var(--lumo-space-s);
 }
 
 .tt-eh-details::part(content) {
 	padding: 0 var(--lumo-space-m);
-/*	padding-top: 0px;*/
-/*	padding-bottom: 0px;*/
-/*	padding-left: 0px;*/
-/*	padding-right: 0px;*/
+	/*	padding-top: 0px;*/
+	/*	padding-bottom: 0px;*/
+	/*	padding-left: 0px;*/
+	/*	padding-right: 0px;*/
+}
+
+.tt-eh-task::part(content) {
+	padding-right: 0;
 }
 
 .tt-eh-category,
 .tt-eh-task {
-	margin-left: var(--lumo-space-m);
+/*	margin-right: 0px;*/
 }
 
 .tt-eh-section-content {
@@ -282,7 +286,7 @@ vaadin-app-layout::part(drawer) {
 	padding: var(--lumo-space-m);
 }
 
-.tt-eh-requirement > .tt-eh-summary > .tt-eh-points {
+.tt-eh-requirement>.tt-eh-summary>.tt-eh-points {
 	margin-right: 0px;
 }
 
