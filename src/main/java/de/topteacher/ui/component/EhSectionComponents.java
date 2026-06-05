@@ -1,5 +1,7 @@
 package de.topteacher.ui.component;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -135,6 +137,10 @@ final class EhSectionComponents {
 	}
 
 	Component editorBlock(final Component... actionComponents) {
+		return editorBlock(List.of(actionComponents));
+	}
+
+	Component editorBlock(final Collection<? extends Component> actionComponents) {
 		final VerticalLayout layout = new VerticalLayout(actionRow(actionComponents));
 		layout.addClassName("tt-eh-editor-block");
 		layout.setPadding(false);
@@ -143,10 +149,26 @@ final class EhSectionComponents {
 	}
 
 	HorizontalLayout actionRow(final Component... actionComponents) {
-		final HorizontalLayout actions = new HorizontalLayout(actionComponents);
+		return actionRow(List.of(actionComponents));
+	}
+
+	HorizontalLayout actionRow(final Collection<? extends Component> actionComponents) {
+		final HorizontalLayout actions = new HorizontalLayout();
+		actionComponents.forEach(actions::add);
 		actions.addClassName("tt-eh-actions");
 		actions.setPadding(false);
 		return actions;
+	}
+
+	<T> List<Component> actionComponentsWithMoveButtons(final List<T> siblings, final T item,
+			final EhSectionHandler<T> handler, final Collection<? extends Component> leadingActions,
+			final Collection<? extends Component> trailingActions) {
+		final List<Component> actionComponents = new ArrayList<>();
+		actionComponents.addAll(leadingActions);
+		actionComponents.add(moveButton("Nach oben", -1, siblings, item, event -> handler.move(item, -1)));
+		actionComponents.add(moveButton("Nach unten", 1, siblings, item, event -> handler.move(item, 1)));
+		actionComponents.addAll(trailingActions);
+		return actionComponents;
 	}
 
 	HorizontalLayout requirementFields(final IntegerField maxPoints, final Checkbox bonus) {

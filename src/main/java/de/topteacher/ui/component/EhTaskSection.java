@@ -27,12 +27,11 @@ final class EhTaskSection extends AbstractEhSection<EhTask> {
 				saveTitle(task, title, handler);
 			}
 		});
-		addToBody(components.editorBlock(components.saveButton(event -> saveTitle(task, title, handler)),
-				components.commandButton("Anforderung hinzufügen", VaadinIcon.PLUS,
-						event -> handler.addRequirement(task)),
-				components.moveButton("Nach oben", -1, siblings, task, event -> handler.move(task, -1)),
-				components.moveButton("Nach unten", 1, siblings, task, event -> handler.move(task, 1)),
-				collapseState.toggleButton(descendantKeys), components.deleteButton(event -> handler.delete(task))));
+		addToBody(editorBlockWithMoveButtons(components, siblings, handler,
+				List.of(components.saveButton(event -> saveTitle(task, title, handler)),
+						components.commandButton("Anforderung hinzufügen", VaadinIcon.PLUS,
+								event -> handler.addRequirement(task))),
+				List.of(collapseState.toggleButton(descendantKeys), components.deleteButton(event -> handler.delete(task)))));
 		addToBody(requirements);
 	}
 

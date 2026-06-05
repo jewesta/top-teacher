@@ -33,14 +33,12 @@ final class EhCategorySection extends AbstractEhSection<EhCategory> {
 			}
 		});
 		addToBody(components.markdownBlock("Beschreibung", description),
-				components.editorBlock(
-						components.saveButton(event -> save(category, title, description, components, handler)),
-						components.commandButton("Teilaufgabe hinzufügen", VaadinIcon.PLUS,
-								event -> handler.addTask(category)),
-						components.moveButton("Nach oben", -1, siblings, category, event -> handler.move(category, -1)),
-						components.moveButton("Nach unten", 1, siblings, category, event -> handler.move(category, 1)),
-						collapseState.toggleButton(descendantKeys),
-						components.deleteButton(event -> handler.delete(category))));
+				editorBlockWithMoveButtons(components, siblings, handler,
+						List.of(components.saveButton(event -> save(category, title, description, components, handler)),
+								components.commandButton("Teilaufgabe hinzufügen", VaadinIcon.PLUS,
+										event -> handler.addTask(category))),
+						List.of(collapseState.toggleButton(descendantKeys),
+								components.deleteButton(event -> handler.delete(category)))));
 		addToBody(tasks);
 	}
 

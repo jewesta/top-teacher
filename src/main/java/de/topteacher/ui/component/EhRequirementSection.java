@@ -40,11 +40,10 @@ final class EhRequirementSection extends Composite<VerticalLayout> implements Eh
 		final IntegerField maxPoints = maxPoints(requirement);
 		final Checkbox bonus = new Checkbox("Bonusaufgabe", requirement.bonus());
 		this.fields = components.requirementFields(maxPoints, bonus);
-		this.actions = components.actionRow(components.saveButton(event -> save(requirement, descriptionEditor, maxPoints,
-				bonus, components, handler)),
-				components.moveButton("Nach oben", -1, siblings, requirement, event -> handler.move(requirement, -1)),
-				components.moveButton("Nach unten", 1, siblings, requirement, event -> handler.move(requirement, 1)),
-				components.deleteButton(event -> handler.delete(requirement)));
+		this.actions = components.actionRow(components.actionComponentsWithMoveButtons(siblings, requirement, handler,
+				List.of(components.saveButton(
+						event -> save(requirement, descriptionEditor, maxPoints, bonus, components, handler))),
+				List.of(components.deleteButton(event -> handler.delete(requirement)))));
 		getContent();
 	}
 

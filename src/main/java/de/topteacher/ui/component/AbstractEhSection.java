@@ -47,6 +47,13 @@ abstract class AbstractEhSection<T> extends Composite<Details> implements EhRefr
 		components.forEach(body::add);
 	}
 
+	protected Component editorBlockWithMoveButtons(final EhSectionComponents components, final List<T> siblings,
+			final EhSectionHandler<T> handler, final Collection<? extends Component> leadingActions,
+			final Collection<? extends Component> trailingActions) {
+		return components.editorBlock(
+				components.actionComponentsWithMoveButtons(siblings, item, handler, leadingActions, trailingActions));
+	}
+
 	@Override
 	public void refreshBadges() {
 		refreshSectionBadges();

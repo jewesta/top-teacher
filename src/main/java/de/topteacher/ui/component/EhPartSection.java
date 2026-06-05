@@ -33,12 +33,11 @@ final class EhPartSection extends AbstractEhSection<EhPart> {
 				saveTitle(part, title, handler);
 			}
 		});
-		addToBody(components.editorBlock(components.saveButton(event -> saveTitle(part, title, handler)),
-				components.commandButton("Leistungskategorie hinzufügen", VaadinIcon.PLUS,
-						event -> handler.addCategory(part)),
-				components.moveButton("Nach oben", -1, siblings, part, event -> handler.move(part, -1)),
-				components.moveButton("Nach unten", 1, siblings, part, event -> handler.move(part, 1)),
-				collapseState.toggleButton(descendantKeys), components.deleteButton(event -> handler.delete(part))));
+		addToBody(editorBlockWithMoveButtons(components, siblings, handler,
+				List.of(components.saveButton(event -> saveTitle(part, title, handler)),
+						components.commandButton("Leistungskategorie hinzufügen", VaadinIcon.PLUS,
+								event -> handler.addCategory(part))),
+				List.of(collapseState.toggleButton(descendantKeys), components.deleteButton(event -> handler.delete(part)))));
 		addToBody(categories);
 	}
 

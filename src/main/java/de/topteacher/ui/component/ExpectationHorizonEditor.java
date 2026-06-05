@@ -233,8 +233,8 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 
 	private EhCategorySection createCategorySection(final EhCategory category) {
 		final List<EhTaskSection> taskSections = tasksFor(category).stream().map(this::createTaskSection).toList();
-		final EhCategorySection section = new EhCategorySection(category, categoriesFor(partFor(category)), taskSections,
-				components, collapseState, categoryHandler, () -> pointsForCategory(category),
+		final EhCategorySection section = new EhCategorySection(category, categoriesFor(partFor(category)),
+				taskSections, components, collapseState, categoryHandler, () -> pointsForCategory(category),
 				categoryDescendantDetailKeys(category));
 		collapseState.configure(section.getContent(), detailKey("category", category.id()));
 		return section;
@@ -244,7 +244,8 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 		final List<EhRequirementSection> requirementSections = requirementsFor(task).stream()
 				.map(this::createRequirementSection).toList();
 		final EhTaskSection section = new EhTaskSection(task, tasksFor(categoryFor(task)), requirementSections,
-				components, collapseState, taskHandler, () -> pointsForTask(task), List.of(detailKey("task", task.id())));
+				components, collapseState, taskHandler, () -> pointsForTask(task),
+				List.of(detailKey("task", task.id())));
 		collapseState.configure(section.getContent(), detailKey("task", task.id()));
 		return section;
 	}
@@ -321,7 +322,8 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 	}
 
 	private EhPoints pointsForRequirement(final EhRequirement requirement) {
-		return requirement.bonus() ? new EhPoints(0, requirement.maxPoints()) : new EhPoints(requirement.maxPoints(), 0);
+		return requirement.bonus() ? new EhPoints(0, requirement.maxPoints())
+				: new EhPoints(requirement.maxPoints(), 0);
 	}
 
 	private int percentageForPart(final EhPart part) {
@@ -337,8 +339,9 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 	}
 
 	private Component expectationHorizonLight() {
-		final Span text = new Span("Licht am Ende des Erwartungshorizonts");
-		final HorizontalLayout gag = new HorizontalLayout(text, VaadinIcon.SUN_RISE.create());
+		final String sunrise = "\uD83C\uDF05"; // U+1F305 sunrise
+		final Span text = new Span("Licht am Ende des Erwartungshorizonts " + sunrise);
+		final HorizontalLayout gag = new HorizontalLayout(text);
 		gag.addClassName("tt-eh-gag");
 		gag.setAlignItems(Alignment.CENTER);
 		gag.setPadding(false);
