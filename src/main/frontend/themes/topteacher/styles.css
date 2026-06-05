@@ -181,18 +181,24 @@ vaadin-app-layout::part(drawer) {
 
 .tt-eh-details {
 	border: 1px solid var(--lumo-contrast-10pct);
+	border-left-width: 3px;
 	border-radius: var(--lumo-border-radius-m);
 	box-sizing: border-box;
 	margin-bottom: 0;
 	width: 100%;
 }
 
-.tt-eh-details::part(summary) {
-	padding: var(--lumo-space-s) var(--lumo-space-m);
+.tt-eh-details > vaadin-details-summary {
+	background: var(--lumo-contrast-5pct);
+	padding: var(--lumo-space-s);
 }
 
 .tt-eh-details::part(content) {
-	padding: 0 var(--lumo-space-m) var(--lumo-space-m);
+	padding: 0 var(--lumo-space-m);
+/*	padding-top: 0px;*/
+/*	padding-bottom: 0px;*/
+/*	padding-left: 0px;*/
+/*	padding-right: 0px;*/
 }
 
 .tt-eh-category,
@@ -261,7 +267,7 @@ vaadin-app-layout::part(drawer) {
 
 .tt-eh-points {
 	margin-left: auto;
-	margin-right: var(--lumo-space-m);
+	margin-right: var(--lumo-space-s);
 }
 
 .tt-eh-summary-with-percentage .tt-eh-points {
