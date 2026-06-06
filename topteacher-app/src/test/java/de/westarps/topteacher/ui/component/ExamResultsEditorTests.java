@@ -56,12 +56,12 @@ class ExamResultsEditorTests {
 		final IntegerField points = components(editor, IntegerField.class).getFirst();
 		assertThat(saveButton.isEnabled()).isFalse();
 		assertThat(points.getValue()).isEqualTo(1);
-		assertThat(badgeTexts(editor)).contains("Summe: 1 (+0)");
+		assertThat(badgeTexts(editor)).contains("Gesamtpunkte: 1 (+0)", "Summe: 1 (+0)");
 
 		points.setValue(3);
 
 		assertThat(saveButton.isEnabled()).isTrue();
-		assertThat(badgeTexts(editor)).contains("Summe: 3 (+0)");
+		assertThat(badgeTexts(editor)).contains("Gesamtpunkte: 3 (+0)", "Summe: 3 (+0)");
 		verify(expectationHorizonRepository, never()).saveRequirementResult(any());
 		verify(expectationHorizonRepository, never()).saveCriterionResult(any());
 

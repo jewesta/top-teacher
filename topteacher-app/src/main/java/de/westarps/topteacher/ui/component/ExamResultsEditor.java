@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
@@ -39,7 +38,7 @@ public class ExamResultsEditor extends VerticalLayout {
 
 	private final CourseRepository courseRepository;
 	private final ExpectationHorizonRepository expectationHorizonRepository;
-	private final ComboBox<Pupil> pupilSelector = new ComboBox<>("Schüler");
+	private final StepperComboBox<Pupil> pupilSelector = new StepperComboBox<>();
 	private final Button saveButton = new Button("Speichern", VaadinIcon.CHECK.create());
 	private final VerticalLayout results = new VerticalLayout();
 	private final EhSaveController saveController = new EhSaveController();
@@ -55,6 +54,7 @@ public class ExamResultsEditor extends VerticalLayout {
 	private List<EhTask> tasks = List.of();
 	private List<EhRequirement> requirements = List.of();
 	private List<EhCriterion> criteria = List.of();
+	private EhPointBadge examPointsBadge;
 	private Map<Integer, Boolean> persistedCriterionResults = Map.of();
 	private Map<Integer, Integer> persistedRequirementResults = Map.of();
 
@@ -85,12 +85,13 @@ public class ExamResultsEditor extends VerticalLayout {
 		pupilSelector.setItemLabelGenerator(this::pupilLabel);
 		pupilSelector.setWidth("24rem");
 		pupilSelector.setMaxWidth("100%");
+		pupilSelector.setAriaLabel("Schüler");
 		pupilSelector.addValueChangeListener(event -> {
 			if (refreshing) {
 				selectedPupil = event.getValue();
 				return;
 			}
-			if (event.isFromClient() && isDirty()) {
+			if (isDirty()) {
 				Notification.show("Bitte speichern Sie die Ergebnisse zuerst.");
 				refreshing = true;
 				pupilSelector.setValue(event.getOldValue());
@@ -103,7 +104,7 @@ public class ExamResultsEditor extends VerticalLayout {
 	}
 
 	private void configureSaveButton() {
-		saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+		saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
 		saveButton.addClickListener(event -> saveController.save());
 		saveController.setDirtySupplier(this::isDirty);
 		saveController.setSaveAction(this::saveResults);
@@ -119,6 +120,7 @@ public class ExamResultsEditor extends VerticalLayout {
 	private void refresh() {
 		removeAll();
 		results.removeAll();
+		examPointsBadge = null;
 
 		if (exam == null) {
 			clearResultState();
@@ -127,16 +129,21 @@ public class ExamResultsEditor extends VerticalLayout {
 			return;
 		}
 
-		final HorizontalLayout toolbar = new HorizontalLayout(pupilSelector, saveButton);
-		toolbar.addClassName("tt-results-toolbar");
-		toolbar.setAlignItems(Alignment.END);
-		toolbar.setPadding(false);
-		toolbar.setWidthFull();
-
 		refreshPupils();
-		add(toolbar, results);
+		add(createToolbar(), results);
 		expand(results);
 		renderResults();
+	}
+
+	private Component createToolbar() {
+		examPointsBadge = new EhPointBadge("Gesamtpunkte", this::pointsForExam);
+
+		final HorizontalLayout toolbar = new HorizontalLayout(pupilSelector, saveButton, examPointsBadge);
+		toolbar.addClassName("tt-results-toolbar");
+		toolbar.setAlignItems(Alignment.CENTER);
+		toolbar.setPadding(false);
+		toolbar.setWidthFull();
+		return toolbar;
 	}
 
 	private void refreshPupils() {
@@ -161,6 +168,7 @@ public class ExamResultsEditor extends VerticalLayout {
 
 		if (selectedPupil == null) {
 			results.add(emptyState("Diesem Kurs sind keine Schüler zugeordnet."));
+			refreshPointBadges();
 			saveController.update();
 			return;
 		}
@@ -171,11 +179,13 @@ public class ExamResultsEditor extends VerticalLayout {
 
 		if (parts.isEmpty()) {
 			results.add(emptyState("Noch kein Erwartungshorizont angelegt."));
+			refreshPointBadges();
 			saveController.update();
 			return;
 		}
 
 		parts.forEach(part -> results.add(partBlock(part)));
+		refreshPointBadges();
 		saveController.update();
 	}
 
@@ -361,6 +371,9 @@ public class ExamResultsEditor extends VerticalLayout {
 	}
 
 	private void refreshPointBadges() {
+		if (examPointsBadge != null) {
+			examPointsBadge.refreshBadges();
+		}
 		pointBadges.forEach(EhPointBadge::refreshBadges);
 	}
 
@@ -395,6 +408,10 @@ public class ExamResultsEditor extends VerticalLayout {
 
 	private EhPoints pointsForTask(final EhTask task) {
 		return sum(requirementsFor(task));
+	}
+
+	private EhPoints pointsForExam() {
+		return sum(requirements);
 	}
 
 	private EhPoints pointsForRequirement(final EhRequirement requirement) {

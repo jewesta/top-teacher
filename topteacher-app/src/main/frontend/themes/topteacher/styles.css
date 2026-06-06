@@ -247,11 +247,30 @@ vaadin-app-layout::part(navbar) {
 }
 
 .tt-results-toolbar {
-	align-items: flex-end;
+	align-items: center;
 	box-sizing: border-box;
 	flex: 0 0 auto;
 	gap: var(--lumo-space-m);
 	padding-top: var(--lumo-space-m);
+	width: 100%;
+}
+
+.tt-results-toolbar::after {
+	content: "";
+	flex: 1 1 auto;
+	order: 1;
+}
+
+.tt-results-toolbar .tt-eh-points {
+	order: 2;
+}
+
+.tt-stepper-combo-box {
+	gap: var(--lumo-space-xs);
+}
+
+.tt-stepper-combo-box-field {
+	min-width: 0;
 }
 
 .tt-results-list {
