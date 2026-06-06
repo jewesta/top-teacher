@@ -173,13 +173,19 @@ class ExpectationHorizonRepositoryTests {
 				.saveRequirement(new EhRequirement(null, task.id(), "Formuliert sauber.", 4, false, 0));
 		final Pupil pupil = pupilRepository.save(new Pupil(null, "Test", "Punkte", Lifecycle.ACTIVE));
 
-		expectationHorizonRepository.saveRequirementResult(new EhRequirementResult(requirement.id(), pupil.id(), 3));
+		expectationHorizonRepository
+				.saveRequirementResult(new EhRequirementResult(requirement.id(), pupil.id(), 3, "Sehr sauber."));
 
 		assertThat(expectationHorizonRepository.findRequirementResultsByExamAndPupil(exam.id(), pupil.id()))
-				.containsExactly(new EhRequirementResult(requirement.id(), pupil.id(), 3));
+				.containsExactly(new EhRequirementResult(requirement.id(), pupil.id(), 3, "Sehr sauber."));
 		assertThatThrownBy(() -> expectationHorizonRepository.deleteRequirement(requirement.id()))
 				.isInstanceOf(IllegalStateException.class)
 				.hasMessage("Für diesen Bereich wurden bereits Ergebnisse erfasst.");
+
+		expectationHorizonRepository
+				.saveRequirementResult(new EhRequirementResult(requirement.id(), pupil.id(), 4, "Noch besser."));
+		assertThat(expectationHorizonRepository.findRequirementResultsByExamAndPupil(exam.id(), pupil.id()))
+				.containsExactly(new EhRequirementResult(requirement.id(), pupil.id(), 4, "Noch besser."));
 	}
 
 	private Exam createExam(final int calendarYear, final String title) {

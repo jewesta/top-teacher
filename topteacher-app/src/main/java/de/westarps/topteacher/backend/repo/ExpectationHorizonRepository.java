@@ -112,7 +112,7 @@ public class ExpectationHorizonRepository {
 
 	public List<EhRequirementResult> findRequirementResultsByExamAndPupil(final int examId, final int pupilId) {
 		return jdbc.query("""
-				select result.requirement_id, result.pupil_id, result.points
+				select result.requirement_id, result.pupil_id, result.points, result.comment_text
 				from eh_requirement_result result
 				join eh_requirement r on r.id = result.requirement_id
 				join eh_task t on t.id = r.task_id
@@ -214,11 +214,12 @@ public class ExpectationHorizonRepository {
 
 	public void saveRequirementResult(final EhRequirementResult result) {
 		jdbc.update("""
-				merge into eh_requirement_result (requirement_id, pupil_id, points)
+				merge into eh_requirement_result (requirement_id, pupil_id, points, comment_text)
 				key (requirement_id, pupil_id)
-				values (:requirementId, :pupilId, :points)
+				values (:requirementId, :pupilId, :points, :comment)
 				""", new MapSqlParameterSource().addValue("requirementId", result.requirementId())
-				.addValue("pupilId", result.pupilId()).addValue("points", result.points()));
+				.addValue("pupilId", result.pupilId()).addValue("points", result.points())
+				.addValue("comment", result.comment()));
 	}
 
 	public ExamNoteSection saveNoteSection(final ExamNoteSection noteSection) {
@@ -620,7 +621,7 @@ public class ExpectationHorizonRepository {
 	private EhRequirementResult mapRequirementResult(final ResultSet resultSet, final int rowNumber)
 			throws SQLException {
 		return new EhRequirementResult(resultSet.getInt("requirement_id"), resultSet.getInt("pupil_id"),
-				resultSet.getInt("points"));
+				resultSet.getInt("points"), resultSet.getString("comment_text"));
 	}
 
 	private ExamNoteSection mapNoteSection(final ResultSet resultSet, final int rowNumber) throws SQLException {

@@ -19,6 +19,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.textfield.IntegerField;
+import com.vaadin.flow.component.textfield.TextArea;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.ExpectationHorizonRepository;
@@ -92,24 +93,54 @@ class ExamResultsEditorTests {
 	}
 
 	@Test
+	void savesRequirementCommentWithoutRerendering() {
+		final ExpectationHorizonRepository expectationHorizonRepository = expectationHorizonRepository();
+		final CourseRepository courseRepository = courseRepository();
+		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, expectationHorizonRepository);
+
+		editor.setExam(EXAM);
+
+		final Button saveButton = saveButton(editor);
+		final TextArea comment = components(editor, TextArea.class).getFirst();
+		assertThat(saveButton.isEnabled()).isFalse();
+		assertThat(comment.getMinRows()).isEqualTo(2);
+		assertThat(comment.getMaxRows()).isEqualTo(2);
+
+		comment.setValue("Zeitform noch einmal besprechen.");
+
+		assertThat(saveButton.isEnabled()).isTrue();
+
+		saveButton.click();
+
+		verify(expectationHorizonRepository).saveRequirementResult(new EhRequirementResult(REQUIREMENT.id(),
+				PUPIL.id(), 1, "Zeitform noch einmal besprechen."));
+		assertThat(saveButton.isEnabled()).isFalse();
+	}
+
+	@Test
 	void switchingPupilsReusesRenderedResultStructure() {
 		final ExpectationHorizonRepository expectationHorizonRepository = expectationHorizonRepository();
 		when(expectationHorizonRepository.findCriterionResultsByExamAndPupil(EXAM.id(), SECOND_PUPIL.id()))
 				.thenReturn(List.of(new EhCriterionResult(CRITERION.id(), SECOND_PUPIL.id(), true)));
 		when(expectationHorizonRepository.findRequirementResultsByExamAndPupil(EXAM.id(), SECOND_PUPIL.id()))
-				.thenReturn(List.of(new EhRequirementResult(REQUIREMENT.id(), SECOND_PUPIL.id(), 4)));
+				.thenReturn(List.of(new EhRequirementResult(REQUIREMENT.id(), SECOND_PUPIL.id(), 4,
+						"Guter Fortschritt.")));
 		final CourseRepository courseRepository = courseRepository(List.of(PUPIL, SECOND_PUPIL));
 		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, expectationHorizonRepository);
 
 		editor.setExam(EXAM);
 
 		final IntegerField points = components(editor, IntegerField.class).getFirst();
+		final TextArea comment = components(editor, TextArea.class).getFirst();
 		assertThat(points.getValue()).isEqualTo(1);
+		assertThat(comment.getValue()).isEmpty();
 
 		pupilSelector(editor).setValue(SECOND_PUPIL);
 
 		assertThat(points.getValue()).isEqualTo(4);
+		assertThat(comment.getValue()).isEqualTo("Guter Fortschritt.");
 		assertThat(components(editor, IntegerField.class).getFirst()).isSameAs(points);
+		assertThat(components(editor, TextArea.class).getFirst()).isSameAs(comment);
 		assertThat(badgeTexts(editor)).contains("Gesamtpunkte: 4 (+0)", "Summe: 4 (+0)");
 		verify(expectationHorizonRepository, times(1)).syncCriteriaForExam(EXAM.id());
 		verify(expectationHorizonRepository, times(1)).findPartsByExamId(EXAM.id());

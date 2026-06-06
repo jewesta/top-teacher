@@ -19,6 +19,8 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
+import com.vaadin.flow.component.textfield.TextArea;
+import com.vaadin.flow.data.value.ValueChangeMode;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.ExpectationHorizonRepository;
@@ -44,9 +46,11 @@ public class ExamResultsEditor extends VerticalLayout {
 	private final EhSaveController saveController = new EhSaveController();
 	private final List<EhPointBadge> pointBadges = new ArrayList<>();
 	private final Map<Integer, IntegerField> requirementPointFields = new HashMap<>();
+	private final Map<Integer, TextArea> requirementCommentFields = new HashMap<>();
 	private final Map<Integer, MarkdownViewer> requirementDescriptions = new HashMap<>();
 	private final Map<Integer, Boolean> editedCriterionResults = new HashMap<>();
 	private final Map<Integer, Integer> editedRequirementResults = new HashMap<>();
+	private final Map<Integer, String> editedRequirementComments = new HashMap<>();
 
 	private Exam exam;
 	private Pupil selectedPupil;
@@ -60,6 +64,7 @@ public class ExamResultsEditor extends VerticalLayout {
 	private EhPointBadge examPointsBadge;
 	private Map<Integer, Boolean> persistedCriterionResults = Map.of();
 	private Map<Integer, Integer> persistedRequirementResults = Map.of();
+	private Map<Integer, String> persistedRequirementComments = Map.of();
 
 	public ExamResultsEditor(final CourseRepository courseRepository,
 			final ExpectationHorizonRepository expectationHorizonRepository) {
@@ -187,6 +192,7 @@ public class ExamResultsEditor extends VerticalLayout {
 		results.removeAll();
 		pointBadges.clear();
 		requirementPointFields.clear();
+		requirementCommentFields.clear();
 		requirementDescriptions.clear();
 	}
 
@@ -207,6 +213,10 @@ public class ExamResultsEditor extends VerticalLayout {
 				final IntegerField points = requirementPointFields.get(requirement.id());
 				if (points != null) {
 					points.setValue(currentRequirementPoints(requirement));
+				}
+				final TextArea comment = requirementCommentFields.get(requirement.id());
+				if (comment != null) {
+					comment.setValue(currentRequirementComment(requirement));
 				}
 			});
 			requirementDescriptions.forEach((requirementId, description) -> description.setCheckedTagKeys(criteria
@@ -237,18 +247,26 @@ public class ExamResultsEditor extends VerticalLayout {
 		editedCriterionResults.clear();
 		editedCriterionResults.putAll(persistedCriterionResults);
 
-		persistedRequirementResults = expectationHorizonRepository
-				.findRequirementResultsByExamAndPupil(exam.id(), selectedPupil.id()).stream()
+		final List<EhRequirementResult> requirementResults = expectationHorizonRepository
+				.findRequirementResultsByExamAndPupil(exam.id(), selectedPupil.id());
+		persistedRequirementResults = requirementResults.stream()
 				.collect(Collectors.toMap(EhRequirementResult::requirementId, EhRequirementResult::points));
 		editedRequirementResults.clear();
 		editedRequirementResults.putAll(persistedRequirementResults);
+
+		persistedRequirementComments = requirementResults.stream()
+				.collect(Collectors.toMap(EhRequirementResult::requirementId, EhRequirementResult::comment));
+		editedRequirementComments.clear();
+		editedRequirementComments.putAll(persistedRequirementComments);
 	}
 
 	private void clearResultState() {
 		persistedCriterionResults = Map.of();
 		persistedRequirementResults = Map.of();
+		persistedRequirementComments = Map.of();
 		editedCriterionResults.clear();
 		editedRequirementResults.clear();
+		editedRequirementComments.clear();
 	}
 
 	private Component partBlock(final EhPart part) {
@@ -310,6 +328,7 @@ public class ExamResultsEditor extends VerticalLayout {
 			requirementDescriptions.put(requirement.id(), description);
 			descriptionArea.add(description);
 		}
+		descriptionArea.add(commentField(requirement));
 
 		final Div pointsColumn = new Div();
 		pointsColumn.addClassName("tt-results-points-column-spacer");
@@ -322,6 +341,28 @@ public class ExamResultsEditor extends VerticalLayout {
 		body.setWidthFull();
 		block.add(body);
 		return block;
+	}
+
+	private TextArea commentField(final EhRequirement requirement) {
+		final TextArea comment = new TextArea();
+		comment.addClassName("tt-results-comment-field");
+		comment.getElement().setAttribute("aria-label", "Kommentar");
+		comment.setPlaceholder("Kommentar");
+		comment.setMaxLength(2000);
+		comment.setMinRows(2);
+		comment.setMaxRows(2);
+		comment.setValue(currentRequirementComment(requirement));
+		comment.setValueChangeMode(ValueChangeMode.EAGER);
+		comment.setWidthFull();
+		comment.addValueChangeListener(event -> {
+			if (applyingResultState) {
+				return;
+			}
+			editedRequirementComments.put(requirement.id(), normalized(event.getValue()));
+			saveController.update();
+		});
+		requirementCommentFields.put(requirement.id(), comment);
+		return comment;
 	}
 
 	private Component requirementHeader(final EhTask task, final EhRequirement requirement) {
@@ -492,12 +533,22 @@ public class ExamResultsEditor extends VerticalLayout {
 		return persistedRequirementResults.getOrDefault(requirement.id(), 0);
 	}
 
+	private String currentRequirementComment(final EhRequirement requirement) {
+		return editedRequirementComments.getOrDefault(requirement.id(), persistedRequirementComment(requirement));
+	}
+
+	private String persistedRequirementComment(final EhRequirement requirement) {
+		return persistedRequirementComments.getOrDefault(requirement.id(), "");
+	}
+
 	private boolean isDirty() {
 		return criteria.stream()
 				.anyMatch(criterion -> currentCriterionAchieved(criterion) != persistedCriterionAchieved(criterion))
 				|| requirements.stream()
 						.anyMatch(requirement -> currentRequirementPoints(requirement) != persistedRequirementPoints(
-								requirement));
+								requirement)
+								|| !currentRequirementComment(requirement).equals(
+										persistedRequirementComment(requirement)));
 	}
 
 	private void saveResults() {
@@ -515,16 +566,18 @@ public class ExamResultsEditor extends VerticalLayout {
 						currentCriterionAchieved(criterion)))
 				.forEach(expectationHorizonRepository::saveCriterionResult);
 		requirements.stream()
-				.filter(requirement -> currentRequirementPoints(requirement) != persistedRequirementPoints(
-						requirement))
+				.filter(requirement -> currentRequirementPoints(requirement) != persistedRequirementPoints(requirement)
+						|| !currentRequirementComment(requirement).equals(persistedRequirementComment(requirement)))
 				.map(requirement -> new EhRequirementResult(requirement.id(), selectedPupil.id(),
-						currentRequirementPoints(requirement)))
+						currentRequirementPoints(requirement), currentRequirementComment(requirement)))
 				.forEach(expectationHorizonRepository::saveRequirementResult);
 
 		persistedCriterionResults = criteria.stream()
 				.collect(Collectors.toMap(EhCriterion::id, this::currentCriterionAchieved));
 		persistedRequirementResults = requirements.stream()
 				.collect(Collectors.toMap(EhRequirement::id, this::currentRequirementPoints));
+		persistedRequirementComments = requirements.stream()
+				.collect(Collectors.toMap(EhRequirement::id, this::currentRequirementComment));
 	}
 
 	private boolean validateRequirementPoints() {

@@ -359,6 +359,12 @@ vaadin-app-layout::part(navbar) {
 	width: 100%;
 }
 
+.tt-results-comment-field {
+	margin-top: var(--lumo-space-s);
+	resize: none;
+	width: 100%;
+}
+
 .tt-results-points-column-spacer {
 	flex: 0 0 var(--tt-results-points-column-width);
 	margin-left: var(--lumo-space-m);
