@@ -12,6 +12,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 
+import de.westarps.topteacher.markdown.MarkdownExtension;
 import de.westarps.topteacher.markdown.TopTeacherMarkdownEditor;
 import de.westarps.topteacher.model.EhRequirement;
 
@@ -32,8 +33,9 @@ final class EhRequirementSection extends Composite<VerticalLayout> implements Eh
 	EhRequirementSection(final EhRequirement requirement, final List<EhRequirement> siblings,
 			final EhSectionComponents components, final Handler handler, final String requirementNumber) {
 		this(requirement, components, handler,
-				components.markdownEditor(requirement.descriptionMarkdown(), "Beschreibung"), requirementNumber,
-				maxPoints(requirement), bonus(requirement), siblings);
+				components.markdownEditor(requirement.descriptionMarkdown(), "Beschreibung",
+						MarkdownExtension.EH_CRITERIA),
+				requirementNumber, maxPoints(requirement), bonus(requirement), siblings);
 	}
 
 	private EhRequirementSection(final EhRequirement requirement, final EhSectionComponents components,

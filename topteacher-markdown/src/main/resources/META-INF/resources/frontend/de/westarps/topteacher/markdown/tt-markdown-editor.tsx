@@ -5,6 +5,9 @@ import { ReactAdapterElement, type RenderHooks } from 'Frontend/generated/flow/R
 import '@uiw/react-md-editor/markdown-editor.css';
 import '@uiw/react-markdown-preview/markdown.css';
 import {
+  type MarkdownExtensionId,
+  type MarkdownToolbarCommandId,
+  markdownStateIds,
   topTeacherMarkdownCommands,
   topTeacherMarkdownExtraCommands,
   topTeacherMarkdownPreviewOptions,
@@ -15,12 +18,18 @@ class TopTeacherMarkdownEditorElement extends ReactAdapterElement {
     const [content, setContent] = hooks.useState<string>('content', '');
     const [placeholder] = hooks.useState<string>('placeholder', '');
     const [maxLength] = hooks.useState<number>('maxLength', -1);
+    const [extensionsState] = hooks.useState<string>('extensions', '');
+    const [hiddenToolbarCommandsState] = hooks.useState<string>('hiddenToolbarCommands', '');
+    const markdownOptions = {
+      extensions: markdownStateIds<MarkdownExtensionId>(extensionsState),
+      hiddenToolbarCommands: markdownStateIds<MarkdownToolbarCommandId>(hiddenToolbarCommandsState),
+    };
 
     return (
       <MDEditor
-        commands={topTeacherMarkdownCommands}
-        extraCommands={topTeacherMarkdownExtraCommands}
-        previewOptions={topTeacherMarkdownPreviewOptions}
+        commands={topTeacherMarkdownCommands(markdownOptions)}
+        extraCommands={topTeacherMarkdownExtraCommands(markdownOptions)}
+        previewOptions={topTeacherMarkdownPreviewOptions(markdownOptions)}
         textareaProps={{
           placeholder,
           maxLength: maxLength >= 0 ? maxLength : undefined,

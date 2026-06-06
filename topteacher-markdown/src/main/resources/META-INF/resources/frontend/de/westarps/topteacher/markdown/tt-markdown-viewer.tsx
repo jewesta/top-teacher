@@ -4,13 +4,27 @@ import MDEditor from '@uiw/react-md-editor';
 import { ReactAdapterElement, type RenderHooks } from 'Frontend/generated/flow/ReactAdapter';
 import '@uiw/react-md-editor/markdown-editor.css';
 import '@uiw/react-markdown-preview/markdown.css';
-import { topTeacherMarkdownPreviewOptions } from './tt-markdown-support';
+import {
+  type MarkdownExtensionId,
+  markdownStateIds,
+  topTeacherMarkdownPreviewOptions,
+} from './tt-markdown-support';
 
 class TopTeacherMarkdownViewerElement extends ReactAdapterElement {
   protected override render(hooks: RenderHooks): ReactElement | null {
     const [content] = hooks.useState<string>('content', '');
+    const [extensionsState] = hooks.useState<string>('extensions', '');
+    const markdownOptions = {
+      extensions: markdownStateIds<MarkdownExtensionId>(extensionsState),
+    };
 
-    return <MDEditor.Markdown key={content} source={content} {...topTeacherMarkdownPreviewOptions} />;
+    return (
+      <MDEditor.Markdown
+        key={`${content}:${extensionsState}`}
+        source={content}
+        {...topTeacherMarkdownPreviewOptions(markdownOptions)}
+      />
+    );
   }
 }
 

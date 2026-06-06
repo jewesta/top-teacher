@@ -18,10 +18,28 @@ type MarkdownNode = {
   data?: Record<string, unknown>;
 };
 
+export type MarkdownExtensionId = 'EH_CRITERIA';
+export type MarkdownToolbarCommandId = 'IMAGE';
+
+export type TopTeacherMarkdownOptions = {
+  extensions: MarkdownExtensionId[];
+  hiddenToolbarCommands?: MarkdownToolbarCommandId[];
+};
+
+type TopTeacherMarkdownExtension = {
+  id: MarkdownExtensionId;
+  command?: ICommand;
+  remarkPlugins?: PluggableList;
+  extendSanitizeSchema?: (schema: typeof defaultSchema) => typeof defaultSchema;
+};
+
 const criterionUrlPrefix = 'eh:';
 const criterionUrlPattern = /\(eh:([1-9]\d*)\)/g;
 const criterionUrlExactPattern = /^eh:([1-9]\d*)$/;
 const skippedNodeTypes = new Set(['code', 'inlineCode', 'html']);
+const toolbarCommandNames: Record<MarkdownToolbarCommandId, string[]> = {
+  IMAGE: ['image'],
+};
 
 const criterionCommand: ICommand = {
   name: 'criterion',
@@ -60,34 +78,93 @@ const criterionCommand: ICommand = {
   },
 };
 
-const insertCriterionCommand = (baseCommands: ICommand[]): ICommand[] => {
-  const dividerIndex = baseCommands.findIndex((command) => command.keyCommand === 'divider');
-  if (dividerIndex < 0) {
-    return [...baseCommands, criterionCommand];
-  }
-  return [...baseCommands.slice(0, dividerIndex), criterionCommand, ...baseCommands.slice(dividerIndex)];
-};
-
-export const topTeacherMarkdownCommands = insertCriterionCommand(commands.getCommands());
-export const topTeacherMarkdownExtraCommands = commands.getExtraCommands();
-
-const sanitizeSchema = {
-  ...defaultSchema,
-  tagNames: [...(defaultSchema.tagNames ?? []), 'mark', 'span'],
-  attributes: {
-    ...defaultSchema.attributes,
-    mark: [...(defaultSchema.attributes?.mark ?? []), ['className', 'tt-criterion-highlight']],
-    span: [
-      ...(defaultSchema.attributes?.span ?? []),
-      ['className', 'tt-criterion', 'tt-criterion-badge'],
-    ],
-  },
-};
-
-export const topTeacherMarkdownPreviewOptions = {
+const ehCriteriaExtension: TopTeacherMarkdownExtension = {
+  id: 'EH_CRITERIA',
+  command: criterionCommand,
   remarkPlugins: [remarkCriteria] as PluggableList,
-  rehypePlugins: [[rehypeSanitize, sanitizeSchema]] as PluggableList,
+  extendSanitizeSchema: (schema) => ({
+    ...schema,
+    tagNames: [...(schema.tagNames ?? []), 'mark', 'span'],
+    attributes: {
+      ...schema.attributes,
+      mark: [...(schema.attributes?.mark ?? []), ['className', 'tt-criterion-highlight']],
+      span: [...(schema.attributes?.span ?? []), ['className', 'tt-criterion', 'tt-criterion-badge']],
+    },
+  }),
 };
+
+const extensionsById = new Map<MarkdownExtensionId, TopTeacherMarkdownExtension>([
+  [ehCriteriaExtension.id, ehCriteriaExtension],
+]);
+
+export function markdownStateIds<T extends string>(stateValue: string): T[] {
+  return stateValue
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean) as T[];
+}
+
+export function topTeacherMarkdownCommands(options: TopTeacherMarkdownOptions): ICommand[] {
+  const extensionCommands = enabledExtensions(options.extensions)
+    .map((extension) => extension.command)
+    .filter((command): command is ICommand => Boolean(command));
+  const commandsWithExtensions = extensionCommands.reduce(insertBeforeFirstDivider, commands.getCommands());
+  return filterCommands(commandsWithExtensions, hiddenCommandNames(options.hiddenToolbarCommands ?? []));
+}
+
+export function topTeacherMarkdownExtraCommands(options: TopTeacherMarkdownOptions): ICommand[] {
+  return filterCommands(commands.getExtraCommands(), hiddenCommandNames(options.hiddenToolbarCommands ?? []));
+}
+
+export function topTeacherMarkdownPreviewOptions(options: Pick<TopTeacherMarkdownOptions, 'extensions'>) {
+  const extensions = enabledExtensions(options.extensions);
+  const remarkPlugins = extensions.flatMap((extension) => extension.remarkPlugins ?? []) as PluggableList;
+  const sanitizeSchema = extensions.reduce(
+    (schema, extension) => extension.extendSanitizeSchema?.(schema) ?? schema,
+    defaultSchema,
+  );
+
+  return {
+    remarkPlugins,
+    rehypePlugins: [[rehypeSanitize, sanitizeSchema]] as PluggableList,
+  };
+}
+
+function enabledExtensions(ids: MarkdownExtensionId[]): TopTeacherMarkdownExtension[] {
+  const uniqueIds = new Set(ids);
+  return [...uniqueIds]
+    .map((id) => extensionsById.get(id))
+    .filter((extension): extension is TopTeacherMarkdownExtension => Boolean(extension));
+}
+
+function insertBeforeFirstDivider(baseCommands: ICommand[], command: ICommand): ICommand[] {
+  const dividerIndex = baseCommands.findIndex((baseCommand) => baseCommand.keyCommand === 'divider');
+  if (dividerIndex < 0) {
+    return [...baseCommands, command];
+  }
+  return [...baseCommands.slice(0, dividerIndex), command, ...baseCommands.slice(dividerIndex)];
+}
+
+function hiddenCommandNames(hiddenToolbarCommands: MarkdownToolbarCommandId[]): Set<string> {
+  return new Set(hiddenToolbarCommands.flatMap((command) => toolbarCommandNames[command] ?? []));
+}
+
+function filterCommands(commandsToFilter: ICommand[], hiddenCommandNames: Set<string>): ICommand[] {
+  return commandsToFilter.flatMap((command) => {
+    if (isHiddenCommand(command, hiddenCommandNames)) {
+      return [];
+    }
+    if ('children' in command && Array.isArray(command.children)) {
+      const children = filterCommands(command.children, hiddenCommandNames);
+      return children.length > 0 ? [{ ...command, children } as ICommand] : [];
+    }
+    return [command];
+  });
+}
+
+function isHiddenCommand(command: ICommand, hiddenCommandNames: Set<string>): boolean {
+  return [command.name, command.keyCommand].some((name) => Boolean(name && hiddenCommandNames.has(name)));
+}
 
 function remarkCriteria() {
   return (tree: MarkdownNode) => {
