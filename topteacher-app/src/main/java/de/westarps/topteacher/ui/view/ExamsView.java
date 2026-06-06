@@ -26,6 +26,7 @@ import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.ui.MainLayout;
 import de.westarps.topteacher.ui.component.ExamNotesEditor;
+import de.westarps.topteacher.ui.component.ExamResultsEditor;
 import de.westarps.topteacher.ui.component.ExpectationHorizonEditor;
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
 
@@ -38,6 +39,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 	private final ExamRepository examRepository;
 	private final ExpectationHorizonEditor expectationHorizonEditor;
 	private final ExamNotesEditor examNotesEditor;
+	private final ExamResultsEditor examResultsEditor;
 	private final ComboBox<Course> courseFilter = new ComboBox<>("Kurs");
 	private final TextField title = new TextField("Titel");
 	private final DatePicker date = new DatePicker("Datum");
@@ -49,6 +51,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 	private Exam selectedExam;
 	private Tab expectationHorizonTab;
 	private Tab notesTab;
+	private Tab resultsTab;
 
 	public ExamsView(final CourseRepository courseRepository, final ExamRepository examRepository,
 			final ExpectationHorizonRepository expectationHorizonRepository) {
@@ -57,6 +60,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		this.examRepository = examRepository;
 		this.expectationHorizonEditor = new ExpectationHorizonEditor(expectationHorizonRepository);
 		this.examNotesEditor = new ExamNotesEditor(expectationHorizonRepository);
+		this.examResultsEditor = new ExamResultsEditor(courseRepository, expectationHorizonRepository);
 
 		configureCourseFilter();
 		configureEditors();
@@ -243,29 +247,35 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		if (expectationHorizonTab == null) {
 			expectationHorizonTab = getContextTabs().add("EH", expectationHorizonEditor);
 			notesTab = getContextTabs().add("Notizen", examNotesEditor);
+			resultsTab = getContextTabs().add("Ergebnisse", examResultsEditor);
 		}
 
 		expectationHorizonEditor.setExam(exam);
 		examNotesEditor.setExam(exam);
+		examResultsEditor.setExam(exam);
 	}
 
 	private void removeExamContextTabs() {
 		if (expectationHorizonTab == null) {
 			expectationHorizonEditor.setExam(null);
 			examNotesEditor.setExam(null);
+			examResultsEditor.setExam(null);
 			return;
 		}
 
 		if (getContextTabs().getSelectedTab() == expectationHorizonTab
-				|| getContextTabs().getSelectedTab() == notesTab) {
+				|| getContextTabs().getSelectedTab() == notesTab || getContextTabs().getSelectedTab() == resultsTab) {
 			getContextTabs().setSelectedIndex(0);
 		}
 		getContextTabs().remove(expectationHorizonTab);
 		getContextTabs().remove(notesTab);
+		getContextTabs().remove(resultsTab);
 		expectationHorizonTab = null;
 		notesTab = null;
+		resultsTab = null;
 		expectationHorizonEditor.setExam(null);
 		examNotesEditor.setExam(null);
+		examResultsEditor.setExam(null);
 	}
 
 	private void updateEditorEnabled() {

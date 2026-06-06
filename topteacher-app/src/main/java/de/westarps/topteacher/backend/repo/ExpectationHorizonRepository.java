@@ -13,6 +13,9 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
 import de.westarps.topteacher.model.EhCategory;
+import de.westarps.topteacher.model.EhCriterion;
+import de.westarps.topteacher.model.EhCriterionParser;
+import de.westarps.topteacher.model.EhCriterionResult;
 import de.westarps.topteacher.model.EhPart;
 import de.westarps.topteacher.model.EhRequirement;
 import de.westarps.topteacher.model.EhTask;
@@ -26,6 +29,8 @@ public class ExpectationHorizonRepository {
 	private final RowMapper<EhCategory> categoryRowMapper = this::mapCategory;
 	private final RowMapper<EhTask> taskRowMapper = this::mapTask;
 	private final RowMapper<EhRequirement> requirementRowMapper = this::mapRequirement;
+	private final RowMapper<EhCriterion> criterionRowMapper = this::mapCriterion;
+	private final RowMapper<EhCriterionResult> criterionResultRowMapper = this::mapCriterionResult;
 	private final RowMapper<ExamNoteSection> noteSectionRowMapper = this::mapNoteSection;
 
 	public ExpectationHorizonRepository(final NamedParameterJdbcTemplate jdbc) {
@@ -72,6 +77,35 @@ public class ExpectationHorizonRepository {
 				where p.exam_id = :examId
 				order by p.sort_order, p.id, c.sort_order, c.id, t.sort_order, t.id, r.sort_order, r.id
 				""", Map.of("examId", examId), requirementRowMapper);
+	}
+
+	public List<EhCriterion> findActiveCriteriaByExamId(final int examId) {
+		return jdbc.query("""
+				select cr.id, cr.requirement_id, cr.criterion_key, cr.label, cr.sort_order, cr.active
+				from eh_criterion cr
+				join eh_requirement r on r.id = cr.requirement_id
+				join eh_task t on t.id = r.task_id
+				join eh_category c on c.id = t.category_id
+				join eh_part p on p.id = c.part_id
+				where p.exam_id = :examId
+				  and cr.active = true
+				order by p.sort_order, p.id, c.sort_order, c.id, t.sort_order, t.id, r.sort_order, r.id,
+				         cr.sort_order, cr.id
+				""", Map.of("examId", examId), criterionRowMapper);
+	}
+
+	public List<EhCriterionResult> findCriterionResultsByExamAndPupil(final int examId, final int pupilId) {
+		return jdbc.query("""
+				select result.criterion_id, result.pupil_id, result.achieved
+				from eh_criterion_result result
+				join eh_criterion cr on cr.id = result.criterion_id
+				join eh_requirement r on r.id = cr.requirement_id
+				join eh_task t on t.id = r.task_id
+				join eh_category c on c.id = t.category_id
+				join eh_part p on p.id = c.part_id
+				where p.exam_id = :examId
+				  and result.pupil_id = :pupilId
+				""", Map.of("examId", examId, "pupilId", pupilId), criterionResultRowMapper);
 	}
 
 	public List<ExamNoteSection> findNoteSectionsByExamId(final int examId) {
@@ -130,7 +164,9 @@ public class ExpectationHorizonRepository {
 
 	public EhRequirement saveRequirement(final EhRequirement requirement) {
 		if (requirement.id() == null) {
-			return insertRequirement(requirement);
+			final EhRequirement insertedRequirement = insertRequirement(requirement);
+			syncCriteria(insertedRequirement);
+			return insertedRequirement;
 		}
 		jdbc.update("""
 				update eh_requirement
@@ -144,7 +180,21 @@ public class ExpectationHorizonRepository {
 						.addValue("descriptionMarkdown", requirement.descriptionMarkdown())
 						.addValue("maxPoints", requirement.maxPoints()).addValue("bonus", requirement.bonus())
 						.addValue("sortOrder", requirement.sortOrder()));
+		syncCriteria(requirement);
 		return requirement;
+	}
+
+	public void syncCriteriaForExam(final int examId) {
+		findRequirementsByExamId(examId).forEach(this::syncCriteria);
+	}
+
+	public void saveCriterionResult(final EhCriterionResult result) {
+		jdbc.update("""
+				merge into eh_criterion_result (criterion_id, pupil_id, achieved)
+				key (criterion_id, pupil_id)
+				values (:criterionId, :pupilId, :achieved)
+				""", new MapSqlParameterSource().addValue("criterionId", result.criterionId())
+				.addValue("pupilId", result.pupilId()).addValue("achieved", result.achieved()));
 	}
 
 	public ExamNoteSection saveNoteSection(final ExamNoteSection noteSection) {
@@ -165,18 +215,22 @@ public class ExpectationHorizonRepository {
 	}
 
 	public void deletePart(final int id) {
+		assertNoCriterionResultsForPart(id);
 		deleteById("eh_part", id);
 	}
 
 	public void deleteCategory(final int id) {
+		assertNoCriterionResultsForCategory(id);
 		deleteById("eh_category", id);
 	}
 
 	public void deleteTask(final int id) {
+		assertNoCriterionResultsForTask(id);
 		deleteById("eh_task", id);
 	}
 
 	public void deleteRequirement(final int id) {
+		assertNoCriterionResultsForRequirement(id);
 		deleteById("eh_requirement", id);
 	}
 
@@ -301,6 +355,57 @@ public class ExpectationHorizonRepository {
 				requirement.sortOrder());
 	}
 
+	private void syncCriteria(final EhRequirement requirement) {
+		jdbc.update("""
+				update eh_criterion
+				set active = false
+				where requirement_id = :requirementId
+				""", Map.of("requirementId", requirement.id()));
+
+		for (final EhCriterion criterion : EhCriterionParser.parse(requirement.id(), requirement.descriptionMarkdown())) {
+			final List<Integer> existingIds = jdbc.queryForList("""
+					select id
+					from eh_criterion
+					where requirement_id = :requirementId
+					  and criterion_key = :criterionKey
+					""",
+					new MapSqlParameterSource().addValue("requirementId", criterion.requirementId())
+							.addValue("criterionKey", criterion.criterionKey()),
+					Integer.class);
+			if (existingIds.isEmpty()) {
+				insertCriterion(criterion);
+			} else {
+				updateCriterion(existingIds.getFirst(), criterion);
+			}
+		}
+	}
+
+	private EhCriterion insertCriterion(final EhCriterion criterion) {
+		final KeyHolder keyHolder = new GeneratedKeyHolder();
+		jdbc.update("""
+				insert into eh_criterion (requirement_id, criterion_key, label, sort_order, active)
+				values (:requirementId, :criterionKey, :label, :sortOrder, :active)
+				""", criterionParameters(criterion), keyHolder, new String[] { "id" });
+		return new EhCriterion(generatedId(keyHolder, "EH criterion"), criterion.requirementId(),
+				criterion.criterionKey(), criterion.label(), criterion.sortOrder(), criterion.active());
+	}
+
+	private void updateCriterion(final int id, final EhCriterion criterion) {
+		jdbc.update("""
+				update eh_criterion
+				set label = :label,
+				    sort_order = :sortOrder,
+				    active = :active
+				where id = :id
+				""", criterionParameters(criterion).addValue("id", id));
+	}
+
+	private MapSqlParameterSource criterionParameters(final EhCriterion criterion) {
+		return new MapSqlParameterSource().addValue("requirementId", criterion.requirementId())
+				.addValue("criterionKey", criterion.criterionKey()).addValue("label", criterion.label())
+				.addValue("sortOrder", criterion.sortOrder()).addValue("active", criterion.active());
+	}
+
 	private ExamNoteSection insertNoteSection(final ExamNoteSection noteSection) {
 		final KeyHolder keyHolder = new GeneratedKeyHolder();
 		jdbc.update("""
@@ -318,6 +423,55 @@ public class ExpectationHorizonRepository {
 
 	private void deleteById(final String table, final int id) {
 		jdbc.update("delete from " + table + " where id = :id", Map.of("id", id));
+	}
+
+	private void assertNoCriterionResultsForPart(final int partId) {
+		assertNoCriterionResults("""
+				select count(*)
+				from eh_criterion_result result
+				join eh_criterion cr on cr.id = result.criterion_id
+				join eh_requirement r on r.id = cr.requirement_id
+				join eh_task t on t.id = r.task_id
+				join eh_category c on c.id = t.category_id
+				where c.part_id = :id
+				""", partId);
+	}
+
+	private void assertNoCriterionResultsForCategory(final int categoryId) {
+		assertNoCriterionResults("""
+				select count(*)
+				from eh_criterion_result result
+				join eh_criterion cr on cr.id = result.criterion_id
+				join eh_requirement r on r.id = cr.requirement_id
+				join eh_task t on t.id = r.task_id
+				where t.category_id = :id
+				""", categoryId);
+	}
+
+	private void assertNoCriterionResultsForTask(final int taskId) {
+		assertNoCriterionResults("""
+				select count(*)
+				from eh_criterion_result result
+				join eh_criterion cr on cr.id = result.criterion_id
+				join eh_requirement r on r.id = cr.requirement_id
+				where r.task_id = :id
+				""", taskId);
+	}
+
+	private void assertNoCriterionResultsForRequirement(final int requirementId) {
+		assertNoCriterionResults("""
+				select count(*)
+				from eh_criterion_result result
+				join eh_criterion cr on cr.id = result.criterion_id
+				where cr.requirement_id = :id
+				""", requirementId);
+	}
+
+	private void assertNoCriterionResults(final String sql, final int id) {
+		final Integer count = jdbc.queryForObject(sql, Map.of("id", id), Integer.class);
+		if (count != null && count > 0) {
+			throw new IllegalStateException("Für diesen Bereich wurden bereits Ergebnisse erfasst.");
+		}
 	}
 
 	private int nextSortOrder(final String sql, final int parentId) {
@@ -384,6 +538,17 @@ public class ExpectationHorizonRepository {
 		return new EhRequirement(resultSet.getInt("id"), resultSet.getInt("task_id"),
 				resultSet.getString("description_markdown"), resultSet.getInt("max_points"),
 				resultSet.getBoolean("bonus"), resultSet.getInt("sort_order"));
+	}
+
+	private EhCriterion mapCriterion(final ResultSet resultSet, final int rowNumber) throws SQLException {
+		return new EhCriterion(resultSet.getInt("id"), resultSet.getInt("requirement_id"),
+				resultSet.getString("criterion_key"), resultSet.getString("label"), resultSet.getInt("sort_order"),
+				resultSet.getBoolean("active"));
+	}
+
+	private EhCriterionResult mapCriterionResult(final ResultSet resultSet, final int rowNumber) throws SQLException {
+		return new EhCriterionResult(resultSet.getInt("criterion_id"), resultSet.getInt("pupil_id"),
+				resultSet.getBoolean("achieved"));
 	}
 
 	private ExamNoteSection mapNoteSection(final ResultSet resultSet, final int rowNumber) throws SQLException {

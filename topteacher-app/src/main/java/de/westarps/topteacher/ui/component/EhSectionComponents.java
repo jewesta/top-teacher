@@ -18,12 +18,14 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
 
+import de.westarps.topteacher.model.EhCriterionParser;
 import de.westarps.vaadin.markdown.MarkdownEditor;
 import de.westarps.vaadin.markdown.MarkdownTag;
 
 final class EhSectionComponents {
 
-	private static final MarkdownTag CRITERION_TAG = MarkdownTag.nextNumber("eh", "Kriterium markieren");
+	static final MarkdownTag CRITERION_TAG = MarkdownTag.nextNumber(EhCriterionParser.TAG_NAMESPACE,
+			"Kriterium markieren");
 
 	private final EhSaveController saveController;
 

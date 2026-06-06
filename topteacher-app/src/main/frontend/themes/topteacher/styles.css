@@ -153,7 +153,8 @@ vaadin-app-layout::part(navbar) {
 }
 
 .tt-eh-editor,
-.tt-exam-notes-editor {
+.tt-exam-notes-editor,
+.tt-exam-results-editor {
 	box-sizing: border-box;
 	height: 100%;
 	width: 100%;
@@ -231,6 +232,71 @@ vaadin-app-layout::part(navbar) {
 
 .tt-exam-note-section::part(content) {
 	padding-right: 0;
+}
+
+.tt-results-toolbar {
+	box-sizing: border-box;
+	padding: var(--lumo-space-m) var(--lumo-space-m) 0;
+}
+
+.tt-results-list {
+	box-sizing: border-box;
+	gap: var(--lumo-space-m);
+	height: 100%;
+	overflow: auto;
+	padding: var(--lumo-space-m);
+	width: 100%;
+}
+
+.tt-results-part,
+.tt-results-category,
+.tt-results-task {
+	box-sizing: border-box;
+	gap: var(--lumo-space-s);
+	width: 100%;
+}
+
+.tt-results-category {
+	padding-left: var(--lumo-space-m);
+}
+
+.tt-results-task {
+	padding-left: var(--lumo-space-m);
+}
+
+.tt-results-requirement {
+	background: var(--lumo-contrast-5pct);
+	border-radius: var(--lumo-border-radius-m);
+	box-sizing: border-box;
+	gap: var(--lumo-space-s);
+	padding: var(--lumo-space-m);
+	width: 100%;
+}
+
+.tt-results-header {
+	align-items: center;
+	gap: var(--lumo-space-s);
+	min-width: 0;
+}
+
+.tt-results-title {
+	font-weight: 600;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.tt-results-requirement-description {
+	width: 100%;
+}
+
+.tt-results-criteria {
+	gap: var(--lumo-space-xs);
+}
+
+.tt-results-criterion {
+	max-width: 100%;
 }
 
 .tt-eh-category,

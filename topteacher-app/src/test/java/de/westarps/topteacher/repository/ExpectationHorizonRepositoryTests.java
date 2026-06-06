@@ -1,8 +1,11 @@
 package de.westarps.topteacher.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,15 +14,19 @@ import org.springframework.boot.test.context.SpringBootTest;
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.ExamRepository;
 import de.westarps.topteacher.backend.repo.ExpectationHorizonRepository;
+import de.westarps.topteacher.backend.repo.PupilRepository;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.CoursePeriod;
 import de.westarps.topteacher.model.EhCategory;
+import de.westarps.topteacher.model.EhCriterion;
+import de.westarps.topteacher.model.EhCriterionResult;
 import de.westarps.topteacher.model.EhPart;
 import de.westarps.topteacher.model.EhRequirement;
 import de.westarps.topteacher.model.EhTask;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.ExamNoteSection;
 import de.westarps.topteacher.model.Lifecycle;
+import de.westarps.topteacher.model.Pupil;
 import de.westarps.topteacher.model.SchoolClass;
 import de.westarps.topteacher.model.SchoolYear;
 import de.westarps.topteacher.model.Subject;
@@ -32,6 +39,9 @@ class ExpectationHorizonRepositoryTests {
 
 	@Autowired
 	private ExamRepository examRepository;
+
+	@Autowired
+	private PupilRepository pupilRepository;
 
 	@Autowired
 	private ExpectationHorizonRepository expectationHorizonRepository;
@@ -109,6 +119,46 @@ class ExpectationHorizonRepositoryTests {
 
 		assertThat(expectationHorizonRepository.findNoteSectionsByExamId(exam.id()))
 				.containsExactly(new ExamNoteSection(second.id(), exam.id(), "Notenschluessel", "15 Punkte = 1", 0));
+	}
+
+	@Test
+	void syncsCriteriaAndStoresCriterionResults() {
+		final Exam exam = createExam(2039, "EH Results");
+		final EhPart part = expectationHorizonRepository.savePart(new EhPart(null, exam.id(), "Klausurteil A", 0));
+		final EhCategory category = expectationHorizonRepository
+				.saveCategory(new EhCategory(null, part.id(), "Sprache", "", 0));
+		final EhTask task = expectationHorizonRepository.saveTask(new EhTask(null, category.id(), "Teilaufgabe 1", 0));
+		final EhRequirement requirement = expectationHorizonRepository.saveRequirement(new EhRequirement(null,
+				task.id(), "Nutzt die [korrekte Zeitform](eh:1) und [präzise Wortwahl](eh:2).", 8, false, 0));
+
+		assertThat(expectationHorizonRepository.findActiveCriteriaByExamId(exam.id()))
+				.extracting(EhCriterion::criterionKey, EhCriterion::label, EhCriterion::sortOrder,
+						EhCriterion::active)
+				.containsExactly(tuple("1", "korrekte Zeitform", 0, true), tuple("2", "präzise Wortwahl", 1, true));
+
+		final EhRequirement updatedRequirement = new EhRequirement(requirement.id(), task.id(),
+				"Nutzt die [richtige Zeitform](eh:1) und [passende Konnektoren](eh:3).", 8, false, 0);
+		expectationHorizonRepository.saveRequirement(updatedRequirement);
+		final List<EhCriterion> updatedCriteria = expectationHorizonRepository.findActiveCriteriaByExamId(exam.id());
+
+		assertThat(updatedCriteria).extracting(EhCriterion::criterionKey, EhCriterion::label)
+				.containsExactly(tuple("1", "richtige Zeitform"), tuple("3", "passende Konnektoren"));
+
+		final Pupil pupil = pupilRepository.save(new Pupil(null, "Test", "Ergebnis", Lifecycle.ACTIVE));
+		final EhCriterion firstCriterion = updatedCriteria.getFirst();
+		expectationHorizonRepository
+				.saveCriterionResult(new EhCriterionResult(firstCriterion.id(), pupil.id(), true));
+
+		assertThat(expectationHorizonRepository.findCriterionResultsByExamAndPupil(exam.id(), pupil.id()))
+				.containsExactly(new EhCriterionResult(firstCriterion.id(), pupil.id(), true));
+		assertThatThrownBy(() -> expectationHorizonRepository.deleteRequirement(requirement.id()))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessage("Für diesen Bereich wurden bereits Ergebnisse erfasst.");
+
+		expectationHorizonRepository
+				.saveCriterionResult(new EhCriterionResult(firstCriterion.id(), pupil.id(), false));
+		assertThat(expectationHorizonRepository.findCriterionResultsByExamAndPupil(exam.id(), pupil.id()))
+				.containsExactly(new EhCriterionResult(firstCriterion.id(), pupil.id(), false));
 	}
 
 	private Exam createExam(final int calendarYear, final String title) {

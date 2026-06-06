@@ -9,6 +9,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 
@@ -429,8 +430,7 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 	}
 
 	private void delete(final EhPart part) {
-		expectationHorizonRepository.deletePart(part.id());
-		refresh();
+		deleteSafely(() -> expectationHorizonRepository.deletePart(part.id()));
 	}
 
 	private void saveTitle(final EhCategory category, final String title) {
@@ -459,8 +459,7 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 	}
 
 	private void delete(final EhCategory category) {
-		expectationHorizonRepository.deleteCategory(category.id());
-		refresh();
+		deleteSafely(() -> expectationHorizonRepository.deleteCategory(category.id()));
 	}
 
 	private void saveTitle(final EhTask task, final String title) {
@@ -480,8 +479,7 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 	}
 
 	private void delete(final EhTask task) {
-		expectationHorizonRepository.deleteTask(task.id());
-		refresh();
+		deleteSafely(() -> expectationHorizonRepository.deleteTask(task.id()));
 	}
 
 	private void save(final EhRequirement requirement, final String descriptionMarkdown, final int maxPoints,
@@ -499,8 +497,16 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 	}
 
 	private void delete(final EhRequirement requirement) {
-		expectationHorizonRepository.deleteRequirement(requirement.id());
-		refresh();
+		deleteSafely(() -> expectationHorizonRepository.deleteRequirement(requirement.id()));
+	}
+
+	private void deleteSafely(final Runnable deleteAction) {
+		try {
+			deleteAction.run();
+			refresh();
+		} catch (final IllegalStateException exception) {
+			Notification.show(exception.getMessage());
+		}
 	}
 
 	private Component emptyState(final String text) {
