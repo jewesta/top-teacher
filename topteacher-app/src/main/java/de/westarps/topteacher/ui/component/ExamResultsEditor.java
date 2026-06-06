@@ -2,11 +2,11 @@ package de.westarps.topteacher.ui.component;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -23,6 +23,7 @@ import de.westarps.topteacher.model.EhTask;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.Pupil;
 import de.westarps.vaadin.markdown.MarkdownViewer;
+import de.westarps.vaadin.markdown.MarkdownTagRenderMode;
 
 public class ExamResultsEditor extends VerticalLayout {
 
@@ -179,23 +180,30 @@ public class ExamResultsEditor extends VerticalLayout {
 		block.add(header("Anforderung " + requirementNumber(task, requirement), "Punkte",
 				pointsForRequirement(requirement)));
 
+		final List<EhCriterion> requirementCriteria = criteriaFor(requirement);
+		final Map<String, EhCriterion> criteriaByKey = requirementCriteria.stream()
+				.collect(Collectors.toMap(EhCriterion::criterionKey, criterion -> criterion));
 		final String descriptionMarkdown = normalized(requirement.descriptionMarkdown());
 		if (!descriptionMarkdown.isBlank()) {
 			final MarkdownViewer description = new MarkdownViewer(descriptionMarkdown);
 			description.setTag(EhSectionComponents.CRITERION_TAG);
+			description.setTagRenderMode(MarkdownTagRenderMode.CHECKBOX);
+			description.setCheckedTagKeys(requirementCriteria.stream()
+					.filter(criterion -> achievedCriterionIds.contains(criterion.id())).map(EhCriterion::criterionKey)
+					.toList());
+			description.addTagCheckedChangeListener(change -> {
+				if (selectedPupil == null) {
+					return;
+				}
+				final EhCriterion criterion = criteriaByKey.get(change.key());
+				if (criterion != null) {
+					expectationHorizonRepository.saveCriterionResult(
+							new EhCriterionResult(criterion.id(), selectedPupil.id(), change.checked()));
+				}
+			});
 			description.addClassName("tt-results-requirement-description");
 			description.setWidthFull();
 			block.add(description);
-		}
-
-		final List<EhCriterion> requirementCriteria = criteriaFor(requirement);
-		if (!requirementCriteria.isEmpty()) {
-			final VerticalLayout checklist = new VerticalLayout();
-			checklist.addClassName("tt-results-criteria");
-			checklist.setPadding(false);
-			checklist.setWidthFull();
-			requirementCriteria.forEach(criterion -> checklist.add(criterionCheckbox(criterion, achievedCriterionIds)));
-			block.add(checklist);
 		}
 		return block;
 	}
@@ -217,19 +225,6 @@ public class ExamResultsEditor extends VerticalLayout {
 		header.setPadding(false);
 		header.setWidthFull();
 		return header;
-	}
-
-	private Component criterionCheckbox(final EhCriterion criterion, final Set<Integer> achievedCriterionIds) {
-		final Checkbox checkbox = new Checkbox(criterion.label());
-		checkbox.addClassName("tt-results-criterion");
-		checkbox.setValue(achievedCriterionIds.contains(criterion.id()));
-		checkbox.addValueChangeListener(event -> {
-			if (event.isFromClient() && selectedPupil != null) {
-				expectationHorizonRepository.saveCriterionResult(
-						new EhCriterionResult(criterion.id(), selectedPupil.id(), event.getValue()));
-			}
-		});
-		return checkbox;
 	}
 
 	private List<EhCategory> categoriesFor(final EhPart part) {

@@ -22,6 +22,46 @@
 	display: inline;
 }
 
+.wmde-markdown .ws-markdown-tag-checkbox {
+	appearance: none;
+	background: var(--lumo-base-color, #fff);
+	border: 1px solid var(--lumo-contrast-40pct, #a8a8a8);
+	border-radius: var(--lumo-border-radius-s, 0.25em);
+	box-sizing: border-box;
+	cursor: pointer;
+	display: inline-grid;
+	height: 1em;
+	margin: 0 0.15em 0 0.3em;
+	place-content: center;
+	pointer-events: auto;
+	vertical-align: 0.12em;
+	width: 1em;
+}
+
+.wmde-markdown .ws-markdown-tag-checkbox::before {
+	border: solid var(--lumo-primary-contrast-color, #fff);
+	border-width: 0 0.12em 0.12em 0;
+	content: "";
+	height: 0.5em;
+	margin-top: -0.08em;
+	transform: rotate(45deg) scale(0);
+	width: 0.25em;
+}
+
+.wmde-markdown .ws-markdown-tag-checkbox:checked {
+	background: var(--lumo-primary-color);
+	border-color: var(--lumo-primary-color);
+}
+
+.wmde-markdown .ws-markdown-tag-checkbox:checked::before {
+	transform: rotate(45deg) scale(1);
+}
+
+.wmde-markdown .ws-markdown-tag-checkbox:focus-visible {
+	outline: 2px solid var(--lumo-primary-color-50pct, var(--lumo-primary-color));
+	outline-offset: 2px;
+}
+
 .ws-markdown-tag-highlight {
 	background: var(--ws-markdown-tag-highlight-color, #fff3bf);
 	border-radius: var(--lumo-border-radius-s);

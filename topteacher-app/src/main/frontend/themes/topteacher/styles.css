@@ -291,14 +291,6 @@ vaadin-app-layout::part(navbar) {
 	width: 100%;
 }
 
-.tt-results-criteria {
-	gap: var(--lumo-space-xs);
-}
-
-.tt-results-criterion {
-	max-width: 100%;
-}
-
 .tt-eh-category,
 .tt-eh-task {
 /*	margin-right: 0px;*/

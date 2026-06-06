@@ -20,6 +20,7 @@ type MarkdownNode = {
 };
 
 export type MarkdownTagIdGenerator = 'NEXT_NUMBER';
+export type MarkdownTagRenderMode = 'DEFAULT' | 'CHECKBOX';
 export type MarkdownToolbarCommandId = 'IMAGE';
 
 export type MarkdownTagOptions = {
@@ -30,6 +31,8 @@ export type MarkdownTagOptions = {
 
 export type MarkdownOptions = {
   tag?: MarkdownTagOptions;
+  tagRenderMode?: MarkdownTagRenderMode;
+  checkedTagKeys?: string[];
   hiddenToolbarCommands?: MarkdownToolbarCommandId[];
 };
 
@@ -68,6 +71,10 @@ export function markdownTagOptions(
   };
 }
 
+export function markdownTagRenderMode(value: string): MarkdownTagRenderMode {
+  return value === 'CHECKBOX' ? 'CHECKBOX' : 'DEFAULT';
+}
+
 export function markdownCommands(options: MarkdownOptions): ICommand[] {
   const extensionCommands = options.tag ? [tagCommand(options.tag)] : [];
   const commandsWithExtensions = extensionCommands.reduce(insertBeforeFirstDivider, commands.getCommands());
@@ -78,11 +85,14 @@ export function markdownExtraCommands(options: MarkdownOptions): ICommand[] {
   return filterCommands(commands.getExtraCommands(), hiddenCommandNames(options.hiddenToolbarCommands ?? []));
 }
 
-export function markdownPreviewOptions(options: Pick<MarkdownOptions, 'tag'>) {
-  const sanitizeSchema = options.tag ? tagSanitizeSchema(defaultSchema) : defaultSchema;
+export function markdownPreviewOptions(options: Pick<MarkdownOptions, 'tag' | 'tagRenderMode' | 'checkedTagKeys'>) {
+  const tagRenderMode = options.tagRenderMode ?? 'DEFAULT';
+  const sanitizeSchema = options.tag ? tagSanitizeSchema(defaultSchema, tagRenderMode) : defaultSchema;
 
   return {
-    remarkPlugins: options.tag ? ([remarkTags(options.tag)] as PluggableList) : [],
+    remarkPlugins: options.tag
+      ? ([remarkTags(options.tag, tagRenderMode, new Set(options.checkedTagKeys ?? []))] as PluggableList)
+      : [],
     rehypePlugins: [[rehypeSanitize, sanitizeSchema]] as PluggableList,
   };
 }
@@ -132,12 +142,24 @@ function tagCommand(tag: MarkdownTagOptions): ICommand {
   };
 }
 
-function tagSanitizeSchema(schema: typeof defaultSchema): typeof defaultSchema {
+function tagSanitizeSchema(schema: typeof defaultSchema, tagRenderMode: MarkdownTagRenderMode): typeof defaultSchema {
+  const tagNames = [...(schema.tagNames ?? []), 'mark', 'span'];
+  if (tagRenderMode === 'CHECKBOX') {
+    tagNames.push('input');
+  }
+
   return {
     ...schema,
-    tagNames: [...(schema.tagNames ?? []), 'mark', 'span'],
+    tagNames,
     attributes: {
       ...schema.attributes,
+      input: [
+        ...(schema.attributes?.input ?? []),
+        ['className', 'ws-markdown-tag-checkbox'],
+        ['type', 'checkbox'],
+        'defaultChecked',
+        'value',
+      ],
       mark: [...(schema.attributes?.mark ?? []), ['className', 'ws-markdown-tag-highlight']],
       span: [
         ...(schema.attributes?.span ?? []),
@@ -217,13 +239,22 @@ function unwrapTag(markdown: string, api: TextAreaTextApi, tag: TagRange, origin
   });
 }
 
-function remarkTags(tag: MarkdownTagOptions) {
+function remarkTags(
+  tag: MarkdownTagOptions,
+  tagRenderMode: MarkdownTagRenderMode,
+  checkedTagKeys: Set<string>,
+) {
   return () => (tree: MarkdownNode) => {
-    transformTags(tree, tag);
+    transformTags(tree, tag, tagRenderMode, checkedTagKeys);
   };
 }
 
-function transformTags(node: MarkdownNode | undefined, tag: MarkdownTagOptions) {
+function transformTags(
+  node: MarkdownNode | undefined,
+  tag: MarkdownTagOptions,
+  tagRenderMode: MarkdownTagRenderMode,
+  checkedTagKeys: Set<string>,
+) {
   if (!node?.children || skippedNodeTypes.has(node.type)) {
     return;
   }
@@ -231,9 +262,9 @@ function transformTags(node: MarkdownNode | undefined, tag: MarkdownTagOptions) 
   node.children = node.children.flatMap((child) => {
     const tagId = tagIdFromNode(child, tag);
     if (tagId) {
-      return [tagNode(tagId, child.children ?? [])];
+      return [tagNode(tagId, child.children ?? [], tagRenderMode, checkedTagKeys.has(tagId))];
     }
-    transformTags(child, tag);
+    transformTags(child, tag, tagRenderMode, checkedTagKeys);
     return [child];
   });
 }
@@ -246,7 +277,12 @@ function tagIdFromNode(node: MarkdownNode, tag: MarkdownTagOptions): string | nu
   return match ? match[1] : null;
 }
 
-function tagNode(id: string, children: MarkdownNode[]): MarkdownNode {
+function tagNode(
+  id: string,
+  children: MarkdownNode[],
+  tagRenderMode: MarkdownTagRenderMode,
+  checked: boolean,
+): MarkdownNode {
   return {
     type: 'wsMarkdownTag',
     data: {
@@ -276,7 +312,23 @@ function tagNode(id: string, children: MarkdownNode[]): MarkdownNode {
         },
         children: [{ type: 'text', value: id }],
       },
+      ...(tagRenderMode === 'CHECKBOX' ? [tagCheckboxNode(id, checked)] : []),
     ],
+  };
+}
+
+function tagCheckboxNode(id: string, checked: boolean): MarkdownNode {
+  return {
+    type: 'wsMarkdownTagCheckbox',
+    data: {
+      hName: 'input',
+      hProperties: {
+        className: ['ws-markdown-tag-checkbox'],
+        type: 'checkbox',
+        defaultChecked: checked,
+        value: id,
+      },
+    },
   };
 }
 
