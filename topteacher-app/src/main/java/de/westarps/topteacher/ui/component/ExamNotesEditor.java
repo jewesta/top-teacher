@@ -56,17 +56,10 @@ public class ExamNotesEditor extends VerticalLayout {
 
 		noteSections = expectationHorizonRepository.findNoteSectionsByExamId(exam.id());
 
-		final Button addSection = commandButton("Abschnitt hinzufügen", VaadinIcon.PLUS, event -> {
-			expectationHorizonRepository.saveNoteSection(new ExamNoteSection(null, exam.id(), "Neuer Abschnitt", "",
-					expectationHorizonRepository.nextNoteSectionSortOrder(exam.id())));
-			refresh();
-		});
-		addSection.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-
-		final VerticalLayout content = new VerticalLayout(addSection);
-		content.addClassName("tt-eh-scroll-area");
+		final VerticalLayout content = new VerticalLayout();
+		content.addClassName("tt-notes-list");
 		content.setPadding(false);
-		content.setSizeFull();
+		content.setWidthFull();
 
 		if (noteSections.isEmpty()) {
 			content.add(emptyState("Noch keine Notizen angelegt."));
@@ -74,8 +67,25 @@ public class ExamNotesEditor extends VerticalLayout {
 			noteSections.forEach(noteSection -> content.add(createNoteSectionDetails(noteSection)));
 		}
 
+		add(createToolbar());
 		add(content);
 		expand(content);
+	}
+
+	private Component createToolbar() {
+		final Button addSection = commandButton("Abschnitt hinzufügen", VaadinIcon.PLUS, event -> {
+			expectationHorizonRepository.saveNoteSection(new ExamNoteSection(null, exam.id(), "Neuer Abschnitt", "",
+					expectationHorizonRepository.nextNoteSectionSortOrder(exam.id())));
+			refresh();
+		});
+		addSection.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+		final HorizontalLayout toolbar = new HorizontalLayout(addSection);
+		toolbar.addClassName("tt-notes-toolbar");
+		toolbar.setAlignItems(Alignment.CENTER);
+		toolbar.setPadding(false);
+		toolbar.setWidthFull();
+		return toolbar;
 	}
 
 	private Details createNoteSectionDetails(final ExamNoteSection noteSection) {

@@ -35,14 +35,16 @@ class ExamRepositoryTests {
 		final Course otherCourse = courseRepository.save(new Course(null, SchoolClass.CLS_8A, Subject.SPANISH,
 				new SchoolYear(2030), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE));
 
-		final Exam saved = examRepository.save(new Exam(null, course.id(), "1. Klausur", LocalDate.of(2030, 9, 17)));
-		examRepository.save(new Exam(null, otherCourse.id(), "Andere Klausur", LocalDate.of(2030, 9, 18)));
+		final Exam saved = examRepository
+				.save(new Exam(null, course.id(), "1. Klausur", LocalDate.of(2030, 9, 17), 40));
+		examRepository.save(new Exam(null, otherCourse.id(), "Andere Klausur", LocalDate.of(2030, 9, 18), 35));
 
 		assertThat(saved.id()).isNotNull();
+		assertThat(saved.maxPoints()).isEqualTo(40);
 		assertThat(examRepository.findById(saved.id())).contains(saved);
 		assertThat(examRepository.findByCourseId(course.id())).containsExactly(saved);
 
-		final Exam updated = new Exam(saved.id(), course.id(), "1. Klassenarbeit", LocalDate.of(2030, 9, 24));
+		final Exam updated = new Exam(saved.id(), course.id(), "1. Klassenarbeit", LocalDate.of(2030, 9, 24), 42);
 		examRepository.save(updated);
 
 		assertThat(examRepository.findById(saved.id())).contains(updated);
@@ -58,7 +60,17 @@ class ExamRepositoryTests {
 		final Exam saved = examRepository.save(new Exam(null, course.id(), "1. Klausur", LocalDate.of(2031, 9, 17)));
 
 		assertThatThrownBy(
-				() -> examRepository.save(new Exam(saved.id(), otherCourse.id(), saved.title(), saved.date())))
+				() -> examRepository.save(new Exam(saved.id(), otherCourse.id(), saved.title(), saved.date(),
+						saved.maxPoints())))
 				.isInstanceOf(IllegalArgumentException.class).hasMessage("Exam course can not be changed.");
+	}
+
+	@Test
+	void rejectsNegativeMaxPoints() {
+		final Course course = courseRepository.save(new Course(null, SchoolClass.CLS_7C, Subject.ENGLISH,
+				new SchoolYear(2032), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE));
+
+		assertThatThrownBy(() -> new Exam(null, course.id(), "1. Klausur", LocalDate.of(2032, 9, 17), -1))
+				.isInstanceOf(IllegalArgumentException.class).hasMessage("maxPoints must not be negative");
 	}
 }

@@ -346,8 +346,8 @@ public class ExamResultsEditor extends VerticalLayout {
 	private TextArea commentField(final EhRequirement requirement) {
 		final TextArea comment = new TextArea();
 		comment.addClassName("tt-results-comment-field");
-		comment.getElement().setAttribute("aria-label", "Kommentar");
-		comment.setPlaceholder("Kommentar");
+		comment.getElement().setAttribute("aria-label", "Notiz");
+		comment.setPlaceholder("Notiz");
 		comment.setMaxLength(2000);
 		comment.setMinRows(2);
 		comment.setMaxRows(2);

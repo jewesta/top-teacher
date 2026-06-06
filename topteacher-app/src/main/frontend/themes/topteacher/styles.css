@@ -179,7 +179,8 @@ vaadin-app-layout::part(navbar) {
 	height: auto;
 }
 
-.tt-eh-toolbar {
+.tt-eh-toolbar,
+.tt-notes-toolbar {
 	align-items: center;
 	box-sizing: border-box;
 	flex: 0 0 auto;
@@ -188,7 +189,8 @@ vaadin-app-layout::part(navbar) {
 	width: 100%;
 }
 
-.tt-eh-toolbar::after {
+.tt-eh-toolbar::after,
+.tt-notes-toolbar::after {
 	content: "";
 	flex: 1 1 auto;
 	order: 1;
@@ -273,7 +275,8 @@ vaadin-app-layout::part(navbar) {
 	min-width: 0;
 }
 
-.tt-results-list {
+.tt-results-list,
+.tt-notes-list {
 	box-sizing: border-box;
 	flex: 1 1 auto;
 	gap: var(--lumo-space-m);

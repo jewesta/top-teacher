@@ -16,6 +16,7 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
+import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 
@@ -43,6 +44,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 	private final ComboBox<Course> courseFilter = new ComboBox<>("Kurs");
 	private final TextField title = new TextField("Titel");
 	private final DatePicker date = new DatePicker("Datum");
+	private final IntegerField maxPoints = new IntegerField("Max. Punkte");
 	private final Button saveButton = new Button("Speichern");
 	private final Button newButton = new Button("Neu");
 	private final Span multiSelectionSummary = new Span();
@@ -73,11 +75,12 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 	protected void configureGrid(final MultiSelectionGrid<Exam> grid) {
 		grid.addColumn(Exam::title).setHeader("Titel").setAutoWidth(true);
 		grid.addColumn(exam -> DATE_FORMATTER.format(exam.date())).setHeader("Datum").setAutoWidth(true);
+		grid.addColumn(Exam::maxPoints).setHeader("Max. Punkte").setAutoWidth(true);
 	}
 
 	@Override
 	protected Component createSingleSelectEditor() {
-		final FormLayout form = new FormLayout(title, date);
+		final FormLayout form = new FormLayout(title, date, maxPoints);
 		form.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 1));
 
 		final HorizontalLayout buttons = new HorizontalLayout(saveButton, newButton);
@@ -104,7 +107,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 	@Override
 	protected String getSearchText(final Exam exam) {
 		return String.join(" ", String.valueOf(exam.id()), exam.title(), DATE_FORMATTER.format(exam.date()),
-				exam.date().toString());
+				exam.date().toString(), String.valueOf(exam.maxPoints()));
 	}
 
 	@Override
@@ -154,6 +157,10 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		date.setLocale(Locale.GERMANY);
 		date.setI18n(germanDatePickerI18n());
 		date.setRequiredIndicatorVisible(true);
+		maxPoints.setMin(0);
+		maxPoints.setStepButtonsVisible(true);
+		maxPoints.setRequiredIndicatorVisible(true);
+		maxPoints.setWidth("8rem");
 
 		saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 		saveButton.addClickListener(event -> saveExam());
@@ -192,6 +199,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 
 		title.setValue(exam.title());
 		date.setValue(exam.date());
+		maxPoints.setValue(exam.maxPoints());
 		updateEditorEnabled();
 	}
 
@@ -208,14 +216,18 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		}
 
 		final String trimmedTitle = title.getValue().trim();
-		if (trimmedTitle.isBlank() || date.getValue() == null) {
-			Notification.show("Titel und Datum sind erforderlich.");
+		if (trimmedTitle.isBlank() || date.getValue() == null || maxPoints.getValue() == null) {
+			Notification.show("Titel, Datum und max. Punkte sind erforderlich.");
+			return;
+		}
+		if (maxPoints.getValue() < 0) {
+			Notification.show("Max. Punkte dürfen nicht negativ sein.");
 			return;
 		}
 
 		final Integer id = selectedExam == null ? null : selectedExam.id();
 		final Integer courseId = selectedExam == null ? selectedCourse.id() : selectedExam.courseId();
-		examRepository.save(new Exam(id, courseId, trimmedTitle, date.getValue()));
+		examRepository.save(new Exam(id, courseId, trimmedTitle, date.getValue(), maxPoints.getValue()));
 
 		refreshGrid();
 		clearSingleEditor();
@@ -235,6 +247,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		selectedExam = null;
 		title.clear();
 		date.clear();
+		maxPoints.setValue(0);
 		updateEditorEnabled();
 	}
 
@@ -282,6 +295,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		final boolean enabled = selectedCourse != null;
 		title.setEnabled(enabled);
 		date.setEnabled(enabled);
+		maxPoints.setEnabled(enabled);
 		saveButton.setEnabled(enabled);
 		newButton.setEnabled(enabled);
 	}
