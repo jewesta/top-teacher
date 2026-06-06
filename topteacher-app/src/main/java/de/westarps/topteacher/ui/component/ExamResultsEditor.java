@@ -14,6 +14,7 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -232,7 +233,7 @@ public class ExamResultsEditor extends VerticalLayout {
 		block.setPadding(false);
 		block.setWidthFull();
 
-		block.add(header("Anforderung " + requirementNumber(task, requirement)));
+		block.add(requirementHeader(task, requirement));
 
 		final List<EhCriterion> requirementCriteria = criteriaFor(requirement);
 		final Map<String, EhCriterion> criteriaByKey = requirementCriteria.stream()
@@ -263,7 +264,7 @@ public class ExamResultsEditor extends VerticalLayout {
 			descriptionArea.add(description);
 		}
 
-		final HorizontalLayout body = new HorizontalLayout(descriptionArea, pointsControl(requirement));
+		final HorizontalLayout body = new HorizontalLayout(descriptionArea);
 		body.addClassName("tt-results-requirement-body");
 		body.setFlexGrow(1, descriptionArea);
 		body.setPadding(false);
@@ -271,6 +272,29 @@ public class ExamResultsEditor extends VerticalLayout {
 		body.setWidthFull();
 		block.add(body);
 		return block;
+	}
+
+	private Component requirementHeader(final EhTask task, final EhRequirement requirement) {
+		final HorizontalLayout header = header("Anforderung " + requirementNumber(task, requirement));
+		final HorizontalLayout controls = new HorizontalLayout();
+		controls.addClassName("tt-results-requirement-controls");
+		controls.setAlignItems(Alignment.CENTER);
+		controls.setPadding(false);
+		controls.setSpacing(false);
+		if (requirement.bonus()) {
+			controls.add(bonusIcon());
+		}
+		controls.add(pointsControl(requirement));
+		header.add(controls);
+		return header;
+	}
+
+	private static Icon bonusIcon() {
+		final Icon star = VaadinIcon.STAR.create();
+		star.addClassName("tt-results-bonus-icon");
+		star.getElement().setAttribute("aria-label", "Sternchen-Aufgabe");
+		star.setTooltipText("Sternchen-Aufgabe / Bonusaufgabe");
+		return star;
 	}
 
 	private Component pointsControl(final EhRequirement requirement) {

@@ -160,10 +160,6 @@ vaadin-app-layout::part(navbar) {
 	width: 100%;
 }
 
-.tt-exam-results-editor {
-	--tt-results-points-column-width: 12rem;
-}
-
 .tt-eh-scroll-area {
 	box-sizing: border-box;
 	flex: 1 1 auto;
@@ -286,9 +282,9 @@ vaadin-app-layout::part(navbar) {
 	border-radius: var(--lumo-border-radius-m);
 	box-sizing: border-box;
 	gap: var(--lumo-space-s);
-	padding-top: var(--lumo-space-m);
+	padding-top: var(--lumo-space-s);
 	padding-left: var(--lumo-space-m);
-	padding-bottom: var(--lumo-space-m);
+	padding-bottom: var(--lumo-space-s);
 	padding-right: 0px;
 	width: 100%;
 }
@@ -322,12 +318,22 @@ vaadin-app-layout::part(navbar) {
 	width: 100%;
 }
 
+.tt-results-requirement-controls {
+	align-items: center;
+	gap: var(--lumo-space-s);
+	margin-left: auto;
+	margin-right: var(--lumo-space-s);
+}
+
+.tt-results-bonus-icon {
+	color: hsl(43, 86%, 42%);
+	flex: 0 0 auto;
+}
+
 .tt-results-points-control {
 	align-items: center;
-	flex: 0 0 var(--tt-results-points-column-width);
+	flex: 0 0 auto;
 	gap: var(--lumo-space-s);
-	margin-left: var(--lumo-space-m);
-	margin-right: var(--lumo-space-s);
 }
 
 .tt-results-points-field {

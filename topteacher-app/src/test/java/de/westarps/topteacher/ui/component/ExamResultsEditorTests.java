@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.textfield.IntegerField;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
@@ -41,6 +42,7 @@ class ExamResultsEditorTests {
 			"Nutzt die [korrekte Zeitform](eh:1).", 5, false, 0);
 	private static final EhCriterion CRITERION = new EhCriterion(5, REQUIREMENT.id(), "1", "korrekte Zeitform", 0,
 			true);
+	private static final EhRequirement BONUS_REQUIREMENT = new EhRequirement(6, TASK.id(), "Bonusaufgabe", 2, true, 1);
 
 	@Test
 	void savesRequirementPointsOnlyWhenToolbarSaveIsClicked() {
@@ -71,17 +73,38 @@ class ExamResultsEditorTests {
 		assertThat(saveButton.isEnabled()).isFalse();
 	}
 
+	@Test
+	void showsBonusStarOnlyForBonusRequirements() {
+		final ExpectationHorizonRepository expectationHorizonRepository = expectationHorizonRepository(
+				List.of(REQUIREMENT, BONUS_REQUIREMENT), List.of(CRITERION),
+				List.of(new EhRequirementResult(REQUIREMENT.id(), PUPIL.id(), 1)));
+		final CourseRepository courseRepository = courseRepository();
+		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, expectationHorizonRepository);
+
+		editor.setExam(EXAM);
+
+		assertThat(bonusIcons(editor)).hasSize(1);
+		assertThat(components(editor, IntegerField.class)).hasSize(2);
+	}
+
 	private static ExpectationHorizonRepository expectationHorizonRepository() {
+		return expectationHorizonRepository(List.of(REQUIREMENT), List.of(CRITERION),
+				List.of(new EhRequirementResult(REQUIREMENT.id(), PUPIL.id(), 1)));
+	}
+
+	private static ExpectationHorizonRepository expectationHorizonRepository(final List<EhRequirement> requirements,
+			final List<EhCriterion> criteria, final List<EhRequirementResult> requirementResults) {
 		final ExpectationHorizonRepository repository = mock(ExpectationHorizonRepository.class);
 		when(repository.findPartsByExamId(EXAM.id())).thenReturn(List.of(PART));
 		when(repository.findCategoriesByExamId(EXAM.id())).thenReturn(List.of(CATEGORY));
 		when(repository.findTasksByExamId(EXAM.id())).thenReturn(List.of(TASK));
-		when(repository.findRequirementsByExamId(EXAM.id())).thenReturn(List.of(REQUIREMENT));
-		when(repository.findActiveCriteriaByExamId(EXAM.id())).thenReturn(List.of(CRITERION));
+		when(repository.findRequirementsByExamId(EXAM.id())).thenReturn(requirements);
+		when(repository.findActiveCriteriaByExamId(EXAM.id())).thenReturn(criteria);
 		when(repository.findCriterionResultsByExamAndPupil(EXAM.id(), PUPIL.id()))
-				.thenReturn(List.of(new EhCriterionResult(CRITERION.id(), PUPIL.id(), false)));
-		when(repository.findRequirementResultsByExamAndPupil(EXAM.id(), PUPIL.id()))
-				.thenReturn(List.of(new EhRequirementResult(REQUIREMENT.id(), PUPIL.id(), 1)));
+				.thenReturn(criteria.stream()
+						.map(criterion -> new EhCriterionResult(criterion.id(), PUPIL.id(), false))
+						.toList());
+		when(repository.findRequirementResultsByExamAndPupil(EXAM.id(), PUPIL.id())).thenReturn(requirementResults);
 		return repository;
 	}
 
@@ -98,6 +121,12 @@ class ExamResultsEditorTests {
 
 	private static List<String> badgeTexts(final Component root) {
 		return components(root, EhBadge.class).stream().map(EhBadge::getText).toList();
+	}
+
+	private static List<Icon> bonusIcons(final Component root) {
+		return components(root, Icon.class).stream()
+				.filter(icon -> icon.getClassNames().contains("tt-results-bonus-icon"))
+				.toList();
 	}
 
 	private static <T extends Component> List<T> components(final Component root, final Class<T> type) {
