@@ -26,4 +26,7 @@ echo "H2 console: http://localhost:8080/h2-console/"
 mvn -pl westarps-vaadin-markdown -am install -DskipTests
 mvn -pl topteacher-app vaadin:prepare-frontend -DskipTests
 
+rm -f topteacher-app/src/main/bundles/dev.bundle
+rm -rf topteacher-app/target/dev-bundle
+
 exec mvn -pl topteacher-app spring-boot:run -Dspring-boot.run.workingDirectory="$PROJECT_ROOT" "$@"

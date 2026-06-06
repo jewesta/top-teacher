@@ -5,6 +5,7 @@ import {
   selectWord,
   type ExecuteState,
   type ICommand,
+  type TextRange,
   type TextAreaTextApi,
 } from '@uiw/react-md-editor/nohighlight';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
@@ -33,9 +34,15 @@ type MarkdownExtension = {
   extendSanitizeSchema?: (schema: typeof defaultSchema) => typeof defaultSchema;
 };
 
+type CriterionRange = {
+  full: TextRange;
+  label: TextRange;
+};
+
 const criterionUrlPrefix = 'eh:';
 const criterionUrlPattern = /\(eh:([1-9]\d*)\)/g;
 const criterionUrlExactPattern = /^eh:([1-9]\d*)$/;
+const criterionMarkdownPattern = /\[([^\]\n]*)\]\(eh:[1-9]\d*\)/g;
 const skippedNodeTypes = new Set(['code', 'inlineCode', 'html']);
 const toolbarCommandNames: Record<MarkdownToolbarCommandId, string[]> = {
   IMAGE: ['image'],
@@ -54,6 +61,12 @@ const criterionCommand: ICommand = {
     </svg>
   ),
   execute: (state: ExecuteState, api: TextAreaTextApi) => {
+    const criterion = criterionAtSelection(state.text, state.selection);
+    if (criterion) {
+      unwrapCriterion(state.text, api, criterion, state.selection);
+      return;
+    }
+
     const prefix = '[';
     const suffix = `](${criterionUrlPrefix}${nextCriterionId(state.text)})`;
     const selection = state.selectedText
@@ -167,6 +180,52 @@ function filterCommands(commandsToFilter: ICommand[], hiddenCommandNames: Set<st
 
 function isHiddenCommand(command: ICommand, hiddenCommandNames: Set<string>): boolean {
   return [command.name, command.keyCommand].some((name) => Boolean(name && hiddenCommandNames.has(name)));
+}
+
+function criterionAtSelection(markdown: string, selection: TextRange): CriterionRange | null {
+  for (const match of markdown.matchAll(criterionMarkdownPattern)) {
+    const fullStart = match.index ?? 0;
+    const labelText = match[1] ?? '';
+    const labelStart = fullStart + 1;
+    const labelEnd = labelStart + labelText.length;
+    const fullEnd = fullStart + match[0].length;
+
+    if (isSelectionInside(selection, { start: labelStart, end: labelEnd })
+        || isSameSelection(selection, { start: fullStart, end: fullEnd })) {
+      return {
+        full: { start: fullStart, end: fullEnd },
+        label: { start: labelStart, end: labelEnd },
+      };
+    }
+  }
+  return null;
+}
+
+function isSelectionInside(selection: TextRange, range: TextRange): boolean {
+  return selection.start >= range.start && selection.end <= range.end;
+}
+
+function isSameSelection(selection: TextRange, range: TextRange): boolean {
+  return selection.start === range.start && selection.end === range.end;
+}
+
+function unwrapCriterion(
+  markdown: string,
+  api: TextAreaTextApi,
+  criterion: CriterionRange,
+  originalSelection: TextRange,
+) {
+  const labelText = markdown.slice(criterion.label.start, criterion.label.end);
+  const preserveInnerSelection = isSelectionInside(originalSelection, criterion.label);
+  const selectionStart = preserveInnerSelection ? originalSelection.start - criterion.label.start : 0;
+  const selectionEnd = preserveInnerSelection ? originalSelection.end - criterion.label.start : labelText.length;
+
+  api.setSelectionRange(criterion.full);
+  api.replaceSelection(labelText);
+  api.setSelectionRange({
+    start: criterion.full.start + selectionStart,
+    end: criterion.full.start + selectionEnd,
+  });
 }
 
 function remarkCriteria() {
