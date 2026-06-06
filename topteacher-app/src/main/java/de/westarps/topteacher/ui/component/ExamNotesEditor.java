@@ -22,7 +22,7 @@ import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.ExamNoteSection;
 import de.westarps.vaadin.markdown.MarkdownEditor;
 
-public class ExamNotesEditor extends VerticalLayout {
+public class ExamNotesEditor extends AbstractDesigner {
 
 	private final ExpectationHorizonRepository expectationHorizonRepository;
 	private final Set<String> collapsedDetails = new HashSet<>();
@@ -31,12 +31,8 @@ public class ExamNotesEditor extends VerticalLayout {
 	private List<ExamNoteSection> noteSections = List.of();
 
 	public ExamNotesEditor(final ExpectationHorizonRepository expectationHorizonRepository) {
+		super("tt-exam-notes-editor");
 		this.expectationHorizonRepository = expectationHorizonRepository;
-
-		addClassName("tt-exam-notes-editor");
-		setPadding(false);
-		setSpacing(false);
-		setSizeFull();
 	}
 
 	public void setExam(final Exam exam) {
@@ -48,31 +44,25 @@ public class ExamNotesEditor extends VerticalLayout {
 	}
 
 	private void refresh() {
-		removeAll();
+		resetDesigner();
 		if (exam == null) {
-			add(new Span("Bitte wählen Sie eine Klausur aus."));
+			showDesignerMessage(new Span("Bitte wählen Sie eine Klausur aus."));
 			return;
 		}
 
 		noteSections = expectationHorizonRepository.findNoteSectionsByExamId(exam.id());
 
-		final VerticalLayout content = new VerticalLayout();
-		content.addClassName("tt-notes-list");
-		content.setPadding(false);
-		content.setWidthFull();
-
 		if (noteSections.isEmpty()) {
-			content.add(emptyState("Noch keine Notizen angelegt."));
+			content().add(emptyState("Noch keine Notizen angelegt."));
 		} else {
-			noteSections.forEach(noteSection -> content.add(createNoteSectionDetails(noteSection)));
+			noteSections.forEach(noteSection -> content().add(createNoteSectionDetails(noteSection)));
 		}
 
-		add(createToolbar());
-		add(content);
-		expand(content);
+		configureToolbar();
+		showDesigner();
 	}
 
-	private Component createToolbar() {
+	private void configureToolbar() {
 		final Button addSection = commandButton("Abschnitt hinzufügen", VaadinIcon.PLUS, event -> {
 			expectationHorizonRepository.saveNoteSection(new ExamNoteSection(null, exam.id(), "Neuer Abschnitt", "",
 					expectationHorizonRepository.nextNoteSectionSortOrder(exam.id())));
@@ -80,12 +70,7 @@ public class ExamNotesEditor extends VerticalLayout {
 		});
 		addSection.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-		final HorizontalLayout toolbar = new HorizontalLayout(addSection);
-		toolbar.addClassName("tt-notes-toolbar");
-		toolbar.setAlignItems(Alignment.CENTER);
-		toolbar.setPadding(false);
-		toolbar.setWidthFull();
-		return toolbar;
+		toolbar().add(addSection);
 	}
 
 	private Details createNoteSectionDetails(final ExamNoteSection noteSection) {

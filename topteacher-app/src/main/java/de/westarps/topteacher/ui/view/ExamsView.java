@@ -10,11 +10,8 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.datepicker.DatePicker.DatePickerI18n;
-import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
@@ -26,6 +23,7 @@ import de.westarps.topteacher.backend.repo.ExpectationHorizonRepository;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.ui.MainLayout;
+import de.westarps.topteacher.ui.component.AbstractFormEditor;
 import de.westarps.topteacher.ui.component.ExamNotesEditor;
 import de.westarps.topteacher.ui.component.ExamResultsEditor;
 import de.westarps.topteacher.ui.component.ExpectationHorizonEditor;
@@ -80,28 +78,14 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 
 	@Override
 	protected Component createSingleSelectEditor() {
-		final FormLayout form = new FormLayout(title, date, maxPoints);
-		form.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 1));
-
-		final HorizontalLayout buttons = new HorizontalLayout(saveButton, newButton);
-		buttons.setSpacing(true);
-
-		final VerticalLayout editor = new VerticalLayout(form, buttons);
-		editor.addClassNames("tt-editor", "tt-exam-editor");
-		editor.setPadding(false);
-		editor.setWidthFull();
-		return editor;
+		return AbstractFormEditor.responsive("tt-exam-editor", List.of(title, date, maxPoints),
+				List.of(saveButton, newButton));
 	}
 
 	@Override
 	protected Component createMultiSelectEditor() {
 		multiSelectionSummary.addClassName("tt-selection-summary");
-
-		final VerticalLayout editor = new VerticalLayout(multiSelectionSummary);
-		editor.addClassNames("tt-editor", "tt-exam-bulk-editor");
-		editor.setPadding(false);
-		editor.setWidthFull();
-		return editor;
+		return AbstractFormEditor.contentOnly("tt-exam-bulk-editor", List.of(multiSelectionSummary));
 	}
 
 	@Override
@@ -139,10 +123,9 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 	}
 
 	private void configureCourseFilter() {
+		courseFilter.addClassName("tt-toolbar-filter");
 		courseFilter.setItemLabelGenerator(Course::getDisplayName);
 		courseFilter.setRequiredIndicatorVisible(true);
-		courseFilter.setWidth("24rem");
-		courseFilter.setMaxWidth("100%");
 		courseFilter.addValueChangeListener(event -> {
 			selectedCourse = event.getValue();
 			clearSelection();

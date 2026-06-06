@@ -15,7 +15,10 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.ComponentUtil;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.textfield.IntegerField;
@@ -157,6 +160,40 @@ class ExamResultsEditorTests {
 		verify(expectationHorizonRepository, times(1)).findActiveCriteriaByExamId(EXAM.id());
 	}
 
+	@Test
+	void deletesSelectedPupilResultsOnlyAfterConfirmation() {
+		final ExpectationHorizonRepository expectationHorizonRepository = expectationHorizonRepository();
+		final CourseRepository courseRepository = courseRepository();
+		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, expectationHorizonRepository);
+
+		UI.setCurrent(new UI());
+		try {
+			editor.setExam(EXAM);
+
+			final Button deleteButton = deleteButton(editor);
+			final ConfirmDialog confirmation = components(editor, ConfirmDialog.class).getFirst();
+			final IntegerField points = components(editor, IntegerField.class).getFirst();
+			final TextArea comment = components(editor, TextArea.class).getFirst();
+			assertThat(deleteButton.isEnabled()).isTrue();
+			assertThat(points.getValue()).isEqualTo(1);
+
+			deleteButton.click();
+
+			assertThat(confirmation.isOpened()).isTrue();
+			verify(expectationHorizonRepository, never()).deleteResultsByExamAndPupil(EXAM.id(), PUPIL.id());
+
+			ComponentUtil.fireEvent(confirmation, new ConfirmDialog.ConfirmEvent(confirmation, false));
+
+			verify(expectationHorizonRepository).deleteResultsByExamAndPupil(EXAM.id(), PUPIL.id());
+			assertThat(points.getValue()).isZero();
+			assertThat(comment.getValue()).isEmpty();
+			assertThat(deleteButton.isEnabled()).isFalse();
+			assertThat(badgeTexts(editor)).contains("Gesamtpunkte: 0 (+0)", "Summe: 0 (+0)");
+		} finally {
+			UI.setCurrent(null);
+		}
+	}
+
 	private static ExpectationHorizonRepository expectationHorizonRepository() {
 		return expectationHorizonRepository(List.of(REQUIREMENT), List.of(CRITERION),
 				List.of(new EhRequirementResult(REQUIREMENT.id(), PUPIL.id(), 1)));
@@ -190,6 +227,12 @@ class ExamResultsEditorTests {
 
 	private static Button saveButton(final Component root) {
 		return components(root, Button.class).stream().filter(button -> "Speichern".equals(button.getText()))
+				.findFirst().orElseThrow();
+	}
+
+	private static Button deleteButton(final Component root) {
+		return components(root, Button.class).stream()
+				.filter(button -> "Ergebnisse löschen".equals(button.getElement().getAttribute("aria-label")))
 				.findFirst().orElseThrow();
 	}
 

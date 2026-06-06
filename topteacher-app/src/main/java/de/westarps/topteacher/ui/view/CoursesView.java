@@ -10,7 +10,6 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.ColumnTextAlign;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
@@ -22,10 +21,8 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.shared.Tooltip;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.textfield.IntegerField;
-import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.data.provider.ListDataProvider;
-import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.Route;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
@@ -37,7 +34,9 @@ import de.westarps.topteacher.model.SchoolClass;
 import de.westarps.topteacher.model.SchoolYear;
 import de.westarps.topteacher.model.Subject;
 import de.westarps.topteacher.ui.MainLayout;
+import de.westarps.topteacher.ui.component.AbstractFormEditor;
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
+import de.westarps.topteacher.ui.component.QuickFilterField;
 
 @Route(value = "courses", layout = MainLayout.class)
 public class CoursesView extends AbstractMasterDataView<Course> {
@@ -59,7 +58,7 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 	private final Span multiSelectionSummary = new Span();
 	private final ComboBox<Lifecycle> bulkLifecycle = new ComboBox<>("Status");
 	private final Button applyLifecycleButton = new Button("Anwenden");
-	private final TextField assignmentSearch = new TextField();
+	private final QuickFilterField assignmentSearch = new QuickFilterField();
 	private final Grid<AssignmentRow> assignmentGrid = new Grid<>(AssignmentRow.class, false);
 
 	private Course selectedCourse;
@@ -91,34 +90,16 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 
 	@Override
 	protected Component createSingleSelectEditor() {
-		final FormLayout form = new FormLayout(schoolClass, subject, calendarYear, coursePeriod, lifecycle);
-		form.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("32rem", 2));
-
-		final HorizontalLayout buttons = new HorizontalLayout(saveButton, newButton, archiveButton);
-		buttons.setSpacing(true);
-
-		final VerticalLayout editor = new VerticalLayout(form, buttons);
-		editor.addClassNames("tt-editor", "tt-course-editor");
-		editor.setPadding(false);
-		editor.setWidthFull();
-		return editor;
+		return AbstractFormEditor.responsive("tt-course-editor",
+				List.of(schoolClass, subject, calendarYear, coursePeriod, lifecycle),
+				List.of(saveButton, newButton, archiveButton));
 	}
 
 	@Override
 	protected Component createMultiSelectEditor() {
 		multiSelectionSummary.addClassName("tt-selection-summary");
-
-		final FormLayout form = new FormLayout(bulkLifecycle);
-		form.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 1));
-
-		final HorizontalLayout buttons = new HorizontalLayout(applyLifecycleButton);
-		buttons.setSpacing(true);
-
-		final VerticalLayout editor = new VerticalLayout(multiSelectionSummary, form, buttons);
-		editor.addClassNames("tt-editor", "tt-course-bulk-editor");
-		editor.setPadding(false);
-		editor.setWidthFull();
-		return editor;
+		return AbstractFormEditor.singleColumn("tt-course-bulk-editor", List.of(multiSelectionSummary),
+				List.of(bulkLifecycle), List.of(applyLifecycleButton));
 	}
 
 	@Override
@@ -189,12 +170,7 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 	}
 
 	private void configureAssignments() {
-		assignmentSearch.addClassName("tt-assignment-search");
-		assignmentSearch.setClearButtonVisible(true);
 		assignmentSearch.setPlaceholder("Schüler suchen");
-		assignmentSearch.setPrefixComponent(VaadinIcon.SEARCH.create());
-		assignmentSearch.setValueChangeMode(ValueChangeMode.EAGER);
-		assignmentSearch.setWidthFull();
 		assignmentSearch.addValueChangeListener(event -> applyAssignmentFilter());
 
 		assignmentGrid.addColumn(row -> row.pupil().id()).setHeader("ID").setAutoWidth(true).setFlexGrow(0);

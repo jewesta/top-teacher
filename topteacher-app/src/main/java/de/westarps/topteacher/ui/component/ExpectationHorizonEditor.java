@@ -11,7 +11,6 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 
 import de.westarps.topteacher.backend.repo.ExpectationHorizonRepository;
 import de.westarps.topteacher.model.EhCategory;
@@ -20,7 +19,7 @@ import de.westarps.topteacher.model.EhRequirement;
 import de.westarps.topteacher.model.EhTask;
 import de.westarps.topteacher.model.Exam;
 
-public class ExpectationHorizonEditor extends VerticalLayout {
+public class ExpectationHorizonEditor extends AbstractDesigner {
 
 	private final ExpectationHorizonRepository expectationHorizonRepository;
 	private final EhSaveController saveController = new EhSaveController();
@@ -125,12 +124,9 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 	private List<EhPartSection> partSections = List.of();
 
 	public ExpectationHorizonEditor(final ExpectationHorizonRepository expectationHorizonRepository) {
+		super("tt-eh-editor");
 		this.expectationHorizonRepository = expectationHorizonRepository;
 
-		addClassName("tt-eh-editor");
-		setPadding(false);
-		setSpacing(false);
-		setSizeFull();
 		saveController.setDirtySupplier(this::isDirty);
 		saveController.setSaveAction(this::saveDirtySections);
 	}
@@ -148,9 +144,9 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 		collapseState.clearRenderedComponents();
 		examPointsBadge = null;
 		partSections = List.of();
-		removeAll();
+		resetDesigner();
 		if (exam == null) {
-			add(new Span("Bitte wählen Sie eine Klausur aus."));
+			showDesignerMessage(new Span("Bitte wählen Sie eine Klausur aus."));
 			return;
 		}
 
@@ -159,22 +155,16 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 			loadItems();
 		}
 
-		final VerticalLayout content = new VerticalLayout();
-		content.addClassName("tt-eh-scroll-area");
-		content.setPadding(false);
-		content.setWidthFull();
-
 		if (parts.isEmpty()) {
-			content.add(emptyState("Noch kein Erwartungshorizont angelegt."));
+			content().add(emptyState("Noch kein Erwartungshorizont angelegt."));
 		} else {
 			partSections = parts.stream().map(this::createPartSection).toList();
-			partSections.forEach(content::add);
-			content.add(expectationHorizonLight());
+			partSections.forEach(content()::add);
+			content().add(expectationHorizonLight());
 		}
 
-		add(createToolbar());
-		add(content);
-		expand(content);
+		configureToolbar();
+		showDesigner();
 		saveController.update();
 	}
 
@@ -208,7 +198,7 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 		return changed;
 	}
 
-	private Component createToolbar() {
+	private void configureToolbar() {
 		final Button addPart = components.commandButton("Klausurteil hinzufügen", VaadinIcon.PLUS, event -> {
 			final int sortOrder = expectationHorizonRepository.nextPartSortOrder(exam.id());
 			final EhPart part = expectationHorizonRepository
@@ -219,13 +209,7 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 		addPart.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
 		examPointsBadge = components.pointBadge("Gesamtpunktzahl", this::pointsForExam);
-		final HorizontalLayout toolbar = new HorizontalLayout(addPart, collapseState.toggleButton(allDetailKeys()),
-				examPointsBadge);
-		toolbar.addClassName("tt-eh-toolbar");
-		toolbar.setAlignItems(Alignment.CENTER);
-		toolbar.setPadding(false);
-		toolbar.setWidthFull();
-		return toolbar;
+		toolbar().add(addPart, collapseState.toggleButton(allDetailKeys()), examPointsBadge);
 	}
 
 	private EhPartSection createPartSection(final EhPart part) {

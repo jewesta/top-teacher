@@ -77,10 +77,11 @@ vaadin-app-layout::part(navbar) {
 	width: 100%;
 }
 
-.tt-master-search {
+.tt-quick-filter,
+.tt-toolbar-filter {
 	flex: 0 0 auto;
-	max-width: 24rem;
-	width: 100%;
+	max-width: 100%;
+	width: 12rem;
 }
 
 .tt-master-toolbar {
@@ -137,10 +138,6 @@ vaadin-app-layout::part(navbar) {
 	width: 100%;
 }
 
-.tt-assignment-search {
-	flex: 0 0 auto;
-}
-
 .tt-assignment-grid {
 	flex: 1 1 auto;
 	min-height: 0;
@@ -152,9 +149,7 @@ vaadin-app-layout::part(navbar) {
 	width: var(--lumo-icon-size-s);
 }
 
-.tt-eh-editor,
-.tt-exam-notes-editor,
-.tt-exam-results-editor {
+.tt-designer {
 	box-sizing: border-box;
 	height: 100%;
 	width: 100%;
@@ -164,23 +159,7 @@ vaadin-app-layout::part(navbar) {
 	--tt-results-points-column-width: 12rem;
 }
 
-.tt-eh-scroll-area {
-	box-sizing: border-box;
-	flex: 1 1 auto;
-	gap: var(--lumo-space-m);
-	height: 100%;
-	min-height: 0;
-	overflow: auto;
-	padding-top: var(--lumo-space-m);
-	width: 100%;
-}
-
-.tt-eh-editor>.tt-eh-scroll-area {
-	height: auto;
-}
-
-.tt-eh-toolbar,
-.tt-notes-toolbar {
+.tt-designer-toolbar {
 	align-items: center;
 	box-sizing: border-box;
 	flex: 0 0 auto;
@@ -189,14 +168,13 @@ vaadin-app-layout::part(navbar) {
 	width: 100%;
 }
 
-.tt-eh-toolbar::after,
-.tt-notes-toolbar::after {
+.tt-designer-toolbar::after {
 	content: "";
 	flex: 1 1 auto;
 	order: 1;
 }
 
-.tt-eh-toolbar .tt-eh-points {
+.tt-designer-toolbar .tt-eh-points {
 	margin-right: var(--lumo-space-m);
 	order: 2;
 }
@@ -248,25 +226,6 @@ vaadin-app-layout::part(navbar) {
 	padding-right: 0;
 }
 
-.tt-results-toolbar {
-	align-items: center;
-	box-sizing: border-box;
-	flex: 0 0 auto;
-	gap: var(--lumo-space-m);
-	padding-top: var(--lumo-space-m);
-	width: 100%;
-}
-
-.tt-results-toolbar::after {
-	content: "";
-	flex: 1 1 auto;
-	order: 1;
-}
-
-.tt-results-toolbar .tt-eh-points {
-	order: 2;
-}
-
 .tt-stepper-combo-box {
 	gap: var(--lumo-space-xs);
 }
@@ -275,8 +234,7 @@ vaadin-app-layout::part(navbar) {
 	min-width: 0;
 }
 
-.tt-results-list,
-.tt-notes-list {
+.tt-designer-content {
 	box-sizing: border-box;
 	flex: 1 1 auto;
 	gap: var(--lumo-space-m);

@@ -9,7 +9,6 @@ import java.util.Set;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
@@ -17,17 +16,17 @@ import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.data.provider.ListDataProvider;
-import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.HasDynamicTitle;
 
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
+import de.westarps.topteacher.ui.component.QuickFilterField;
 
 public abstract class AbstractMasterDataView<T> extends VerticalLayout implements HasDynamicTitle {
 
 	private final String pageTitle;
 	private final String viewClassName;
 	private final MultiSelectionGrid<T> grid;
-	private final TextField searchField = new TextField();
+	private final QuickFilterField searchField = new QuickFilterField();
 	private final Div editorHost = new Div();
 	private final TabSheet contextTabs = new TabSheet();
 
@@ -133,13 +132,6 @@ public abstract class AbstractMasterDataView<T> extends VerticalLayout implement
 	}
 
 	private void configureSearchField() {
-		searchField.addClassName("tt-master-search");
-		searchField.setClearButtonVisible(true);
-		searchField.setLabel("Schnellfilter");
-		searchField.setPlaceholder("Suchbegriff");
-		searchField.setPrefixComponent(VaadinIcon.SEARCH.create());
-		searchField.setValueChangeMode(ValueChangeMode.EAGER);
-		searchField.setWidthFull();
 		searchField.addValueChangeListener(event -> applySearchFilter());
 	}
 

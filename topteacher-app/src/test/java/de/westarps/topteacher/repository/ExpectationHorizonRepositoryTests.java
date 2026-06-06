@@ -188,6 +188,36 @@ class ExpectationHorizonRepositoryTests {
 				.containsExactly(new EhRequirementResult(requirement.id(), pupil.id(), 4, "Noch besser."));
 	}
 
+	@Test
+	void deletesResultsForExamAndPupilOnly() {
+		final Exam exam = createExam(2041, "EH Delete Results");
+		final EhPart part = expectationHorizonRepository.savePart(new EhPart(null, exam.id(), "Klausurteil A", 0));
+		final EhCategory category = expectationHorizonRepository
+				.saveCategory(new EhCategory(null, part.id(), "Sprache", "", 0));
+		final EhTask task = expectationHorizonRepository.saveTask(new EhTask(null, category.id(), "Teilaufgabe 1", 0));
+		final EhRequirement requirement = expectationHorizonRepository.saveRequirement(new EhRequirement(null,
+				task.id(), "Nutzt die [korrekte Zeitform](eh:1).", 5, false, 0));
+		final EhCriterion criterion = expectationHorizonRepository.findActiveCriteriaByExamId(exam.id()).getFirst();
+		final Pupil pupil = pupilRepository.save(new Pupil(null, "Test", "Löschen", Lifecycle.ACTIVE));
+		final Pupil otherPupil = pupilRepository.save(new Pupil(null, "Test", "Bleibt", Lifecycle.ACTIVE));
+
+		expectationHorizonRepository.saveCriterionResult(new EhCriterionResult(criterion.id(), pupil.id(), true));
+		expectationHorizonRepository
+				.saveRequirementResult(new EhRequirementResult(requirement.id(), pupil.id(), 3, "Wird gelöscht."));
+		expectationHorizonRepository.saveCriterionResult(new EhCriterionResult(criterion.id(), otherPupil.id(), true));
+		expectationHorizonRepository.saveRequirementResult(
+				new EhRequirementResult(requirement.id(), otherPupil.id(), 4, "Bleibt bestehen."));
+
+		expectationHorizonRepository.deleteResultsByExamAndPupil(exam.id(), pupil.id());
+
+		assertThat(expectationHorizonRepository.findCriterionResultsByExamAndPupil(exam.id(), pupil.id())).isEmpty();
+		assertThat(expectationHorizonRepository.findRequirementResultsByExamAndPupil(exam.id(), pupil.id())).isEmpty();
+		assertThat(expectationHorizonRepository.findCriterionResultsByExamAndPupil(exam.id(), otherPupil.id()))
+				.containsExactly(new EhCriterionResult(criterion.id(), otherPupil.id(), true));
+		assertThat(expectationHorizonRepository.findRequirementResultsByExamAndPupil(exam.id(), otherPupil.id()))
+				.containsExactly(new EhRequirementResult(requirement.id(), otherPupil.id(), 4, "Bleibt bestehen."));
+	}
+
 	private Exam createExam(final int calendarYear, final String title) {
 		final Course course = courseRepository.save(new Course(null, SchoolClass.CLS_10A, Subject.ENGLISH,
 				new SchoolYear(calendarYear), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE));

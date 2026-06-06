@@ -6,11 +6,8 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteAlias;
@@ -19,6 +16,7 @@ import de.westarps.topteacher.backend.repo.PupilRepository;
 import de.westarps.topteacher.model.Lifecycle;
 import de.westarps.topteacher.model.Pupil;
 import de.westarps.topteacher.ui.MainLayout;
+import de.westarps.topteacher.ui.component.AbstractFormEditor;
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
 
 @Route(value = "", layout = MainLayout.class)
@@ -59,34 +57,15 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 
 	@Override
 	protected Component createSingleSelectEditor() {
-		final FormLayout form = new FormLayout(name, surname, lifecycle);
-		form.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 1), new FormLayout.ResponsiveStep("32rem", 2));
-
-		final HorizontalLayout buttons = new HorizontalLayout(saveButton, newButton, archiveButton);
-		buttons.setSpacing(true);
-
-		final VerticalLayout editor = new VerticalLayout(form, buttons);
-		editor.addClassNames("tt-editor", "tt-pupil-editor");
-		editor.setPadding(false);
-		editor.setWidthFull();
-		return editor;
+		return AbstractFormEditor.responsive("tt-pupil-editor", List.of(name, surname, lifecycle),
+				List.of(saveButton, newButton, archiveButton));
 	}
 
 	@Override
 	protected Component createMultiSelectEditor() {
 		multiSelectionSummary.addClassName("tt-selection-summary");
-
-		final FormLayout form = new FormLayout(bulkLifecycle);
-		form.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 1));
-
-		final HorizontalLayout buttons = new HorizontalLayout(applyLifecycleButton);
-		buttons.setSpacing(true);
-
-		final VerticalLayout editor = new VerticalLayout(multiSelectionSummary, form, buttons);
-		editor.addClassNames("tt-editor", "tt-pupil-bulk-editor");
-		editor.setPadding(false);
-		editor.setWidthFull();
-		return editor;
+		return AbstractFormEditor.singleColumn("tt-pupil-bulk-editor", List.of(multiSelectionSummary),
+				List.of(bulkLifecycle), List.of(applyLifecycleButton));
 	}
 
 	@Override

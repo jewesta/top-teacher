@@ -11,6 +11,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import de.westarps.topteacher.model.EhCategory;
 import de.westarps.topteacher.model.EhCriterion;
@@ -220,6 +221,37 @@ public class ExpectationHorizonRepository {
 				""", new MapSqlParameterSource().addValue("requirementId", result.requirementId())
 				.addValue("pupilId", result.pupilId()).addValue("points", result.points())
 				.addValue("comment", result.comment()));
+	}
+
+	@Transactional
+	public void deleteResultsByExamAndPupil(final int examId, final int pupilId) {
+		final MapSqlParameterSource parameters = new MapSqlParameterSource().addValue("examId", examId)
+				.addValue("pupilId", pupilId);
+		jdbc.update("""
+				delete from eh_criterion_result
+				where pupil_id = :pupilId
+				  and criterion_id in (
+				      select cr.id
+				      from eh_criterion cr
+				      join eh_requirement r on r.id = cr.requirement_id
+				      join eh_task t on t.id = r.task_id
+				      join eh_category c on c.id = t.category_id
+				      join eh_part p on p.id = c.part_id
+				      where p.exam_id = :examId
+				  )
+				""", parameters);
+		jdbc.update("""
+				delete from eh_requirement_result
+				where pupil_id = :pupilId
+				  and requirement_id in (
+				      select r.id
+				      from eh_requirement r
+				      join eh_task t on t.id = r.task_id
+				      join eh_category c on c.id = t.category_id
+				      join eh_part p on p.id = c.part_id
+				      where p.exam_id = :examId
+				  )
+				""", parameters);
 	}
 
 	public ExamNoteSection saveNoteSection(final ExamNoteSection noteSection) {

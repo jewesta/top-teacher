@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
@@ -36,13 +37,15 @@ import de.westarps.topteacher.model.Pupil;
 import de.westarps.vaadin.markdown.MarkdownViewer;
 import de.westarps.vaadin.markdown.MarkdownTagRenderMode;
 
-public class ExamResultsEditor extends VerticalLayout {
+public class ExamResultsEditor extends AbstractDesigner {
 
 	private final CourseRepository courseRepository;
 	private final ExpectationHorizonRepository expectationHorizonRepository;
 	private final StepperComboBox<Pupil> pupilSelector = new StepperComboBox<>();
 	private final Button saveButton = new Button("Speichern", VaadinIcon.CHECK.create());
-	private final VerticalLayout results = new VerticalLayout();
+	private final Button deleteButton = new Button(VaadinIcon.TRASH.create());
+	private final ConfirmDialog deleteConfirmation = new ConfirmDialog();
+	private final VerticalLayout results;
 	private final EhSaveController saveController = new EhSaveController();
 	private final List<EhPointBadge> pointBadges = new ArrayList<>();
 	private final Map<Integer, IntegerField> requirementPointFields = new HashMap<>();
@@ -68,17 +71,14 @@ public class ExamResultsEditor extends VerticalLayout {
 
 	public ExamResultsEditor(final CourseRepository courseRepository,
 			final ExpectationHorizonRepository expectationHorizonRepository) {
+		super("tt-exam-results-editor");
 		this.courseRepository = courseRepository;
 		this.expectationHorizonRepository = expectationHorizonRepository;
-
-		addClassName("tt-exam-results-editor");
-		setPadding(false);
-		setSpacing(false);
-		setSizeFull();
+		results = content();
 
 		configurePupilSelector();
 		configureSaveButton();
-		configureResults();
+		configureDeleteButton();
 	}
 
 	public void setExam(final Exam exam) {
@@ -119,42 +119,46 @@ public class ExamResultsEditor extends VerticalLayout {
 		saveController.register(saveButton);
 	}
 
-	private void configureResults() {
-		results.addClassName("tt-results-list");
-		results.setPadding(false);
-		results.setWidthFull();
+	private void configureDeleteButton() {
+		deleteButton.setAriaLabel("Ergebnisse löschen");
+		deleteButton.setTooltipText("Ergebnisse löschen");
+		deleteButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY_INLINE,
+				ButtonVariant.LUMO_ERROR);
+		deleteButton.addClickListener(event -> openDeleteConfirmation());
+
+		deleteConfirmation.setHeader("Ergebnisse löschen?");
+		deleteConfirmation.setCancelable(true);
+		deleteConfirmation.setCancelText("Abbrechen");
+		deleteConfirmation.setConfirmText("Löschen");
+		deleteConfirmation.setConfirmButtonTheme("error primary");
+		deleteConfirmation.addConfirmListener(event -> deleteSelectedPupilResults());
+		updateDeleteButton();
 	}
 
 	private void refresh() {
-		removeAll();
+		resetDesigner();
 		clearRenderedResults();
 		examPointsBadge = null;
 
 		if (exam == null) {
 			clearResultState();
 			saveController.update();
-			add(emptyState("Bitte wählen Sie eine Klausur aus."));
+			showDesignerMessage(emptyState("Bitte wählen Sie eine Klausur aus."));
 			return;
 		}
 
 		expectationHorizonRepository.syncCriteriaForExam(exam.id());
 		loadItems();
 		refreshPupils();
-		add(createToolbar(), results);
-		expand(results);
+		configureToolbar();
+		showDesigner();
 		renderResultStructure();
 		loadSelectedPupilResults();
 	}
 
-	private Component createToolbar() {
+	private void configureToolbar() {
 		examPointsBadge = new EhPointBadge("Gesamtpunkte", this::pointsForExam);
-
-		final HorizontalLayout toolbar = new HorizontalLayout(pupilSelector, saveButton, examPointsBadge);
-		toolbar.addClassName("tt-results-toolbar");
-		toolbar.setAlignItems(Alignment.CENTER);
-		toolbar.setPadding(false);
-		toolbar.setWidthFull();
-		return toolbar;
+		toolbar().add(pupilSelector, saveButton, deleteButton, examPointsBadge, deleteConfirmation);
 	}
 
 	private void refreshPupils() {
@@ -230,6 +234,7 @@ public class ExamResultsEditor extends VerticalLayout {
 		}
 		refreshPointBadges();
 		saveController.update();
+		updateDeleteButton();
 	}
 
 	private void loadItems() {
@@ -267,6 +272,29 @@ public class ExamResultsEditor extends VerticalLayout {
 		editedCriterionResults.clear();
 		editedRequirementResults.clear();
 		editedRequirementComments.clear();
+	}
+
+	private void openDeleteConfirmation() {
+		if (!hasPersistedResults()) {
+			return;
+		}
+
+		final String pupilName = selectedPupil == null ? "" : pupilLabel(selectedPupil);
+		deleteConfirmation.setText("Die erfassten Ergebnisse für " + pupilName
+				+ " werden gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.");
+		deleteConfirmation.open();
+	}
+
+	private void deleteSelectedPupilResults() {
+		if (exam == null || selectedPupil == null) {
+			return;
+		}
+
+		expectationHorizonRepository.deleteResultsByExamAndPupil(exam.id(), selectedPupil.id());
+		clearResultState();
+		applyResultState();
+		deleteConfirmation.close();
+		Notification.show("Ergebnisse gelöscht.");
 	}
 
 	private Component partBlock(final EhPart part) {
@@ -578,6 +606,15 @@ public class ExamResultsEditor extends VerticalLayout {
 				.collect(Collectors.toMap(EhRequirement::id, this::currentRequirementPoints));
 		persistedRequirementComments = requirements.stream()
 				.collect(Collectors.toMap(EhRequirement::id, this::currentRequirementComment));
+		updateDeleteButton();
+	}
+
+	private void updateDeleteButton() {
+		deleteButton.setEnabled(selectedPupil != null && hasPersistedResults());
+	}
+
+	private boolean hasPersistedResults() {
+		return !persistedCriterionResults.isEmpty() || !persistedRequirementResults.isEmpty();
 	}
 
 	private boolean validateRequirementPoints() {
