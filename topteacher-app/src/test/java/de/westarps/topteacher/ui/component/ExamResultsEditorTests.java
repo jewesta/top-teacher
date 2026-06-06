@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -36,6 +37,7 @@ class ExamResultsEditorTests {
 
 	private static final Exam EXAM = new Exam(1, 10, "Klausur", LocalDate.of(2026, 9, 1));
 	private static final Pupil PUPIL = new Pupil(20, "Anna", "Ergebnis", Lifecycle.ACTIVE);
+	private static final Pupil SECOND_PUPIL = new Pupil(21, "Berta", "Ergebnis", Lifecycle.ACTIVE);
 	private static final EhPart PART = new EhPart(1, EXAM.id(), "Klausurteil A", 0);
 	private static final EhCategory CATEGORY = new EhCategory(2, PART.id(), "Inhalt", "", 0);
 	private static final EhTask TASK = new EhTask(3, CATEGORY.id(), "Teilaufgabe 1", 0);
@@ -89,6 +91,34 @@ class ExamResultsEditorTests {
 		assertThat(components(editor, IntegerField.class)).hasSize(2);
 	}
 
+	@Test
+	void switchingPupilsReusesRenderedResultStructure() {
+		final ExpectationHorizonRepository expectationHorizonRepository = expectationHorizonRepository();
+		when(expectationHorizonRepository.findCriterionResultsByExamAndPupil(EXAM.id(), SECOND_PUPIL.id()))
+				.thenReturn(List.of(new EhCriterionResult(CRITERION.id(), SECOND_PUPIL.id(), true)));
+		when(expectationHorizonRepository.findRequirementResultsByExamAndPupil(EXAM.id(), SECOND_PUPIL.id()))
+				.thenReturn(List.of(new EhRequirementResult(REQUIREMENT.id(), SECOND_PUPIL.id(), 4)));
+		final CourseRepository courseRepository = courseRepository(List.of(PUPIL, SECOND_PUPIL));
+		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, expectationHorizonRepository);
+
+		editor.setExam(EXAM);
+
+		final IntegerField points = components(editor, IntegerField.class).getFirst();
+		assertThat(points.getValue()).isEqualTo(1);
+
+		pupilSelector(editor).setValue(SECOND_PUPIL);
+
+		assertThat(points.getValue()).isEqualTo(4);
+		assertThat(components(editor, IntegerField.class).getFirst()).isSameAs(points);
+		assertThat(badgeTexts(editor)).contains("Gesamtpunkte: 4 (+0)", "Summe: 4 (+0)");
+		verify(expectationHorizonRepository, times(1)).syncCriteriaForExam(EXAM.id());
+		verify(expectationHorizonRepository, times(1)).findPartsByExamId(EXAM.id());
+		verify(expectationHorizonRepository, times(1)).findCategoriesByExamId(EXAM.id());
+		verify(expectationHorizonRepository, times(1)).findTasksByExamId(EXAM.id());
+		verify(expectationHorizonRepository, times(1)).findRequirementsByExamId(EXAM.id());
+		verify(expectationHorizonRepository, times(1)).findActiveCriteriaByExamId(EXAM.id());
+	}
+
 	private static ExpectationHorizonRepository expectationHorizonRepository() {
 		return expectationHorizonRepository(List.of(REQUIREMENT), List.of(CRITERION),
 				List.of(new EhRequirementResult(REQUIREMENT.id(), PUPIL.id(), 1)));
@@ -111,8 +141,12 @@ class ExamResultsEditorTests {
 	}
 
 	private static CourseRepository courseRepository() {
+		return courseRepository(List.of(PUPIL));
+	}
+
+	private static CourseRepository courseRepository(final List<Pupil> pupils) {
 		final CourseRepository repository = mock(CourseRepository.class);
-		when(repository.findPupils(EXAM.courseId())).thenReturn(List.of(PUPIL));
+		when(repository.findPupils(EXAM.courseId())).thenReturn(pupils);
 		return repository;
 	}
 
@@ -136,6 +170,11 @@ class ExamResultsEditorTests {
 				.filter(span -> span.getClassNames().contains("tt-results-requirement-number"))
 				.map(Span::getText)
 				.toList();
+	}
+
+	@SuppressWarnings("unchecked")
+	private static StepperComboBox<Pupil> pupilSelector(final Component root) {
+		return (StepperComboBox<Pupil>) components(root, StepperComboBox.class).getFirst();
 	}
 
 	private static <T extends Component> List<T> components(final Component root, final Class<T> type) {

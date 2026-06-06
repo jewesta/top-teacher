@@ -43,12 +43,15 @@ public class ExamResultsEditor extends VerticalLayout {
 	private final VerticalLayout results = new VerticalLayout();
 	private final EhSaveController saveController = new EhSaveController();
 	private final List<EhPointBadge> pointBadges = new ArrayList<>();
+	private final Map<Integer, IntegerField> requirementPointFields = new HashMap<>();
+	private final Map<Integer, MarkdownViewer> requirementDescriptions = new HashMap<>();
 	private final Map<Integer, Boolean> editedCriterionResults = new HashMap<>();
 	private final Map<Integer, Integer> editedRequirementResults = new HashMap<>();
 
 	private Exam exam;
 	private Pupil selectedPupil;
 	private boolean refreshing;
+	private boolean applyingResultState;
 	private List<EhPart> parts = List.of();
 	private List<EhCategory> categories = List.of();
 	private List<EhTask> tasks = List.of();
@@ -99,7 +102,7 @@ public class ExamResultsEditor extends VerticalLayout {
 				return;
 			}
 			selectedPupil = event.getValue();
-			renderResults();
+			loadSelectedPupilResults();
 		});
 	}
 
@@ -119,7 +122,7 @@ public class ExamResultsEditor extends VerticalLayout {
 
 	private void refresh() {
 		removeAll();
-		results.removeAll();
+		clearRenderedResults();
 		examPointsBadge = null;
 
 		if (exam == null) {
@@ -129,10 +132,13 @@ public class ExamResultsEditor extends VerticalLayout {
 			return;
 		}
 
+		expectationHorizonRepository.syncCriteriaForExam(exam.id());
+		loadItems();
 		refreshPupils();
 		add(createToolbar(), results);
 		expand(results);
-		renderResults();
+		renderResultStructure();
+		loadSelectedPupilResults();
 	}
 
 	private Component createToolbar() {
@@ -161,30 +167,57 @@ public class ExamResultsEditor extends VerticalLayout {
 		refreshing = false;
 	}
 
-	private void renderResults() {
-		results.removeAll();
-		pointBadges.clear();
-		clearResultState();
+	private void renderResultStructure() {
+		clearRenderedResults();
 
 		if (selectedPupil == null) {
 			results.add(emptyState("Diesem Kurs sind keine Schüler zugeordnet."));
-			refreshPointBadges();
-			saveController.update();
 			return;
 		}
 
-		expectationHorizonRepository.syncCriteriaForExam(exam.id());
-		loadItems();
-		loadResultState();
-
 		if (parts.isEmpty()) {
 			results.add(emptyState("Noch kein Erwartungshorizont angelegt."));
-			refreshPointBadges();
-			saveController.update();
 			return;
 		}
 
 		parts.forEach(part -> results.add(partBlock(part)));
+	}
+
+	private void clearRenderedResults() {
+		results.removeAll();
+		pointBadges.clear();
+		requirementPointFields.clear();
+		requirementDescriptions.clear();
+	}
+
+	private void loadSelectedPupilResults() {
+		clearResultState();
+		if (exam == null || selectedPupil == null) {
+			applyResultState();
+			return;
+		}
+		loadResultState();
+		applyResultState();
+	}
+
+	private void applyResultState() {
+		applyingResultState = true;
+		try {
+			requirements.forEach(requirement -> {
+				final IntegerField points = requirementPointFields.get(requirement.id());
+				if (points != null) {
+					points.setValue(currentRequirementPoints(requirement));
+				}
+			});
+			requirementDescriptions.forEach((requirementId, description) -> description.setCheckedTagKeys(criteria
+					.stream()
+					.filter(criterion -> criterion.requirementId().equals(requirementId))
+					.filter(this::currentCriterionAchieved)
+					.map(EhCriterion::criterionKey)
+					.toList()));
+		} finally {
+			applyingResultState = false;
+		}
 		refreshPointBadges();
 		saveController.update();
 	}
@@ -260,6 +293,9 @@ public class ExamResultsEditor extends VerticalLayout {
 					.filter(this::currentCriterionAchieved).map(EhCriterion::criterionKey)
 					.toList());
 			description.addTagCheckedChangeListener(change -> {
+				if (applyingResultState) {
+					return;
+				}
 				if (selectedPupil == null) {
 					return;
 				}
@@ -271,6 +307,7 @@ public class ExamResultsEditor extends VerticalLayout {
 			});
 			description.addClassName("tt-results-requirement-description");
 			description.setWidthFull();
+			requirementDescriptions.put(requirement.id(), description);
 			descriptionArea.add(description);
 		}
 
@@ -330,10 +367,14 @@ public class ExamResultsEditor extends VerticalLayout {
 		points.setStepButtonsVisible(true);
 		points.setValue(currentRequirementPoints(requirement));
 		points.addValueChangeListener(event -> {
+			if (applyingResultState) {
+				return;
+			}
 			editedRequirementResults.put(requirement.id(), valueOrZero(event.getValue()));
 			refreshPointBadges();
 			saveController.update();
 		});
+		requirementPointFields.put(requirement.id(), points);
 
 		final Span maximum = new Span("/ " + requirement.maxPoints());
 		maximum.addClassName("tt-results-points-maximum");
