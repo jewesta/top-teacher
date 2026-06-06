@@ -62,6 +62,7 @@ class ExamResultsEditorTests {
 		final Button saveButton = saveButton(editor);
 		final IntegerField points = components(editor, IntegerField.class).getFirst();
 		assertThat(saveButton.isEnabled()).isFalse();
+		assertThat(points.getLabel()).isEqualTo("Punkte von 5");
 		assertThat(points.getValue()).isEqualTo(1);
 		assertThat(badgeTexts(editor)).contains("Gesamtpunkte: 1 (+0)", "Summe: 1 (+0)");
 		assertThat(requirementNumberTexts(editor)).containsExactly("1");

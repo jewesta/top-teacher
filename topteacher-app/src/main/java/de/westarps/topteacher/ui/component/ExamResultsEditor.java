@@ -453,8 +453,8 @@ public class ExamResultsEditor extends AbstractDesigner {
 
 	private Component pointsControl(final EhRequirement requirement) {
 		final IntegerField points = new IntegerField();
-		points.addClassName("tt-results-points-field");
-		points.setLabel("Punkte");
+		points.addClassNames("tt-results-points-control", "tt-results-points-field");
+		points.setLabel("Punkte von " + requirement.maxPoints());
 		points.getElement().setAttribute("aria-label", "Punkte");
 		points.setMin(0);
 		points.setMax(requirement.maxPoints());
@@ -470,15 +470,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 		});
 		requirementPointFields.put(requirement.id(), points);
 
-		final Span maximum = new Span("/ " + requirement.maxPoints());
-		maximum.addClassName("tt-results-points-maximum");
-
-		final HorizontalLayout control = new HorizontalLayout(points, maximum);
-		control.addClassName("tt-results-points-control");
-		control.setAlignItems(Alignment.END);
-		control.setPadding(false);
-		control.setSpacing(false);
-		return control;
+		return points;
 	}
 
 	private VerticalLayout aggregationBlock(final String className, final String title,

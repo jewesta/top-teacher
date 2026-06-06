@@ -276,6 +276,10 @@ vaadin-app-layout::part(navbar) {
 	min-width: 0;
 }
 
+.tt-results-header .tt-eh-points {
+	width: var(--tt-results-points-column-width);
+}
+
 .tt-results-title {
 	font-weight: 600;
 	min-width: 0;
@@ -350,19 +354,12 @@ vaadin-app-layout::part(navbar) {
 }
 
 .tt-results-points-control {
-	align-items: center;
-	flex: 0 0 auto;
-	gap: var(--lumo-space-s);
+	flex: 0 0 var(--tt-results-points-column-width);
+	width: var(--tt-results-points-column-width);
 }
 
 .tt-results-points-field {
-	width: 6.5rem;
-}
-
-.tt-results-points-maximum {
-	color: var(--lumo-secondary-text-color);
-	font-size: var(--lumo-font-size-s);
-	white-space: nowrap;
+	max-width: 100%;
 }
 
 .tt-grading-scale-grid {

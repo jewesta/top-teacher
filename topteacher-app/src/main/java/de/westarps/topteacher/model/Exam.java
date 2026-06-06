@@ -15,4 +15,5 @@ public record Exam(Integer id, Integer courseId, String title, LocalDate date) {
 			throw new IllegalArgumentException("date must not be null");
 		}
 	}
+
 }
