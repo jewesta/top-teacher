@@ -17,7 +17,7 @@ Planned technology:
 The repository is a Maven multi-module build:
 
 - `topteacher-app` contains the Spring Boot and Vaadin application.
-- `topteacher-markdown` contains reusable Vaadin markdown editor components.
+- `westarps-vaadin-markdown` contains reusable Vaadin markdown editor components.
 
 Run the application:
 

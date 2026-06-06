@@ -1,4 +1,4 @@
-package de.westarps.topteacher.markdown;
+package de.westarps.vaadin.markdown;
 
 import java.util.Collection;
 import java.util.EnumSet;
@@ -13,19 +13,19 @@ import com.vaadin.flow.component.react.ReactAdapterComponent;
 import com.vaadin.flow.function.SerializableConsumer;
 
 @SuppressWarnings("serial")
-@CssImport("./styles/tt-markdown-editor-styles.css")
+@CssImport("./styles/ws-markdown-editor-styles.css")
 @NpmPackage(value = "@uiw/react-md-editor", version = "4.0.4")
 @NpmPackage(value = "rehype-sanitize", version = "6.0.0")
-abstract class TopTeacherMarkdownComponent extends ReactAdapterComponent implements HasSize {
+abstract class MarkdownComponent extends ReactAdapterComponent implements HasSize {
 
 	private String content;
 	private Set<MarkdownExtension> extensions = EnumSet.noneOf(MarkdownExtension.class);
 
-	protected TopTeacherMarkdownComponent() {
+	protected MarkdownComponent() {
 		this("");
 	}
 
-	protected TopTeacherMarkdownComponent(final String content) {
+	protected MarkdownComponent(final String content) {
 		setContent(content);
 		addContentChangeListener(newContent -> this.content = normalized(newContent));
 	}

@@ -18,9 +18,9 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 
 import de.westarps.topteacher.backend.repo.ExpectationHorizonRepository;
-import de.westarps.topteacher.markdown.TopTeacherMarkdownEditor;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.ExamNoteSection;
+import de.westarps.vaadin.markdown.MarkdownEditor;
 
 public class ExamNotesEditor extends VerticalLayout {
 
@@ -104,7 +104,7 @@ public class ExamNotesEditor extends VerticalLayout {
 			replaceNoteSection(updatedNoteSection);
 		});
 
-		final TopTeacherMarkdownEditor description = new TopTeacherMarkdownEditor(noteSection.descriptionMarkdown());
+		final MarkdownEditor description = new MarkdownEditor(noteSection.descriptionMarkdown());
 		description.addClassName("tt-markdown-editor");
 		description.setPlaceholder("Beschreibung");
 		description.setWidthFull();
@@ -199,7 +199,7 @@ public class ExamNotesEditor extends VerticalLayout {
 		return emptyState;
 	}
 
-	private String value(final TopTeacherMarkdownEditor editor) {
+	private String value(final MarkdownEditor editor) {
 		return editor.getValue() == null ? "" : editor.getValue();
 	}
 

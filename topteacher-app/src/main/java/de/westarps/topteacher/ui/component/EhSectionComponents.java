@@ -18,8 +18,8 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
 
-import de.westarps.topteacher.markdown.MarkdownExtension;
-import de.westarps.topteacher.markdown.TopTeacherMarkdownEditor;
+import de.westarps.vaadin.markdown.MarkdownEditor;
+import de.westarps.vaadin.markdown.MarkdownExtension;
 
 final class EhSectionComponents {
 
@@ -43,9 +43,8 @@ final class EhSectionComponents {
 		return field;
 	}
 
-	TopTeacherMarkdownEditor markdownEditor(final String value, final String placeholder,
-			final MarkdownExtension... extensions) {
-		final TopTeacherMarkdownEditor editor = new TopTeacherMarkdownEditor(value == null ? "" : value);
+	MarkdownEditor markdownEditor(final String value, final String placeholder, final MarkdownExtension... extensions) {
+		final MarkdownEditor editor = new MarkdownEditor(value == null ? "" : value);
 		editor.setExtensions(extensions);
 		editor.addClassName("tt-markdown-editor");
 		editor.setPlaceholder(placeholder);
@@ -54,7 +53,7 @@ final class EhSectionComponents {
 		return editor;
 	}
 
-	Component markdownBlock(final String label, final TopTeacherMarkdownEditor editor) {
+	Component markdownBlock(final String label, final MarkdownEditor editor) {
 		final Span editorLabel = new Span(label);
 		editorLabel.addClassName("tt-field-label");
 

@@ -1,4 +1,4 @@
-package de.westarps.topteacher.markdown;
+package de.westarps.vaadin.markdown;
 
 import java.util.Collection;
 import java.util.EnumSet;
@@ -8,14 +8,14 @@ import com.vaadin.flow.component.Tag;
 import com.vaadin.flow.component.dependency.JsModule;
 
 @SuppressWarnings("serial")
-@JsModule("./de/westarps/topteacher/markdown/tt-markdown-editor.tsx")
-@Tag("tt-markdown-editor")
-final class TopTeacherMarkdownEditorComponent extends TopTeacherMarkdownComponent {
+@JsModule("./de/westarps/vaadin/markdown/ws-markdown-editor.tsx")
+@Tag("ws-markdown-editor")
+final class MarkdownEditorComponent extends MarkdownComponent {
 
 	private static final int UNLIMITED = -1;
 	private Set<MarkdownToolbarCommand> hiddenToolbarCommands = EnumSet.of(MarkdownToolbarCommand.IMAGE);
 
-	TopTeacherMarkdownEditorComponent() {
+	MarkdownEditorComponent() {
 		super("");
 		setHiddenToolbarCommands(hiddenToolbarCommands);
 	}

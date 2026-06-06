@@ -21,12 +21,12 @@ type MarkdownNode = {
 export type MarkdownExtensionId = 'EH_CRITERIA';
 export type MarkdownToolbarCommandId = 'IMAGE';
 
-export type TopTeacherMarkdownOptions = {
+export type MarkdownOptions = {
   extensions: MarkdownExtensionId[];
   hiddenToolbarCommands?: MarkdownToolbarCommandId[];
 };
 
-type TopTeacherMarkdownExtension = {
+type MarkdownExtension = {
   id: MarkdownExtensionId;
   command?: ICommand;
   remarkPlugins?: PluggableList;
@@ -78,7 +78,7 @@ const criterionCommand: ICommand = {
   },
 };
 
-const ehCriteriaExtension: TopTeacherMarkdownExtension = {
+const ehCriteriaExtension: MarkdownExtension = {
   id: 'EH_CRITERIA',
   command: criterionCommand,
   remarkPlugins: [remarkCriteria] as PluggableList,
@@ -87,13 +87,16 @@ const ehCriteriaExtension: TopTeacherMarkdownExtension = {
     tagNames: [...(schema.tagNames ?? []), 'mark', 'span'],
     attributes: {
       ...schema.attributes,
-      mark: [...(schema.attributes?.mark ?? []), ['className', 'tt-criterion-highlight']],
-      span: [...(schema.attributes?.span ?? []), ['className', 'tt-criterion', 'tt-criterion-badge']],
+      mark: [...(schema.attributes?.mark ?? []), ['className', 'ws-markdown-tag-highlight']],
+      span: [
+        ...(schema.attributes?.span ?? []),
+        ['className', 'ws-markdown-tag', 'ws-markdown-tag-badge'],
+      ],
     },
   }),
 };
 
-const extensionsById = new Map<MarkdownExtensionId, TopTeacherMarkdownExtension>([
+const extensionsById = new Map<MarkdownExtensionId, MarkdownExtension>([
   [ehCriteriaExtension.id, ehCriteriaExtension],
 ]);
 
@@ -104,7 +107,7 @@ export function markdownStateIds<T extends string>(stateValue: string): T[] {
     .filter(Boolean) as T[];
 }
 
-export function topTeacherMarkdownCommands(options: TopTeacherMarkdownOptions): ICommand[] {
+export function markdownCommands(options: MarkdownOptions): ICommand[] {
   const extensionCommands = enabledExtensions(options.extensions)
     .map((extension) => extension.command)
     .filter((command): command is ICommand => Boolean(command));
@@ -112,11 +115,11 @@ export function topTeacherMarkdownCommands(options: TopTeacherMarkdownOptions): 
   return filterCommands(commandsWithExtensions, hiddenCommandNames(options.hiddenToolbarCommands ?? []));
 }
 
-export function topTeacherMarkdownExtraCommands(options: TopTeacherMarkdownOptions): ICommand[] {
+export function markdownExtraCommands(options: MarkdownOptions): ICommand[] {
   return filterCommands(commands.getExtraCommands(), hiddenCommandNames(options.hiddenToolbarCommands ?? []));
 }
 
-export function topTeacherMarkdownPreviewOptions(options: Pick<TopTeacherMarkdownOptions, 'extensions'>) {
+export function markdownPreviewOptions(options: Pick<MarkdownOptions, 'extensions'>) {
   const extensions = enabledExtensions(options.extensions);
   const remarkPlugins = extensions.flatMap((extension) => extension.remarkPlugins ?? []) as PluggableList;
   const sanitizeSchema = extensions.reduce(
@@ -130,11 +133,11 @@ export function topTeacherMarkdownPreviewOptions(options: Pick<TopTeacherMarkdow
   };
 }
 
-function enabledExtensions(ids: MarkdownExtensionId[]): TopTeacherMarkdownExtension[] {
+function enabledExtensions(ids: MarkdownExtensionId[]): MarkdownExtension[] {
   const uniqueIds = new Set(ids);
   return [...uniqueIds]
     .map((id) => extensionsById.get(id))
-    .filter((extension): extension is TopTeacherMarkdownExtension => Boolean(extension));
+    .filter((extension): extension is MarkdownExtension => Boolean(extension));
 }
 
 function insertBeforeFirstDivider(baseCommands: ICommand[], command: ICommand): ICommand[] {
@@ -201,7 +204,7 @@ function criterionNode(id: string, children: MarkdownNode[]): MarkdownNode {
     data: {
       hName: 'span',
       hProperties: {
-        className: ['tt-criterion'],
+        className: ['ws-markdown-tag'],
       },
     },
     children: [
@@ -210,7 +213,7 @@ function criterionNode(id: string, children: MarkdownNode[]): MarkdownNode {
         data: {
           hName: 'mark',
           hProperties: {
-            className: ['tt-criterion-highlight'],
+            className: ['ws-markdown-tag-highlight'],
           },
         },
         children,
@@ -220,7 +223,7 @@ function criterionNode(id: string, children: MarkdownNode[]): MarkdownNode {
         data: {
           hName: 'span',
           hProperties: {
-            className: ['tt-criterion-badge'],
+            className: ['ws-markdown-tag-badge'],
           },
         },
         children: [{ type: 'text', value: id }],

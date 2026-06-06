@@ -12,15 +12,15 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 
-import de.westarps.topteacher.markdown.MarkdownExtension;
-import de.westarps.topteacher.markdown.TopTeacherMarkdownEditor;
 import de.westarps.topteacher.model.EhRequirement;
+import de.westarps.vaadin.markdown.MarkdownEditor;
+import de.westarps.vaadin.markdown.MarkdownExtension;
 
 final class EhRequirementSection extends Composite<VerticalLayout> implements EhEditable {
 
 	private final EhRequirement requirement;
 	private final Handler handler;
-	private final TopTeacherMarkdownEditor descriptionEditor;
+	private final MarkdownEditor descriptionEditor;
 	private final IntegerField maxPoints;
 	private final Checkbox bonus;
 	private final Component summary;
@@ -39,7 +39,7 @@ final class EhRequirementSection extends Composite<VerticalLayout> implements Eh
 	}
 
 	private EhRequirementSection(final EhRequirement requirement, final EhSectionComponents components,
-			final Handler handler, final TopTeacherMarkdownEditor descriptionEditor, final String requirementNumber,
+			final Handler handler, final MarkdownEditor descriptionEditor, final String requirementNumber,
 			final IntegerField maxPoints, final Checkbox bonus, final List<EhRequirement> siblings) {
 		this.requirement = requirement;
 		this.handler = handler;
@@ -158,7 +158,7 @@ final class EhRequirementSection extends Composite<VerticalLayout> implements Eh
 				"""));
 	}
 
-	private static String componentsValue(final TopTeacherMarkdownEditor editor) {
+	private static String componentsValue(final MarkdownEditor editor) {
 		return normalized(editor.getValue());
 	}
 

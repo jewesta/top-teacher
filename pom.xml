@@ -19,7 +19,7 @@
     <description>Local-network web utility for managing pupils' grades and printing result sheets.</description>
 
     <modules>
-        <module>topteacher-markdown</module>
+        <module>westarps-vaadin-markdown</module>
         <module>topteacher-app</module>
     </modules>
 

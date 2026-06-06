@@ -11,9 +11,10 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>topteacher-markdown</artifactId>
-    <name>TopTeacher Markdown</name>
-    <description>Reusable Vaadin markdown editor components for TopTeacher.</description>
+    <groupId>de.westarps.vaadin</groupId>
+    <artifactId>westarps-vaadin-markdown</artifactId>
+    <name>Westarps Vaadin Markdown</name>
+    <description>Reusable Vaadin markdown editor components.</description>
 
     <dependencies>
         <dependency>

@@ -1,4 +1,4 @@
-package de.westarps.topteacher.markdown;
+package de.westarps.vaadin.markdown;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -6,16 +6,25 @@ import java.util.Set;
 
 import com.vaadin.flow.component.AbstractCompositeField;
 import com.vaadin.flow.component.HasSize;
+import com.vaadin.flow.component.dependency.CssImport;
+import com.vaadin.flow.component.dependency.JsModule;
+import com.vaadin.flow.component.dependency.NpmPackage;
+import com.vaadin.flow.component.dependency.Uses;
 
 @SuppressWarnings("serial")
-public class TopTeacherMarkdownEditor extends
-		AbstractCompositeField<TopTeacherMarkdownEditorComponent, TopTeacherMarkdownEditor, String> implements HasSize {
+@CssImport("./styles/ws-markdown-editor-styles.css")
+@JsModule("./de/westarps/vaadin/markdown/ws-markdown-editor.tsx")
+@NpmPackage(value = "@uiw/react-md-editor", version = "4.0.4")
+@NpmPackage(value = "rehype-sanitize", version = "6.0.0")
+@Uses(MarkdownEditorComponent.class)
+public class MarkdownEditor extends AbstractCompositeField<MarkdownEditorComponent, MarkdownEditor, String>
+		implements HasSize {
 
-	public TopTeacherMarkdownEditor() {
+	public MarkdownEditor() {
 		this("");
 	}
 
-	public TopTeacherMarkdownEditor(final String initialValue) {
+	public MarkdownEditor(final String initialValue) {
 		super("");
 		getEditor().addContentChangeListener(newValue -> setModelValue(normalized(newValue), true));
 		getEditor().setContent(normalized(initialValue));
@@ -78,8 +87,8 @@ public class TopTeacherMarkdownEditor extends
 	}
 
 	@Override
-	protected TopTeacherMarkdownEditorComponent initContent() {
-		return new TopTeacherMarkdownEditorComponent();
+	protected MarkdownEditorComponent initContent() {
+		return new MarkdownEditorComponent();
 	}
 
 	@Override
@@ -87,7 +96,7 @@ public class TopTeacherMarkdownEditor extends
 		getEditor().setContent(normalized(newPresentationValue));
 	}
 
-	private TopTeacherMarkdownEditorComponent getEditor() {
+	private MarkdownEditorComponent getEditor() {
 		return getContent();
 	}
 

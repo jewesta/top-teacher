@@ -6,11 +6,11 @@ import '@uiw/react-md-editor/markdown-editor.css';
 import '@uiw/react-markdown-preview/markdown.css';
 import {
   type MarkdownExtensionId,
+  markdownPreviewOptions,
   markdownStateIds,
-  topTeacherMarkdownPreviewOptions,
-} from './tt-markdown-support';
+} from './ws-markdown-support';
 
-class TopTeacherMarkdownViewerElement extends ReactAdapterElement {
+class MarkdownViewerElement extends ReactAdapterElement {
   protected override render(hooks: RenderHooks): ReactElement | null {
     const [content] = hooks.useState<string>('content', '');
     const [extensionsState] = hooks.useState<string>('extensions', '');
@@ -22,10 +22,10 @@ class TopTeacherMarkdownViewerElement extends ReactAdapterElement {
       <MDEditor.Markdown
         key={`${content}:${extensionsState}`}
         source={content}
-        {...topTeacherMarkdownPreviewOptions(markdownOptions)}
+        {...markdownPreviewOptions(markdownOptions)}
       />
     );
   }
 }
 
-customElements.define('tt-markdown-viewer', TopTeacherMarkdownViewerElement);
+customElements.define('ws-markdown-viewer', MarkdownViewerElement);

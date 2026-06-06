@@ -18,18 +18,18 @@
 	height: 100%;
 }
 
-.tt-criterion {
+.ws-markdown-tag {
 	display: inline;
 }
 
-.tt-criterion-highlight {
-	background: var(--tt-criterion-highlight-color, #fff3bf);
+.ws-markdown-tag-highlight {
+	background: var(--ws-markdown-tag-highlight-color, #fff3bf);
 	border-radius: var(--lumo-border-radius-s);
 	padding: 0 0.15em;
 }
 
-.tt-criterion-badge,
-.tt-criterion > .tt-criterion-highlight + span {
+.ws-markdown-tag-badge,
+.ws-markdown-tag > .ws-markdown-tag-highlight + span {
 	align-items: center;
 	background: var(--lumo-contrast-70pct);
 	border-radius: 999px;

@@ -17,8 +17,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>de.westarps.topteacher</groupId>
-            <artifactId>topteacher-markdown</artifactId>
+            <groupId>de.westarps.vaadin</groupId>
+            <artifactId>westarps-vaadin-markdown</artifactId>
             <version>${project.version}</version>
         </dependency>
 

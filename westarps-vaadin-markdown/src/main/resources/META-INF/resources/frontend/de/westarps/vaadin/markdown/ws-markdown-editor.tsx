@@ -7,13 +7,13 @@ import '@uiw/react-markdown-preview/markdown.css';
 import {
   type MarkdownExtensionId,
   type MarkdownToolbarCommandId,
+  markdownCommands,
+  markdownExtraCommands,
+  markdownPreviewOptions,
   markdownStateIds,
-  topTeacherMarkdownCommands,
-  topTeacherMarkdownExtraCommands,
-  topTeacherMarkdownPreviewOptions,
-} from './tt-markdown-support';
+} from './ws-markdown-support';
 
-class TopTeacherMarkdownEditorElement extends ReactAdapterElement {
+class MarkdownEditorElement extends ReactAdapterElement {
   protected override render(hooks: RenderHooks): ReactElement | null {
     const [content, setContent] = hooks.useState<string>('content', '');
     const [placeholder] = hooks.useState<string>('placeholder', '');
@@ -27,9 +27,9 @@ class TopTeacherMarkdownEditorElement extends ReactAdapterElement {
 
     return (
       <MDEditor
-        commands={topTeacherMarkdownCommands(markdownOptions)}
-        extraCommands={topTeacherMarkdownExtraCommands(markdownOptions)}
-        previewOptions={topTeacherMarkdownPreviewOptions(markdownOptions)}
+        commands={markdownCommands(markdownOptions)}
+        extraCommands={markdownExtraCommands(markdownOptions)}
+        previewOptions={markdownPreviewOptions(markdownOptions)}
         textareaProps={{
           placeholder,
           maxLength: maxLength >= 0 ? maxLength : undefined,
@@ -42,4 +42,4 @@ class TopTeacherMarkdownEditorElement extends ReactAdapterElement {
   }
 }
 
-customElements.define('tt-markdown-editor', TopTeacherMarkdownEditorElement);
+customElements.define('ws-markdown-editor', MarkdownEditorElement);

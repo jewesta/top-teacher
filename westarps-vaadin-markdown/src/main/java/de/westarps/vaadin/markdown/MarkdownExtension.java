@@ -1,4 +1,4 @@
-package de.westarps.topteacher.markdown;
+package de.westarps.vaadin.markdown;
 
 public enum MarkdownExtension {
 

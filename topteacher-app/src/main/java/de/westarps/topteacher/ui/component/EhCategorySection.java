@@ -8,13 +8,13 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.textfield.TextField;
 
-import de.westarps.topteacher.markdown.TopTeacherMarkdownEditor;
 import de.westarps.topteacher.model.EhCategory;
+import de.westarps.vaadin.markdown.MarkdownEditor;
 
 final class EhCategorySection extends AbstractEhSection<EhCategory> {
 
 	private final TextField title;
-	private final TopTeacherMarkdownEditor description;
+	private final MarkdownEditor description;
 	private final Handler handler;
 	private String savedTitle;
 	private String savedDescriptionMarkdown;
@@ -31,7 +31,7 @@ final class EhCategorySection extends AbstractEhSection<EhCategory> {
 	private EhCategorySection(final EhCategory category, final List<EhCategory> siblings,
 			final List<EhTaskSection> tasks, final EhSectionComponents components, final EhCollapseState collapseState,
 			final Handler handler, final List<String> descendantKeys, final TextField title,
-			final TopTeacherMarkdownEditor description, final EhPointBadge pointBadge) {
+			final MarkdownEditor description, final EhPointBadge pointBadge) {
 		super(category, "tt-eh-category", components.summary("Leistungskategorie", title, pointBadge), pointBadge,
 				tasks);
 		this.title = title;
@@ -74,7 +74,7 @@ final class EhCategorySection extends AbstractEhSection<EhCategory> {
 		return value == null || value.isBlank();
 	}
 
-	private static String componentsValue(final TopTeacherMarkdownEditor editor) {
+	private static String componentsValue(final MarkdownEditor editor) {
 		return normalized(editor.getValue());
 	}
 
