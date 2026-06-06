@@ -51,6 +51,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private final Map<Integer, IntegerField> requirementPointFields = new HashMap<>();
 	private final Map<Integer, TextArea> requirementCommentFields = new HashMap<>();
 	private final Map<Integer, MarkdownViewer> requirementDescriptions = new HashMap<>();
+	private final Map<Integer, Span> requirementCriterionIndicators = new HashMap<>();
 	private final Map<Integer, Boolean> editedCriterionResults = new HashMap<>();
 	private final Map<Integer, Integer> editedRequirementResults = new HashMap<>();
 	private final Map<Integer, String> editedRequirementComments = new HashMap<>();
@@ -198,6 +199,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 		requirementPointFields.clear();
 		requirementCommentFields.clear();
 		requirementDescriptions.clear();
+		requirementCriterionIndicators.clear();
 	}
 
 	private void loadSelectedPupilResults() {
@@ -232,6 +234,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 		} finally {
 			applyingResultState = false;
 		}
+		refreshCriterionIndicators();
 		refreshPointBadges();
 		saveController.update();
 		updateDeleteButton();
@@ -317,20 +320,23 @@ public class ExamResultsEditor extends AbstractDesigner {
 	}
 
 	private Component requirementBlock(final EhTask task, final EhRequirement requirement) {
-		final VerticalLayout block = new VerticalLayout();
+		final HorizontalLayout block = new HorizontalLayout();
 		block.addClassName("tt-results-requirement");
 		block.setPadding(false);
+		block.setSpacing(false);
 		block.setWidthFull();
-
-		block.add(requirementHeader(task, requirement));
+		block.setAlignItems(Alignment.STRETCH);
 
 		final List<EhCriterion> requirementCriteria = criteriaFor(requirement);
 		final Map<String, EhCriterion> criteriaByKey = requirementCriteria.stream()
 				.collect(Collectors.toMap(EhCriterion::criterionKey, criterion -> criterion));
 		final String descriptionMarkdown = normalized(requirement.descriptionMarkdown());
 
-		final Div descriptionArea = new Div();
-		descriptionArea.addClassName("tt-results-requirement-description-area");
+		final VerticalLayout descriptionArea = new VerticalLayout();
+		descriptionArea.addClassName("tt-results-requirement-content");
+		descriptionArea.setPadding(false);
+		descriptionArea.setSpacing(false);
+		descriptionArea.setWidthFull();
 		if (!descriptionMarkdown.isBlank()) {
 			final MarkdownViewer description = new MarkdownViewer(descriptionMarkdown);
 			description.setTag(EhSectionComponents.CRITERION_TAG);
@@ -348,6 +354,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 				final EhCriterion criterion = criteriaByKey.get(change.key());
 				if (criterion != null) {
 					editedCriterionResults.put(criterion.id(), change.checked());
+					refreshCriterionIndicator(requirement);
 					saveController.update();
 				}
 			});
@@ -356,19 +363,42 @@ public class ExamResultsEditor extends AbstractDesigner {
 			requirementDescriptions.put(requirement.id(), description);
 			descriptionArea.add(description);
 		}
+		if (!requirementCriteria.isEmpty()) {
+			descriptionArea.add(criterionIndicator(requirement));
+		}
 		descriptionArea.add(commentField(requirement));
 
-		final Div pointsColumn = new Div();
-		pointsColumn.addClassName("tt-results-points-column-spacer");
+		final Div pointsArea = new Div(pointsControl(requirement));
+		pointsArea.addClassName("tt-results-requirement-points-area");
 
-		final HorizontalLayout body = new HorizontalLayout(descriptionArea, pointsColumn);
-		body.addClassName("tt-results-requirement-body");
-		body.setFlexGrow(1, descriptionArea);
-		body.setPadding(false);
-		body.setSpacing(false);
-		body.setWidthFull();
-		block.add(body);
+		block.add(requirementMarker(task, requirement), descriptionArea, pointsArea);
+		block.setFlexGrow(1, descriptionArea);
 		return block;
+	}
+
+	private Span criterionIndicator(final EhRequirement requirement) {
+		final Span indicator = new Span();
+		indicator.addClassName("tt-results-criteria-indicator");
+		indicator.getElement().setAttribute("aria-label", "Markierte Kriterien");
+		requirementCriterionIndicators.put(requirement.id(), indicator);
+		refreshCriterionIndicator(requirement);
+		return indicator;
+	}
+
+	private void refreshCriterionIndicators() {
+		requirements.forEach(this::refreshCriterionIndicator);
+	}
+
+	private void refreshCriterionIndicator(final EhRequirement requirement) {
+		final Span indicator = requirementCriterionIndicators.get(requirement.id());
+		if (indicator == null) {
+			return;
+		}
+
+		final List<EhCriterion> requirementCriteria = criteriaFor(requirement);
+		final long achieved = requirementCriteria.stream().filter(this::currentCriterionAchieved).count();
+		indicator.setText(achieved + "/" + requirementCriteria.size()
+				+ (requirementCriteria.size() == 1 ? " Kriterium" : " Kriterien"));
 	}
 
 	private TextArea commentField(final EhRequirement requirement) {
@@ -393,20 +423,17 @@ public class ExamResultsEditor extends AbstractDesigner {
 		return comment;
 	}
 
-	private Component requirementHeader(final EhTask task, final EhRequirement requirement) {
+	private Component requirementMarker(final EhTask task, final EhRequirement requirement) {
 		final String requirementNumber = requirementNumber(task, requirement);
-		final HorizontalLayout header = header(requirementNumberBadge(requirementNumber));
+		final VerticalLayout marker = new VerticalLayout(requirementNumberBadge(requirementNumber));
+		marker.addClassName("tt-results-requirement-marker");
+		marker.setAlignItems(Alignment.CENTER);
+		marker.setPadding(false);
+		marker.setSpacing(false);
 		if (requirement.bonus()) {
-			header.add(bonusIcon());
+			marker.add(bonusIcon());
 		}
-		final HorizontalLayout controls = new HorizontalLayout();
-		controls.addClassName("tt-results-requirement-controls");
-		controls.setAlignItems(Alignment.CENTER);
-		controls.setPadding(false);
-		controls.setSpacing(false);
-		controls.add(pointsControl(requirement));
-		header.add(controls);
-		return header;
+		return marker;
 	}
 
 	private static Span requirementNumberBadge(final String requirementNumber) {
@@ -425,11 +452,9 @@ public class ExamResultsEditor extends AbstractDesigner {
 	}
 
 	private Component pointsControl(final EhRequirement requirement) {
-		final Span label = new Span("Punkte");
-		label.addClassName("tt-field-label");
-
 		final IntegerField points = new IntegerField();
 		points.addClassName("tt-results-points-field");
+		points.setLabel("Punkte");
 		points.getElement().setAttribute("aria-label", "Punkte");
 		points.setMin(0);
 		points.setMax(requirement.maxPoints());
@@ -448,9 +473,9 @@ public class ExamResultsEditor extends AbstractDesigner {
 		final Span maximum = new Span("/ " + requirement.maxPoints());
 		maximum.addClassName("tt-results-points-maximum");
 
-		final HorizontalLayout control = new HorizontalLayout(label, points, maximum);
+		final HorizontalLayout control = new HorizontalLayout(points, maximum);
 		control.addClassName("tt-results-points-control");
-		control.setAlignItems(Alignment.CENTER);
+		control.setAlignItems(Alignment.END);
 		control.setPadding(false);
 		control.setSpacing(false);
 		return control;

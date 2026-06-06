@@ -92,13 +92,18 @@ class ExamResultsEditorTests {
 		editor.setExam(EXAM);
 
 		final Icon bonusIcon = bonusIcons(editor).getFirst();
-		final Component header = bonusIcon.getParent().orElseThrow();
-		final List<Component> headerChildren = header.getChildren().toList();
+		final Component marker = bonusIcon.getParent().orElseThrow();
+		final Component requirement = marker.getParent().orElseThrow();
+		final List<Component> markerChildren = marker.getChildren().toList();
+		final List<Component> requirementChildren = requirement.getChildren().toList();
 		assertThat(bonusIcons(editor)).hasSize(1);
-		assertThat(header.getClassNames()).contains("tt-results-header");
-		assertThat(headerChildren.get(0).getClassNames()).contains("tt-results-requirement-number");
-		assertThat(headerChildren.get(1)).isSameAs(bonusIcon);
-		assertThat(headerChildren.get(2).getClassNames()).contains("tt-results-requirement-controls");
+		assertThat(requirement.getClassNames()).contains("tt-results-requirement");
+		assertThat(marker.getClassNames()).contains("tt-results-requirement-marker");
+		assertThat(markerChildren.get(0).getClassNames()).contains("tt-results-requirement-number");
+		assertThat(markerChildren.get(1)).isSameAs(bonusIcon);
+		assertThat(requirementChildren.get(0)).isSameAs(marker);
+		assertThat(requirementChildren.get(1).getClassNames()).contains("tt-results-requirement-content");
+		assertThat(requirementChildren.get(2).getClassNames()).contains("tt-results-requirement-points-area");
 		assertThat(components(editor, IntegerField.class)).hasSize(2);
 	}
 
@@ -144,11 +149,13 @@ class ExamResultsEditorTests {
 		final TextArea comment = components(editor, TextArea.class).getFirst();
 		assertThat(points.getValue()).isEqualTo(1);
 		assertThat(comment.getValue()).isEmpty();
+		assertThat(criterionIndicatorTexts(editor)).containsExactly("0/1 Kriterium");
 
 		pupilSelector(editor).setValue(SECOND_PUPIL);
 
 		assertThat(points.getValue()).isEqualTo(4);
 		assertThat(comment.getValue()).isEqualTo("Guter Fortschritt.");
+		assertThat(criterionIndicatorTexts(editor)).containsExactly("1/1 Kriterium");
 		assertThat(components(editor, IntegerField.class).getFirst()).isSameAs(points);
 		assertThat(components(editor, TextArea.class).getFirst()).isSameAs(comment);
 		assertThat(badgeTexts(editor)).contains("Gesamtpunkte: 4 (+0)", "Summe: 4 (+0)");
@@ -188,6 +195,7 @@ class ExamResultsEditorTests {
 			assertThat(points.getValue()).isZero();
 			assertThat(comment.getValue()).isEmpty();
 			assertThat(deleteButton.isEnabled()).isFalse();
+			assertThat(criterionIndicatorTexts(editor)).containsExactly("0/1 Kriterium");
 			assertThat(badgeTexts(editor)).contains("Gesamtpunkte: 0 (+0)", "Summe: 0 (+0)");
 		} finally {
 			UI.setCurrent(null);
@@ -249,6 +257,13 @@ class ExamResultsEditorTests {
 	private static List<String> requirementNumberTexts(final Component root) {
 		return components(root, Span.class).stream()
 				.filter(span -> span.getClassNames().contains("tt-results-requirement-number"))
+				.map(Span::getText)
+				.toList();
+	}
+
+	private static List<String> criterionIndicatorTexts(final Component root) {
+		return components(root, Span.class).stream()
+				.filter(span -> span.getClassNames().contains("tt-results-criteria-indicator"))
 				.map(Span::getText)
 				.toList();
 	}
