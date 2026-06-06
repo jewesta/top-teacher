@@ -5,8 +5,11 @@ import java.util.Objects;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Composite;
-import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -21,37 +24,44 @@ final class EhRequirementSection extends Composite<VerticalLayout> implements Eh
 	private final Handler handler;
 	private final MarkdownEditor descriptionEditor;
 	private final IntegerField maxPoints;
-	private final Checkbox bonus;
+	private final Button bonusButton;
 	private final Component summary;
 	private final Component description;
 	private final Component actions;
 	private String savedDescriptionMarkdown;
 	private int savedMaxPoints;
 	private boolean savedBonus;
+	private boolean bonus;
 
 	EhRequirementSection(final EhRequirement requirement, final List<EhRequirement> siblings,
 			final EhSectionComponents components, final Handler handler, final String requirementNumber) {
 		this(requirement, components, handler,
 				components.requirementDescriptionEditor(requirement.descriptionMarkdown(), "Beschreibung"),
-				requirementNumber, maxPoints(requirement), bonus(requirement), siblings);
+				requirementNumber, maxPoints(requirement), bonusButton(), siblings);
 	}
 
 	private EhRequirementSection(final EhRequirement requirement, final EhSectionComponents components,
 			final Handler handler, final MarkdownEditor descriptionEditor, final String requirementNumber,
-			final IntegerField maxPoints, final Checkbox bonus, final List<EhRequirement> siblings) {
+			final IntegerField maxPoints, final Button bonusButton, final List<EhRequirement> siblings) {
 		this.requirement = requirement;
 		this.handler = handler;
 		this.descriptionEditor = descriptionEditor;
 		this.maxPoints = maxPoints;
-		this.bonus = bonus;
-		this.summary = components.requirementSummary(requirementNumber, headerControls(bonus, maxPoints));
+		this.bonusButton = bonusButton;
+		this.bonus = requirement.bonus();
+		this.summary = components.requirementSummary(requirementNumber, headerControls(bonusButton, maxPoints));
 		this.description = components.markdownBlock("Beschreibung", descriptionEditor);
 		this.savedDescriptionMarkdown = normalized(requirement.descriptionMarkdown());
 		this.savedMaxPoints = requirement.maxPoints();
 		this.savedBonus = requirement.bonus();
+		updateBonusButton();
 		components.trackDirty(descriptionEditor);
 		components.trackDirty(maxPoints);
-		components.trackDirty(bonus);
+		bonusButton.addClickListener(event -> {
+			bonus = !bonus;
+			updateBonusButton();
+			components.updateDirty();
+		});
 		this.actions = components.actionRow(components.actionComponentsWithMoveButtons(siblings, requirement, handler,
 				List.of(components.saveButton()),
 				List.of(components.deleteButton(event -> handler.delete(requirement)))));
@@ -78,7 +88,7 @@ final class EhRequirementSection extends Composite<VerticalLayout> implements Eh
 	@Override
 	public boolean isDirty() {
 		return !Objects.equals(savedDescriptionMarkdown, componentsValue(descriptionEditor))
-				|| !Objects.equals(savedMaxPoints, maxPoints.getValue()) || savedBonus != bonus.getValue();
+				|| !Objects.equals(savedMaxPoints, maxPoints.getValue()) || savedBonus != bonus;
 	}
 
 	@Override
@@ -92,7 +102,7 @@ final class EhRequirementSection extends Composite<VerticalLayout> implements Eh
 		}
 		final String descriptionMarkdown = componentsValue(descriptionEditor);
 		final int maxPointsValue = maxPoints.getValue();
-		final boolean bonusValue = bonus.getValue();
+		final boolean bonusValue = bonus;
 		handler.save(requirement, descriptionMarkdown, maxPointsValue, bonusValue);
 		savedDescriptionMarkdown = descriptionMarkdown;
 		savedMaxPoints = maxPointsValue;
@@ -111,27 +121,34 @@ final class EhRequirementSection extends Composite<VerticalLayout> implements Eh
 		return maxPoints;
 	}
 
-	private static Checkbox bonus(final EhRequirement requirement) {
-		final Checkbox bonus = new Checkbox();
-		bonus.getElement().setAttribute("aria-label", "Bonus");
-		bonus.setValue(requirement.bonus());
-		stopSummaryToggle(bonus);
-		return bonus;
+	private static Button bonusButton() {
+		final Icon star = VaadinIcon.STAR.create();
+
+		final Button bonusButton = new Button(star);
+		bonusButton.addClassName("tt-eh-bonus-toggle");
+		bonusButton.addThemeVariants(ButtonVariant.LUMO_ICON);
+		bonusButton.getElement().setAttribute("data-action", "toggle-bonus");
+		bonusButton.setAriaLabel("Sternchen-Aufgabe");
+		bonusButton.setTooltipText("Sternchen-Aufgabe / Bonusaufgabe");
+		stopSummaryToggle(bonusButton);
+		return bonusButton;
 	}
 
-	private static HorizontalLayout headerControls(final Checkbox bonus, final IntegerField maxPoints) {
-		final HorizontalLayout controls = new HorizontalLayout(bonusControl(bonus), maxPointsControl(maxPoints));
+	private void updateBonusButton() {
+		bonusButton.setClassName("tt-eh-bonus-toggle-active", bonus);
+		bonusButton.getElement().setAttribute("aria-pressed", String.valueOf(bonus));
+	}
+
+	private static HorizontalLayout headerControls(final Button bonusButton, final IntegerField maxPoints) {
+		final HorizontalLayout controls = new HorizontalLayout(bonusControl(bonusButton), maxPointsControl(maxPoints));
 		controls.addClassName("tt-eh-requirement-header-controls");
 		controls.setPadding(false);
 		controls.setSpacing(false);
 		return controls;
 	}
 
-	private static HorizontalLayout bonusControl(final Checkbox bonus) {
-		final Span label = new Span("Bonus");
-		label.addClassName("tt-field-label");
-
-		final HorizontalLayout control = new HorizontalLayout(label, bonus);
+	private static HorizontalLayout bonusControl(final Button bonusButton) {
+		final HorizontalLayout control = new HorizontalLayout(bonusButton);
 		control.addClassName("tt-eh-requirement-bonus-control");
 		control.setPadding(false);
 		control.setSpacing(false);

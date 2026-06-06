@@ -189,4 +189,8 @@ final class EhSectionComponents {
 	void trackDirty(final HasValue<?, ?> field) {
 		field.addValueChangeListener(event -> saveController.update());
 	}
+
+	void updateDirty() {
+		saveController.update();
+	}
 }

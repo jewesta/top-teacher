@@ -299,11 +299,6 @@ vaadin-app-layout::part(navbar) {
 	min-width: 0;
 }
 
-.tt-results-header .tt-eh-points {
-	margin-left: auto;
-	width: var(--tt-results-points-column-width);
-}
-
 .tt-results-title {
 	font-weight: 600;
 	min-width: 0;
@@ -466,6 +461,14 @@ vaadin-app-layout::part(navbar) {
 .tt-eh-requirement-points-control {
 	align-items: center;
 	gap: var(--lumo-space-s);
+}
+
+.tt-eh-bonus-toggle {
+	color: var(--lumo-secondary-text-color);
+}
+
+.tt-eh-bonus-toggle-active {
+	color: hsl(43, 86%, 42%);
 }
 
 .tt-eh-requirement-points-field {

@@ -232,8 +232,7 @@ public class ExamResultsEditor extends VerticalLayout {
 		block.setPadding(false);
 		block.setWidthFull();
 
-		block.add(header("Anforderung " + requirementNumber(task, requirement), "Max.",
-				() -> maxPointsForRequirement(requirement)));
+		block.add(header("Anforderung " + requirementNumber(task, requirement)));
 
 		final List<EhCriterion> requirementCriteria = criteriaFor(requirement);
 		final Map<String, EhCriterion> criteriaByKey = requirementCriteria.stream()
@@ -312,10 +311,16 @@ public class ExamResultsEditor extends VerticalLayout {
 	}
 
 	private Component header(final String titleText, final String badgeLabel, final Supplier<EhPoints> pointsSupplier) {
+		final HorizontalLayout header = header(titleText);
+		header.add(pointBadge(badgeLabel, pointsSupplier));
+		return header;
+	}
+
+	private HorizontalLayout header(final String titleText) {
 		final Span title = new Span(titleText);
 		title.addClassName("tt-results-title");
 
-		final HorizontalLayout header = new HorizontalLayout(title, pointBadge(badgeLabel, pointsSupplier));
+		final HorizontalLayout header = new HorizontalLayout(title);
 		header.addClassName("tt-results-header");
 		header.setPadding(false);
 		header.setWidthFull();
@@ -368,11 +373,6 @@ public class ExamResultsEditor extends VerticalLayout {
 	private EhPoints pointsForRequirement(final EhRequirement requirement) {
 		return requirement.bonus() ? new EhPoints(0, currentRequirementPoints(requirement))
 				: new EhPoints(currentRequirementPoints(requirement), 0);
-	}
-
-	private EhPoints maxPointsForRequirement(final EhRequirement requirement) {
-		return requirement.bonus() ? new EhPoints(0, requirement.maxPoints())
-				: new EhPoints(requirement.maxPoints(), 0);
 	}
 
 	private EhPoints sum(final List<EhRequirement> requirements) {

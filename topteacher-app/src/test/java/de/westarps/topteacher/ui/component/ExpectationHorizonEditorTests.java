@@ -16,7 +16,6 @@ import org.junit.jupiter.api.Test;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -97,7 +96,7 @@ class ExpectationHorizonEditorTests {
 		clearInvocations(repository);
 
 		components(editor, IntegerField.class).getFirst().setValue(7);
-		components(editor, Checkbox.class).getFirst().setValue(true);
+		bonusButtons(editor).getFirst().click();
 		final List<Button> saveButtons = saveButtons(editor);
 		saveButtons.getLast().click();
 
@@ -186,7 +185,7 @@ class ExpectationHorizonEditorTests {
 		editor.setExam(EXAM);
 
 		final IntegerField maxPoints = components(editor, IntegerField.class).getFirst();
-		final Checkbox bonus = components(editor, Checkbox.class).getFirst();
+		final Button bonus = bonusButtons(editor).getFirst();
 		final Component parent = maxPoints.getParent().orElseThrow();
 		final Component bonusParent = bonus.getParent().orElseThrow();
 		final Component headerControls = parent.getParent().orElseThrow();
@@ -199,12 +198,21 @@ class ExpectationHorizonEditorTests {
 		assertThat(parent.getClassNames()).contains("tt-eh-requirement-points-control");
 		assertThat(parent.getChildren().filter(Span.class::isInstance).map(Span.class::cast).map(Span::getText))
 				.containsExactly("Max. Punkte");
-		assertThat(bonus.getElement().getAttribute("aria-label")).isEqualTo("Bonus");
+		assertThat(bonus.getElement().getAttribute("aria-label")).isEqualTo("Sternchen-Aufgabe");
+		assertThat(bonus.getElement().getAttribute("aria-pressed")).isEqualTo("false");
+		assertThat(bonus.getIcon().getElement().getAttribute("icon")).isEqualTo("vaadin:star");
+		assertThat(bonus.getClassNames()).contains("tt-eh-bonus-toggle");
+		assertThat(bonus.getClassNames()).doesNotContain("tt-eh-bonus-toggle-active");
 		assertThat(bonusParent.getClassNames()).contains("tt-eh-requirement-bonus-control");
 		assertThat(bonusParent.getChildren().filter(Span.class::isInstance).map(Span.class::cast).map(Span::getText))
-				.containsExactly("Bonus");
+				.isEmpty();
 		assertThat(headerControls.getClassNames()).contains("tt-eh-requirement-header-controls");
 		assertThat(headerControls.getParent().orElseThrow().getClassNames()).contains("tt-eh-summary");
+
+		bonus.click();
+
+		assertThat(bonus.getElement().getAttribute("aria-pressed")).isEqualTo("true");
+		assertThat(bonus.getClassNames()).contains("tt-eh-bonus-toggle-active");
 	}
 
 	@Test
@@ -381,6 +389,11 @@ class ExpectationHorizonEditorTests {
 	private static List<Button> collapseButtons(final Component root) {
 		return components(root, Button.class).stream()
 				.filter(button -> "collapse-below".equals(button.getElement().getAttribute("data-action"))).toList();
+	}
+
+	private static List<Button> bonusButtons(final Component root) {
+		return components(root, Button.class).stream()
+				.filter(button -> "toggle-bonus".equals(button.getElement().getAttribute("data-action"))).toList();
 	}
 
 	private static String collapseIcon(final Button button) {
