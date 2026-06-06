@@ -49,7 +49,8 @@ final class EhRequirementSection extends Composite<VerticalLayout> implements Eh
 		this.maxPoints = maxPoints;
 		this.bonusButton = bonusButton;
 		this.bonus = requirement.bonus();
-		this.summary = components.requirementSummary(requirementNumber, headerControls(bonusButton, maxPoints));
+		this.summary = components.requirementSummary(requirementNumber, bonusControl(bonusButton),
+				headerControls(maxPoints));
 		this.description = components.markdownBlock("Beschreibung", descriptionEditor);
 		this.savedDescriptionMarkdown = normalized(requirement.descriptionMarkdown());
 		this.savedMaxPoints = requirement.maxPoints();
@@ -139,8 +140,8 @@ final class EhRequirementSection extends Composite<VerticalLayout> implements Eh
 		bonusButton.getElement().setAttribute("aria-pressed", String.valueOf(bonus));
 	}
 
-	private static HorizontalLayout headerControls(final Button bonusButton, final IntegerField maxPoints) {
-		final HorizontalLayout controls = new HorizontalLayout(bonusControl(bonusButton), maxPointsControl(maxPoints));
+	private static HorizontalLayout headerControls(final IntegerField maxPoints) {
+		final HorizontalLayout controls = new HorizontalLayout(maxPointsControl(maxPoints));
 		controls.addClassName("tt-eh-requirement-header-controls");
 		controls.setPadding(false);
 		controls.setSpacing(false);

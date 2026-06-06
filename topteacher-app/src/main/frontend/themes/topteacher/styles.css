@@ -515,6 +515,7 @@ vaadin-app-layout::part(navbar) {
 .tt-eh-requirement-header-controls {
 	align-items: center;
 	gap: var(--lumo-space-m);
+	margin-left: auto;
 }
 
 .tt-eh-requirement-bonus-control,

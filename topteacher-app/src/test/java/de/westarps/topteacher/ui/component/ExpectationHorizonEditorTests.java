@@ -207,7 +207,14 @@ class ExpectationHorizonEditorTests {
 		assertThat(bonusParent.getChildren().filter(Span.class::isInstance).map(Span.class::cast).map(Span::getText))
 				.isEmpty();
 		assertThat(headerControls.getClassNames()).contains("tt-eh-requirement-header-controls");
-		assertThat(headerControls.getParent().orElseThrow().getClassNames()).contains("tt-eh-summary");
+		final Component summary = headerControls.getParent().orElseThrow();
+		assertThat(summary.getClassNames()).contains("tt-eh-summary");
+		assertThat(bonusParent.getParent().orElseThrow()).isSameAs(summary);
+		final List<Component> summaryChildren = summary.getChildren().toList();
+		assertThat(summaryChildren.get(0)).isInstanceOf(Span.class);
+		assertThat(((Span) summaryChildren.get(0)).getText()).isEqualTo("Anforderung 1");
+		assertThat(summaryChildren.get(1)).isSameAs(bonusParent);
+		assertThat(summaryChildren.get(2)).isSameAs(headerControls);
 
 		bonus.click();
 

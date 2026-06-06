@@ -88,7 +88,14 @@ class ExamResultsEditorTests {
 
 		editor.setExam(EXAM);
 
+		final Icon bonusIcon = bonusIcons(editor).getFirst();
+		final Component header = bonusIcon.getParent().orElseThrow();
+		final List<Component> headerChildren = header.getChildren().toList();
 		assertThat(bonusIcons(editor)).hasSize(1);
+		assertThat(header.getClassNames()).contains("tt-results-header");
+		assertThat(headerChildren.get(0).getClassNames()).contains("tt-results-requirement-number");
+		assertThat(headerChildren.get(1)).isSameAs(bonusIcon);
+		assertThat(headerChildren.get(2).getClassNames()).contains("tt-results-requirement-controls");
 		assertThat(components(editor, IntegerField.class)).hasSize(2);
 	}
 

@@ -95,15 +95,15 @@ final class EhSectionComponents {
 		return summary;
 	}
 
-	Component requirementSummary(final String requirementNumber, final Component pointControl) {
+	Component requirementSummary(final String requirementNumber, final Component bonusControl,
+			final Component pointControl) {
 		final Span typeLabel = new Span("Anforderung " + requirementNumber);
 		typeLabel.addClassName("tt-eh-summary-type");
 
-		final HorizontalLayout summary = new HorizontalLayout(typeLabel, pointControl);
+		final HorizontalLayout summary = new HorizontalLayout(typeLabel, bonusControl, pointControl);
 		summary.addClassName("tt-eh-summary");
 		summary.setPadding(false);
 		summary.setWidthFull();
-		summary.setFlexGrow(1, typeLabel);
 		return summary;
 	}
 

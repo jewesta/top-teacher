@@ -368,14 +368,14 @@ public class ExamResultsEditor extends VerticalLayout {
 	private Component requirementHeader(final EhTask task, final EhRequirement requirement) {
 		final String requirementNumber = requirementNumber(task, requirement);
 		final HorizontalLayout header = header(requirementNumberBadge(requirementNumber));
+		if (requirement.bonus()) {
+			header.add(bonusIcon());
+		}
 		final HorizontalLayout controls = new HorizontalLayout();
 		controls.addClassName("tt-results-requirement-controls");
 		controls.setAlignItems(Alignment.CENTER);
 		controls.setPadding(false);
 		controls.setSpacing(false);
-		if (requirement.bonus()) {
-			controls.add(bonusIcon());
-		}
 		controls.add(pointsControl(requirement));
 		header.add(controls);
 		return header;
