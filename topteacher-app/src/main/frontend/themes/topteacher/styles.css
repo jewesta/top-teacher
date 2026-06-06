@@ -160,19 +160,31 @@ vaadin-app-layout::part(navbar) {
 	width: 100%;
 }
 
+.tt-exam-results-editor {
+	--tt-results-points-column-width: 12rem;
+}
+
 .tt-eh-scroll-area {
 	box-sizing: border-box;
+	flex: 1 1 auto;
 	gap: var(--lumo-space-m);
 	height: 100%;
+	min-height: 0;
 	overflow: auto;
 	padding-top: var(--lumo-space-m);
 	width: 100%;
 }
 
+.tt-eh-editor>.tt-eh-scroll-area {
+	height: auto;
+}
+
 .tt-eh-toolbar {
 	align-items: center;
+	box-sizing: border-box;
 	flex: 0 0 auto;
 	gap: var(--lumo-space-m);
+	padding-top: var(--lumo-space-m);
 	width: 100%;
 }
 
@@ -235,16 +247,21 @@ vaadin-app-layout::part(navbar) {
 }
 
 .tt-results-toolbar {
+	align-items: flex-end;
 	box-sizing: border-box;
-	padding: var(--lumo-space-m) var(--lumo-space-m) 0;
+	flex: 0 0 auto;
+	gap: var(--lumo-space-m);
+	padding-top: var(--lumo-space-m);
 }
 
 .tt-results-list {
 	box-sizing: border-box;
+	flex: 1 1 auto;
 	gap: var(--lumo-space-m);
-	height: 100%;
+	height: auto;
+	min-height: 0;
 	overflow: auto;
-	padding: var(--lumo-space-m);
+	padding-top: var(--lumo-space-m);
 	width: 100%;
 }
 
@@ -269,7 +286,10 @@ vaadin-app-layout::part(navbar) {
 	border-radius: var(--lumo-border-radius-m);
 	box-sizing: border-box;
 	gap: var(--lumo-space-s);
-	padding: var(--lumo-space-m);
+	padding-top: var(--lumo-space-m);
+	padding-left: var(--lumo-space-m);
+	padding-bottom: var(--lumo-space-m);
+	padding-right: 0px;
 	width: 100%;
 }
 
@@ -277,6 +297,11 @@ vaadin-app-layout::part(navbar) {
 	align-items: center;
 	gap: var(--lumo-space-s);
 	min-width: 0;
+}
+
+.tt-results-header .tt-eh-points {
+	margin-left: auto;
+	width: var(--tt-results-points-column-width);
 }
 
 .tt-results-title {
@@ -287,13 +312,37 @@ vaadin-app-layout::part(navbar) {
 	white-space: nowrap;
 }
 
+.tt-results-requirement-body {
+	align-items: flex-start;
+	gap: var(--lumo-space-m);
+	width: 100%;
+}
+
+.tt-results-requirement-description-area {
+	min-width: 0;
+	width: 100%;
+}
+
 .tt-results-requirement-description {
 	width: 100%;
 }
 
-.tt-eh-category,
-.tt-eh-task {
-/*	margin-right: 0px;*/
+.tt-results-points-control {
+	align-items: center;
+	flex: 0 0 var(--tt-results-points-column-width);
+	gap: var(--lumo-space-s);
+	margin-left: var(--lumo-space-m);
+	margin-right: var(--lumo-space-s);
+}
+
+.tt-results-points-field {
+	width: 6.5rem;
+}
+
+.tt-results-points-maximum {
+	color: var(--lumo-secondary-text-color);
+	font-size: var(--lumo-font-size-s);
+	white-space: nowrap;
 }
 
 .tt-eh-section-content {

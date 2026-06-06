@@ -18,6 +18,7 @@ import de.westarps.topteacher.model.EhCriterionParser;
 import de.westarps.topteacher.model.EhCriterionResult;
 import de.westarps.topteacher.model.EhPart;
 import de.westarps.topteacher.model.EhRequirement;
+import de.westarps.topteacher.model.EhRequirementResult;
 import de.westarps.topteacher.model.EhTask;
 import de.westarps.topteacher.model.ExamNoteSection;
 
@@ -31,6 +32,7 @@ public class ExpectationHorizonRepository {
 	private final RowMapper<EhRequirement> requirementRowMapper = this::mapRequirement;
 	private final RowMapper<EhCriterion> criterionRowMapper = this::mapCriterion;
 	private final RowMapper<EhCriterionResult> criterionResultRowMapper = this::mapCriterionResult;
+	private final RowMapper<EhRequirementResult> requirementResultRowMapper = this::mapRequirementResult;
 	private final RowMapper<ExamNoteSection> noteSectionRowMapper = this::mapNoteSection;
 
 	public ExpectationHorizonRepository(final NamedParameterJdbcTemplate jdbc) {
@@ -106,6 +108,19 @@ public class ExpectationHorizonRepository {
 				where p.exam_id = :examId
 				  and result.pupil_id = :pupilId
 				""", Map.of("examId", examId, "pupilId", pupilId), criterionResultRowMapper);
+	}
+
+	public List<EhRequirementResult> findRequirementResultsByExamAndPupil(final int examId, final int pupilId) {
+		return jdbc.query("""
+				select result.requirement_id, result.pupil_id, result.points
+				from eh_requirement_result result
+				join eh_requirement r on r.id = result.requirement_id
+				join eh_task t on t.id = r.task_id
+				join eh_category c on c.id = t.category_id
+				join eh_part p on p.id = c.part_id
+				where p.exam_id = :examId
+				  and result.pupil_id = :pupilId
+				""", Map.of("examId", examId, "pupilId", pupilId), requirementResultRowMapper);
 	}
 
 	public List<ExamNoteSection> findNoteSectionsByExamId(final int examId) {
@@ -197,6 +212,15 @@ public class ExpectationHorizonRepository {
 				.addValue("pupilId", result.pupilId()).addValue("achieved", result.achieved()));
 	}
 
+	public void saveRequirementResult(final EhRequirementResult result) {
+		jdbc.update("""
+				merge into eh_requirement_result (requirement_id, pupil_id, points)
+				key (requirement_id, pupil_id)
+				values (:requirementId, :pupilId, :points)
+				""", new MapSqlParameterSource().addValue("requirementId", result.requirementId())
+				.addValue("pupilId", result.pupilId()).addValue("points", result.points()));
+	}
+
 	public ExamNoteSection saveNoteSection(final ExamNoteSection noteSection) {
 		if (noteSection.id() == null) {
 			return insertNoteSection(noteSection);
@@ -216,21 +240,25 @@ public class ExpectationHorizonRepository {
 
 	public void deletePart(final int id) {
 		assertNoCriterionResultsForPart(id);
+		assertNoRequirementResultsForPart(id);
 		deleteById("eh_part", id);
 	}
 
 	public void deleteCategory(final int id) {
 		assertNoCriterionResultsForCategory(id);
+		assertNoRequirementResultsForCategory(id);
 		deleteById("eh_category", id);
 	}
 
 	public void deleteTask(final int id) {
 		assertNoCriterionResultsForTask(id);
+		assertNoRequirementResultsForTask(id);
 		deleteById("eh_task", id);
 	}
 
 	public void deleteRequirement(final int id) {
 		assertNoCriterionResultsForRequirement(id);
+		assertNoRequirementResultsForRequirement(id);
 		deleteById("eh_requirement", id);
 	}
 
@@ -426,7 +454,7 @@ public class ExpectationHorizonRepository {
 	}
 
 	private void assertNoCriterionResultsForPart(final int partId) {
-		assertNoCriterionResults("""
+		assertNoResults("""
 				select count(*)
 				from eh_criterion_result result
 				join eh_criterion cr on cr.id = result.criterion_id
@@ -438,7 +466,7 @@ public class ExpectationHorizonRepository {
 	}
 
 	private void assertNoCriterionResultsForCategory(final int categoryId) {
-		assertNoCriterionResults("""
+		assertNoResults("""
 				select count(*)
 				from eh_criterion_result result
 				join eh_criterion cr on cr.id = result.criterion_id
@@ -449,7 +477,7 @@ public class ExpectationHorizonRepository {
 	}
 
 	private void assertNoCriterionResultsForTask(final int taskId) {
-		assertNoCriterionResults("""
+		assertNoResults("""
 				select count(*)
 				from eh_criterion_result result
 				join eh_criterion cr on cr.id = result.criterion_id
@@ -459,7 +487,7 @@ public class ExpectationHorizonRepository {
 	}
 
 	private void assertNoCriterionResultsForRequirement(final int requirementId) {
-		assertNoCriterionResults("""
+		assertNoResults("""
 				select count(*)
 				from eh_criterion_result result
 				join eh_criterion cr on cr.id = result.criterion_id
@@ -467,7 +495,45 @@ public class ExpectationHorizonRepository {
 				""", requirementId);
 	}
 
-	private void assertNoCriterionResults(final String sql, final int id) {
+	private void assertNoRequirementResultsForPart(final int partId) {
+		assertNoResults("""
+				select count(*)
+				from eh_requirement_result result
+				join eh_requirement r on r.id = result.requirement_id
+				join eh_task t on t.id = r.task_id
+				join eh_category c on c.id = t.category_id
+				where c.part_id = :id
+				""", partId);
+	}
+
+	private void assertNoRequirementResultsForCategory(final int categoryId) {
+		assertNoResults("""
+				select count(*)
+				from eh_requirement_result result
+				join eh_requirement r on r.id = result.requirement_id
+				join eh_task t on t.id = r.task_id
+				where t.category_id = :id
+				""", categoryId);
+	}
+
+	private void assertNoRequirementResultsForTask(final int taskId) {
+		assertNoResults("""
+				select count(*)
+				from eh_requirement_result result
+				join eh_requirement r on r.id = result.requirement_id
+				where r.task_id = :id
+				""", taskId);
+	}
+
+	private void assertNoRequirementResultsForRequirement(final int requirementId) {
+		assertNoResults("""
+				select count(*)
+				from eh_requirement_result result
+				where result.requirement_id = :id
+				""", requirementId);
+	}
+
+	private void assertNoResults(final String sql, final int id) {
 		final Integer count = jdbc.queryForObject(sql, Map.of("id", id), Integer.class);
 		if (count != null && count > 0) {
 			throw new IllegalStateException("Für diesen Bereich wurden bereits Ergebnisse erfasst.");
@@ -549,6 +615,12 @@ public class ExpectationHorizonRepository {
 	private EhCriterionResult mapCriterionResult(final ResultSet resultSet, final int rowNumber) throws SQLException {
 		return new EhCriterionResult(resultSet.getInt("criterion_id"), resultSet.getInt("pupil_id"),
 				resultSet.getBoolean("achieved"));
+	}
+
+	private EhRequirementResult mapRequirementResult(final ResultSet resultSet, final int rowNumber)
+			throws SQLException {
+		return new EhRequirementResult(resultSet.getInt("requirement_id"), resultSet.getInt("pupil_id"),
+				resultSet.getInt("points"));
 	}
 
 	private ExamNoteSection mapNoteSection(final ResultSet resultSet, final int rowNumber) throws SQLException {

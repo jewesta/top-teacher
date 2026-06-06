@@ -22,6 +22,7 @@ import de.westarps.topteacher.model.EhCriterion;
 import de.westarps.topteacher.model.EhCriterionResult;
 import de.westarps.topteacher.model.EhPart;
 import de.westarps.topteacher.model.EhRequirement;
+import de.westarps.topteacher.model.EhRequirementResult;
 import de.westarps.topteacher.model.EhTask;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.ExamNoteSection;
@@ -159,6 +160,26 @@ class ExpectationHorizonRepositoryTests {
 				.saveCriterionResult(new EhCriterionResult(firstCriterion.id(), pupil.id(), false));
 		assertThat(expectationHorizonRepository.findCriterionResultsByExamAndPupil(exam.id(), pupil.id()))
 				.containsExactly(new EhCriterionResult(firstCriterion.id(), pupil.id(), false));
+	}
+
+	@Test
+	void storesRequirementResultsAndProtectsHierarchyDeletion() {
+		final Exam exam = createExam(2040, "EH Requirement Results");
+		final EhPart part = expectationHorizonRepository.savePart(new EhPart(null, exam.id(), "Klausurteil A", 0));
+		final EhCategory category = expectationHorizonRepository
+				.saveCategory(new EhCategory(null, part.id(), "Sprache", "", 0));
+		final EhTask task = expectationHorizonRepository.saveTask(new EhTask(null, category.id(), "Teilaufgabe 1", 0));
+		final EhRequirement requirement = expectationHorizonRepository
+				.saveRequirement(new EhRequirement(null, task.id(), "Formuliert sauber.", 4, false, 0));
+		final Pupil pupil = pupilRepository.save(new Pupil(null, "Test", "Punkte", Lifecycle.ACTIVE));
+
+		expectationHorizonRepository.saveRequirementResult(new EhRequirementResult(requirement.id(), pupil.id(), 3));
+
+		assertThat(expectationHorizonRepository.findRequirementResultsByExamAndPupil(exam.id(), pupil.id()))
+				.containsExactly(new EhRequirementResult(requirement.id(), pupil.id(), 3));
+		assertThatThrownBy(() -> expectationHorizonRepository.deleteRequirement(requirement.id()))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessage("Für diesen Bereich wurden bereits Ergebnisse erfasst.");
 	}
 
 	private Exam createExam(final int calendarYear, final String title) {

@@ -159,10 +159,10 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 			loadItems();
 		}
 
-		final VerticalLayout content = new VerticalLayout(createToolbar());
+		final VerticalLayout content = new VerticalLayout();
 		content.addClassName("tt-eh-scroll-area");
 		content.setPadding(false);
-		content.setSizeFull();
+		content.setWidthFull();
 
 		if (parts.isEmpty()) {
 			content.add(emptyState("Noch kein Erwartungshorizont angelegt."));
@@ -172,6 +172,7 @@ public class ExpectationHorizonEditor extends VerticalLayout {
 			content.add(expectationHorizonLight());
 		}
 
+		add(createToolbar());
 		add(content);
 		expand(content);
 		saveController.update();
