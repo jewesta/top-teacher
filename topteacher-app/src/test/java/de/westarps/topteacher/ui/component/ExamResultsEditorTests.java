@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.textfield.IntegerField;
 
@@ -57,6 +58,7 @@ class ExamResultsEditorTests {
 		assertThat(saveButton.isEnabled()).isFalse();
 		assertThat(points.getValue()).isEqualTo(1);
 		assertThat(badgeTexts(editor)).contains("Gesamtpunkte: 1 (+0)", "Summe: 1 (+0)");
+		assertThat(requirementNumberTexts(editor)).containsExactly("1");
 
 		points.setValue(3);
 
@@ -126,6 +128,13 @@ class ExamResultsEditorTests {
 	private static List<Icon> bonusIcons(final Component root) {
 		return components(root, Icon.class).stream()
 				.filter(icon -> icon.getClassNames().contains("tt-results-bonus-icon"))
+				.toList();
+	}
+
+	private static List<String> requirementNumberTexts(final Component root) {
+		return components(root, Span.class).stream()
+				.filter(span -> span.getClassNames().contains("tt-results-requirement-number"))
+				.map(Span::getText)
 				.toList();
 	}
 

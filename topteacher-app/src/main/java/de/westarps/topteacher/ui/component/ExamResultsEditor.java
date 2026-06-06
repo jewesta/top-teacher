@@ -288,7 +288,8 @@ public class ExamResultsEditor extends VerticalLayout {
 	}
 
 	private Component requirementHeader(final EhTask task, final EhRequirement requirement) {
-		final HorizontalLayout header = header("Anforderung " + requirementNumber(task, requirement));
+		final String requirementNumber = requirementNumber(task, requirement);
+		final HorizontalLayout header = header(requirementNumberBadge(requirementNumber));
 		final HorizontalLayout controls = new HorizontalLayout();
 		controls.addClassName("tt-results-requirement-controls");
 		controls.setAlignItems(Alignment.CENTER);
@@ -300,6 +301,13 @@ public class ExamResultsEditor extends VerticalLayout {
 		controls.add(pointsControl(requirement));
 		header.add(controls);
 		return header;
+	}
+
+	private static Span requirementNumberBadge(final String requirementNumber) {
+		final Span number = new Span(requirementNumber);
+		number.addClassName("tt-results-requirement-number");
+		number.getElement().setAttribute("aria-label", "Anforderung " + requirementNumber);
+		return number;
 	}
 
 	private static Icon bonusIcon() {
@@ -357,6 +365,10 @@ public class ExamResultsEditor extends VerticalLayout {
 		final Span title = new Span(titleText);
 		title.addClassName("tt-results-title");
 
+		return header(title);
+	}
+
+	private HorizontalLayout header(final Component title) {
 		final HorizontalLayout header = new HorizontalLayout(title);
 		header.addClassName("tt-results-header");
 		header.setPadding(false);

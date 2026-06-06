@@ -307,7 +307,7 @@ vaadin-app-layout::part(navbar) {
 	gap: var(--lumo-space-s);
 	padding-top: var(--lumo-space-s);
 	padding-left: var(--lumo-space-m);
-	padding-bottom: var(--lumo-space-s);
+	padding-bottom: var(--lumo-space-m);
 	padding-right: 0px;
 	width: 100%;
 }
@@ -324,6 +324,24 @@ vaadin-app-layout::part(navbar) {
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+}
+
+.tt-results-requirement-number {
+	align-items: center;
+	background: var(--lumo-contrast-10pct);
+	border: 1px solid var(--lumo-contrast-20pct);
+	border-radius: 50%;
+	box-sizing: border-box;
+	color: var(--lumo-secondary-text-color);
+	display: inline-flex;
+	flex: 0 0 auto;
+	font-size: var(--lumo-font-size-s);
+	font-weight: 600;
+	height: var(--lumo-size-xs);
+	justify-content: center;
+	line-height: 1;
+	min-width: var(--lumo-size-xs);
+	padding: 0 var(--lumo-space-xs);
 }
 
 .tt-results-requirement-body {
