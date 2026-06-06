@@ -19,9 +19,11 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
 
 import de.westarps.vaadin.markdown.MarkdownEditor;
-import de.westarps.vaadin.markdown.MarkdownExtension;
+import de.westarps.vaadin.markdown.MarkdownTag;
 
 final class EhSectionComponents {
+
+	private static final MarkdownTag CRITERION_TAG = MarkdownTag.nextNumber("eh", "Kriterium markieren");
 
 	private final EhSaveController saveController;
 
@@ -43,13 +45,18 @@ final class EhSectionComponents {
 		return field;
 	}
 
-	MarkdownEditor markdownEditor(final String value, final String placeholder, final MarkdownExtension... extensions) {
+	MarkdownEditor markdownEditor(final String value, final String placeholder) {
 		final MarkdownEditor editor = new MarkdownEditor(value == null ? "" : value);
-		editor.setExtensions(extensions);
 		editor.addClassName("tt-markdown-editor");
 		editor.setPlaceholder(placeholder);
 		editor.setWidthFull();
 		editor.setHeight("14rem");
+		return editor;
+	}
+
+	MarkdownEditor requirementDescriptionEditor(final String value, final String placeholder) {
+		final MarkdownEditor editor = markdownEditor(value, placeholder);
+		editor.setTag(CRITERION_TAG);
 		return editor;
 	}
 

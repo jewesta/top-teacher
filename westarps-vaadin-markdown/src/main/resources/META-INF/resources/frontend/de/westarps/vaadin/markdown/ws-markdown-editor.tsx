@@ -5,12 +5,12 @@ import { ReactAdapterElement, type RenderHooks } from 'Frontend/generated/flow/R
 import '@uiw/react-md-editor/markdown-editor.css';
 import '@uiw/react-markdown-preview/markdown.css';
 import {
-  type MarkdownExtensionId,
   type MarkdownToolbarCommandId,
   markdownCommands,
   markdownExtraCommands,
   markdownPreviewOptions,
   markdownStateIds,
+  markdownTagOptions,
 } from './ws-markdown-support';
 
 class MarkdownEditorElement extends ReactAdapterElement {
@@ -18,10 +18,12 @@ class MarkdownEditorElement extends ReactAdapterElement {
     const [content, setContent] = hooks.useState<string>('content', '');
     const [placeholder] = hooks.useState<string>('placeholder', '');
     const [maxLength] = hooks.useState<number>('maxLength', -1);
-    const [extensionsState] = hooks.useState<string>('extensions', '');
+    const [tagNamespace] = hooks.useState<string>('tagNamespace', '');
+    const [tagToolbarLabel] = hooks.useState<string>('tagToolbarLabel', '');
+    const [tagIdGenerator] = hooks.useState<string>('tagIdGenerator', '');
     const [hiddenToolbarCommandsState] = hooks.useState<string>('hiddenToolbarCommands', '');
     const markdownOptions = {
-      extensions: markdownStateIds<MarkdownExtensionId>(extensionsState),
+      tag: markdownTagOptions(tagNamespace, tagToolbarLabel, tagIdGenerator),
       hiddenToolbarCommands: markdownStateIds<MarkdownToolbarCommandId>(hiddenToolbarCommandsState),
     };
 

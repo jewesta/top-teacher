@@ -1,9 +1,5 @@
 package de.westarps.vaadin.markdown;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Set;
-
 import com.vaadin.flow.component.Tag;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.dependency.JsModule;
@@ -25,23 +21,15 @@ public class MarkdownViewer extends MarkdownComponent {
 		super(content);
 	}
 
-	public Set<MarkdownExtension> getExtensions() {
-		return super.getExtensions();
+	public MarkdownTag getTag() {
+		return super.getTag();
 	}
 
-	public void setExtensions(final Collection<MarkdownExtension> extensions) {
-		super.setExtensions(extensions);
+	public void setTag(final MarkdownTag tag) {
+		super.setTag(tag);
 	}
 
-	public void setExtensions(final MarkdownExtension... extensions) {
-		setExtensions(Arrays.asList(extensions));
-	}
-
-	public void enableExtension(final MarkdownExtension extension) {
-		super.enableExtension(extension);
-	}
-
-	public void disableExtension(final MarkdownExtension extension) {
-		super.disableExtension(extension);
+	public void clearTag() {
+		setTag(null);
 	}
 }

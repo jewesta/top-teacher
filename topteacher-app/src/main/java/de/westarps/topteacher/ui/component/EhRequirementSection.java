@@ -14,7 +14,6 @@ import com.vaadin.flow.component.textfield.IntegerField;
 
 import de.westarps.topteacher.model.EhRequirement;
 import de.westarps.vaadin.markdown.MarkdownEditor;
-import de.westarps.vaadin.markdown.MarkdownExtension;
 
 final class EhRequirementSection extends Composite<VerticalLayout> implements EhEditable {
 
@@ -33,8 +32,7 @@ final class EhRequirementSection extends Composite<VerticalLayout> implements Eh
 	EhRequirementSection(final EhRequirement requirement, final List<EhRequirement> siblings,
 			final EhSectionComponents components, final Handler handler, final String requirementNumber) {
 		this(requirement, components, handler,
-				components.markdownEditor(requirement.descriptionMarkdown(), "Beschreibung",
-						MarkdownExtension.EH_CRITERIA),
+				components.requirementDescriptionEditor(requirement.descriptionMarkdown(), "Beschreibung"),
 				requirementNumber, maxPoints(requirement), bonus(requirement), siblings);
 	}
 

@@ -19,83 +19,121 @@ type MarkdownNode = {
   data?: Record<string, unknown>;
 };
 
-export type MarkdownExtensionId = 'EH_CRITERIA';
+export type MarkdownTagIdGenerator = 'NEXT_NUMBER';
 export type MarkdownToolbarCommandId = 'IMAGE';
 
+export type MarkdownTagOptions = {
+  namespace: string;
+  toolbarLabel: string;
+  idGenerator: MarkdownTagIdGenerator;
+};
+
 export type MarkdownOptions = {
-  extensions: MarkdownExtensionId[];
+  tag?: MarkdownTagOptions;
   hiddenToolbarCommands?: MarkdownToolbarCommandId[];
 };
 
-type MarkdownExtension = {
-  id: MarkdownExtensionId;
-  command?: ICommand;
-  remarkPlugins?: PluggableList;
-  extendSanitizeSchema?: (schema: typeof defaultSchema) => typeof defaultSchema;
-};
-
-type CriterionRange = {
+type TagRange = {
   full: TextRange;
   label: TextRange;
 };
 
-const criterionUrlPrefix = 'eh:';
-const criterionUrlPattern = /\(eh:([1-9]\d*)\)/g;
-const criterionUrlExactPattern = /^eh:([1-9]\d*)$/;
-const criterionMarkdownPattern = /\[([^\]\n]*)\]\(eh:[1-9]\d*\)/g;
+const defaultTagToolbarLabel = 'Tag markieren';
+const numericTagIdPattern = /^[1-9]\d*$/;
 const skippedNodeTypes = new Set(['code', 'inlineCode', 'html']);
 const toolbarCommandNames: Record<MarkdownToolbarCommandId, string[]> = {
   IMAGE: ['image'],
 };
 
-const criterionCommand: ICommand = {
-  name: 'criterion',
-  keyCommand: 'criterion',
-  buttonProps: { 'aria-label': 'Kriterium markieren', title: 'Kriterium markieren' },
-  icon: (
-    <svg width="14" height="14" role="img" viewBox="0 0 16 16">
-      <path
-        fill="currentColor"
-        d="M11.65 1.2 14.8 4.35 6.35 12.8 2.4 13.6 3.2 9.65 11.65 1.2Zm-.7 2.1L4.6 9.65l1.75 1.75 6.35-6.35-1.75-1.75ZM1.5 14.5h13v1h-13v-1Z"
-      />
-    </svg>
-  ),
-  execute: (state: ExecuteState, api: TextAreaTextApi) => {
-    const criterion = criterionAtSelection(state.text, state.selection);
-    if (criterion) {
-      unwrapCriterion(state.text, api, criterion, state.selection);
-      return;
-    }
+export function markdownStateIds<T extends string>(stateValue: string): T[] {
+  return stateValue
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean) as T[];
+}
 
-    const prefix = '[';
-    const suffix = `](${criterionUrlPrefix}${nextCriterionId(state.text)})`;
-    const selection = state.selectedText
-      ? state.selection
-      : selectWord({
-          text: state.text,
-          selection: state.selection,
-          prefix,
-          suffix,
-        });
-    const selectedState = api.setSelectionRange(selection);
-    if (selectedState.selectedText.includes('\n')) {
-      return;
-    }
-    executeCommand({
-      api,
-      selectedText: selectedState.selectedText,
-      selection,
-      prefix,
-      suffix,
-    });
-  },
-};
+export function markdownTagOptions(
+  namespace: string,
+  toolbarLabel: string,
+  idGenerator: string,
+): MarkdownTagOptions | undefined {
+  const normalizedNamespace = namespace.trim();
+  if (!normalizedNamespace) {
+    return undefined;
+  }
+  return {
+    namespace: normalizedNamespace,
+    toolbarLabel: toolbarLabel.trim() || defaultTagToolbarLabel,
+    idGenerator: idGenerator === 'NEXT_NUMBER' ? idGenerator : 'NEXT_NUMBER',
+  };
+}
 
-const ehCriteriaExtension: MarkdownExtension = {
-  id: 'EH_CRITERIA',
-  command: criterionCommand,
-  remarkPlugins: [remarkCriteria] as PluggableList,
-  extendSanitizeSchema: (schema) => ({
+export function markdownCommands(options: MarkdownOptions): ICommand[] {
+  const extensionCommands = options.tag ? [tagCommand(options.tag)] : [];
+  const commandsWithExtensions = extensionCommands.reduce(insertBeforeFirstDivider, commands.getCommands());
+  return filterCommands(commandsWithExtensions, hiddenCommandNames(options.hiddenToolbarCommands ?? []));
+}
+
+export function markdownExtraCommands(options: MarkdownOptions): ICommand[] {
+  return filterCommands(commands.getExtraCommands(), hiddenCommandNames(options.hiddenToolbarCommands ?? []));
+}
+
+export function markdownPreviewOptions(options: Pick<MarkdownOptions, 'tag'>) {
+  const sanitizeSchema = options.tag ? tagSanitizeSchema(defaultSchema) : defaultSchema;
+
+  return {
+    remarkPlugins: options.tag ? ([remarkTags(options.tag)] as PluggableList) : [],
+    rehypePlugins: [[rehypeSanitize, sanitizeSchema]] as PluggableList,
+  };
+}
+
+function tagCommand(tag: MarkdownTagOptions): ICommand {
+  return {
+    name: 'tag',
+    keyCommand: 'tag',
+    buttonProps: { 'aria-label': tag.toolbarLabel, title: tag.toolbarLabel },
+    icon: (
+      <svg width="14" height="14" role="img" viewBox="0 0 16 16">
+        <path
+          fill="currentColor"
+          d="M11.65 1.2 14.8 4.35 6.35 12.8 2.4 13.6 3.2 9.65 11.65 1.2Zm-.7 2.1L4.6 9.65l1.75 1.75 6.35-6.35-1.75-1.75ZM1.5 14.5h13v1h-13v-1Z"
+        />
+      </svg>
+    ),
+    execute: (state: ExecuteState, api: TextAreaTextApi) => {
+      const taggedRange = tagAtSelection(state.text, state.selection, tag);
+      if (taggedRange) {
+        unwrapTag(state.text, api, taggedRange, state.selection);
+        return;
+      }
+
+      const prefix = '[';
+      const suffix = `](${tag.namespace}:${nextTagId(state.text, tag)})`;
+      const selection = state.selectedText
+        ? state.selection
+        : selectWord({
+            text: state.text,
+            selection: state.selection,
+            prefix,
+            suffix,
+          });
+      const selectedState = api.setSelectionRange(selection);
+      if (selectedState.selectedText.includes('\n')) {
+        return;
+      }
+      executeCommand({
+        api,
+        selectedText: selectedState.selectedText,
+        selection,
+        prefix,
+        suffix,
+      });
+    },
+  };
+}
+
+function tagSanitizeSchema(schema: typeof defaultSchema): typeof defaultSchema {
+  return {
     ...schema,
     tagNames: [...(schema.tagNames ?? []), 'mark', 'span'],
     attributes: {
@@ -106,51 +144,7 @@ const ehCriteriaExtension: MarkdownExtension = {
         ['className', 'ws-markdown-tag', 'ws-markdown-tag-badge'],
       ],
     },
-  }),
-};
-
-const extensionsById = new Map<MarkdownExtensionId, MarkdownExtension>([
-  [ehCriteriaExtension.id, ehCriteriaExtension],
-]);
-
-export function markdownStateIds<T extends string>(stateValue: string): T[] {
-  return stateValue
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean) as T[];
-}
-
-export function markdownCommands(options: MarkdownOptions): ICommand[] {
-  const extensionCommands = enabledExtensions(options.extensions)
-    .map((extension) => extension.command)
-    .filter((command): command is ICommand => Boolean(command));
-  const commandsWithExtensions = extensionCommands.reduce(insertBeforeFirstDivider, commands.getCommands());
-  return filterCommands(commandsWithExtensions, hiddenCommandNames(options.hiddenToolbarCommands ?? []));
-}
-
-export function markdownExtraCommands(options: MarkdownOptions): ICommand[] {
-  return filterCommands(commands.getExtraCommands(), hiddenCommandNames(options.hiddenToolbarCommands ?? []));
-}
-
-export function markdownPreviewOptions(options: Pick<MarkdownOptions, 'extensions'>) {
-  const extensions = enabledExtensions(options.extensions);
-  const remarkPlugins = extensions.flatMap((extension) => extension.remarkPlugins ?? []) as PluggableList;
-  const sanitizeSchema = extensions.reduce(
-    (schema, extension) => extension.extendSanitizeSchema?.(schema) ?? schema,
-    defaultSchema,
-  );
-
-  return {
-    remarkPlugins,
-    rehypePlugins: [[rehypeSanitize, sanitizeSchema]] as PluggableList,
   };
-}
-
-function enabledExtensions(ids: MarkdownExtensionId[]): MarkdownExtension[] {
-  const uniqueIds = new Set(ids);
-  return [...uniqueIds]
-    .map((id) => extensionsById.get(id))
-    .filter((extension): extension is MarkdownExtension => Boolean(extension));
 }
 
 function insertBeforeFirstDivider(baseCommands: ICommand[], command: ICommand): ICommand[] {
@@ -182,8 +176,8 @@ function isHiddenCommand(command: ICommand, hiddenCommandNames: Set<string>): bo
   return [command.name, command.keyCommand].some((name) => Boolean(name && hiddenCommandNames.has(name)));
 }
 
-function criterionAtSelection(markdown: string, selection: TextRange): CriterionRange | null {
-  for (const match of markdown.matchAll(criterionMarkdownPattern)) {
+function tagAtSelection(markdown: string, selection: TextRange, tag: MarkdownTagOptions): TagRange | null {
+  for (const match of markdown.matchAll(tagMarkdownPattern(tag))) {
     const fullStart = match.index ?? 0;
     const labelText = match[1] ?? '';
     const labelStart = fullStart + 1;
@@ -209,57 +203,52 @@ function isSameSelection(selection: TextRange, range: TextRange): boolean {
   return selection.start === range.start && selection.end === range.end;
 }
 
-function unwrapCriterion(
-  markdown: string,
-  api: TextAreaTextApi,
-  criterion: CriterionRange,
-  originalSelection: TextRange,
-) {
-  const labelText = markdown.slice(criterion.label.start, criterion.label.end);
-  const preserveInnerSelection = isSelectionInside(originalSelection, criterion.label);
-  const selectionStart = preserveInnerSelection ? originalSelection.start - criterion.label.start : 0;
-  const selectionEnd = preserveInnerSelection ? originalSelection.end - criterion.label.start : labelText.length;
+function unwrapTag(markdown: string, api: TextAreaTextApi, tag: TagRange, originalSelection: TextRange) {
+  const labelText = markdown.slice(tag.label.start, tag.label.end);
+  const preserveInnerSelection = isSelectionInside(originalSelection, tag.label);
+  const selectionStart = preserveInnerSelection ? originalSelection.start - tag.label.start : 0;
+  const selectionEnd = preserveInnerSelection ? originalSelection.end - tag.label.start : labelText.length;
 
-  api.setSelectionRange(criterion.full);
+  api.setSelectionRange(tag.full);
   api.replaceSelection(labelText);
   api.setSelectionRange({
-    start: criterion.full.start + selectionStart,
-    end: criterion.full.start + selectionEnd,
+    start: tag.full.start + selectionStart,
+    end: tag.full.start + selectionEnd,
   });
 }
 
-function remarkCriteria() {
-  return (tree: MarkdownNode) => {
-    transformCriteria(tree);
+function remarkTags(tag: MarkdownTagOptions) {
+  return () => (tree: MarkdownNode) => {
+    transformTags(tree, tag);
   };
 }
 
-function transformCriteria(node: MarkdownNode) {
-  if (!node.children || skippedNodeTypes.has(node.type)) {
+function transformTags(node: MarkdownNode | undefined, tag: MarkdownTagOptions) {
+  if (!node?.children || skippedNodeTypes.has(node.type)) {
     return;
   }
 
   node.children = node.children.flatMap((child) => {
-    const criterionId = ehCriterionId(child);
-    if (criterionId) {
-      return [criterionNode(criterionId, child.children ?? [])];
+    const tagId = tagIdFromNode(child, tag);
+    if (tagId) {
+      return [tagNode(tagId, child.children ?? [])];
     }
-    transformCriteria(child);
+    transformTags(child, tag);
     return [child];
   });
 }
 
-function ehCriterionId(node: MarkdownNode): string | null {
+function tagIdFromNode(node: MarkdownNode, tag: MarkdownTagOptions): string | null {
   if (node.type !== 'link' || typeof node.url !== 'string') {
     return null;
   }
-  const match = criterionUrlExactPattern.exec(node.url.trim());
+  const match = tagUrlExactPattern(tag).exec(node.url.trim());
   return match ? match[1] : null;
 }
 
-function criterionNode(id: string, children: MarkdownNode[]): MarkdownNode {
+function tagNode(id: string, children: MarkdownNode[]): MarkdownNode {
   return {
-    type: 'ttCriterion',
+    type: 'wsMarkdownTag',
     data: {
       hName: 'span',
       hProperties: {
@@ -268,7 +257,7 @@ function criterionNode(id: string, children: MarkdownNode[]): MarkdownNode {
     },
     children: [
       {
-        type: 'ttCriterionHighlight',
+        type: 'wsMarkdownTagHighlight',
         data: {
           hName: 'mark',
           hProperties: {
@@ -278,7 +267,7 @@ function criterionNode(id: string, children: MarkdownNode[]): MarkdownNode {
         children,
       },
       {
-        type: 'ttCriterionBadge',
+        type: 'wsMarkdownTagBadge',
         data: {
           hName: 'span',
           hProperties: {
@@ -291,13 +280,46 @@ function criterionNode(id: string, children: MarkdownNode[]): MarkdownNode {
   };
 }
 
-function nextCriterionId(markdown: string): number {
+function nextTagId(markdown: string, tag: MarkdownTagOptions): string {
+  switch (tag.idGenerator) {
+    case 'NEXT_NUMBER':
+      return String(nextNumberTagId(markdown, tag));
+    default:
+      return '1';
+  }
+}
+
+function nextNumberTagId(markdown: string, tag: MarkdownTagOptions): number {
   let nextId = 1;
-  for (const match of markdown.matchAll(criterionUrlPattern)) {
-    const id = Number.parseInt(match[1], 10);
+  for (const match of markdown.matchAll(tagUrlPattern(tag))) {
+    const value = match[1] ?? '';
+    if (!numericTagIdPattern.test(value)) {
+      continue;
+    }
+    const id = Number.parseInt(value, 10);
     if (id >= nextId) {
       nextId = id + 1;
     }
   }
   return nextId;
+}
+
+function tagUrlPattern(tag: MarkdownTagOptions): RegExp {
+  return new RegExp(`\\(${escapedNamespace(tag)}:([^\\s)]+)\\)`, 'g');
+}
+
+function tagUrlExactPattern(tag: MarkdownTagOptions): RegExp {
+  return new RegExp(`^${escapedNamespace(tag)}:([^\\s)]+)$`);
+}
+
+function tagMarkdownPattern(tag: MarkdownTagOptions): RegExp {
+  return new RegExp(`\\[([^\\]\\n]*)\\]\\(${escapedNamespace(tag)}:[^\\s)]+\\)`, 'g');
+}
+
+function escapedNamespace(tag: MarkdownTagOptions): string {
+  return escapeRegExp(tag.namespace);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

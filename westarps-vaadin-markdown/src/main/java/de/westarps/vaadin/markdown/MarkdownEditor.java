@@ -46,24 +46,16 @@ public class MarkdownEditor extends AbstractCompositeField<MarkdownEditorCompone
 		getEditor().setMaxLength(maxLength);
 	}
 
-	public Set<MarkdownExtension> getExtensions() {
-		return getEditor().getExtensions();
+	public MarkdownTag getTag() {
+		return getEditor().getTag();
 	}
 
-	public void setExtensions(final Collection<MarkdownExtension> extensions) {
-		getEditor().setExtensions(extensions);
+	public void setTag(final MarkdownTag tag) {
+		getEditor().setTag(tag);
 	}
 
-	public void setExtensions(final MarkdownExtension... extensions) {
-		setExtensions(Arrays.asList(extensions));
-	}
-
-	public void enableExtension(final MarkdownExtension extension) {
-		getEditor().enableExtension(extension);
-	}
-
-	public void disableExtension(final MarkdownExtension extension) {
-		getEditor().disableExtension(extension);
+	public void clearTag() {
+		setTag(null);
 	}
 
 	public Set<MarkdownToolbarCommand> getHiddenToolbarCommands() {

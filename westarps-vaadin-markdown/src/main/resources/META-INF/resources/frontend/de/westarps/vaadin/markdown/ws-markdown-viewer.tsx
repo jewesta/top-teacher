@@ -5,22 +5,23 @@ import { ReactAdapterElement, type RenderHooks } from 'Frontend/generated/flow/R
 import '@uiw/react-md-editor/markdown-editor.css';
 import '@uiw/react-markdown-preview/markdown.css';
 import {
-  type MarkdownExtensionId,
   markdownPreviewOptions,
-  markdownStateIds,
+  markdownTagOptions,
 } from './ws-markdown-support';
 
 class MarkdownViewerElement extends ReactAdapterElement {
   protected override render(hooks: RenderHooks): ReactElement | null {
     const [content] = hooks.useState<string>('content', '');
-    const [extensionsState] = hooks.useState<string>('extensions', '');
+    const [tagNamespace] = hooks.useState<string>('tagNamespace', '');
+    const [tagToolbarLabel] = hooks.useState<string>('tagToolbarLabel', '');
+    const [tagIdGenerator] = hooks.useState<string>('tagIdGenerator', '');
     const markdownOptions = {
-      extensions: markdownStateIds<MarkdownExtensionId>(extensionsState),
+      tag: markdownTagOptions(tagNamespace, tagToolbarLabel, tagIdGenerator),
     };
 
     return (
       <MDEditor.Markdown
-        key={`${content}:${extensionsState}`}
+        key={`${content}:${tagNamespace}:${tagIdGenerator}`}
         source={content}
         {...markdownPreviewOptions(markdownOptions)}
       />
