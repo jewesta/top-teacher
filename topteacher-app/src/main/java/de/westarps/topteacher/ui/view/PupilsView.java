@@ -10,6 +10,7 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteAlias;
 
@@ -19,6 +20,7 @@ import de.westarps.topteacher.model.Pupil;
 import de.westarps.topteacher.model.SchoolClass;
 import de.westarps.topteacher.ui.MainLayout;
 import de.westarps.topteacher.ui.component.AbstractFormEditor;
+import de.westarps.topteacher.ui.component.FormBinders;
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
 
 @Route(value = "", layout = MainLayout.class)
@@ -30,6 +32,7 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 	private final TextField surname = new TextField("Nachname");
 	private final TextField currentSchoolClass = new TextField("Klasse");
 	private final ComboBox<Lifecycle> lifecycle = new ComboBox<>("Status");
+	private final Binder<PupilFormData> pupilBinder = new Binder<>();
 	private final Button saveButton = new Button();
 	private final Button archiveButton = new Button("Archivieren");
 	private final Span multiSelectionSummary = new Span();
@@ -95,14 +98,13 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 	private void configureEditors() {
 		name.setRequiredIndicatorVisible(true);
 		surname.setRequiredIndicatorVisible(true);
-		name.addValueChangeListener(event -> name.setInvalid(false));
-		surname.addValueChangeListener(event -> surname.setInvalid(false));
 
 		currentSchoolClass.setReadOnly(true);
 
 		lifecycle.setItems(Lifecycle.values());
 		lifecycle.setItemLabelGenerator(Lifecycle::getDisplayName);
-		lifecycle.addValueChangeListener(event -> lifecycle.setInvalid(false));
+
+		bindSingleEditor();
 
 		saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 		saveButton.addClickListener(event -> savePupil());
@@ -128,11 +130,8 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 			return;
 		}
 
-		name.setValue(pupil.name());
-		surname.setValue(pupil.surname());
 		currentSchoolClass.setValue(latestSchoolClassLabel(pupil));
-		lifecycle.setValue(pupil.lifecycle());
-		clearSingleEditorValidation();
+		readSingleEditor(new PupilFormData(pupil.name(), pupil.surname(), pupil.lifecycle()));
 		updateEditorModeControls();
 	}
 
@@ -145,15 +144,13 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 	}
 
 	private void savePupil() {
-		final String trimmedName = name.getValue().trim();
-		final String trimmedSurname = surname.getValue().trim();
-		if (!validateSingleEditor(trimmedName, trimmedSurname)) {
+		final PupilFormData formData = new PupilFormData();
+		if (!pupilBinder.writeBeanIfValid(formData)) {
 			return;
 		}
 
-		final Lifecycle selectedLifecycle = lifecycle.getValue() == null ? Lifecycle.ACTIVE : lifecycle.getValue();
 		final Integer id = selectedPupil == null ? null : selectedPupil.id();
-		pupilRepository.save(new Pupil(id, trimmedName, trimmedSurname, selectedLifecycle));
+		pupilRepository.save(new Pupil(id, formData.getName(), formData.getSurname(), formData.getLifecycle()));
 
 		refreshGrid();
 		clearSelection();
@@ -190,11 +187,8 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 
 	private void clearSingleEditor() {
 		selectedPupil = null;
-		name.clear();
-		surname.clear();
 		currentSchoolClass.clear();
-		lifecycle.setValue(Lifecycle.ACTIVE);
-		clearSingleEditorValidation();
+		readSingleEditor(new PupilFormData("", "", Lifecycle.ACTIVE));
 		updateEditorModeControls();
 	}
 
@@ -206,36 +200,29 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 		archiveButton.setVisible(editMode && selectedPupil.lifecycle() == Lifecycle.ACTIVE);
 	}
 
-	private boolean validateSingleEditor(final String trimmedName, final String trimmedSurname) {
-		clearSingleEditorValidation();
-		boolean valid = true;
-		if (trimmedName.isBlank()) {
-			name.setErrorMessage("Vorname ist erforderlich.");
-			name.setInvalid(true);
-			valid = false;
-		}
-		if (trimmedSurname.isBlank()) {
-			surname.setErrorMessage("Nachname ist erforderlich.");
-			surname.setInvalid(true);
-			valid = false;
-		}
-		if (selectedPupil != null && lifecycle.getValue() == null) {
-			lifecycle.setErrorMessage("Status ist erforderlich.");
-			lifecycle.setInvalid(true);
-			valid = false;
-		}
-		return valid;
-	}
-
-	private void clearSingleEditorValidation() {
-		name.setInvalid(false);
-		surname.setInvalid(false);
-		lifecycle.setInvalid(false);
-	}
-
 	private String latestSchoolClassLabel(final Pupil pupil) {
 		final SchoolClass schoolClass = latestSchoolClassByPupilId.get(pupil.id());
 		return schoolClass == null ? "" : schoolClass.getDisplayName();
+	}
+
+	private void bindSingleEditor() {
+		pupilBinder.forField(name).withConverter(PupilsView::trim, value -> value)
+				.withValidator(value -> !value.isBlank(), "Vorname ist erforderlich.")
+				.bind(PupilFormData::getName, PupilFormData::setName);
+		pupilBinder.forField(surname).withConverter(PupilsView::trim, value -> value)
+				.withValidator(value -> !value.isBlank(), "Nachname ist erforderlich.")
+				.bind(PupilFormData::getSurname, PupilFormData::setSurname);
+		pupilBinder.forField(lifecycle).asRequired("Status ist erforderlich.")
+				.bind(PupilFormData::getLifecycle, PupilFormData::setLifecycle);
+	}
+
+	private void readSingleEditor(final PupilFormData formData) {
+		pupilBinder.readBean(formData);
+		FormBinders.clearValidation(pupilBinder);
+	}
+
+	private static String trim(final String value) {
+		return value == null ? "" : value.trim();
 	}
 
 	private Lifecycle commonLifecycle(final List<Pupil> pupils) {
@@ -257,5 +244,45 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 
 	private void updateBulkApplyButton() {
 		applyLifecycleButton.setEnabled(!selectedPupils.isEmpty() && bulkLifecycle.getValue() != null);
+	}
+
+	private static final class PupilFormData {
+
+		private String name = "";
+		private String surname = "";
+		private Lifecycle lifecycle = Lifecycle.ACTIVE;
+
+		public PupilFormData() {
+		}
+
+		private PupilFormData(final String name, final String surname, final Lifecycle lifecycle) {
+			this.name = name;
+			this.surname = surname;
+			this.lifecycle = lifecycle;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public void setName(final String name) {
+			this.name = name;
+		}
+
+		public String getSurname() {
+			return surname;
+		}
+
+		public void setSurname(final String surname) {
+			this.surname = surname;
+		}
+
+		public Lifecycle getLifecycle() {
+			return lifecycle;
+		}
+
+		public void setLifecycle(final Lifecycle lifecycle) {
+			this.lifecycle = lifecycle;
+		}
 	}
 }

@@ -32,9 +32,8 @@ final class EhTaskSection extends AbstractEhSection<EhTask> {
 		this.savedTitle = task.title();
 		components.trackDirty(title);
 		addToBody(editorBlockWithMoveButtons(components, siblings, handler,
-				List.of(components.saveButton(),
-						components.commandButton("Anforderung hinzufügen", VaadinIcon.PLUS,
-								event -> handler.addRequirement(task))),
+				List.of(components.commandButton("Anforderung hinzufügen", VaadinIcon.PLUS,
+						event -> handler.addRequirement(task))),
 				List.of(collapseState.toggleButton(descendantKeys),
 						components.deleteButton(event -> handler.delete(task)))));
 		addToBody(requirements);

@@ -131,6 +131,10 @@ public abstract class AbstractMasterDataView<T> extends VerticalLayout implement
 		return null;
 	}
 
+	protected String getEditorTabLabel() {
+		return pageTitle;
+	}
+
 	private void configureSearchField() {
 		searchField.addValueChangeListener(event -> applySearchFilter());
 	}
@@ -175,7 +179,7 @@ public abstract class AbstractMasterDataView<T> extends VerticalLayout implement
 
 		contextTabs.addClassName("tt-context-tabs");
 		contextTabs.setSizeFull();
-		contextTabs.add("Bearbeiten", editorHost);
+		contextTabs.add(getEditorTabLabel(), editorHost);
 
 		final VerticalLayout contextArea = new VerticalLayout(contextTabs);
 		contextArea.addClassName("tt-context-area");

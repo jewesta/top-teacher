@@ -199,6 +199,7 @@ public class ExpectationHorizonEditor extends AbstractDesigner {
 	}
 
 	private void configureToolbar() {
+		final Button save = components.saveButton();
 		final Button addPart = components.commandButton("Klausurteil hinzufügen", VaadinIcon.PLUS, event -> {
 			final int sortOrder = expectationHorizonRepository.nextPartSortOrder(exam.id());
 			final EhPart part = expectationHorizonRepository
@@ -209,7 +210,7 @@ public class ExpectationHorizonEditor extends AbstractDesigner {
 		addPart.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
 		examPointsBadge = components.pointBadge("Gesamtpunktzahl", this::pointsForExam);
-		toolbar().add(addPart, collapseState.toggleButton(allDetailKeys()), examPointsBadge);
+		toolbar().add(save, addPart, collapseState.toggleButton(allDetailKeys()), examPointsBadge);
 	}
 
 	private EhPartSection createPartSection(final EhPart part) {

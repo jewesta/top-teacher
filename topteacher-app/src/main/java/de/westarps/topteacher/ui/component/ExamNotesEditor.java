@@ -1,7 +1,9 @@
 package de.westarps.topteacher.ui.component;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import com.vaadin.flow.component.ClickEvent;
@@ -12,7 +14,6 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
@@ -26,13 +27,19 @@ public class ExamNotesEditor extends AbstractDesigner {
 
 	private final ExpectationHorizonRepository expectationHorizonRepository;
 	private final Set<String> collapsedDetails = new HashSet<>();
+	private final Button saveButton = new Button("Speichern", VaadinIcon.CHECK.create());
 
 	private Exam exam;
 	private List<ExamNoteSection> noteSections = List.of();
+	private List<NoteSectionEditor> noteSectionEditors = List.of();
 
 	public ExamNotesEditor(final ExpectationHorizonRepository expectationHorizonRepository) {
 		super("tt-exam-notes-editor");
 		this.expectationHorizonRepository = expectationHorizonRepository;
+
+		saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
+		saveButton.addClickListener(event -> saveDirtySections());
+		saveButton.setEnabled(false);
 	}
 
 	public void setExam(final Exam exam) {
@@ -45,6 +52,7 @@ public class ExamNotesEditor extends AbstractDesigner {
 
 	private void refresh() {
 		resetDesigner();
+		noteSectionEditors = List.of();
 		if (exam == null) {
 			showDesignerMessage(new Span("Bitte wählen Sie eine Klausur aus."));
 			return;
@@ -55,11 +63,13 @@ public class ExamNotesEditor extends AbstractDesigner {
 		if (noteSections.isEmpty()) {
 			content().add(emptyState("Noch keine Notizen angelegt."));
 		} else {
-			noteSections.forEach(noteSection -> content().add(createNoteSectionDetails(noteSection)));
+			noteSectionEditors = noteSections.stream().map(this::createNoteSectionEditor).toList();
+			noteSectionEditors.forEach(noteSectionEditor -> content().add(noteSectionEditor.details()));
 		}
 
 		configureToolbar();
 		showDesigner();
+		updateSaveButton();
 	}
 
 	private void configureToolbar() {
@@ -70,10 +80,10 @@ public class ExamNotesEditor extends AbstractDesigner {
 		});
 		addSection.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-		toolbar().add(addSection);
+		toolbar().add(saveButton, addSection);
 	}
 
-	private Details createNoteSectionDetails(final ExamNoteSection noteSection) {
+	private NoteSectionEditor createNoteSectionEditor(final ExamNoteSection noteSection) {
 		final TextField title = new TextField();
 		title.addClassName("tt-eh-summary-title-field");
 		title.setValue(noteSection.title());
@@ -84,19 +94,10 @@ public class ExamNotesEditor extends AbstractDesigner {
 				this.addEventListener('keydown', event => event.stopPropagation());
 				"""));
 		title.addValueChangeListener(event -> {
-			if (!event.isFromClient()) {
-				return;
+			title.setInvalid(false);
+			if (event.isFromClient()) {
+				updateSaveButton();
 			}
-			if (event.getValue() == null || event.getValue().isBlank()) {
-				Notification.show("Titel ist erforderlich.");
-				title.setValue(noteSection.title());
-				return;
-			}
-			final ExamNoteSection currentNoteSection = noteSectionById(noteSection.id());
-			final ExamNoteSection updatedNoteSection = new ExamNoteSection(noteSection.id(), noteSection.examId(),
-					event.getValue(), currentNoteSection.descriptionMarkdown(), noteSection.sortOrder());
-			expectationHorizonRepository.saveNoteSection(updatedNoteSection);
-			replaceNoteSection(updatedNoteSection);
 		});
 
 		final MarkdownEditor description = new MarkdownEditor(noteSection.descriptionMarkdown());
@@ -104,28 +105,14 @@ public class ExamNotesEditor extends AbstractDesigner {
 		description.setPlaceholder("Beschreibung");
 		description.setWidthFull();
 		description.setHeight("18rem");
+		description.addValueChangeListener(event -> updateSaveButton());
 
-		final Span editorLabel = new Span("Beschreibung");
-		editorLabel.addClassName("tt-field-label");
-
-		final VerticalLayout markdownBlock = new VerticalLayout(editorLabel, description);
+		final VerticalLayout markdownBlock = new VerticalLayout(description);
 		markdownBlock.addClassName("tt-markdown-block");
 		markdownBlock.setPadding(false);
 		markdownBlock.setWidthFull();
 
-		final Button save = commandButton("Speichern", VaadinIcon.CHECK, event -> {
-			if (title.getValue() == null || title.getValue().isBlank()) {
-				Notification.show("Titel ist erforderlich.");
-				return;
-			}
-			final ExamNoteSection updatedNoteSection = new ExamNoteSection(noteSection.id(), noteSection.examId(),
-					title.getValue(), value(description), noteSection.sortOrder());
-			expectationHorizonRepository.saveNoteSection(updatedNoteSection);
-			replaceNoteSection(updatedNoteSection);
-		});
-		save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-
-		final HorizontalLayout actions = new HorizontalLayout(save, moveButton("Nach oben", -1, noteSection),
+		final HorizontalLayout actions = new HorizontalLayout(moveButton("Nach oben", -1, noteSection),
 				moveButton("Nach unten", 1, noteSection), deleteButton(event -> {
 					expectationHorizonRepository.deleteNoteSection(noteSection.id());
 					refresh();
@@ -141,7 +128,7 @@ public class ExamNotesEditor extends AbstractDesigner {
 		final Details details = new Details(summary(title), content);
 		details.addClassNames("tt-eh-details", "tt-exam-note-section");
 		configureOpenedState(details, detailKey("note", noteSection.id()));
-		return details;
+		return new NoteSectionEditor(noteSection, title, description, details);
 	}
 
 	private Component summary(final Component title) {
@@ -198,9 +185,17 @@ public class ExamNotesEditor extends AbstractDesigner {
 		return editor.getValue() == null ? "" : editor.getValue();
 	}
 
-	private ExamNoteSection noteSectionById(final Integer id) {
-		return noteSections.stream().filter(noteSection -> noteSection.id().equals(id)).findFirst()
-				.orElseThrow(() -> new IllegalStateException("Missing note section: " + id));
+	private void updateSaveButton() {
+		saveButton.setEnabled(noteSectionEditors.stream().anyMatch(NoteSectionEditor::isDirty));
+	}
+
+	private void saveDirtySections() {
+		for (final NoteSectionEditor noteSectionEditor : new ArrayList<>(noteSectionEditors)) {
+			if (!noteSectionEditor.save()) {
+				return;
+			}
+		}
+		updateSaveButton();
 	}
 
 	private void configureOpenedState(final Details details, final String key) {
@@ -223,5 +218,53 @@ public class ExamNotesEditor extends AbstractDesigner {
 				.map(currentNoteSection -> currentNoteSection.id().equals(noteSection.id()) ? noteSection
 						: currentNoteSection)
 				.toList();
+	}
+
+	private final class NoteSectionEditor {
+
+		private ExamNoteSection noteSection;
+		private final TextField title;
+		private final MarkdownEditor description;
+		private final Details details;
+		private String savedTitle;
+		private String savedDescriptionMarkdown;
+
+		private NoteSectionEditor(final ExamNoteSection noteSection, final TextField title,
+				final MarkdownEditor description, final Details details) {
+			this.noteSection = noteSection;
+			this.title = title;
+			this.description = description;
+			this.details = details;
+			this.savedTitle = noteSection.title();
+			this.savedDescriptionMarkdown = value(description);
+		}
+
+		private Details details() {
+			return details;
+		}
+
+		private boolean isDirty() {
+			return !Objects.equals(savedTitle, title.getValue())
+					|| !Objects.equals(savedDescriptionMarkdown, value(description));
+		}
+
+		private boolean save() {
+			if (!isDirty()) {
+				return true;
+			}
+			if (title.getValue() == null || title.getValue().isBlank()) {
+				title.setErrorMessage("Titel ist erforderlich.");
+				title.setInvalid(true);
+				return false;
+			}
+			final ExamNoteSection updatedNoteSection = new ExamNoteSection(noteSection.id(), noteSection.examId(),
+					title.getValue(), value(description), noteSection.sortOrder());
+			expectationHorizonRepository.saveNoteSection(updatedNoteSection);
+			replaceNoteSection(updatedNoteSection);
+			noteSection = updatedNoteSection;
+			savedTitle = updatedNoteSection.title();
+			savedDescriptionMarkdown = updatedNoteSection.descriptionMarkdown();
+			return true;
+		}
 	}
 }

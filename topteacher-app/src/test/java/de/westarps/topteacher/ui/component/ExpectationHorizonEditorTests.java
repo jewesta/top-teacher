@@ -74,8 +74,8 @@ class ExpectationHorizonEditorTests {
 
 		components(editor, IntegerField.class).getFirst().setValue(7);
 		final List<Button> saveButtons = saveButtons(editor);
-		assertThat(saveButtons).hasSize(4);
-		saveButtons.getLast().click();
+		assertThat(saveButtons).hasSize(1);
+		saveButtons.getFirst().click();
 
 		verify(repository).saveRequirement(new EhRequirement(REQUIREMENT.id(), REQUIREMENT.taskId(),
 				REQUIREMENT.descriptionMarkdown(), 7, REQUIREMENT.bonus(), REQUIREMENT.sortOrder()));
@@ -98,7 +98,7 @@ class ExpectationHorizonEditorTests {
 		components(editor, IntegerField.class).getFirst().setValue(7);
 		bonusButtons(editor).getFirst().click();
 		final List<Button> saveButtons = saveButtons(editor);
-		saveButtons.getLast().click();
+		saveButtons.getFirst().click();
 
 		verify(repository).saveRequirement(new EhRequirement(REQUIREMENT.id(), REQUIREMENT.taskId(),
 				REQUIREMENT.descriptionMarkdown(), 7, true, REQUIREMENT.sortOrder()));
@@ -117,7 +117,7 @@ class ExpectationHorizonEditorTests {
 		editor.setExam(EXAM);
 		final List<Button> saveButtons = saveButtons(editor);
 
-		assertThat(saveButtons).hasSize(4).extracting(Button::isEnabled).containsOnly(false);
+		assertThat(saveButtons).hasSize(1).extracting(Button::isEnabled).containsOnly(false);
 
 		components(editor, IntegerField.class).getFirst().setValue(7);
 
@@ -146,7 +146,7 @@ class ExpectationHorizonEditorTests {
 
 		assertThat(saveButtons).extracting(Button::isEnabled).containsOnly(true);
 
-		saveButtons.getLast().click();
+		saveButtons.getFirst().click();
 
 		verify(repository).savePart(new EhPart(PART.id(), PART.examId(), "Klausurteil X", PART.sortOrder()));
 		assertThat(saveButtons).extracting(Button::isEnabled).containsOnly(false);

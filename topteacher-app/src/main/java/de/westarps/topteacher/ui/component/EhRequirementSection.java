@@ -51,7 +51,7 @@ final class EhRequirementSection extends Composite<VerticalLayout> implements Eh
 		this.bonus = requirement.bonus();
 		this.summary = components.requirementSummary(requirementNumber, bonusControl(bonusButton),
 				headerControls(maxPoints));
-		this.description = components.markdownBlock("Beschreibung", descriptionEditor);
+		this.description = components.markdownBlock(descriptionEditor);
 		this.savedDescriptionMarkdown = normalized(requirement.descriptionMarkdown());
 		this.savedMaxPoints = requirement.maxPoints();
 		this.savedBonus = requirement.bonus();
@@ -64,8 +64,7 @@ final class EhRequirementSection extends Composite<VerticalLayout> implements Eh
 			components.updateDirty();
 		});
 		this.actions = components.actionRow(components.actionComponentsWithMoveButtons(siblings, requirement, handler,
-				List.of(components.saveButton()),
-				List.of(components.deleteButton(event -> handler.delete(requirement)))));
+				List.of(), List.of(components.deleteButton(event -> handler.delete(requirement)))));
 		getContent();
 	}
 

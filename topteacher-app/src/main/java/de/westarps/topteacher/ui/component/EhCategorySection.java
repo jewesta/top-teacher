@@ -24,7 +24,7 @@ final class EhCategorySection extends AbstractEhSection<EhCategory> {
 			final Supplier<EhPoints> pointsSupplier, final List<String> descendantKeys) {
 		this(category, siblings, tasks, components, collapseState, handler, descendantKeys,
 				components.summaryTitleField(category.title()),
-				components.markdownEditor(category.descriptionMarkdown(), "Beschreibung"),
+				components.categoryCommentEditor(category.descriptionMarkdown(), "Beschreibung"),
 				components.pointBadge("Summe", pointsSupplier));
 	}
 
@@ -43,9 +43,8 @@ final class EhCategorySection extends AbstractEhSection<EhCategory> {
 		components.trackDirty(description);
 		addToBody(components.markdownBlock("Beschreibung", description),
 				editorBlockWithMoveButtons(components, siblings, handler,
-						List.of(components.saveButton(),
-								components.commandButton("Teilaufgabe hinzufügen", VaadinIcon.PLUS,
-										event -> handler.addTask(category))),
+						List.of(components.commandButton("Teilaufgabe hinzufügen", VaadinIcon.PLUS,
+								event -> handler.addTask(category))),
 						List.of(collapseState.toggleButton(descendantKeys),
 								components.deleteButton(event -> handler.delete(category)))));
 		addToBody(tasks);

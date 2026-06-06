@@ -56,6 +56,12 @@ final class EhSectionComponents {
 		return editor;
 	}
 
+	MarkdownEditor categoryCommentEditor(final String value, final String placeholder) {
+		final MarkdownEditor editor = markdownEditor(value, placeholder);
+		editor.setHeight("7rem");
+		return editor;
+	}
+
 	MarkdownEditor requirementDescriptionEditor(final String value, final String placeholder) {
 		final MarkdownEditor editor = markdownEditor(value, placeholder);
 		editor.setTag(CRITERION_TAG);
@@ -67,6 +73,14 @@ final class EhSectionComponents {
 		editorLabel.addClassName("tt-field-label");
 
 		final VerticalLayout block = new VerticalLayout(editorLabel, editor);
+		block.addClassName("tt-markdown-block");
+		block.setPadding(false);
+		block.setWidthFull();
+		return block;
+	}
+
+	Component markdownBlock(final MarkdownEditor editor) {
+		final VerticalLayout block = new VerticalLayout(editor);
 		block.addClassName("tt-markdown-block");
 		block.setPadding(false);
 		block.setWidthFull();

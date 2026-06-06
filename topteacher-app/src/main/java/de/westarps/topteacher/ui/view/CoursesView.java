@@ -23,6 +23,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.shared.Tooltip;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.textfield.IntegerField;
+import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.router.Route;
@@ -39,6 +40,7 @@ import de.westarps.topteacher.model.SchoolYear;
 import de.westarps.topteacher.model.Subject;
 import de.westarps.topteacher.ui.MainLayout;
 import de.westarps.topteacher.ui.component.AbstractFormEditor;
+import de.westarps.topteacher.ui.component.FormBinders;
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
 import de.westarps.topteacher.ui.component.QuickFilterField;
 
@@ -58,6 +60,7 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 	private final ComboBox<CoursePeriod> coursePeriod = new ComboBox<>("Zeitraum");
 	private final ComboBox<GradingScale> gradingScale = new ComboBox<>("Notenschlüssel");
 	private final ComboBox<Lifecycle> lifecycle = new ComboBox<>("Status");
+	private final Binder<CourseFormData> courseBinder = new Binder<>();
 	private final Button saveButton = new Button();
 	private final Button archiveButton = new Button("Archivieren");
 	private final Span multiSelectionSummary = new Span();
@@ -67,6 +70,7 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 	private final Button copyAssignmentsButton = new Button("Aus Kurs...");
 	private final Dialog copyAssignmentsDialog = new Dialog();
 	private final ComboBox<Course> sourceCourse = new ComboBox<>("Kurs");
+	private final Binder<AssignmentCopyFormData> assignmentCopyBinder = new Binder<>();
 	private final Grid<AssignmentRow> assignmentGrid = new Grid<>(AssignmentRow.class, false);
 
 	private Course selectedCourse;
@@ -114,6 +118,11 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 	}
 
 	@Override
+	protected String getEditorTabLabel() {
+		return "Kurs";
+	}
+
+	@Override
 	protected String getSearchText(final Course course) {
 		return String.join(" ", String.valueOf(course.id()), String.valueOf(course.schoolYear().getCalendarYear()),
 				course.schoolYear().getDisplayName(), course.coursePeriod().getDisplayName(),
@@ -140,33 +149,29 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 		schoolClass.setItems(SchoolClass.values());
 		schoolClass.setItemLabelGenerator(SchoolClass::getDisplayName);
 		schoolClass.setRequiredIndicatorVisible(true);
-		schoolClass.addValueChangeListener(event -> schoolClass.setInvalid(false));
 
 		subject.setItems(Subject.values());
 		subject.setItemLabelGenerator(Subject::getDisplayName);
 		subject.setRequiredIndicatorVisible(true);
-		subject.addValueChangeListener(event -> subject.setInvalid(false));
 
 		calendarYear.setMin(1900);
 		calendarYear.setMax(9998);
 		calendarYear.setStepButtonsVisible(true);
 		calendarYear.setRequiredIndicatorVisible(true);
-		calendarYear.addValueChangeListener(event -> calendarYear.setInvalid(false));
 
 		coursePeriod.setItems(CoursePeriod.values());
 		coursePeriod.setItemLabelGenerator(CoursePeriod::getDisplayName);
 		coursePeriod.setRequiredIndicatorVisible(true);
-		coursePeriod.addValueChangeListener(event -> coursePeriod.setInvalid(false));
 
 		gradingScale.setItemLabelGenerator(GradingScale::getDisplayName);
 		gradingScale.setRequiredIndicatorVisible(true);
-		gradingScale.addValueChangeListener(event -> gradingScale.setInvalid(false));
 		refreshGradingScaleOptions();
 
 		lifecycle.setItems(Lifecycle.values());
 		lifecycle.setItemLabelGenerator(Lifecycle::getDisplayName);
 		lifecycle.setRequiredIndicatorVisible(true);
-		lifecycle.addValueChangeListener(event -> lifecycle.setInvalid(false));
+
+		bindSingleEditor();
 
 		saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 		saveButton.addClickListener(event -> saveCourse());
@@ -252,7 +257,7 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 		sourceCourse.setItemLabelGenerator(Course::getDisplayName);
 		sourceCourse.setRequiredIndicatorVisible(true);
 		sourceCourse.setWidthFull();
-		sourceCourse.addValueChangeListener(event -> sourceCourse.setInvalid(false));
+		bindAssignmentCopyDialog();
 
 		final Span hint = new Span("Bestehende Zuordnungen werden ersetzt.");
 		final Button cancelButton = new Button("Abbrechen", event -> copyAssignmentsDialog.close());
@@ -277,13 +282,9 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 			return;
 		}
 
-		schoolClass.setValue(course.schoolClass());
-		subject.setValue(course.subject());
-		calendarYear.setValue(course.schoolYear().getCalendarYear());
-		coursePeriod.setValue(course.coursePeriod());
-		gradingScale.setValue(gradingScaleFor(course));
-		lifecycle.setValue(course.lifecycle());
-		clearSingleEditorValidation();
+		readSingleEditor(new CourseFormData(course.schoolClass(), course.subject(),
+				course.schoolYear().getCalendarYear(), course.coursePeriod(), gradingScaleFor(course),
+				course.lifecycle()));
 		updateEditorModeControls();
 	}
 
@@ -296,26 +297,20 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 	}
 
 	private void saveCourse() {
-		if (!validateSingleEditor()) {
+		final CourseFormData formData = new CourseFormData();
+		if (!courseBinder.writeBeanIfValid(formData)) {
 			return;
 		}
 
 		final Integer id = selectedCourse == null ? null : selectedCourse.id();
-		final Lifecycle selectedLifecycle = selectedCourse == null ? Lifecycle.ACTIVE : lifecycle.getValue();
-		courseRepository.save(new Course(id, schoolClass.getValue(), subject.getValue(),
-				new SchoolYear(calendarYear.getValue()), coursePeriod.getValue(), selectedLifecycle,
-				gradingScale.getValue().id()));
+		courseRepository.save(new Course(id, formData.getSchoolClass(), formData.getSubject(),
+				new SchoolYear(formData.getCalendarYear()), formData.getCoursePeriod(), formData.getLifecycle(),
+				formData.getGradingScale().id()));
 
 		refreshGrid();
 		clearSelection();
 		clearSingleEditor();
 		removeAssignmentsTab();
-	}
-
-	private boolean hasRequiredCourseValues() {
-		return schoolClass.getValue() != null && subject.getValue() != null && calendarYear.getValue() != null
-				&& calendarYear.getValue() >= 1900 && calendarYear.getValue() <= 9998 && coursePeriod.getValue() != null
-				&& gradingScale.getValue() != null;
 	}
 
 	private void archiveSelectedCourse() {
@@ -374,8 +369,7 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 		}
 
 		sourceCourse.setItems(sourceCourses);
-		sourceCourse.clear();
-		sourceCourse.setInvalid(false);
+		readAssignmentCopyDialog(new AssignmentCopyFormData(null));
 		copyAssignmentsDialog.open();
 	}
 
@@ -383,13 +377,12 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 		if (selectedCourse == null) {
 			return;
 		}
-		if (sourceCourse.getValue() == null) {
-			sourceCourse.setErrorMessage("Kurs ist erforderlich.");
-			sourceCourse.setInvalid(true);
+		final AssignmentCopyFormData formData = new AssignmentCopyFormData();
+		if (!assignmentCopyBinder.writeBeanIfValid(formData)) {
 			return;
 		}
 
-		courseRepository.replacePupilsFromCourse(selectedCourse.id(), sourceCourse.getValue().id());
+		courseRepository.replacePupilsFromCourse(selectedCourse.id(), formData.getSourceCourse().id());
 		copyAssignmentsDialog.close();
 		assignmentSearch.clear();
 		refreshAssignments();
@@ -446,13 +439,8 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 
 	private void clearSingleEditor() {
 		selectedCourse = null;
-		schoolClass.clear();
-		subject.clear();
-		calendarYear.setValue(Year.now().getValue());
-		coursePeriod.setValue(CoursePeriod.FULL_YEAR);
-		gradingScale.setValue(defaultGradingScale());
-		lifecycle.setValue(Lifecycle.ACTIVE);
-		clearSingleEditorValidation();
+		readSingleEditor(new CourseFormData(null, null, Year.now().getValue(), CoursePeriod.FULL_YEAR,
+				defaultGradingScale(), Lifecycle.ACTIVE));
 		updateEditorModeControls();
 	}
 
@@ -485,55 +473,6 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 		saveButton.setText(editMode ? "Speichern" : "Anlegen");
 		lifecycle.setVisible(editMode);
 		archiveButton.setVisible(editMode && selectedCourse.lifecycle() == Lifecycle.ACTIVE);
-	}
-
-	private boolean validateSingleEditor() {
-		clearSingleEditorValidation();
-		boolean valid = hasRequiredCourseValues();
-		if (schoolClass.getValue() == null) {
-			schoolClass.setErrorMessage("Klasse ist erforderlich.");
-			schoolClass.setInvalid(true);
-			valid = false;
-		}
-		if (subject.getValue() == null) {
-			subject.setErrorMessage("Fach ist erforderlich.");
-			subject.setInvalid(true);
-			valid = false;
-		}
-		if (calendarYear.getValue() == null) {
-			calendarYear.setErrorMessage("Startjahr ist erforderlich.");
-			calendarYear.setInvalid(true);
-			valid = false;
-		} else if (calendarYear.getValue() < 1900 || calendarYear.getValue() > 9998) {
-			calendarYear.setErrorMessage("Startjahr muss zwischen 1900 und 9998 liegen.");
-			calendarYear.setInvalid(true);
-			valid = false;
-		}
-		if (coursePeriod.getValue() == null) {
-			coursePeriod.setErrorMessage("Zeitraum ist erforderlich.");
-			coursePeriod.setInvalid(true);
-			valid = false;
-		}
-		if (gradingScale.getValue() == null) {
-			gradingScale.setErrorMessage("Notenschlüssel ist erforderlich.");
-			gradingScale.setInvalid(true);
-			valid = false;
-		}
-		if (selectedCourse != null && lifecycle.getValue() == null) {
-			lifecycle.setErrorMessage("Status ist erforderlich.");
-			lifecycle.setInvalid(true);
-			valid = false;
-		}
-		return valid;
-	}
-
-	private void clearSingleEditorValidation() {
-		schoolClass.setInvalid(false);
-		subject.setInvalid(false);
-		calendarYear.setInvalid(false);
-		coursePeriod.setInvalid(false);
-		gradingScale.setInvalid(false);
-		lifecycle.setInvalid(false);
 	}
 
 	private Lifecycle commonLifecycle(final List<Course> courses) {
@@ -583,5 +522,128 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 	}
 
 	private record AssignmentRow(Pupil pupil, boolean assigned) {
+	}
+
+	private void bindSingleEditor() {
+		courseBinder.forField(schoolClass).asRequired("Klasse ist erforderlich.")
+				.bind(CourseFormData::getSchoolClass, CourseFormData::setSchoolClass);
+		courseBinder.forField(subject).asRequired("Fach ist erforderlich.").bind(CourseFormData::getSubject,
+				CourseFormData::setSubject);
+		courseBinder.forField(calendarYear).asRequired("Startjahr ist erforderlich.")
+				.withValidator(year -> year == null || year >= 1900 && year <= 9998,
+						"Startjahr muss zwischen 1900 und 9998 liegen.")
+				.bind(CourseFormData::getCalendarYear, CourseFormData::setCalendarYear);
+		courseBinder.forField(coursePeriod).asRequired("Zeitraum ist erforderlich.")
+				.bind(CourseFormData::getCoursePeriod, CourseFormData::setCoursePeriod);
+		courseBinder.forField(gradingScale).asRequired("Notenschlüssel ist erforderlich.")
+				.bind(CourseFormData::getGradingScale, CourseFormData::setGradingScale);
+		courseBinder.forField(lifecycle).asRequired("Status ist erforderlich.").bind(CourseFormData::getLifecycle,
+				CourseFormData::setLifecycle);
+	}
+
+	private void readSingleEditor(final CourseFormData formData) {
+		courseBinder.readBean(formData);
+		FormBinders.clearValidation(courseBinder);
+	}
+
+	private void bindAssignmentCopyDialog() {
+		assignmentCopyBinder.forField(sourceCourse).asRequired("Kurs ist erforderlich.")
+				.bind(AssignmentCopyFormData::getSourceCourse, AssignmentCopyFormData::setSourceCourse);
+	}
+
+	private void readAssignmentCopyDialog(final AssignmentCopyFormData formData) {
+		assignmentCopyBinder.readBean(formData);
+		FormBinders.clearValidation(assignmentCopyBinder);
+	}
+
+	private static final class CourseFormData {
+
+		private SchoolClass schoolClass;
+		private Subject subject;
+		private Integer calendarYear = Year.now().getValue();
+		private CoursePeriod coursePeriod = CoursePeriod.FULL_YEAR;
+		private GradingScale gradingScale;
+		private Lifecycle lifecycle = Lifecycle.ACTIVE;
+
+		private CourseFormData() {
+		}
+
+		private CourseFormData(final SchoolClass schoolClass, final Subject subject, final Integer calendarYear,
+				final CoursePeriod coursePeriod, final GradingScale gradingScale, final Lifecycle lifecycle) {
+			this.schoolClass = schoolClass;
+			this.subject = subject;
+			this.calendarYear = calendarYear;
+			this.coursePeriod = coursePeriod;
+			this.gradingScale = gradingScale;
+			this.lifecycle = lifecycle;
+		}
+
+		public SchoolClass getSchoolClass() {
+			return schoolClass;
+		}
+
+		public void setSchoolClass(final SchoolClass schoolClass) {
+			this.schoolClass = schoolClass;
+		}
+
+		public Subject getSubject() {
+			return subject;
+		}
+
+		public void setSubject(final Subject subject) {
+			this.subject = subject;
+		}
+
+		public Integer getCalendarYear() {
+			return calendarYear;
+		}
+
+		public void setCalendarYear(final Integer calendarYear) {
+			this.calendarYear = calendarYear;
+		}
+
+		public CoursePeriod getCoursePeriod() {
+			return coursePeriod;
+		}
+
+		public void setCoursePeriod(final CoursePeriod coursePeriod) {
+			this.coursePeriod = coursePeriod;
+		}
+
+		public GradingScale getGradingScale() {
+			return gradingScale;
+		}
+
+		public void setGradingScale(final GradingScale gradingScale) {
+			this.gradingScale = gradingScale;
+		}
+
+		public Lifecycle getLifecycle() {
+			return lifecycle;
+		}
+
+		public void setLifecycle(final Lifecycle lifecycle) {
+			this.lifecycle = lifecycle;
+		}
+	}
+
+	private static final class AssignmentCopyFormData {
+
+		private Course sourceCourse;
+
+		private AssignmentCopyFormData() {
+		}
+
+		private AssignmentCopyFormData(final Course sourceCourse) {
+			this.sourceCourse = sourceCourse;
+		}
+
+		public Course getSourceCourse() {
+			return sourceCourse;
+		}
+
+		public void setSourceCourse(final Course sourceCourse) {
+			this.sourceCourse = sourceCourse;
+		}
 	}
 }

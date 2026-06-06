@@ -37,9 +37,8 @@ final class EhPartSection extends AbstractEhSection<EhPart> {
 		this.savedTitle = part.title();
 		components.trackDirty(title);
 		addToBody(editorBlockWithMoveButtons(components, siblings, handler,
-				List.of(components.saveButton(),
-						components.commandButton("Leistungskategorie hinzufügen", VaadinIcon.PLUS,
-								event -> handler.addCategory(part))),
+				List.of(components.commandButton("Leistungskategorie hinzufügen", VaadinIcon.PLUS,
+						event -> handler.addCategory(part))),
 				List.of(collapseState.toggleButton(descendantKeys),
 						components.deleteButton(event -> handler.delete(part)))));
 		addToBody(categories);
