@@ -58,6 +58,14 @@ public class MarkdownEditor extends AbstractCompositeField<MarkdownEditorCompone
 		setTag(null);
 	}
 
+	public String getCanvasColor() {
+		return getEditor().getCanvasColor();
+	}
+
+	public void setCanvasColor(final String canvasColor) {
+		getEditor().setCanvasColor(canvasColor);
+	}
+
 	public Set<MarkdownToolbarCommand> getHiddenToolbarCommands() {
 		return getEditor().getHiddenToolbarCommands();
 	}

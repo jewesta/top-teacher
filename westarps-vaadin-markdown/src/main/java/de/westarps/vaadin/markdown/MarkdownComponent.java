@@ -13,6 +13,8 @@ import com.vaadin.flow.function.SerializableConsumer;
 @NpmPackage(value = "rehype-sanitize", version = "6.0.0")
 abstract class MarkdownComponent extends ReactAdapterComponent implements HasSize {
 
+	private static final String CANVAS_COLOR_PROPERTY = "--ws-markdown-canvas-color";
+
 	private String content;
 	private MarkdownTag tag;
 
@@ -36,6 +38,18 @@ abstract class MarkdownComponent extends ReactAdapterComponent implements HasSiz
 
 	public void addContentChangeListener(final SerializableConsumer<String> listener) {
 		addStateChangeListener("content", String.class, listener);
+	}
+
+	public String getCanvasColor() {
+		return getElement().getStyle().get(CANVAS_COLOR_PROPERTY);
+	}
+
+	public void setCanvasColor(final String canvasColor) {
+		if (canvasColor == null || canvasColor.isBlank()) {
+			getElement().getStyle().remove(CANVAS_COLOR_PROPERTY);
+			return;
+		}
+		getElement().getStyle().set(CANVAS_COLOR_PROPERTY, canvasColor);
 	}
 
 	MarkdownTag getTag() {

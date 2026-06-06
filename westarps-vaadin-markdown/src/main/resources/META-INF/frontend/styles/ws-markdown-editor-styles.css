@@ -18,6 +18,16 @@
 	height: 100%;
 }
 
+ws-markdown-viewer[data-color-mode] .wmde-markdown,
+ws-markdown-viewer[data-color-mode] .wmde-markdown-var {
+	--color-canvas-default: var(--ws-markdown-canvas-color, transparent);
+}
+
+ws-markdown-editor[data-color-mode] .wmde-markdown,
+ws-markdown-editor[data-color-mode] .wmde-markdown-var {
+	--color-canvas-default: var(--ws-markdown-canvas-color, #ffffff);
+}
+
 .ws-markdown-tag {
 	display: inline;
 }
