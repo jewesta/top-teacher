@@ -26,8 +26,10 @@ import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.router.Route;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
+import de.westarps.topteacher.backend.repo.GradingScaleRepository;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.CoursePeriod;
+import de.westarps.topteacher.model.GradingScale;
 import de.westarps.topteacher.model.Lifecycle;
 import de.westarps.topteacher.model.Pupil;
 import de.westarps.topteacher.model.SchoolClass;
@@ -47,10 +49,12 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 			.thenComparing(row -> row.pupil().id());
 
 	private final CourseRepository courseRepository;
+	private final GradingScaleRepository gradingScaleRepository;
 	private final ComboBox<SchoolClass> schoolClass = new ComboBox<>("Klasse");
 	private final ComboBox<Subject> subject = new ComboBox<>("Fach");
 	private final IntegerField calendarYear = new IntegerField("Startjahr");
 	private final ComboBox<CoursePeriod> coursePeriod = new ComboBox<>("Zeitraum");
+	private final ComboBox<GradingScale> gradingScale = new ComboBox<>("Notenschlüssel");
 	private final ComboBox<Lifecycle> lifecycle = new ComboBox<>("Status");
 	private final Button saveButton = new Button("Speichern");
 	private final Button newButton = new Button("Neu");
@@ -63,13 +67,15 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 
 	private Course selectedCourse;
 	private List<Course> selectedCourses = List.of();
+	private List<GradingScale> gradingScales = List.of();
 	private ListDataProvider<AssignmentRow> assignmentDataProvider;
 	private Tab assignmentsTab;
 	private Component assignmentsContent;
 
-	public CoursesView(final CourseRepository courseRepository) {
+	public CoursesView(final CourseRepository courseRepository, final GradingScaleRepository gradingScaleRepository) {
 		super("Kurse", "tt-courses-view", new MultiSelectionGrid<>(Course.class, false));
 		this.courseRepository = courseRepository;
+		this.gradingScaleRepository = gradingScaleRepository;
 
 		configureEditors();
 		configureAssignments();
@@ -85,13 +91,14 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 		grid.addColumn(course -> course.coursePeriod().getDisplayName()).setHeader("Zeitraum").setAutoWidth(true);
 		grid.addColumn(course -> course.schoolClass().getDisplayName()).setHeader("Klasse").setAutoWidth(true);
 		grid.addColumn(course -> course.subject().getDisplayName()).setHeader("Fach").setAutoWidth(true);
+		grid.addColumn(this::gradingScaleLabel).setHeader("Notenschlüssel").setAutoWidth(true);
 		grid.addColumn(course -> course.lifecycle().getDisplayName()).setHeader("Status").setAutoWidth(true);
 	}
 
 	@Override
 	protected Component createSingleSelectEditor() {
 		return AbstractFormEditor.responsive("tt-course-editor",
-				List.of(schoolClass, subject, calendarYear, coursePeriod, lifecycle),
+				List.of(schoolClass, subject, calendarYear, coursePeriod, gradingScale, lifecycle),
 				List.of(saveButton, newButton, archiveButton));
 	}
 
@@ -107,8 +114,8 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 		return String.join(" ", String.valueOf(course.id()), String.valueOf(course.schoolYear().getCalendarYear()),
 				course.schoolYear().getDisplayName(), course.coursePeriod().getDisplayName(),
 				course.coursePeriod().name(), course.schoolClass().getDisplayName(), course.schoolClass().name(),
-				course.subject().getDisplayName(), course.subject().name(), course.lifecycle().getDisplayName(),
-				course.lifecycle().name());
+				course.subject().getDisplayName(), course.subject().name(), gradingScaleLabel(course),
+				course.lifecycle().getDisplayName(), course.lifecycle().name());
 	}
 
 	@Override
@@ -142,6 +149,10 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 		coursePeriod.setItems(CoursePeriod.values());
 		coursePeriod.setItemLabelGenerator(CoursePeriod::getDisplayName);
 		coursePeriod.setRequiredIndicatorVisible(true);
+
+		gradingScale.setItemLabelGenerator(GradingScale::getDisplayName);
+		gradingScale.setRequiredIndicatorVisible(true);
+		refreshGradingScaleOptions();
 
 		lifecycle.setItems(Lifecycle.values());
 		lifecycle.setItemLabelGenerator(Lifecycle::getDisplayName);
@@ -232,6 +243,7 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 		subject.setValue(course.subject());
 		calendarYear.setValue(course.schoolYear().getCalendarYear());
 		coursePeriod.setValue(course.coursePeriod());
+		gradingScale.setValue(gradingScaleFor(course));
 		lifecycle.setValue(course.lifecycle());
 		updateArchiveButton();
 	}
@@ -246,13 +258,14 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 
 	private void saveCourse() {
 		if (!hasRequiredCourseValues()) {
-			Notification.show("Klasse, Fach, Startjahr, Zeitraum und Status sind erforderlich.");
+			Notification.show("Klasse, Fach, Startjahr, Zeitraum, Notenschlüssel und Status sind erforderlich.");
 			return;
 		}
 
 		final Integer id = selectedCourse == null ? null : selectedCourse.id();
 		courseRepository.save(new Course(id, schoolClass.getValue(), subject.getValue(),
-				new SchoolYear(calendarYear.getValue()), coursePeriod.getValue(), lifecycle.getValue()));
+				new SchoolYear(calendarYear.getValue()), coursePeriod.getValue(), lifecycle.getValue(),
+				gradingScale.getValue().id()));
 
 		refreshGrid();
 		clearSingleEditor();
@@ -262,7 +275,7 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 	private boolean hasRequiredCourseValues() {
 		return schoolClass.getValue() != null && subject.getValue() != null && calendarYear.getValue() != null
 				&& calendarYear.getValue() >= 1900 && calendarYear.getValue() <= 9998 && coursePeriod.getValue() != null
-				&& lifecycle.getValue() != null;
+				&& gradingScale.getValue() != null && lifecycle.getValue() != null;
 	}
 
 	private void archiveSelectedCourse() {
@@ -283,7 +296,8 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 		}
 
 		selectedCourses.forEach(course -> courseRepository.save(new Course(course.id(), course.schoolClass(),
-				course.subject(), course.schoolYear(), course.coursePeriod(), selectedLifecycle)));
+				course.subject(), course.schoolYear(), course.coursePeriod(), selectedLifecycle,
+				course.gradingScaleId())));
 		Notification.show("Status für " + selectedCourses.size() + " Kurse aktualisiert.");
 		refreshGrid();
 	}
@@ -307,6 +321,7 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 	}
 
 	private void refreshGrid() {
+		refreshGradingScaleOptions();
 		setGridItems(courseRepository.findAll());
 	}
 
@@ -359,8 +374,33 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 		subject.clear();
 		calendarYear.setValue(Year.now().getValue());
 		coursePeriod.setValue(CoursePeriod.FULL_YEAR);
+		gradingScale.setValue(defaultGradingScale());
 		lifecycle.setValue(Lifecycle.ACTIVE);
 		updateArchiveButton();
+	}
+
+	private void refreshGradingScaleOptions() {
+		gradingScales = gradingScaleRepository.findAll();
+		gradingScale.setItems(gradingScales);
+	}
+
+	private GradingScale gradingScaleFor(final Course course) {
+		return gradingScales.stream()
+				.filter(candidate -> candidate.id().equals(course.gradingScaleId()))
+				.findFirst()
+				.orElse(null);
+	}
+
+	private GradingScale defaultGradingScale() {
+		return gradingScales.stream()
+				.filter(candidate -> candidate.lifecycle() == Lifecycle.ACTIVE)
+				.findFirst()
+				.orElseGet(() -> gradingScales.stream().findFirst().orElse(null));
+	}
+
+	private String gradingScaleLabel(final Course course) {
+		final GradingScale assignedGradingScale = gradingScaleFor(course);
+		return assignedGradingScale == null ? "" : assignedGradingScale.getDisplayName();
 	}
 
 	private void updateArchiveButton() {

@@ -13,13 +13,13 @@ import com.vaadin.flow.component.datepicker.DatePicker.DatePickerI18n;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.tabs.Tab;
-import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.ExamRepository;
 import de.westarps.topteacher.backend.repo.ExpectationHorizonRepository;
+import de.westarps.topteacher.backend.repo.GradingScaleRepository;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.ui.MainLayout;
@@ -27,6 +27,7 @@ import de.westarps.topteacher.ui.component.AbstractFormEditor;
 import de.westarps.topteacher.ui.component.ExamNotesEditor;
 import de.westarps.topteacher.ui.component.ExamResultsEditor;
 import de.westarps.topteacher.ui.component.ExpectationHorizonEditor;
+import de.westarps.topteacher.ui.component.GradingScaleViewer;
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
 
 @Route(value = "exams", layout = MainLayout.class)
@@ -39,10 +40,10 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 	private final ExpectationHorizonEditor expectationHorizonEditor;
 	private final ExamNotesEditor examNotesEditor;
 	private final ExamResultsEditor examResultsEditor;
+	private final GradingScaleViewer gradingScaleViewer;
 	private final ComboBox<Course> courseFilter = new ComboBox<>("Kurs");
 	private final TextField title = new TextField("Titel");
 	private final DatePicker date = new DatePicker("Datum");
-	private final IntegerField maxPoints = new IntegerField("Max. Punkte");
 	private final Button saveButton = new Button("Speichern");
 	private final Button newButton = new Button("Neu");
 	private final Span multiSelectionSummary = new Span();
@@ -52,15 +53,18 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 	private Tab expectationHorizonTab;
 	private Tab notesTab;
 	private Tab resultsTab;
+	private Tab gradingScaleTab;
 
 	public ExamsView(final CourseRepository courseRepository, final ExamRepository examRepository,
-			final ExpectationHorizonRepository expectationHorizonRepository) {
+			final ExpectationHorizonRepository expectationHorizonRepository,
+			final GradingScaleRepository gradingScaleRepository) {
 		super("Klausuren", "tt-exams-view", new MultiSelectionGrid<>(Exam.class, false));
 		this.courseRepository = courseRepository;
 		this.examRepository = examRepository;
 		this.expectationHorizonEditor = new ExpectationHorizonEditor(expectationHorizonRepository);
 		this.examNotesEditor = new ExamNotesEditor(expectationHorizonRepository);
 		this.examResultsEditor = new ExamResultsEditor(courseRepository, expectationHorizonRepository);
+		this.gradingScaleViewer = new GradingScaleViewer(gradingScaleRepository);
 
 		configureCourseFilter();
 		configureEditors();
@@ -73,13 +77,11 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 	protected void configureGrid(final MultiSelectionGrid<Exam> grid) {
 		grid.addColumn(Exam::title).setHeader("Titel").setAutoWidth(true);
 		grid.addColumn(exam -> DATE_FORMATTER.format(exam.date())).setHeader("Datum").setAutoWidth(true);
-		grid.addColumn(Exam::maxPoints).setHeader("Max. Punkte").setAutoWidth(true);
 	}
 
 	@Override
 	protected Component createSingleSelectEditor() {
-		return AbstractFormEditor.responsive("tt-exam-editor", List.of(title, date, maxPoints),
-				List.of(saveButton, newButton));
+		return AbstractFormEditor.responsive("tt-exam-editor", List.of(title, date), List.of(saveButton, newButton));
 	}
 
 	@Override
@@ -91,7 +93,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 	@Override
 	protected String getSearchText(final Exam exam) {
 		return String.join(" ", String.valueOf(exam.id()), exam.title(), DATE_FORMATTER.format(exam.date()),
-				exam.date().toString(), String.valueOf(exam.maxPoints()));
+				exam.date().toString());
 	}
 
 	@Override
@@ -140,10 +142,6 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		date.setLocale(Locale.GERMANY);
 		date.setI18n(germanDatePickerI18n());
 		date.setRequiredIndicatorVisible(true);
-		maxPoints.setMin(0);
-		maxPoints.setStepButtonsVisible(true);
-		maxPoints.setRequiredIndicatorVisible(true);
-		maxPoints.setWidth("8rem");
 
 		saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 		saveButton.addClickListener(event -> saveExam());
@@ -182,7 +180,6 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 
 		title.setValue(exam.title());
 		date.setValue(exam.date());
-		maxPoints.setValue(exam.maxPoints());
 		updateEditorEnabled();
 	}
 
@@ -199,18 +196,14 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		}
 
 		final String trimmedTitle = title.getValue().trim();
-		if (trimmedTitle.isBlank() || date.getValue() == null || maxPoints.getValue() == null) {
-			Notification.show("Titel, Datum und max. Punkte sind erforderlich.");
-			return;
-		}
-		if (maxPoints.getValue() < 0) {
-			Notification.show("Max. Punkte dürfen nicht negativ sein.");
+		if (trimmedTitle.isBlank() || date.getValue() == null) {
+			Notification.show("Titel und Datum sind erforderlich.");
 			return;
 		}
 
 		final Integer id = selectedExam == null ? null : selectedExam.id();
 		final Integer courseId = selectedExam == null ? selectedCourse.id() : selectedExam.courseId();
-		examRepository.save(new Exam(id, courseId, trimmedTitle, date.getValue(), maxPoints.getValue()));
+		examRepository.save(new Exam(id, courseId, trimmedTitle, date.getValue()));
 
 		refreshGrid();
 		clearSingleEditor();
@@ -230,7 +223,6 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		selectedExam = null;
 		title.clear();
 		date.clear();
-		maxPoints.setValue(0);
 		updateEditorEnabled();
 	}
 
@@ -244,11 +236,13 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 			expectationHorizonTab = getContextTabs().add("EH", expectationHorizonEditor);
 			notesTab = getContextTabs().add("Notizen", examNotesEditor);
 			resultsTab = getContextTabs().add("Ergebnisse", examResultsEditor);
+			gradingScaleTab = getContextTabs().add("Notenschlüssel", gradingScaleViewer);
 		}
 
 		expectationHorizonEditor.setExam(exam);
 		examNotesEditor.setExam(exam);
 		examResultsEditor.setExam(exam);
+		gradingScaleViewer.setCourse(selectedCourse);
 	}
 
 	private void removeExamContextTabs() {
@@ -256,29 +250,33 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 			expectationHorizonEditor.setExam(null);
 			examNotesEditor.setExam(null);
 			examResultsEditor.setExam(null);
+			gradingScaleViewer.setCourse(null);
 			return;
 		}
 
 		if (getContextTabs().getSelectedTab() == expectationHorizonTab
-				|| getContextTabs().getSelectedTab() == notesTab || getContextTabs().getSelectedTab() == resultsTab) {
+				|| getContextTabs().getSelectedTab() == notesTab || getContextTabs().getSelectedTab() == resultsTab
+				|| getContextTabs().getSelectedTab() == gradingScaleTab) {
 			getContextTabs().setSelectedIndex(0);
 		}
 		getContextTabs().remove(expectationHorizonTab);
 		getContextTabs().remove(notesTab);
 		getContextTabs().remove(resultsTab);
+		getContextTabs().remove(gradingScaleTab);
 		expectationHorizonTab = null;
 		notesTab = null;
 		resultsTab = null;
+		gradingScaleTab = null;
 		expectationHorizonEditor.setExam(null);
 		examNotesEditor.setExam(null);
 		examResultsEditor.setExam(null);
+		gradingScaleViewer.setCourse(null);
 	}
 
 	private void updateEditorEnabled() {
 		final boolean enabled = selectedCourse != null;
 		title.setEnabled(enabled);
 		date.setEnabled(enabled);
-		maxPoints.setEnabled(enabled);
 		saveButton.setEnabled(enabled);
 		newButton.setEnabled(enabled);
 	}

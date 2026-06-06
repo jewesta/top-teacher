@@ -365,6 +365,18 @@ vaadin-app-layout::part(navbar) {
 	white-space: nowrap;
 }
 
+.tt-grading-scale-grid {
+	max-width: 100%;
+}
+
+.tt-grading-scale-title {
+	font-weight: 600;
+}
+
+.tt-grading-scale-meta {
+	color: var(--lumo-secondary-text-color);
+}
+
 .tt-eh-section-content {
 	gap: var(--lumo-space-m);
 }

@@ -14,6 +14,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.ExamRepository;
 import de.westarps.topteacher.backend.repo.ExpectationHorizonRepository;
+import de.westarps.topteacher.backend.repo.GradingScaleRepository;
 import de.westarps.topteacher.backend.repo.PupilRepository;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.CoursePeriod;
@@ -26,6 +27,7 @@ import de.westarps.topteacher.model.EhRequirementResult;
 import de.westarps.topteacher.model.EhTask;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.ExamNoteSection;
+import de.westarps.topteacher.model.GradingScale;
 import de.westarps.topteacher.model.Lifecycle;
 import de.westarps.topteacher.model.Pupil;
 import de.westarps.topteacher.model.SchoolClass;
@@ -37,6 +39,9 @@ class ExpectationHorizonRepositoryTests {
 
 	@Autowired
 	private CourseRepository courseRepository;
+
+	@Autowired
+	private GradingScaleRepository gradingScaleRepository;
 
 	@Autowired
 	private ExamRepository examRepository;
@@ -219,8 +224,10 @@ class ExpectationHorizonRepositoryTests {
 	}
 
 	private Exam createExam(final int calendarYear, final String title) {
+		final GradingScale gradingScale = gradingScaleRepository.save(new GradingScale(null,
+				"EH Repo " + calendarYear + " " + title, 100, Lifecycle.ACTIVE));
 		final Course course = courseRepository.save(new Course(null, SchoolClass.CLS_10A, Subject.ENGLISH,
-				new SchoolYear(calendarYear), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE));
+				new SchoolYear(calendarYear), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, gradingScale.id()));
 		return examRepository.save(new Exam(null, course.id(), title, LocalDate.of(calendarYear, 9, 1)));
 	}
 }

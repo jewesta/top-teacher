@@ -34,7 +34,7 @@ public class CourseRepository {
 
 	public List<Course> findAll() {
 		return jdbc.query("""
-				select id, school_class, subject, calendar_year, course_period, lifecycle
+				select id, school_class, subject, calendar_year, course_period, lifecycle, grading_scale_id
 				from course
 				order by calendar_year desc, course_period, school_class, subject, id
 				""", rowMapper);
@@ -42,7 +42,7 @@ public class CourseRepository {
 
 	public List<Course> findActive() {
 		return jdbc.query("""
-				select id, school_class, subject, calendar_year, course_period, lifecycle
+				select id, school_class, subject, calendar_year, course_period, lifecycle, grading_scale_id
 				from course
 				where lifecycle = :lifecycle
 				order by calendar_year desc, course_period, school_class, subject, id
@@ -51,7 +51,7 @@ public class CourseRepository {
 
 	public Optional<Course> findById(final int id) {
 		return jdbc.query("""
-				select id, school_class, subject, calendar_year, course_period, lifecycle
+				select id, school_class, subject, calendar_year, course_period, lifecycle, grading_scale_id
 				from course
 				where id = :id
 				""", Map.of("id", id), rowMapper).stream().findFirst();
@@ -125,8 +125,8 @@ public class CourseRepository {
 		final MapSqlParameterSource parameters = parameters(course);
 
 		jdbc.update("""
-				insert into course (school_class, subject, calendar_year, course_period, lifecycle)
-				values (:schoolClass, :subject, :calendarYear, :coursePeriod, :lifecycle)
+				insert into course (school_class, subject, calendar_year, course_period, lifecycle, grading_scale_id)
+				values (:schoolClass, :subject, :calendarYear, :coursePeriod, :lifecycle, :gradingScaleId)
 				""", parameters, keyHolder, new String[] { "id" });
 
 		final Number id = keyHolder.getKey();
@@ -135,7 +135,7 @@ public class CourseRepository {
 		}
 
 		return new Course(id.intValue(), course.schoolClass(), course.subject(), course.schoolYear(),
-				course.coursePeriod(), course.lifecycle());
+				course.coursePeriod(), course.lifecycle(), course.gradingScaleId());
 	}
 
 	private void update(final Course course) {
@@ -147,7 +147,8 @@ public class CourseRepository {
 				    subject = :subject,
 				    calendar_year = :calendarYear,
 				    course_period = :coursePeriod,
-				    lifecycle = :lifecycle
+				    lifecycle = :lifecycle,
+				    grading_scale_id = :gradingScaleId
 				where id = :id
 				""", parameters);
 	}
@@ -157,14 +158,16 @@ public class CourseRepository {
 				.addValue("subject", course.subject().name())
 				.addValue("calendarYear", course.schoolYear().getCalendarYear())
 				.addValue("coursePeriod", course.coursePeriod().name())
-				.addValue("lifecycle", course.lifecycle().name());
+				.addValue("lifecycle", course.lifecycle().name())
+				.addValue("gradingScaleId", course.gradingScaleId());
 	}
 
 	private Course mapCourse(final ResultSet resultSet, final int rowNumber) throws SQLException {
 		return new Course(resultSet.getInt("id"), SchoolClass.valueOf(resultSet.getString("school_class")),
 				Subject.valueOf(resultSet.getString("subject")), new SchoolYear(resultSet.getInt("calendar_year")),
 				CoursePeriod.valueOf(resultSet.getString("course_period")),
-				Lifecycle.valueOf(resultSet.getString("lifecycle")));
+				Lifecycle.valueOf(resultSet.getString("lifecycle")),
+				resultSet.getObject("grading_scale_id", Integer.class));
 	}
 
 	private Pupil mapPupil(final ResultSet resultSet, final int rowNumber) throws SQLException {
