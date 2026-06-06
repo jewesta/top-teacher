@@ -264,7 +264,10 @@ public class ExamResultsEditor extends VerticalLayout {
 			descriptionArea.add(description);
 		}
 
-		final HorizontalLayout body = new HorizontalLayout(descriptionArea);
+		final Div pointsColumn = new Div();
+		pointsColumn.addClassName("tt-results-points-column-spacer");
+
+		final HorizontalLayout body = new HorizontalLayout(descriptionArea, pointsColumn);
 		body.addClassName("tt-results-requirement-body");
 		body.setFlexGrow(1, descriptionArea);
 		body.setPadding(false);
