@@ -1,25 +1,31 @@
 import React from 'react';
-import { commands, executeCommand, selectWord, type ExecuteState, type ICommand, type TextAreaTextApi } from '@uiw/react-md-editor/nohighlight';
+import {
+  commands,
+  executeCommand,
+  selectWord,
+  type ExecuteState,
+  type ICommand,
+  type TextAreaTextApi,
+} from '@uiw/react-md-editor/nohighlight';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import type { PluggableList } from 'unified';
 
 type MarkdownNode = {
   type: string;
   value?: string;
+  url?: string;
   children?: MarkdownNode[];
   data?: Record<string, unknown>;
 };
 
-const criterionPrefix = '::eh[';
-const criterionSuffix = ']';
-const criterionPattern = /::eh\[([^\]\n]+)\]/g;
+const criterionUrlPrefix = 'eh:';
+const criterionUrlPattern = /\(eh:([1-9]\d*)\)/g;
+const criterionUrlExactPattern = /^eh:([1-9]\d*)$/;
 const skippedNodeTypes = new Set(['code', 'inlineCode', 'html']);
 
 const criterionCommand: ICommand = {
   name: 'criterion',
   keyCommand: 'criterion',
-  prefix: criterionPrefix,
-  suffix: criterionSuffix,
   buttonProps: { 'aria-label': 'Kriterium markieren', title: 'Kriterium markieren' },
   icon: (
     <svg width="14" height="14" role="img" viewBox="0 0 16 16">
@@ -30,13 +36,15 @@ const criterionCommand: ICommand = {
     </svg>
   ),
   execute: (state: ExecuteState, api: TextAreaTextApi) => {
+    const prefix = '[';
+    const suffix = `](${criterionUrlPrefix}${nextCriterionId(state.text)})`;
     const selection = state.selectedText
       ? state.selection
       : selectWord({
           text: state.text,
           selection: state.selection,
-          prefix: criterionPrefix,
-          suffix: criterionSuffix,
+          prefix,
+          suffix,
         });
     const selectedState = api.setSelectionRange(selection);
     if (selectedState.selectedText.includes('\n')) {
@@ -45,9 +53,9 @@ const criterionCommand: ICommand = {
     executeCommand({
       api,
       selectedText: selectedState.selectedText,
-      selection: state.selection,
-      prefix: criterionPrefix,
-      suffix: criterionSuffix,
+      selection,
+      prefix,
+      suffix,
     });
   },
 };
@@ -65,10 +73,14 @@ export const topTeacherMarkdownExtraCommands = commands.getExtraCommands();
 
 const sanitizeSchema = {
   ...defaultSchema,
-  tagNames: [...(defaultSchema.tagNames ?? []), 'mark'],
+  tagNames: [...(defaultSchema.tagNames ?? []), 'mark', 'span'],
   attributes: {
     ...defaultSchema.attributes,
     mark: [...(defaultSchema.attributes?.mark ?? []), ['className', 'tt-criterion-highlight']],
+    span: [
+      ...(defaultSchema.attributes?.span ?? []),
+      ['className', 'tt-criterion', 'tt-criterion-badge'],
+    ],
   },
 };
 
@@ -89,38 +101,64 @@ function transformCriteria(node: MarkdownNode) {
   }
 
   node.children = node.children.flatMap((child) => {
-    if (child.type === 'text' && typeof child.value === 'string') {
-      return criterionNodes(child.value);
+    const criterionId = ehCriterionId(child);
+    if (criterionId) {
+      return [criterionNode(criterionId, child.children ?? [])];
     }
     transformCriteria(child);
     return [child];
   });
 }
 
-function criterionNodes(value: string): MarkdownNode[] {
-  const nodes: MarkdownNode[] = [];
-  let lastIndex = 0;
-  for (const match of value.matchAll(criterionPattern)) {
-    if (match.index === undefined) {
-      continue;
-    }
-    if (match.index > lastIndex) {
-      nodes.push({ type: 'text', value: value.slice(lastIndex, match.index) });
-    }
-    nodes.push({
-      type: 'ttCriterion',
-      data: {
-        hName: 'mark',
-        hProperties: {
-          className: ['tt-criterion-highlight'],
-        },
+function ehCriterionId(node: MarkdownNode): string | null {
+  if (node.type !== 'link' || typeof node.url !== 'string') {
+    return null;
+  }
+  const match = criterionUrlExactPattern.exec(node.url.trim());
+  return match ? match[1] : null;
+}
+
+function criterionNode(id: string, children: MarkdownNode[]): MarkdownNode {
+  return {
+    type: 'ttCriterion',
+    data: {
+      hName: 'span',
+      hProperties: {
+        className: ['tt-criterion'],
       },
-      children: [{ type: 'text', value: match[1] }],
-    });
-    lastIndex = match.index + match[0].length;
+    },
+    children: [
+      {
+        type: 'ttCriterionHighlight',
+        data: {
+          hName: 'mark',
+          hProperties: {
+            className: ['tt-criterion-highlight'],
+          },
+        },
+        children,
+      },
+      {
+        type: 'ttCriterionBadge',
+        data: {
+          hName: 'span',
+          hProperties: {
+            className: ['tt-criterion-badge'],
+          },
+        },
+        children: [{ type: 'text', value: id }],
+      },
+    ],
+  };
+}
+
+function nextCriterionId(markdown: string): number {
+  let nextId = 1;
+  for (const match of markdown.matchAll(criterionUrlPattern)) {
+    const id = Number.parseInt(match[1], 10);
+    if (id >= nextId) {
+      nextId = id + 1;
+    }
   }
-  if (lastIndex < value.length) {
-    nodes.push({ type: 'text', value: value.slice(lastIndex) });
-  }
-  return nodes.length ? nodes : [{ type: 'text', value }];
+  return nextId;
 }

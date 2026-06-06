@@ -18,8 +18,30 @@
 	height: 100%;
 }
 
+.tt-criterion {
+	display: inline;
+}
+
 .tt-criterion-highlight {
-	background: var(--lumo-primary-color-10pct);
+	background: var(--tt-criterion-highlight-color, #fff3bf);
 	border-radius: var(--lumo-border-radius-s);
 	padding: 0 0.15em;
+}
+
+.tt-criterion-badge,
+.tt-criterion > .tt-criterion-highlight + span {
+	align-items: center;
+	background: var(--lumo-contrast-70pct);
+	border-radius: 999px;
+	color: var(--lumo-base-color);
+	display: inline-flex;
+	font-size: 0.72em;
+	font-weight: 600;
+	height: 1.35em;
+	justify-content: center;
+	line-height: 1;
+	margin-left: 0.18em;
+	min-width: 1.35em;
+	padding: 0 0.25em;
+	vertical-align: 0.12em;
 }
