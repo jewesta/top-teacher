@@ -1,6 +1,7 @@
 package de.westarps.topteacher.ui.view;
 
 import java.util.List;
+import java.util.Map;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
@@ -15,6 +16,7 @@ import com.vaadin.flow.router.RouteAlias;
 import de.westarps.topteacher.backend.repo.PupilRepository;
 import de.westarps.topteacher.model.Lifecycle;
 import de.westarps.topteacher.model.Pupil;
+import de.westarps.topteacher.model.SchoolClass;
 import de.westarps.topteacher.ui.MainLayout;
 import de.westarps.topteacher.ui.component.AbstractFormEditor;
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
@@ -26,9 +28,9 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 	private final PupilRepository pupilRepository;
 	private final TextField name = new TextField("Vorname");
 	private final TextField surname = new TextField("Nachname");
+	private final TextField currentSchoolClass = new TextField("Klasse");
 	private final ComboBox<Lifecycle> lifecycle = new ComboBox<>("Status");
-	private final Button saveButton = new Button("Speichern");
-	private final Button newButton = new Button("Neu");
+	private final Button saveButton = new Button();
 	private final Button archiveButton = new Button("Archivieren");
 	private final Span multiSelectionSummary = new Span();
 	private final ComboBox<Lifecycle> bulkLifecycle = new ComboBox<>("Status");
@@ -36,6 +38,7 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 
 	private Pupil selectedPupil;
 	private List<Pupil> selectedPupils = List.of();
+	private Map<Integer, SchoolClass> latestSchoolClassByPupilId = Map.of();
 
 	public PupilsView(final PupilRepository pupilRepository) {
 		super("Schüler", "tt-pupils-view", new MultiSelectionGrid<>(Pupil.class, false));
@@ -52,13 +55,14 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 		grid.addColumn(Pupil::id).setHeader("ID").setAutoWidth(true).setFlexGrow(0);
 		grid.addColumn(Pupil::name).setHeader("Vorname").setAutoWidth(true);
 		grid.addColumn(Pupil::surname).setHeader("Nachname").setAutoWidth(true);
+		grid.addColumn(this::latestSchoolClassLabel).setHeader("Klasse").setAutoWidth(true);
 		grid.addColumn(pupil -> pupil.lifecycle().getDisplayName()).setHeader("Status").setAutoWidth(true);
 	}
 
 	@Override
 	protected Component createSingleSelectEditor() {
-		return AbstractFormEditor.responsive("tt-pupil-editor", List.of(name, surname, lifecycle),
-				List.of(saveButton, newButton, archiveButton));
+		return AbstractFormEditor.responsive("tt-pupil-editor", List.of(name, surname, currentSchoolClass, lifecycle),
+				List.of(saveButton, archiveButton));
 	}
 
 	@Override
@@ -70,7 +74,10 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 
 	@Override
 	protected String getSearchText(final Pupil pupil) {
-		return String.join(" ", String.valueOf(pupil.id()), pupil.name(), pupil.surname(),
+		final SchoolClass schoolClass = latestSchoolClassByPupilId.get(pupil.id());
+		final String schoolClassText = schoolClass == null ? ""
+				: schoolClass.getDisplayName() + " " + schoolClass.name();
+		return String.join(" ", String.valueOf(pupil.id()), pupil.name(), pupil.surname(), schoolClassText,
 				pupil.lifecycle().getDisplayName(), pupil.lifecycle().name());
 	}
 
@@ -88,16 +95,17 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 	private void configureEditors() {
 		name.setRequiredIndicatorVisible(true);
 		surname.setRequiredIndicatorVisible(true);
+		name.addValueChangeListener(event -> name.setInvalid(false));
+		surname.addValueChangeListener(event -> surname.setInvalid(false));
+
+		currentSchoolClass.setReadOnly(true);
+
 		lifecycle.setItems(Lifecycle.values());
 		lifecycle.setItemLabelGenerator(Lifecycle::getDisplayName);
+		lifecycle.addValueChangeListener(event -> lifecycle.setInvalid(false));
 
 		saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 		saveButton.addClickListener(event -> savePupil());
-
-		newButton.addClickListener(event -> {
-			clearSelection();
-			clearSingleEditor();
-		});
 
 		archiveButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
 		archiveButton.addClickListener(event -> archiveSelectedPupil());
@@ -122,8 +130,10 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 
 		name.setValue(pupil.name());
 		surname.setValue(pupil.surname());
+		currentSchoolClass.setValue(latestSchoolClassLabel(pupil));
 		lifecycle.setValue(pupil.lifecycle());
-		updateArchiveButton();
+		clearSingleEditorValidation();
+		updateEditorModeControls();
 	}
 
 	private void showMultiSelectEditor(final List<Pupil> pupils) {
@@ -137,8 +147,7 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 	private void savePupil() {
 		final String trimmedName = name.getValue().trim();
 		final String trimmedSurname = surname.getValue().trim();
-		if (trimmedName.isBlank() || trimmedSurname.isBlank()) {
-			Notification.show("Vorname und Nachname sind erforderlich.");
+		if (!validateSingleEditor(trimmedName, trimmedSurname)) {
 			return;
 		}
 
@@ -147,6 +156,7 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 		pupilRepository.save(new Pupil(id, trimmedName, trimmedSurname, selectedLifecycle));
 
 		refreshGrid();
+		clearSelection();
 		clearSingleEditor();
 	}
 
@@ -157,6 +167,7 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 
 		pupilRepository.archive(selectedPupil.id());
 		refreshGrid();
+		clearSelection();
 		clearSingleEditor();
 	}
 
@@ -173,6 +184,7 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 	}
 
 	private void refreshGrid() {
+		latestSchoolClassByPupilId = pupilRepository.findLatestSchoolClassByPupilId();
 		setGridItems(pupilRepository.findAll());
 	}
 
@@ -180,12 +192,50 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 		selectedPupil = null;
 		name.clear();
 		surname.clear();
+		currentSchoolClass.clear();
 		lifecycle.setValue(Lifecycle.ACTIVE);
-		updateArchiveButton();
+		clearSingleEditorValidation();
+		updateEditorModeControls();
 	}
 
-	private void updateArchiveButton() {
-		archiveButton.setEnabled(selectedPupil != null && selectedPupil.lifecycle() == Lifecycle.ACTIVE);
+	private void updateEditorModeControls() {
+		final boolean editMode = selectedPupil != null;
+		saveButton.setText(editMode ? "Speichern" : "Anlegen");
+		currentSchoolClass.setVisible(editMode);
+		lifecycle.setVisible(editMode);
+		archiveButton.setVisible(editMode && selectedPupil.lifecycle() == Lifecycle.ACTIVE);
+	}
+
+	private boolean validateSingleEditor(final String trimmedName, final String trimmedSurname) {
+		clearSingleEditorValidation();
+		boolean valid = true;
+		if (trimmedName.isBlank()) {
+			name.setErrorMessage("Vorname ist erforderlich.");
+			name.setInvalid(true);
+			valid = false;
+		}
+		if (trimmedSurname.isBlank()) {
+			surname.setErrorMessage("Nachname ist erforderlich.");
+			surname.setInvalid(true);
+			valid = false;
+		}
+		if (selectedPupil != null && lifecycle.getValue() == null) {
+			lifecycle.setErrorMessage("Status ist erforderlich.");
+			lifecycle.setInvalid(true);
+			valid = false;
+		}
+		return valid;
+	}
+
+	private void clearSingleEditorValidation() {
+		name.setInvalid(false);
+		surname.setInvalid(false);
+		lifecycle.setInvalid(false);
+	}
+
+	private String latestSchoolClassLabel(final Pupil pupil) {
+		final SchoolClass schoolClass = latestSchoolClassByPupilId.get(pupil.id());
+		return schoolClass == null ? "" : schoolClass.getDisplayName();
 	}
 
 	private Lifecycle commonLifecycle(final List<Pupil> pupils) {

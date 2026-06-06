@@ -223,6 +223,60 @@ class ExpectationHorizonRepositoryTests {
 				.containsExactly(new EhRequirementResult(requirement.id(), otherPupil.id(), 4, "Bleibt bestehen."));
 	}
 
+	@Test
+	void copiesDesignAndNotesWithoutResults() {
+		final Exam sourceExam = createExam(2042, "EH Copy Source");
+		final Exam targetExam = createExam(2043, "EH Copy Target");
+		final EhPart part = expectationHorizonRepository.savePart(new EhPart(null, sourceExam.id(), "Klausurteil A", 0));
+		final EhCategory category = expectationHorizonRepository
+				.saveCategory(new EhCategory(null, part.id(), "Sprache", "**Fokus**", 0));
+		final EhTask task = expectationHorizonRepository.saveTask(new EhTask(null, category.id(), "Teilaufgabe 1", 0));
+		final EhRequirement requirement = expectationHorizonRepository.saveRequirement(new EhRequirement(null,
+				task.id(), "Nutzt die [korrekte Zeitform](eh:1).", 5, true, 0));
+		final ExamNoteSection noteSection = expectationHorizonRepository
+				.saveNoteSection(new ExamNoteSection(null, sourceExam.id(), "Hinweis", "Bitte sauber lesen.", 0));
+		final EhCriterion criterion = expectationHorizonRepository.findActiveCriteriaByExamId(sourceExam.id())
+				.getFirst();
+		final Pupil pupil = pupilRepository.save(new Pupil(null, "Test", "Kopie", Lifecycle.ACTIVE));
+		expectationHorizonRepository.saveCriterionResult(new EhCriterionResult(criterion.id(), pupil.id(), true));
+		expectationHorizonRepository
+				.saveRequirementResult(new EhRequirementResult(requirement.id(), pupil.id(), 4, "Schon erfasst."));
+
+		expectationHorizonRepository.copyDesignAndNotes(sourceExam.id(), targetExam.id());
+
+		final EhPart copiedPart = expectationHorizonRepository.findPartsByExamId(targetExam.id()).getFirst();
+		final EhCategory copiedCategory = expectationHorizonRepository.findCategoriesByExamId(targetExam.id())
+				.getFirst();
+		final EhTask copiedTask = expectationHorizonRepository.findTasksByExamId(targetExam.id()).getFirst();
+		final EhRequirement copiedRequirement = expectationHorizonRepository.findRequirementsByExamId(targetExam.id())
+				.getFirst();
+
+		assertThat(copiedPart).isEqualTo(new EhPart(copiedPart.id(), targetExam.id(), part.title(), part.sortOrder()));
+		assertThat(copiedPart.id()).isNotEqualTo(part.id());
+		assertThat(copiedCategory).isEqualTo(new EhCategory(copiedCategory.id(), copiedPart.id(), category.title(),
+				category.descriptionMarkdown(), category.sortOrder()));
+		assertThat(copiedTask).isEqualTo(new EhTask(copiedTask.id(), copiedCategory.id(), task.title(),
+				task.sortOrder()));
+		assertThat(copiedRequirement).isEqualTo(new EhRequirement(copiedRequirement.id(), copiedTask.id(),
+				requirement.descriptionMarkdown(), requirement.maxPoints(), requirement.bonus(),
+				requirement.sortOrder()));
+		assertThat(expectationHorizonRepository.findActiveCriteriaByExamId(targetExam.id()))
+				.extracting(EhCriterion::criterionKey, EhCriterion::label)
+				.containsExactly(tuple("1", "korrekte Zeitform"));
+		final ExamNoteSection copiedNoteSection = expectationHorizonRepository.findNoteSectionsByExamId(targetExam.id())
+				.getFirst();
+		assertThat(copiedNoteSection)
+				.isEqualTo(new ExamNoteSection(copiedNoteSection.id(), targetExam.id(), noteSection.title(),
+						noteSection.descriptionMarkdown(), noteSection.sortOrder()));
+		assertThat(copiedNoteSection.id()).isNotEqualTo(noteSection.id());
+		assertThat(expectationHorizonRepository.findCriterionResultsByExamAndPupil(targetExam.id(), pupil.id()))
+				.isEmpty();
+		assertThat(expectationHorizonRepository.findRequirementResultsByExamAndPupil(targetExam.id(), pupil.id()))
+				.isEmpty();
+		assertThat(expectationHorizonRepository.findCriterionResultsByExamAndPupil(sourceExam.id(), pupil.id()))
+				.containsExactly(new EhCriterionResult(criterion.id(), pupil.id(), true));
+	}
+
 	private Exam createExam(final int calendarYear, final String title) {
 		final GradingScale gradingScale = gradingScaleRepository.save(new GradingScale(null,
 				"EH Repo " + calendarYear + " " + title, 100, Lifecycle.ACTIVE));

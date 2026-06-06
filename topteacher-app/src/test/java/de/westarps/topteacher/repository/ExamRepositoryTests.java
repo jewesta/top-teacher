@@ -54,6 +54,8 @@ class ExamRepositoryTests {
 
 		assertThat(examRepository.findById(saved.id())).contains(updated);
 		assertThat(examRepository.findByCourseId(course.id())).containsExactly(updated);
+		assertThat(examRepository.existsByCourseIdAndTitle(course.id(), updated.title())).isTrue();
+		assertThat(examRepository.existsByCourseIdAndTitle(otherCourse.id(), updated.title())).isFalse();
 	}
 
 	@Test

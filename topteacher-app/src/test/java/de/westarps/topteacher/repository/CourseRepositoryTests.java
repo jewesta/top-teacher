@@ -78,6 +78,29 @@ class CourseRepositoryTests {
 	}
 
 	@Test
+	void replacesPupilsFromAnotherCourse() {
+		final GradingScale gradingScale = createGradingScale("Course Replace Pupils 100");
+		final Course sourceCourse = courseRepository.save(new Course(null, SchoolClass.CLS_7A, Subject.ENGLISH,
+				new SchoolYear(2028), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, gradingScale.id()));
+		final Course targetCourse = courseRepository.save(new Course(null, SchoolClass.CLS_7B, Subject.SPANISH,
+				new SchoolYear(2028), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, gradingScale.id()));
+		final Pupil sourcePupil = pupilRepository.save(new Pupil(null, "Quelle", "Eins", Lifecycle.ACTIVE));
+		final Pupil otherSourcePupil = pupilRepository.save(new Pupil(null, "Quelle", "Zwei", Lifecycle.ACTIVE));
+		final Pupil replacedPupil = pupilRepository.save(new Pupil(null, "Alt", "Zuordnung", Lifecycle.ACTIVE));
+
+		courseRepository.assignPupil(sourceCourse.id(), sourcePupil.id());
+		courseRepository.assignPupil(sourceCourse.id(), otherSourcePupil.id());
+		courseRepository.assignPupil(targetCourse.id(), replacedPupil.id());
+
+		courseRepository.replacePupilsFromCourse(targetCourse.id(), sourceCourse.id());
+
+		assertThat(courseRepository.findPupils(targetCourse.id())).extracting(Pupil::id)
+				.containsExactlyInAnyOrder(sourcePupil.id(), otherSourcePupil.id());
+		assertThat(courseRepository.findPupils(sourceCourse.id())).extracting(Pupil::id)
+				.containsExactlyInAnyOrder(sourcePupil.id(), otherSourcePupil.id());
+	}
+
+	@Test
 	void findsOnlyActiveCourses() {
 		final GradingScale gradingScale = createGradingScale("Course Active 100");
 		final Course active = courseRepository.save(new Course(null, SchoolClass.CLS_9A, Subject.ENGLISH,

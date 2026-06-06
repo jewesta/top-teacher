@@ -2,6 +2,7 @@ package de.westarps.topteacher.backend.repo;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -131,6 +132,41 @@ public class ExpectationHorizonRepository {
 				where exam_id = :examId
 				order by sort_order, id
 				""", Map.of("examId", examId), noteSectionRowMapper);
+	}
+
+	@Transactional
+	public void copyDesignAndNotes(final int sourceExamId, final int targetExamId) {
+		final Map<Integer, Integer> partIds = new HashMap<>();
+		final Map<Integer, Integer> categoryIds = new HashMap<>();
+		final Map<Integer, Integer> taskIds = new HashMap<>();
+
+		for (final EhPart part : findPartsByExamId(sourceExamId)) {
+			final EhPart copiedPart = savePart(new EhPart(null, targetExamId, part.title(), part.sortOrder()));
+			partIds.put(part.id(), copiedPart.id());
+		}
+
+		for (final EhCategory category : findCategoriesByExamId(sourceExamId)) {
+			final EhCategory copiedCategory = saveCategory(new EhCategory(null, partIds.get(category.partId()),
+					category.title(), category.descriptionMarkdown(), category.sortOrder()));
+			categoryIds.put(category.id(), copiedCategory.id());
+		}
+
+		for (final EhTask task : findTasksByExamId(sourceExamId)) {
+			final EhTask copiedTask = saveTask(new EhTask(null, categoryIds.get(task.categoryId()), task.title(),
+					task.sortOrder()));
+			taskIds.put(task.id(), copiedTask.id());
+		}
+
+		for (final EhRequirement requirement : findRequirementsByExamId(sourceExamId)) {
+			saveRequirement(new EhRequirement(null, taskIds.get(requirement.taskId()),
+					requirement.descriptionMarkdown(), requirement.maxPoints(), requirement.bonus(),
+					requirement.sortOrder()));
+		}
+
+		for (final ExamNoteSection noteSection : findNoteSectionsByExamId(sourceExamId)) {
+			saveNoteSection(new ExamNoteSection(null, targetExamId, noteSection.title(),
+					noteSection.descriptionMarkdown(), noteSection.sortOrder()));
+		}
 	}
 
 	public EhPart savePart(final EhPart part) {

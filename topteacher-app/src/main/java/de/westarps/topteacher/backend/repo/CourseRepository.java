@@ -12,6 +12,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.CoursePeriod;
@@ -118,6 +119,26 @@ public class CourseRepository {
 				where course_id = :courseId
 				  and pupil_id = :pupilId
 				""", Map.of("courseId", courseId, "pupilId", pupilId));
+	}
+
+	@Transactional
+	public void replacePupilsFromCourse(final int targetCourseId, final int sourceCourseId) {
+		if (targetCourseId == sourceCourseId) {
+			return;
+		}
+
+		final Map<String, Integer> parameters = Map.of("targetCourseId", targetCourseId, "sourceCourseId",
+				sourceCourseId);
+		jdbc.update("""
+				delete from course_pupil
+				where course_id = :targetCourseId
+				""", parameters);
+		jdbc.update("""
+				insert into course_pupil (course_id, pupil_id)
+				select :targetCourseId, pupil_id
+				from course_pupil
+				where course_id = :sourceCourseId
+				""", parameters);
 	}
 
 	private Course insert(final Course course) {

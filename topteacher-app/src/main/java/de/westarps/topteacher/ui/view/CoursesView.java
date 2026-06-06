@@ -10,12 +10,14 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.ColumnTextAlign;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.shared.Tooltip;
@@ -56,13 +58,15 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 	private final ComboBox<CoursePeriod> coursePeriod = new ComboBox<>("Zeitraum");
 	private final ComboBox<GradingScale> gradingScale = new ComboBox<>("Notenschlüssel");
 	private final ComboBox<Lifecycle> lifecycle = new ComboBox<>("Status");
-	private final Button saveButton = new Button("Speichern");
-	private final Button newButton = new Button("Neu");
+	private final Button saveButton = new Button();
 	private final Button archiveButton = new Button("Archivieren");
 	private final Span multiSelectionSummary = new Span();
 	private final ComboBox<Lifecycle> bulkLifecycle = new ComboBox<>("Status");
 	private final Button applyLifecycleButton = new Button("Anwenden");
 	private final QuickFilterField assignmentSearch = new QuickFilterField();
+	private final Button copyAssignmentsButton = new Button("Aus Kurs...");
+	private final Dialog copyAssignmentsDialog = new Dialog();
+	private final ComboBox<Course> sourceCourse = new ComboBox<>("Kurs");
 	private final Grid<AssignmentRow> assignmentGrid = new Grid<>(AssignmentRow.class, false);
 
 	private Course selectedCourse;
@@ -99,7 +103,7 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 	protected Component createSingleSelectEditor() {
 		return AbstractFormEditor.responsive("tt-course-editor",
 				List.of(schoolClass, subject, calendarYear, coursePeriod, gradingScale, lifecycle),
-				List.of(saveButton, newButton, archiveButton));
+				List.of(saveButton, archiveButton));
 	}
 
 	@Override
@@ -136,36 +140,36 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 		schoolClass.setItems(SchoolClass.values());
 		schoolClass.setItemLabelGenerator(SchoolClass::getDisplayName);
 		schoolClass.setRequiredIndicatorVisible(true);
+		schoolClass.addValueChangeListener(event -> schoolClass.setInvalid(false));
 
 		subject.setItems(Subject.values());
 		subject.setItemLabelGenerator(Subject::getDisplayName);
 		subject.setRequiredIndicatorVisible(true);
+		subject.addValueChangeListener(event -> subject.setInvalid(false));
 
 		calendarYear.setMin(1900);
 		calendarYear.setMax(9998);
 		calendarYear.setStepButtonsVisible(true);
 		calendarYear.setRequiredIndicatorVisible(true);
+		calendarYear.addValueChangeListener(event -> calendarYear.setInvalid(false));
 
 		coursePeriod.setItems(CoursePeriod.values());
 		coursePeriod.setItemLabelGenerator(CoursePeriod::getDisplayName);
 		coursePeriod.setRequiredIndicatorVisible(true);
+		coursePeriod.addValueChangeListener(event -> coursePeriod.setInvalid(false));
 
 		gradingScale.setItemLabelGenerator(GradingScale::getDisplayName);
 		gradingScale.setRequiredIndicatorVisible(true);
+		gradingScale.addValueChangeListener(event -> gradingScale.setInvalid(false));
 		refreshGradingScaleOptions();
 
 		lifecycle.setItems(Lifecycle.values());
 		lifecycle.setItemLabelGenerator(Lifecycle::getDisplayName);
 		lifecycle.setRequiredIndicatorVisible(true);
+		lifecycle.addValueChangeListener(event -> lifecycle.setInvalid(false));
 
 		saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 		saveButton.addClickListener(event -> saveCourse());
-
-		newButton.addClickListener(event -> {
-			clearSelection();
-			clearSingleEditor();
-			removeAssignmentsTab();
-		});
 
 		archiveButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
 		archiveButton.addClickListener(event -> archiveSelectedCourse());
@@ -184,6 +188,8 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 		assignmentSearch.setPlaceholder("Schüler suchen");
 		assignmentSearch.addValueChangeListener(event -> applyAssignmentFilter());
 
+		copyAssignmentsButton.addClickListener(event -> openCopyAssignmentsDialog());
+
 		assignmentGrid.addColumn(row -> row.pupil().id()).setHeader("ID").setAutoWidth(true).setFlexGrow(0);
 		assignmentGrid.addColumn(row -> row.pupil().surname()).setHeader("Nachname").setAutoWidth(true);
 		assignmentGrid.addColumn(row -> row.pupil().name()).setHeader("Vorname").setAutoWidth(true);
@@ -192,6 +198,8 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 		assignmentGrid.addClassName("tt-assignment-grid");
 		assignmentGrid.setSelectionMode(Grid.SelectionMode.NONE);
 		assignmentGrid.setSizeFull();
+
+		configureCopyAssignmentsDialog();
 	}
 
 	private Component createAssignmentHeader() {
@@ -203,7 +211,14 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 	}
 
 	private Component createAssignmentsContent() {
-		final VerticalLayout layout = new VerticalLayout(assignmentSearch, assignmentGrid);
+		final HorizontalLayout toolbar = new HorizontalLayout(assignmentSearch, copyAssignmentsButton);
+		toolbar.addClassName("tt-course-assignment-toolbar");
+		toolbar.setAlignItems(Alignment.END);
+		toolbar.setPadding(false);
+		toolbar.setSpacing(true);
+		toolbar.setWidthFull();
+
+		final VerticalLayout layout = new VerticalLayout(toolbar, assignmentGrid);
 		layout.addClassName("tt-course-assignments");
 		layout.setPadding(false);
 		layout.setSpacing(false);
@@ -231,6 +246,29 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 		return checkbox;
 	}
 
+	private void configureCopyAssignmentsDialog() {
+		copyAssignmentsDialog.setHeaderTitle("Schüler übernehmen");
+
+		sourceCourse.setItemLabelGenerator(Course::getDisplayName);
+		sourceCourse.setRequiredIndicatorVisible(true);
+		sourceCourse.setWidthFull();
+		sourceCourse.addValueChangeListener(event -> sourceCourse.setInvalid(false));
+
+		final Span hint = new Span("Bestehende Zuordnungen werden ersetzt.");
+		final Button cancelButton = new Button("Abbrechen", event -> copyAssignmentsDialog.close());
+		final Button applyButton = new Button("Übernehmen", event -> copyAssignmentsFromSelectedCourse());
+		applyButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+		final HorizontalLayout actions = new HorizontalLayout(cancelButton, applyButton);
+		actions.setPadding(false);
+		actions.setSpacing(true);
+
+		final VerticalLayout content = new VerticalLayout(sourceCourse, hint, actions);
+		content.setPadding(false);
+		content.setSpacing(true);
+		content.setWidth("24rem");
+		copyAssignmentsDialog.add(content);
+	}
+
 	private void showSingleSelectEditor(final Course course) {
 		selectedCourses = List.of();
 		selectedCourse = course;
@@ -245,7 +283,8 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 		coursePeriod.setValue(course.coursePeriod());
 		gradingScale.setValue(gradingScaleFor(course));
 		lifecycle.setValue(course.lifecycle());
-		updateArchiveButton();
+		clearSingleEditorValidation();
+		updateEditorModeControls();
 	}
 
 	private void showMultiSelectEditor(final List<Course> courses) {
@@ -257,17 +296,18 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 	}
 
 	private void saveCourse() {
-		if (!hasRequiredCourseValues()) {
-			Notification.show("Klasse, Fach, Startjahr, Zeitraum, Notenschlüssel und Status sind erforderlich.");
+		if (!validateSingleEditor()) {
 			return;
 		}
 
 		final Integer id = selectedCourse == null ? null : selectedCourse.id();
+		final Lifecycle selectedLifecycle = selectedCourse == null ? Lifecycle.ACTIVE : lifecycle.getValue();
 		courseRepository.save(new Course(id, schoolClass.getValue(), subject.getValue(),
-				new SchoolYear(calendarYear.getValue()), coursePeriod.getValue(), lifecycle.getValue(),
+				new SchoolYear(calendarYear.getValue()), coursePeriod.getValue(), selectedLifecycle,
 				gradingScale.getValue().id()));
 
 		refreshGrid();
+		clearSelection();
 		clearSingleEditor();
 		removeAssignmentsTab();
 	}
@@ -275,7 +315,7 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 	private boolean hasRequiredCourseValues() {
 		return schoolClass.getValue() != null && subject.getValue() != null && calendarYear.getValue() != null
 				&& calendarYear.getValue() >= 1900 && calendarYear.getValue() <= 9998 && coursePeriod.getValue() != null
-				&& gradingScale.getValue() != null && lifecycle.getValue() != null;
+				&& gradingScale.getValue() != null;
 	}
 
 	private void archiveSelectedCourse() {
@@ -285,6 +325,7 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 
 		courseRepository.archive(selectedCourse.id());
 		refreshGrid();
+		clearSelection();
 		clearSingleEditor();
 		removeAssignmentsTab();
 	}
@@ -318,6 +359,41 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 
 		courseRepository.removePupil(selectedCourse.id(), pupil.id());
 		refreshAssignments();
+	}
+
+	private void openCopyAssignmentsDialog() {
+		if (selectedCourse == null) {
+			return;
+		}
+
+		final List<Course> sourceCourses = courseRepository.findAll().stream()
+				.filter(course -> !course.id().equals(selectedCourse.id())).toList();
+		if (sourceCourses.isEmpty()) {
+			Notification.show("Es gibt keinen anderen Kurs zum Übernehmen.");
+			return;
+		}
+
+		sourceCourse.setItems(sourceCourses);
+		sourceCourse.clear();
+		sourceCourse.setInvalid(false);
+		copyAssignmentsDialog.open();
+	}
+
+	private void copyAssignmentsFromSelectedCourse() {
+		if (selectedCourse == null) {
+			return;
+		}
+		if (sourceCourse.getValue() == null) {
+			sourceCourse.setErrorMessage("Kurs ist erforderlich.");
+			sourceCourse.setInvalid(true);
+			return;
+		}
+
+		courseRepository.replacePupilsFromCourse(selectedCourse.id(), sourceCourse.getValue().id());
+		copyAssignmentsDialog.close();
+		assignmentSearch.clear();
+		refreshAssignments();
+		Notification.show("Schüler aus Kurs übernommen.");
 	}
 
 	private void refreshGrid() {
@@ -376,7 +452,8 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 		coursePeriod.setValue(CoursePeriod.FULL_YEAR);
 		gradingScale.setValue(defaultGradingScale());
 		lifecycle.setValue(Lifecycle.ACTIVE);
-		updateArchiveButton();
+		clearSingleEditorValidation();
+		updateEditorModeControls();
 	}
 
 	private void refreshGradingScaleOptions() {
@@ -403,8 +480,60 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 		return assignedGradingScale == null ? "" : assignedGradingScale.getDisplayName();
 	}
 
-	private void updateArchiveButton() {
-		archiveButton.setEnabled(selectedCourse != null && selectedCourse.lifecycle() == Lifecycle.ACTIVE);
+	private void updateEditorModeControls() {
+		final boolean editMode = selectedCourse != null;
+		saveButton.setText(editMode ? "Speichern" : "Anlegen");
+		lifecycle.setVisible(editMode);
+		archiveButton.setVisible(editMode && selectedCourse.lifecycle() == Lifecycle.ACTIVE);
+	}
+
+	private boolean validateSingleEditor() {
+		clearSingleEditorValidation();
+		boolean valid = hasRequiredCourseValues();
+		if (schoolClass.getValue() == null) {
+			schoolClass.setErrorMessage("Klasse ist erforderlich.");
+			schoolClass.setInvalid(true);
+			valid = false;
+		}
+		if (subject.getValue() == null) {
+			subject.setErrorMessage("Fach ist erforderlich.");
+			subject.setInvalid(true);
+			valid = false;
+		}
+		if (calendarYear.getValue() == null) {
+			calendarYear.setErrorMessage("Startjahr ist erforderlich.");
+			calendarYear.setInvalid(true);
+			valid = false;
+		} else if (calendarYear.getValue() < 1900 || calendarYear.getValue() > 9998) {
+			calendarYear.setErrorMessage("Startjahr muss zwischen 1900 und 9998 liegen.");
+			calendarYear.setInvalid(true);
+			valid = false;
+		}
+		if (coursePeriod.getValue() == null) {
+			coursePeriod.setErrorMessage("Zeitraum ist erforderlich.");
+			coursePeriod.setInvalid(true);
+			valid = false;
+		}
+		if (gradingScale.getValue() == null) {
+			gradingScale.setErrorMessage("Notenschlüssel ist erforderlich.");
+			gradingScale.setInvalid(true);
+			valid = false;
+		}
+		if (selectedCourse != null && lifecycle.getValue() == null) {
+			lifecycle.setErrorMessage("Status ist erforderlich.");
+			lifecycle.setInvalid(true);
+			valid = false;
+		}
+		return valid;
+	}
+
+	private void clearSingleEditorValidation() {
+		schoolClass.setInvalid(false);
+		subject.setInvalid(false);
+		calendarYear.setInvalid(false);
+		coursePeriod.setInvalid(false);
+		gradingScale.setInvalid(false);
+		lifecycle.setInvalid(false);
 	}
 
 	private Lifecycle commonLifecycle(final List<Course> courses) {

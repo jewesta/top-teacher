@@ -10,8 +10,11 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.datepicker.DatePicker.DatePickerI18n;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
@@ -37,6 +40,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 
 	private final CourseRepository courseRepository;
 	private final ExamRepository examRepository;
+	private final ExpectationHorizonRepository expectationHorizonRepository;
 	private final ExpectationHorizonEditor expectationHorizonEditor;
 	private final ExamNotesEditor examNotesEditor;
 	private final ExamResultsEditor examResultsEditor;
@@ -44,8 +48,12 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 	private final ComboBox<Course> courseFilter = new ComboBox<>("Kurs");
 	private final TextField title = new TextField("Titel");
 	private final DatePicker date = new DatePicker("Datum");
-	private final Button saveButton = new Button("Speichern");
-	private final Button newButton = new Button("Neu");
+	private final Button saveButton = new Button();
+	private final Button duplicateButton = new Button("Duplizieren...");
+	private final Dialog duplicateDialog = new Dialog();
+	private final TextField duplicateTitle = new TextField("Titel");
+	private final DatePicker duplicateDate = new DatePicker("Datum");
+	private final ComboBox<Course> duplicateCourse = new ComboBox<>("Kurs");
 	private final Span multiSelectionSummary = new Span();
 
 	private Course selectedCourse;
@@ -61,6 +69,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		super("Klausuren", "tt-exams-view", new MultiSelectionGrid<>(Exam.class, false));
 		this.courseRepository = courseRepository;
 		this.examRepository = examRepository;
+		this.expectationHorizonRepository = expectationHorizonRepository;
 		this.expectationHorizonEditor = new ExpectationHorizonEditor(expectationHorizonRepository);
 		this.examNotesEditor = new ExamNotesEditor(expectationHorizonRepository);
 		this.examResultsEditor = new ExamResultsEditor(courseRepository, expectationHorizonRepository);
@@ -81,7 +90,8 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 
 	@Override
 	protected Component createSingleSelectEditor() {
-		return AbstractFormEditor.responsive("tt-exam-editor", List.of(title, date), List.of(saveButton, newButton));
+		return AbstractFormEditor.responsive("tt-exam-editor", List.of(title, date),
+				List.of(saveButton, duplicateButton));
 	}
 
 	@Override
@@ -129,6 +139,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		courseFilter.setItemLabelGenerator(Course::getDisplayName);
 		courseFilter.setRequiredIndicatorVisible(true);
 		courseFilter.addValueChangeListener(event -> {
+			courseFilter.setInvalid(false);
 			selectedCourse = event.getValue();
 			clearSelection();
 			clearSingleEditor();
@@ -139,18 +150,18 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 
 	private void configureEditors() {
 		title.setRequiredIndicatorVisible(true);
+		title.addValueChangeListener(event -> title.setInvalid(false));
 		date.setLocale(Locale.GERMANY);
 		date.setI18n(germanDatePickerI18n());
 		date.setRequiredIndicatorVisible(true);
+		date.addValueChangeListener(event -> date.setInvalid(false));
 
 		saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 		saveButton.addClickListener(event -> saveExam());
 
-		newButton.addClickListener(event -> {
-			clearSelection();
-			clearSingleEditor();
-			removeExamContextTabs();
-		});
+		duplicateButton.addClickListener(event -> openDuplicateDialog());
+
+		configureDuplicateDialog();
 	}
 
 	private void refreshCourseFilter() {
@@ -180,6 +191,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 
 		title.setValue(exam.title());
 		date.setValue(exam.date());
+		clearSingleEditorValidation();
 		updateEditorEnabled();
 	}
 
@@ -190,14 +202,8 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 	}
 
 	private void saveExam() {
-		if (selectedCourse == null) {
-			Notification.show("Bitte wählen Sie einen Kurs aus.");
-			return;
-		}
-
 		final String trimmedTitle = title.getValue().trim();
-		if (trimmedTitle.isBlank() || date.getValue() == null) {
-			Notification.show("Titel und Datum sind erforderlich.");
+		if (!validateSingleEditor(trimmedTitle)) {
 			return;
 		}
 
@@ -206,8 +212,91 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		examRepository.save(new Exam(id, courseId, trimmedTitle, date.getValue()));
 
 		refreshGrid();
+		clearSelection();
 		clearSingleEditor();
 		removeExamContextTabs();
+	}
+
+	private void configureDuplicateDialog() {
+		duplicateDialog.setHeaderTitle("Klausur duplizieren");
+
+		duplicateTitle.setRequiredIndicatorVisible(true);
+		duplicateTitle.setWidthFull();
+		duplicateTitle.addValueChangeListener(event -> duplicateTitle.setInvalid(false));
+
+		duplicateDate.setLocale(Locale.GERMANY);
+		duplicateDate.setI18n(germanDatePickerI18n());
+		duplicateDate.setRequiredIndicatorVisible(true);
+		duplicateDate.setWidthFull();
+		duplicateDate.addValueChangeListener(event -> duplicateDate.setInvalid(false));
+
+		duplicateCourse.setItemLabelGenerator(Course::getDisplayName);
+		duplicateCourse.setRequiredIndicatorVisible(true);
+		duplicateCourse.setWidthFull();
+		duplicateCourse.addValueChangeListener(event -> duplicateCourse.setInvalid(false));
+
+		final Button cancelButton = new Button("Abbrechen", event -> duplicateDialog.close());
+		final Button applyButton = new Button("Duplizieren", event -> duplicateExam());
+		applyButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+		final HorizontalLayout actions = new HorizontalLayout(cancelButton, applyButton);
+		actions.setPadding(false);
+		actions.setSpacing(true);
+
+		final VerticalLayout content = new VerticalLayout(duplicateTitle, duplicateDate, duplicateCourse, actions);
+		content.setPadding(false);
+		content.setSpacing(true);
+		content.setWidth("28rem");
+		duplicateDialog.add(content);
+	}
+
+	private void openDuplicateDialog() {
+		if (selectedExam == null || selectedCourse == null) {
+			return;
+		}
+
+		final List<Course> activeCourses = courseRepository.findActive();
+		duplicateCourse.setItems(activeCourses);
+		duplicateCourse.setValue(selectedCourse);
+		duplicateTitle.setValue(nextAvailableTitle(selectedCourse.id(), selectedExam.title()));
+		duplicateDate.setValue(selectedExam.date());
+		clearDuplicateDialogValidation();
+		duplicateDialog.open();
+	}
+
+	private void duplicateExam() {
+		if (selectedExam == null) {
+			return;
+		}
+
+		final Course targetCourse = duplicateCourse.getValue();
+		final String trimmedTitle = duplicateTitle.getValue().trim();
+		if (!validateDuplicateDialog(trimmedTitle, targetCourse)) {
+			return;
+		}
+
+		final String duplicateExamTitle = nextAvailableTitle(targetCourse.id(), trimmedTitle);
+		final Exam duplicatedExam = examRepository.save(new Exam(null, targetCourse.id(), duplicateExamTitle,
+				duplicateDate.getValue()));
+		expectationHorizonRepository.copyDesignAndNotes(selectedExam.id(), duplicatedExam.id());
+
+		duplicateDialog.close();
+		if (!targetCourse.id().equals(selectedCourse.id())) {
+			courseFilter.setValue(targetCourse);
+		} else {
+			refreshGrid();
+		}
+		getGrid().select(duplicatedExam);
+		Notification.show("Klausur dupliziert.");
+	}
+
+	private String nextAvailableTitle(final int courseId, final String baseTitle) {
+		String candidate = baseTitle;
+		int suffix = 1;
+		while (examRepository.existsByCourseIdAndTitle(courseId, candidate)) {
+			candidate = baseTitle + " #" + suffix;
+			suffix++;
+		}
+		return candidate;
 	}
 
 	private void refreshGrid() {
@@ -223,6 +312,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		selectedExam = null;
 		title.clear();
 		date.clear();
+		clearSingleEditorValidation();
 		updateEditorEnabled();
 	}
 
@@ -278,7 +368,63 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		title.setEnabled(enabled);
 		date.setEnabled(enabled);
 		saveButton.setEnabled(enabled);
-		newButton.setEnabled(enabled);
+		saveButton.setText(selectedExam == null ? "Anlegen" : "Speichern");
+		duplicateButton.setEnabled(enabled && selectedExam != null);
+		duplicateButton.setVisible(selectedExam != null);
+	}
+
+	private boolean validateSingleEditor(final String trimmedTitle) {
+		clearSingleEditorValidation();
+		boolean valid = true;
+		if (selectedCourse == null) {
+			courseFilter.setErrorMessage("Kurs ist erforderlich.");
+			courseFilter.setInvalid(true);
+			valid = false;
+		}
+		if (trimmedTitle.isBlank()) {
+			title.setErrorMessage("Titel ist erforderlich.");
+			title.setInvalid(true);
+			valid = false;
+		}
+		if (date.getValue() == null) {
+			date.setErrorMessage("Datum ist erforderlich.");
+			date.setInvalid(true);
+			valid = false;
+		}
+		return valid;
+	}
+
+	private void clearSingleEditorValidation() {
+		courseFilter.setInvalid(false);
+		title.setInvalid(false);
+		date.setInvalid(false);
+	}
+
+	private boolean validateDuplicateDialog(final String trimmedTitle, final Course targetCourse) {
+		clearDuplicateDialogValidation();
+		boolean valid = true;
+		if (trimmedTitle.isBlank()) {
+			duplicateTitle.setErrorMessage("Titel ist erforderlich.");
+			duplicateTitle.setInvalid(true);
+			valid = false;
+		}
+		if (duplicateDate.getValue() == null) {
+			duplicateDate.setErrorMessage("Datum ist erforderlich.");
+			duplicateDate.setInvalid(true);
+			valid = false;
+		}
+		if (targetCourse == null) {
+			duplicateCourse.setErrorMessage("Kurs ist erforderlich.");
+			duplicateCourse.setInvalid(true);
+			valid = false;
+		}
+		return valid;
+	}
+
+	private void clearDuplicateDialogValidation() {
+		duplicateTitle.setInvalid(false);
+		duplicateDate.setInvalid(false);
+		duplicateCourse.setInvalid(false);
 	}
 
 	private DatePickerI18n germanDatePickerI18n() {

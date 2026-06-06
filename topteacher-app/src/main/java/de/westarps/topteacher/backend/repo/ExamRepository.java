@@ -43,6 +43,16 @@ public class ExamRepository {
 				""", Map.of("id", id), rowMapper).stream().findFirst();
 	}
 
+	public boolean existsByCourseIdAndTitle(final int courseId, final String title) {
+		final Integer count = jdbc.queryForObject("""
+				select count(*)
+				from exam
+				where course_id = :courseId
+				  and title = :title
+				""", Map.of("courseId", courseId, "title", title), Integer.class);
+		return count != null && count > 0;
+	}
+
 	public Exam save(final Exam exam) {
 		if (exam.id() == null) {
 			return insert(exam);

@@ -2,10 +2,12 @@ package de.westarps.topteacher.backend.repo;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -15,6 +17,7 @@ import org.springframework.stereotype.Repository;
 
 import de.westarps.topteacher.model.Lifecycle;
 import de.westarps.topteacher.model.Pupil;
+import de.westarps.topteacher.model.SchoolClass;
 
 @Repository
 public class PupilRepository {
@@ -40,6 +43,26 @@ public class PupilRepository {
 				from pupil
 				where id = :id
 				""", Map.of("id", id), rowMapper).stream().findFirst();
+	}
+
+	public Map<Integer, SchoolClass> findLatestSchoolClassByPupilId() {
+		final Map<Integer, SchoolClass> schoolClassesByPupilId = new HashMap<>();
+		final RowCallbackHandler collectSchoolClasses = resultSet -> schoolClassesByPupilId.put(
+				resultSet.getInt("pupil_id"), SchoolClass.valueOf(resultSet.getString("school_class")));
+		jdbc.query("""
+				select pupil_id, school_class
+				from (
+				    select cp.pupil_id, c.school_class,
+				           row_number() over (
+				               partition by cp.pupil_id
+				               order by c.calendar_year desc, c.id desc
+				           ) as row_num
+				    from course_pupil cp
+				    join course c on c.id = cp.course_id
+				)
+				where row_num = 1
+				""", collectSchoolClasses);
+		return schoolClassesByPupilId;
 	}
 
 	public Pupil save(final Pupil pupil) {
