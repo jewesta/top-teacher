@@ -1,0 +1,397 @@
+:root {
+	--lumo-primary-color: hsl(350, 48%, 34%);
+	--lumo-primary-color-50pct: hsla(350, 48%, 34%, 0.5);
+	--lumo-primary-color-10pct: hsla(350, 48%, 34%, 0.1);
+	--lumo-primary-text-color: hsl(350, 54%, 30%);
+	--lumo-primary-contrast-color: #fff;
+}
+
+vaadin-app-layout::part(drawer) {
+	background-image: none;
+}
+
+vaadin-app-layout::part(navbar) {
+	background: var(--lumo-base-color);
+}
+
+.tt-header {
+	align-items: center;
+	background: var(--lumo-base-color);
+	box-sizing: border-box;
+	display: grid;
+	gap: var(--lumo-space-m);
+	grid-template-columns: minmax(10rem, 1fr) auto minmax(10rem, 1fr);
+	min-height: var(--lumo-size-xl);
+	padding: 0 var(--lumo-space-m);
+	width: 100%;
+}
+
+.tt-app-logo {
+	display: block;
+	height: 2.25rem;
+	justify-self: start;
+	margin: 0;
+	max-width: 12rem;
+	object-fit: contain;
+	width: auto;
+}
+
+.tt-top-navigation {
+	justify-self: center;
+}
+
+.tt-top-navigation-link {
+	align-items: center;
+	color: inherit;
+	display: flex;
+	gap: var(--lumo-space-xs);
+	height: 100%;
+	text-decoration: none;
+}
+
+.tt-top-navigation-link vaadin-icon {
+	height: var(--lumo-icon-size-s);
+	width: var(--lumo-icon-size-s);
+}
+
+.tt-header-spacer {
+	min-width: 0;
+}
+
+.tt-master-data-view {
+	box-sizing: border-box;
+	height: 100%;
+	width: 100%;
+}
+
+.tt-master-data-split {
+	height: 100%;
+	width: 100%;
+}
+
+.tt-master-list {
+	box-sizing: border-box;
+	gap: var(--lumo-space-s);
+	height: 100%;
+	padding: var(--lumo-space-m);
+	width: 100%;
+}
+
+.tt-master-search {
+	flex: 0 0 auto;
+	max-width: 24rem;
+	width: 100%;
+}
+
+.tt-master-toolbar {
+	column-gap: var(--lumo-space-m);
+	flex: 0 0 auto;
+	/* Compensate for top padding of tt-master-list. We usually want the padding,
+	   but the boxes in tt-master-toolbar bring their own top padding which adds up. */
+	margin-top: calc(-1 * var(--lumo-space-m));
+	max-width: 100%;
+	min-width: 0;
+	row-gap: 0;
+}
+
+.tt-master-list vaadin-grid {
+	flex: 1 1 auto;
+	min-height: 0;
+}
+
+.tt-context-area {
+	background: var(--lumo-base-color);
+	box-sizing: border-box;
+	height: 100%;
+	min-width: 0;
+	width: 100%;
+}
+
+.tt-context-tabs {
+	box-sizing: border-box;
+	height: 100%;
+	width: 100%;
+}
+
+.tt-editor-host {
+	box-sizing: border-box;
+	height: 100%;
+	width: 100%;
+}
+
+.tt-editor {
+	box-sizing: border-box;
+	width: 100%;
+}
+
+.tt-selection-summary {
+	color: var(--lumo-secondary-text-color);
+	font-size: var(--lumo-font-size-s);
+}
+
+.tt-course-assignments {
+	box-sizing: border-box;
+	gap: var(--lumo-space-m);
+	height: 100%;
+	padding: var(--lumo-space-m);
+	width: 100%;
+}
+
+.tt-assignment-search {
+	flex: 0 0 auto;
+}
+
+.tt-assignment-grid {
+	flex: 1 1 auto;
+	min-height: 0;
+}
+
+.tt-assignment-header-icon {
+	color: var(--lumo-secondary-text-color);
+	height: var(--lumo-icon-size-s);
+	width: var(--lumo-icon-size-s);
+}
+
+.tt-eh-editor,
+.tt-exam-notes-editor {
+	box-sizing: border-box;
+	height: 100%;
+	width: 100%;
+}
+
+.tt-eh-scroll-area {
+	box-sizing: border-box;
+	gap: var(--lumo-space-m);
+	height: 100%;
+	overflow: auto;
+	padding-top: var(--lumo-space-m);
+	width: 100%;
+}
+
+.tt-eh-toolbar {
+	align-items: center;
+	flex: 0 0 auto;
+	gap: var(--lumo-space-m);
+	width: 100%;
+}
+
+.tt-eh-toolbar::after {
+	content: "";
+	flex: 1 1 auto;
+	order: 1;
+}
+
+.tt-eh-toolbar .tt-eh-points {
+	margin-right: var(--lumo-space-m);
+	order: 2;
+}
+
+.tt-eh-gag {
+	color: var(--lumo-secondary-text-color);
+	font-size: var(--lumo-font-size-s);
+	gap: var(--lumo-space-xs);
+	white-space: nowrap;
+}
+
+.tt-eh-gag vaadin-icon {
+	color: var(--lumo-primary-text-color);
+	height: var(--lumo-icon-size-s);
+	width: var(--lumo-icon-size-s);
+}
+
+.tt-eh-details {
+	border: 1px solid var(--lumo-contrast-10pct);
+	border-left-width: 3px;
+	border-radius: var(--lumo-border-radius-m);
+	box-sizing: border-box;
+	margin-bottom: 0;
+	width: 100%;
+}
+
+.tt-eh-details>vaadin-details-summary {
+	background: var(--lumo-contrast-5pct);
+	padding: var(--lumo-space-s);
+}
+
+.tt-eh-details::part(content) {
+	padding: var(--lumo-space-m) var(--lumo-space-m) 0;
+}
+
+.tt-eh-task::part(content) {
+	padding-right: 0;
+}
+
+.tt-eh-category::part(content) {
+	padding-right: 0;
+}
+
+.tt-eh-part::part(content) {
+	padding-right: 0;
+}
+
+.tt-exam-note-section::part(content) {
+	padding-right: 0;
+}
+
+.tt-eh-category,
+.tt-eh-task {
+/*	margin-right: 0px;*/
+}
+
+.tt-eh-section-content {
+	gap: var(--lumo-space-m);
+}
+
+.tt-eh-editor-block {
+	gap: var(--lumo-space-s);
+}
+
+.tt-eh-actions {
+	flex-wrap: wrap;
+	gap: var(--lumo-space-s);
+}
+
+.tt-eh-summary {
+	align-items: center;
+	gap: var(--lumo-space-s);
+	min-width: 0;
+}
+
+.tt-eh-summary-type {
+	color: var(--lumo-secondary-text-color);
+	flex: 0 0 auto;
+	font-size: var(--lumo-font-size-xs);
+	font-weight: 600;
+	text-transform: uppercase;
+}
+
+.tt-eh-summary-title {
+	flex: 1 1 auto;
+	font-weight: 600;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.tt-eh-summary-title-field {
+	flex: 1 1 0;
+	font-weight: 600;
+	min-width: 12rem;
+}
+
+.tt-eh-summary-title-field::part(input-field) {
+	background: var(--lumo-base-color);
+	box-shadow: inset 0 0 0 1px var(--lumo-contrast-10pct);
+	min-height: var(--lumo-size-s);
+}
+
+.tt-eh-points,
+.tt-eh-percentage {
+	align-items: center;
+	background: var(--lumo-primary-color-10pct);
+	border-radius: var(--lumo-border-radius-s);
+	box-sizing: border-box;
+	color: var(--lumo-primary-text-color);
+	display: inline-flex;
+	flex: 0 0 auto;
+	font-size: var(--lumo-font-size-s);
+	font-weight: 600;
+	justify-content: center;
+	min-height: var(--lumo-size-xs);
+	padding: 0 var(--lumo-space-s);
+}
+
+.tt-eh-points {
+	margin-left: auto;
+	margin-right: var(--lumo-space-s);
+}
+
+.tt-eh-summary-with-percentage .tt-eh-points {
+	margin-left: 0;
+}
+
+.tt-eh-point-badge {
+	gap: 0;
+}
+
+.tt-eh-point-number {
+	display: inline-block;
+	text-align: right;
+}
+
+.tt-eh-point-regular {
+	width: 3ch;
+}
+
+.tt-eh-point-bonus {
+	width: 2ch;
+}
+
+.tt-eh-percentage-badge {
+	gap: 0;
+}
+
+.tt-eh-percentage-number {
+	display: inline-block;
+	text-align: right;
+	width: 3ch;
+}
+
+.tt-eh-requirement {
+	background: var(--lumo-contrast-5pct);
+	border-radius: var(--lumo-border-radius-m);
+	box-sizing: border-box;
+	gap: var(--lumo-space-m);
+	padding: var(--lumo-space-m);
+}
+
+.tt-eh-requirement>.tt-eh-summary>.tt-eh-points {
+	margin-right: 0px;
+}
+
+.tt-eh-requirement-header-controls {
+	align-items: center;
+	gap: var(--lumo-space-m);
+}
+
+.tt-eh-requirement-bonus-control,
+.tt-eh-requirement-points-control {
+	align-items: center;
+	gap: var(--lumo-space-s);
+}
+
+.tt-eh-requirement-points-field {
+	width: 7.5rem;
+}
+
+.tt-markdown-block {
+	gap: var(--lumo-space-xs);
+}
+
+.tt-field-label {
+	color: var(--lumo-secondary-text-color);
+	font-size: var(--lumo-font-size-s);
+	font-weight: 500;
+}
+
+.tt-markdown-editor {
+	min-height: 12rem;
+}
+
+.tt-empty-state {
+	color: var(--lumo-secondary-text-color);
+	font-size: var(--lumo-font-size-s);
+}
+
+vaadin-grid.tt-multi-selection-grid::part(cell) {
+	user-select: none;
+}
+
+vaadin-grid.tt-multi-selection-grid::part(tt-selected-row) {
+	background: var(--lumo-primary-color-10pct);
+}
+
+vaadin-grid.tt-multi-selection-grid::part(tt-selected-row):hover {
+	background: var(--lumo-primary-color-10pct);
+}

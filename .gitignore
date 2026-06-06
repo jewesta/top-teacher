@@ -5,9 +5,12 @@ target/
 # Vaadin generated frontend artifacts
 node_modules/
 vite.generated.ts
-src/main/bundles/
+bin/
 src/main/frontend/generated/
 src/main/frontend/index.html
+topteacher-app/src/main/bundles/
+topteacher-app/src/main/frontend/generated/
+topteacher-app/src/main/frontend/index.html
 
 # IDEs
 .idea/

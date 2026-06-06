@@ -14,10 +14,15 @@ Planned technology:
 
 ## Development
 
+The repository is a Maven multi-module build:
+
+- `topteacher-app` contains the Spring Boot and Vaadin application.
+- `topteacher-markdown` contains reusable Vaadin markdown editor components.
+
 Run the application:
 
 ```shell
-mvn spring-boot:run
+./run/run-app.sh
 ```
 
 Open the app at <http://localhost:8080>.

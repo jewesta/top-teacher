@@ -23,5 +23,6 @@ echo "Starting TopTeacher..."
 echo "App:        http://localhost:8080/"
 echo "H2 console: http://localhost:8080/h2-console/"
 
-exec mvn spring-boot:run "$@"
+mvn -pl topteacher-markdown -am install -DskipTests
 
+exec mvn -pl topteacher-app spring-boot:run -Dspring-boot.run.workingDirectory="$PROJECT_ROOT" "$@"
