@@ -14,15 +14,15 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import de.westarps.topteacher.model.EhCategory;
-import de.westarps.topteacher.model.EhCriterion;
-import de.westarps.topteacher.model.EhCriterionParser;
-import de.westarps.topteacher.model.EhCriterionResult;
-import de.westarps.topteacher.model.EhPart;
-import de.westarps.topteacher.model.EhRequirement;
-import de.westarps.topteacher.model.EhRequirementResult;
-import de.westarps.topteacher.model.EhTask;
-import de.westarps.topteacher.model.ExamNoteSection;
+import de.westarps.topteacher.model.eh.EhCategory;
+import de.westarps.topteacher.model.eh.EhCriterion;
+import de.westarps.topteacher.model.eh.EhCriterionParser;
+import de.westarps.topteacher.model.eh.EhCriterionResult;
+import de.westarps.topteacher.model.eh.EhPart;
+import de.westarps.topteacher.model.eh.EhRequirement;
+import de.westarps.topteacher.model.eh.EhRequirementResult;
+import de.westarps.topteacher.model.eh.EhTask;
+import de.westarps.topteacher.model.eh.ExamNoteSection;
 
 @Repository
 public class ExpectationHorizonRepository {
