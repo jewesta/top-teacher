@@ -201,38 +201,38 @@ vaadin-app-layout::part(navbar) {
 	font-weight: 600;
 }
 
-.tt-evaluation-grid::part(header-cell) {
+.tt-spreadsheet-grid::part(header-cell) {
 	height: 10rem;
 	overflow: visible;
 	vertical-align: bottom;
 }
 
-.tt-evaluation-grid::part(evaluation-rotated-header-cell) {
+.tt-spreadsheet-grid::part(tt-spreadsheet-tilted-header-cell) {
 	background: transparent;
 	overflow: visible;
 	z-index: 1;
 }
 
-.tt-evaluation-grid::part(first-column-cell),
-.tt-evaluation-grid::part(frozen-cell) {
+.tt-spreadsheet-grid::part(first-column-cell),
+.tt-spreadsheet-grid::part(frozen-cell) {
 	background: var(--lumo-base-color);
 	z-index: 3;
 }
 
-.tt-evaluation-grid > vaadin-grid-cell-content:has(.tt-evaluation-header) {
+.tt-spreadsheet-grid > vaadin-grid-cell-content:has(.tt-spreadsheet-header) {
 	background: transparent !important;
 	overflow: visible !important;
 	text-overflow: clip !important;
 }
 
-.tt-evaluation-header {
+.tt-spreadsheet-header {
 	height: 9rem;
 	overflow: visible;
 	position: relative;
 	width: 100%;
 }
 
-.tt-evaluation-header-label {
+.tt-spreadsheet-header-label {
 	bottom: var(--lumo-space-s);
 	display: block;
 	left: 50%;

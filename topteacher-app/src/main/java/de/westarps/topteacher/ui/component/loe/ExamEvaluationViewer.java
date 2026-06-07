@@ -6,10 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.grid.ColumnTextAlign;
 import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
@@ -27,19 +25,17 @@ import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeRequirementResult;
 import de.westarps.topteacher.model.loe.LoeTask;
 import de.westarps.topteacher.ui.component.AbstractDesigner;
+import de.westarps.topteacher.ui.component.SpreadsheetGrid;
 
 public class ExamEvaluationViewer extends AbstractDesigner {
 
-	private static final int HEADER_LABEL_MAX_LENGTH = 24;
-	private static final String HEADER_LABEL_SUFFIX = "...";
 	private static final String RESULT_COLUMN_WIDTH = "5.5rem";
 	private static final String SPACER_COLUMN_WIDTH = RESULT_COLUMN_WIDTH;
-	private static final String ROTATED_HEADER_PART_NAME = "evaluation-rotated-header-cell";
 
 	private final CourseRepository courseRepository;
 	private final LevelOfExpectationsRepository levelOfExpectationsRepository;
 	private final GradingScaleRepository gradingScaleRepository;
-	private final Grid<EvaluationRow> grid = new Grid<>(EvaluationRow.class, false);
+	private final SpreadsheetGrid<EvaluationRow> grid = new SpreadsheetGrid<>(EvaluationRow.class, false);
 
 	private Exam exam;
 	private List<LoePart> parts = List.of();
@@ -57,7 +53,6 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 		this.levelOfExpectationsRepository = levelOfExpectationsRepository;
 		this.gradingScaleRepository = gradingScaleRepository;
 
-		grid.addClassName("tt-evaluation-grid");
 		grid.setSelectionMode(Grid.SelectionMode.NONE);
 		grid.setSizeFull();
 	}
@@ -129,21 +124,19 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 	}
 
 	private void configureGrid(final List<AggregationColumn> aggregationColumns) {
-		grid.addColumn(EvaluationRow::pupilName).setHeader(rotatedHeader("Schüler"))
-				.setHeaderPartName(ROTATED_HEADER_PART_NAME).setFrozen(true).setAutoWidth(true).setFlexGrow(0);
-		grid.addColumn(row -> pointsDisplayName(row.pointsFor(requirements), hasBonus(requirements)))
-				.setHeader(rotatedHeader("Gesamt")).setHeaderPartName(ROTATED_HEADER_PART_NAME)
-				.setTextAlign(ColumnTextAlign.CENTER).setFrozen(true).setWidth(RESULT_COLUMN_WIDTH).setFlexGrow(0);
-		grid.addColumn(this::gradeDisplayName).setHeader(rotatedHeader("Note")).setTextAlign(ColumnTextAlign.CENTER)
-				.setHeaderPartName(ROTATED_HEADER_PART_NAME).setFrozen(true).setWidth("8rem").setFlexGrow(0);
+		grid.addSpreadsheetColumn(EvaluationRow::pupilName, "Schüler").setFrozen(true).setAutoWidth(true)
+				.setFlexGrow(0);
+		grid.addSpreadsheetColumn(row -> pointsDisplayName(row.pointsFor(requirements), hasBonus(requirements)),
+				"Gesamt").setTextAlign(ColumnTextAlign.CENTER).setFrozen(true).setWidth(RESULT_COLUMN_WIDTH)
+				.setFlexGrow(0);
+		grid.addSpreadsheetColumn(this::gradeDisplayName, "Note").setTextAlign(ColumnTextAlign.CENTER)
+				.setFrozen(true).setWidth("8rem").setFlexGrow(0);
 		aggregationColumns.forEach(aggregationColumn -> grid
-				.addColumn(row -> pointsDisplayName(row.pointsFor(aggregationColumn.requirements()),
-						hasBonus(aggregationColumn.requirements())))
-				.setHeader(rotatedHeader(aggregationColumn.title()))
-				.setHeaderPartName(ROTATED_HEADER_PART_NAME).setTextAlign(ColumnTextAlign.CENTER)
+				.addSpreadsheetColumn(row -> pointsDisplayName(row.pointsFor(aggregationColumn.requirements()),
+						hasBonus(aggregationColumn.requirements())), aggregationColumn.title())
+				.setTextAlign(ColumnTextAlign.CENTER)
 				.setWidth(RESULT_COLUMN_WIDTH).setFlexGrow(0));
-		grid.addColumn(row -> "").setHeader("").setHeaderPartName(ROTATED_HEADER_PART_NAME)
-				.setWidth(SPACER_COLUMN_WIDTH).setFlexGrow(0);
+		grid.addSpacerColumn(SPACER_COLUMN_WIDTH);
 	}
 
 	private EvaluationRow evaluationRow(final Pupil pupil) {
@@ -203,22 +196,6 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 	private List<LoeRequirement> requirementsFor(final LoeTask task) {
 		return requirements.stream().filter(requirement -> requirement.taskId().equals(task.id()))
 				.sorted(Comparator.comparingInt(LoeRequirement::sortOrder).thenComparing(LoeRequirement::id)).toList();
-	}
-
-	private static Component rotatedHeader(final String text) {
-		final Span label = new Span(abbreviatedHeaderText(text));
-		label.addClassName("tt-evaluation-header-label");
-		final Div header = new Div(label);
-		header.addClassName("tt-evaluation-header");
-		header.getElement().setAttribute("title", text);
-		return header;
-	}
-
-	private static String abbreviatedHeaderText(final String text) {
-		if (text.length() <= HEADER_LABEL_MAX_LENGTH) {
-			return text;
-		}
-		return text.substring(0, HEADER_LABEL_MAX_LENGTH - HEADER_LABEL_SUFFIX.length()) + HEADER_LABEL_SUFFIX;
 	}
 
 	private static Span summary(final List<Pupil> pupils) {
