@@ -163,7 +163,22 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 						requirementsFor(task))));
 			});
 		});
-		return columns;
+		return collapseRedundantColumns(columns);
+	}
+
+	private List<AggregationColumn> collapseRedundantColumns(final List<AggregationColumn> columns) {
+		final List<AggregationColumn> collapsedColumns = new ArrayList<>();
+		columns.forEach(column -> {
+			if (sameRequirements(column.requirements(), requirements)) {
+				return;
+			}
+			if (!collapsedColumns.isEmpty()
+					&& sameRequirements(collapsedColumns.getLast().requirements(), column.requirements())) {
+				return;
+			}
+			collapsedColumns.add(column);
+		});
+		return collapsedColumns;
 	}
 
 	private String gradeDisplayName(final EvaluationRow row) {
@@ -212,6 +227,14 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 
 	private static boolean hasBonus(final List<LoeRequirement> requirements) {
 		return requirements.stream().anyMatch(LoeRequirement::bonus);
+	}
+
+	private static boolean sameRequirements(final List<LoeRequirement> left, final List<LoeRequirement> right) {
+		return requirementIds(left).equals(requirementIds(right));
+	}
+
+	private static List<Integer> requirementIds(final List<LoeRequirement> requirements) {
+		return requirements.stream().map(LoeRequirement::id).sorted().toList();
 	}
 
 	private static String pointsDisplayName(final LoePoints points, final boolean showBonus) {

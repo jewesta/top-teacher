@@ -51,9 +51,14 @@ class ExamEvaluationViewerTests {
 	private static final LoeTask TASK = new LoeTask(3, CATEGORY.id(), "Teilaufgabe 1", 0);
 	private static final LoeRequirement REQUIREMENT = new LoeRequirement(4, TASK.id(), "Anforderung", 5, false, 0);
 	private static final LoeRequirement BONUS_REQUIREMENT = new LoeRequirement(5, TASK.id(), "Bonus", 2, true, 1);
+	private static final LoePart SECOND_PART = new LoePart(6, EXAM.id(), "Klausurteil B", 1);
+	private static final LoeCategory SECOND_CATEGORY = new LoeCategory(7, SECOND_PART.id(), "Sprache", "", 0);
+	private static final LoeTask SECOND_TASK = new LoeTask(8, SECOND_CATEGORY.id(), "Teilaufgabe 2", 0);
+	private static final LoeRequirement SECOND_REQUIREMENT =
+			new LoeRequirement(9, SECOND_TASK.id(), "Zweite Anforderung", 2, false, 0);
 
 	@Test
-	void rendersAggregationColumnsForAllAssignedPupils() {
+	void collapsesAggregationColumnsThatDuplicateTotal() {
 		final CourseRepository courseRepository = mock(CourseRepository.class);
 		when(courseRepository.findById(EXAM.courseId())).thenReturn(Optional.of(COURSE));
 		when(courseRepository.findPupils(EXAM.courseId())).thenReturn(List.of(PUPIL, SECOND_PUPIL));
@@ -82,13 +87,46 @@ class ExamEvaluationViewerTests {
 		viewer.setExam(EXAM);
 
 		final Grid<?> grid = components(viewer, Grid.class).getFirst();
-		assertThat(grid.getColumns()).hasSize(7);
+		assertThat(grid.getColumns()).hasSize(4);
 		assertThat(grid.getColumns().subList(0, 3)).allMatch(Grid.Column::isFrozen);
 		assertThat(grid.getColumns().subList(3, grid.getColumns().size())).noneMatch(Grid.Column::isFrozen);
 		assertThat(itemCount(grid)).isEqualTo(2);
 		assertThat(components(viewer, Span.class).stream().map(Span::getText)).contains("2 Schüler");
 		verify(levelOfExpectationsRepository).findRequirementResultsByExamAndPupil(EXAM.id(), PUPIL.id());
 		verify(levelOfExpectationsRepository).findRequirementResultsByExamAndPupil(EXAM.id(), SECOND_PUPIL.id());
+	}
+
+	@Test
+	void keepsUpperAggregationNodeWhenSingleChildBranchesCollapse() {
+		final CourseRepository courseRepository = mock(CourseRepository.class);
+		when(courseRepository.findById(EXAM.courseId())).thenReturn(Optional.of(COURSE));
+		when(courseRepository.findPupils(EXAM.courseId())).thenReturn(List.of(PUPIL));
+
+		final LevelOfExpectationsRepository levelOfExpectationsRepository = mock(LevelOfExpectationsRepository.class);
+		when(levelOfExpectationsRepository.findPartsByExamId(EXAM.id())).thenReturn(List.of(PART, SECOND_PART));
+		when(levelOfExpectationsRepository.findCategoriesByExamId(EXAM.id()))
+				.thenReturn(List.of(CATEGORY, SECOND_CATEGORY));
+		when(levelOfExpectationsRepository.findTasksByExamId(EXAM.id())).thenReturn(List.of(TASK, SECOND_TASK));
+		when(levelOfExpectationsRepository.findRequirementsByExamId(EXAM.id()))
+				.thenReturn(List.of(REQUIREMENT, SECOND_REQUIREMENT));
+		when(levelOfExpectationsRepository.findRequirementResultsByExamAndPupil(EXAM.id(), PUPIL.id()))
+				.thenReturn(List.of(new LoeRequirementResult(REQUIREMENT.id(), PUPIL.id(), 4),
+						new LoeRequirementResult(SECOND_REQUIREMENT.id(), PUPIL.id(), 1)));
+
+		final GradingScaleRepository gradingScaleRepository = mock(GradingScaleRepository.class);
+		when(gradingScaleRepository.findById(COURSE.gradingScaleId())).thenReturn(Optional.of(GRADING_SCALE));
+		when(gradingScaleRepository.findRangesByGradingScaleId(GRADING_SCALE.id())).thenReturn(List.of());
+
+		final ExamEvaluationViewer viewer =
+				new ExamEvaluationViewer(courseRepository, levelOfExpectationsRepository, gradingScaleRepository);
+
+		viewer.setExam(EXAM);
+
+		final Grid<?> grid = components(viewer, Grid.class).getFirst();
+		assertThat(grid.getColumns()).hasSize(6);
+		assertThat(grid.getColumns().subList(0, 3)).allMatch(Grid.Column::isFrozen);
+		assertThat(grid.getColumns().subList(3, grid.getColumns().size())).noneMatch(Grid.Column::isFrozen);
+		assertThat(itemCount(grid)).isEqualTo(1);
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
