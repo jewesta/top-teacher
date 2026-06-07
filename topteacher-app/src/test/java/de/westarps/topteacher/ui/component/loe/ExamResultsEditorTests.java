@@ -19,6 +19,7 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
@@ -47,6 +48,7 @@ import de.westarps.topteacher.model.SchoolYear;
 import de.westarps.topteacher.model.Subject;
 import de.westarps.topteacher.ui.component.FullscreenButton;
 import de.westarps.topteacher.ui.component.StepperComboBox;
+import de.westarps.vaadin.markdown.MarkdownViewer;
 
 class ExamResultsEditorTests {
 
@@ -83,6 +85,9 @@ class ExamResultsEditorTests {
 		assertThat(points.getLabel()).isNull();
 		assertThat(pointsText(editor)).containsExactly("1 von 5 Punkten");
 		assertThat(points.getValue()).isEqualTo(1);
+		assertThat(criterionCheckboxes(editor)).hasSize(1);
+		assertThat(criterionCheckboxes(editor).getFirst().getElement().getAttribute("aria-label"))
+				.isEqualTo("Kriterium 1 erfüllt");
 		assertThat(badgeTexts(editor)).contains("Gesamt: 1 (+0)", "Summe: 1 (+0)");
 		assertThat(requirementNumberTexts(editor)).containsExactly("1");
 		assertThat(components(editor, FullscreenButton.class)).hasSize(1);
@@ -103,6 +108,36 @@ class ExamResultsEditorTests {
 		verify(levelOfExpectationsRepository, never()).saveCriterionResult(any(LoeCriterionResult.class));
 		assertThat(saveButton.isEnabled()).isFalse();
 		assertThat(pdfMenu.isEnabled()).isTrue();
+	}
+
+	@Test
+	void syncsCriterionCheckboxListWithMarkdownViewerAndSaveState() {
+		final LevelOfExpectationsRepository levelOfExpectationsRepository = levelOfExpectationsRepository();
+		final CourseRepository courseRepository = courseRepository();
+		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, levelOfExpectationsRepository,
+				gradingScaleRepository());
+
+		editor.setExam(EXAM);
+
+		final Button saveButton = saveButton(editor);
+		final Checkbox criterionCheckbox = criterionCheckboxes(editor).getFirst();
+		final MarkdownViewer description = components(editor, MarkdownViewer.class).getFirst();
+		assertThat(criterionCheckbox.getValue()).isFalse();
+		assertThat(description.getCheckedTagKeys()).isEmpty();
+		assertThat(criterionIndicatorTexts(editor)).containsExactly("0 von 1 Kriterien erfüllt");
+
+		criterionCheckbox.setValue(true);
+
+		assertThat(saveButton.isEnabled()).isTrue();
+		assertThat(description.getCheckedTagKeys()).containsExactly("1");
+		assertThat(criterionIndicatorTexts(editor)).containsExactly("1 von 1 Kriterien erfüllt");
+		verify(levelOfExpectationsRepository, never()).saveCriterionResult(any(LoeCriterionResult.class));
+
+		saveButton.click();
+
+		verify(levelOfExpectationsRepository).saveCriterionResult(
+				new LoeCriterionResult(CRITERION.id(), PUPIL.id(), true));
+		assertThat(saveButton.isEnabled()).isFalse();
 	}
 
 	@Test
@@ -174,18 +209,22 @@ class ExamResultsEditorTests {
 
 		final IntegerField points = components(editor, IntegerField.class).getFirst();
 		final TextArea comment = components(editor, TextArea.class).getFirst();
+		final Checkbox criterionCheckbox = criterionCheckboxes(editor).getFirst();
 		assertThat(points.getValue()).isEqualTo(1);
 		assertThat(comment.getValue()).isEmpty();
+		assertThat(criterionCheckbox.getValue()).isFalse();
 		assertThat(criterionIndicatorTexts(editor)).containsExactly("0 von 1 Kriterien erfüllt");
 
 		pupilSelector(editor).setValue(SECOND_PUPIL);
 
 		assertThat(points.getValue()).isEqualTo(4);
 		assertThat(comment.getValue()).isEqualTo("Guter Fortschritt.");
+		assertThat(criterionCheckbox.getValue()).isTrue();
 		assertThat(pointsText(editor)).containsExactly("4 von 5 Punkten");
 		assertThat(criterionIndicatorTexts(editor)).containsExactly("1 von 1 Kriterien erfüllt");
 		assertThat(components(editor, IntegerField.class).getFirst()).isSameAs(points);
 		assertThat(components(editor, TextArea.class).getFirst()).isSameAs(comment);
+		assertThat(criterionCheckboxes(editor).getFirst()).isSameAs(criterionCheckbox);
 		assertThat(badgeTexts(editor)).contains("Gesamt: 4 (+0)", "Summe: 4 (+0)");
 		verify(levelOfExpectationsRepository, times(1)).syncCriteriaForExam(EXAM.id());
 		verify(levelOfExpectationsRepository, times(1)).findPartsByExamId(EXAM.id());
@@ -361,6 +400,12 @@ class ExamResultsEditorTests {
 		return components(root, Span.class).stream()
 				.filter(span -> span.getClassNames().contains("tt-results-points-text"))
 				.map(Span::getText)
+				.toList();
+	}
+
+	private static List<Checkbox> criterionCheckboxes(final Component root) {
+		return components(root, Checkbox.class).stream()
+				.filter(checkbox -> checkbox.getClassNames().contains("tt-results-criterion-checkbox"))
 				.toList();
 	}
 

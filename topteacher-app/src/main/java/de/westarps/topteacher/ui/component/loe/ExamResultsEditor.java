@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.contextmenu.MenuItem;
 import com.vaadin.flow.component.html.Div;
@@ -65,6 +66,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private final Map<Integer, TextArea> requirementCommentFields = new HashMap<>();
 	private final Map<Integer, MarkdownViewer> requirementDescriptions = new HashMap<>();
 	private final Map<Integer, Span> requirementCriterionIndicators = new HashMap<>();
+	private final Map<Integer, Checkbox> criterionCheckboxes = new HashMap<>();
 	private final Map<Integer, Boolean> editedCriterionResults = new HashMap<>();
 	private final Map<Integer, Integer> editedRequirementResults = new HashMap<>();
 	private final Map<Integer, String> editedRequirementComments = new HashMap<>();
@@ -73,6 +75,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private Pupil selectedPupil;
 	private boolean refreshing;
 	private boolean applyingResultState;
+	private boolean updatingCriterionControls;
 	private List<LoePart> parts = List.of();
 	private List<LoeCategory> categories = List.of();
 	private List<LoeTask> tasks = List.of();
@@ -244,6 +247,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 		requirementCommentFields.clear();
 		requirementDescriptions.clear();
 		requirementCriterionIndicators.clear();
+		criterionCheckboxes.clear();
 	}
 
 	private void loadSelectedPupilResults() {
@@ -269,15 +273,10 @@ public class ExamResultsEditor extends AbstractDesigner {
 					comment.setValue(currentRequirementComment(requirement));
 				}
 			});
-			requirementDescriptions
-					.forEach((requirementId,
-							description) -> description.setCheckedTagKeys(criteria.stream()
-									.filter(criterion -> criterion.requirementId().equals(requirementId))
-									.filter(this::currentCriterionAchieved).map(LoeCriterion::criterionKey).toList()));
+			requirements.forEach(this::refreshCriterionControls);
 		} finally {
 			applyingResultState = false;
 		}
-		refreshCriterionIndicators();
 		refreshRequirementPointTexts();
 		refreshPointBadges();
 		updateActionButtons();
@@ -401,9 +400,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 				}
 				final LoeCriterion criterion = criteriaByKey.get(change.key());
 				if (criterion != null) {
-					editedCriterionResults.put(criterion.id(), change.checked());
-					refreshCriterionIndicator(requirement);
-					updateActionButtons();
+					setCriterionAchieved(requirement, criterion, change.checked());
 				}
 			});
 			description.addClassName("tt-results-requirement-description");
@@ -416,7 +413,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 		}
 		descriptionArea.add(commentField(requirement));
 
-		final Div pointsArea = new Div(pointsControl(requirement));
+		final Div pointsArea = new Div(pointsControl(requirement, requirementCriteria));
 		pointsArea.addClassName("tt-results-requirement-points-area");
 
 		block.add(requirementMarker(task, requirement), descriptionArea, pointsArea);
@@ -446,6 +443,38 @@ public class ExamResultsEditor extends AbstractDesigner {
 		final List<LoeCriterion> requirementCriteria = criteriaFor(requirement);
 		final long achieved = requirementCriteria.stream().filter(this::currentCriterionAchieved).count();
 		indicator.setText(achieved + " von " + requirementCriteria.size() + " Kriterien erfüllt");
+	}
+
+	private void setCriterionAchieved(final LoeRequirement requirement, final LoeCriterion criterion,
+			final boolean achieved) {
+		if (selectedPupil == null) {
+			return;
+		}
+		editedCriterionResults.put(criterion.id(), achieved);
+		refreshCriterionControls(requirement);
+		updateActionButtons();
+	}
+
+	private void refreshCriterionControls(final LoeRequirement requirement) {
+		updatingCriterionControls = true;
+		try {
+			final List<LoeCriterion> requirementCriteria = criteriaFor(requirement);
+			final List<String> checkedKeys = requirementCriteria.stream().filter(this::currentCriterionAchieved)
+					.map(LoeCriterion::criterionKey).toList();
+			final MarkdownViewer description = requirementDescriptions.get(requirement.id());
+			if (description != null) {
+				description.setCheckedTagKeys(checkedKeys);
+			}
+			requirementCriteria.forEach(criterion -> {
+				final Checkbox checkbox = criterionCheckboxes.get(criterion.id());
+				if (checkbox != null) {
+					checkbox.setValue(currentCriterionAchieved(criterion));
+				}
+			});
+		} finally {
+			updatingCriterionControls = false;
+		}
+		refreshCriterionIndicator(requirement);
 	}
 
 	private TextArea commentField(final LoeRequirement requirement) {
@@ -498,7 +527,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 		return star;
 	}
 
-	private Component pointsControl(final LoeRequirement requirement) {
+	private Component pointsControl(final LoeRequirement requirement, final List<LoeCriterion> requirementCriteria) {
 		final IntegerField points = new IntegerField();
 		points.addClassName("tt-results-points-field");
 		points.getElement().setAttribute("aria-label", "Punkte");
@@ -527,7 +556,45 @@ public class ExamResultsEditor extends AbstractDesigner {
 		control.setPadding(false);
 		control.setSpacing(false);
 		control.setWidthFull();
+		if (!requirementCriteria.isEmpty()) {
+			control.add(criteriaChecklist(requirement, requirementCriteria));
+		}
 		return control;
+	}
+
+	private Component criteriaChecklist(final LoeRequirement requirement, final List<LoeCriterion> requirementCriteria) {
+		final VerticalLayout checklist = new VerticalLayout();
+		checklist.addClassName("tt-results-criteria-checklist");
+		checklist.setPadding(false);
+		checklist.setSpacing(false);
+		checklist.setWidthFull();
+		requirementCriteria.forEach(criterion -> checklist.add(criterionCheckboxRow(requirement, criterion)));
+		return checklist;
+	}
+
+	private Component criterionCheckboxRow(final LoeRequirement requirement, final LoeCriterion criterion) {
+		final Checkbox checkbox = new Checkbox(currentCriterionAchieved(criterion));
+		checkbox.addClassName("tt-results-criterion-checkbox");
+		checkbox.setAriaLabel("Kriterium " + criterion.criterionKey() + " erfüllt");
+		checkbox.getElement().setAttribute("aria-label", "Kriterium " + criterion.criterionKey() + " erfüllt");
+		checkbox.addValueChangeListener(event -> {
+			if (applyingResultState || updatingCriterionControls) {
+				return;
+			}
+			setCriterionAchieved(requirement, criterion, event.getValue());
+		});
+		criterionCheckboxes.put(criterion.id(), checkbox);
+
+		final Span badge = new Span(criterion.criterionKey());
+		badge.addClassNames("ws-markdown-tag-badge", "tt-results-criterion-badge");
+		badge.getElement().setAttribute("aria-hidden", "true");
+
+		final HorizontalLayout row = new HorizontalLayout(badge, checkbox);
+		row.addClassName("tt-results-criterion-checkbox-row");
+		row.setAlignItems(Alignment.CENTER);
+		row.setPadding(false);
+		row.setSpacing(false);
+		return row;
 	}
 
 	private VerticalLayout aggregationBlock(final String className, final String title,

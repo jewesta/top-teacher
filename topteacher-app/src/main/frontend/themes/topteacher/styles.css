@@ -450,6 +450,25 @@ vaadin-app-layout::part(navbar) {
 	font-size: var(--lumo-font-size-xs);
 }
 
+.tt-results-criteria-checklist {
+	gap: var(--lumo-space-xs);
+	margin-top: var(--lumo-space-s);
+}
+
+.tt-results-criterion-checkbox-row {
+	column-gap: var(--lumo-space-xs);
+	min-height: var(--lumo-size-s);
+}
+
+.tt-results-criterion-badge {
+	flex: 0 0 auto;
+	margin-left: 0;
+}
+
+.tt-results-criterion-checkbox {
+	flex: 0 0 auto;
+}
+
 .tt-grading-scale-grid {
 	max-width: 100%;
 }
