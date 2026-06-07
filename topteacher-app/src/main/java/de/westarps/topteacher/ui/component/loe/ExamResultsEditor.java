@@ -385,6 +385,12 @@ public class ExamResultsEditor extends AbstractDesigner {
 		descriptionArea.setPadding(false);
 		descriptionArea.setSpacing(false);
 		descriptionArea.setWidthFull();
+
+		final VerticalLayout descriptionMain = new VerticalLayout();
+		descriptionMain.addClassName("tt-results-requirement-main");
+		descriptionMain.setPadding(false);
+		descriptionMain.setSpacing(false);
+		descriptionMain.setWidthFull();
 		if (!descriptionMarkdown.isBlank()) {
 			final MarkdownViewer description = new MarkdownViewer(descriptionMarkdown);
 			description.setTag(LoeSectionComponents.CRITERION_TAG);
@@ -406,12 +412,13 @@ public class ExamResultsEditor extends AbstractDesigner {
 			description.addClassName("tt-results-requirement-description");
 			description.setWidthFull();
 			requirementDescriptions.put(requirement.id(), description);
-			descriptionArea.add(description);
+			descriptionMain.add(description);
 		}
 		if (!requirementCriteria.isEmpty()) {
-			descriptionArea.add(criterionIndicator(requirement));
+			descriptionMain.add(criterionIndicator(requirement));
 		}
-		descriptionArea.add(commentField(requirement));
+		descriptionArea.add(descriptionMain, commentField(requirement));
+		descriptionArea.setFlexGrow(1, descriptionMain);
 
 		final Div pointsArea = new Div(pointsControl(requirement, requirementCriteria));
 		pointsArea.addClassName("tt-results-requirement-points-area");
