@@ -27,7 +27,7 @@ import de.westarps.topteacher.model.SchoolClass;
 import de.westarps.topteacher.model.Subject;
 
 @SpringBootTest
-@Sql("/demo-data.sql")
+@Sql("/db/demo-data.sql")
 class LevelOfExpectationsExportServiceTests {
 
 	@Autowired

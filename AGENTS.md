@@ -9,7 +9,7 @@
 - Preserve UI state where possible. Avoid unnecessary full rerenders, especially in EH design and result entry flows.
 - Save actions should respect dirty state where applicable.
 - Prefer Vaadin Binder for form validation instead of manual if/else validation in form editors.
-- Keep `schema.sql` and `demo-data.sql` in sync when persistence changes.
+- Keep `db/schema.sql`, `db/base-data.sql`, and `db/demo-data.sql` in sync when persistence changes.
 - For issue branches, maintain a concise summary in `issues/Issue_<nr>.md`; derive the issue number from the branch name when possible.
 - Run `mvn -pl topteacher-app -am test` and `git diff --check` before handing off code changes.
 - Do not revert user changes or clean unrelated worktree changes.

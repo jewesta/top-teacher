@@ -16,7 +16,8 @@ PDF exports.
   viewing.
 - Added local run support, live reload/dev tooling, a Spring Boot startup
   banner, application styling, and the first operational docs.
-- Established schema and demo-data SQL files for the H2-backed local database.
+- Established schema, base-data, and demo-data SQL files for the H2-backed local
+  database.
 
 ## Core Domain and Persistence
 
