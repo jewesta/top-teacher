@@ -30,11 +30,20 @@ where not exists (
       and p.surname = demo.surname
 );
 
+update grading_scale
+set name = 'Standard'
+where name = '100 Punkte'
+  and not exists (
+      select 1
+      from grading_scale gs
+      where gs.name = 'Standard'
+  );
+
 insert into grading_scale (name, max_points, lifecycle)
 select demo.name, demo.max_points, demo.lifecycle
 from (
     values
-        ('100 Punkte', 100, 'ACTIVE')
+        ('Standard', 100, 'ACTIVE')
 ) demo(name, max_points, lifecycle)
 where not exists (
     select 1
@@ -64,7 +73,7 @@ from (
         (0, 0, 19)
 ) demo(grade_points, min_points, max_points)
 join grading_scale gs
-    on gs.name = '100 Punkte'
+    on gs.name = 'Standard'
 where not exists (
     select 1
     from grading_scale_range gsr
@@ -83,7 +92,7 @@ from (
         ('CLS_Q1', 'SPANISH', 2025, 'FULL_YEAR', 'INACTIVE')
 ) demo(school_class, subject, calendar_year, course_period, lifecycle)
 join grading_scale gs
-    on gs.name = '100 Punkte'
+    on gs.name = 'Standard'
 where not exists (
     select 1
     from course c
@@ -94,7 +103,7 @@ where not exists (
 );
 
 update course
-set grading_scale_id = (select gs.id from grading_scale gs where gs.name = '100 Punkte')
+set grading_scale_id = (select gs.id from grading_scale gs where gs.name = 'Standard')
 where grading_scale_id is null;
 
 insert into exam (course_id, title, exam_date)

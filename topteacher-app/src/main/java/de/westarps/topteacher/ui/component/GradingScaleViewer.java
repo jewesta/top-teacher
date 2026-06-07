@@ -46,24 +46,16 @@ public class GradingScaleViewer extends AbstractDesigner {
 	}
 
 	private void configureGrid() {
-		rangeGrid.addColumn(GradingScaleRange::getPointRangeDisplayName)
-				.setHeader("Punktzahl")
-				.setTextAlign(ColumnTextAlign.CENTER)
-				.setWidth("8rem")
+		rangeGrid.addColumn(GradingScaleRange::getPointRangeDisplayName).setHeader("Punktzahl")
+				.setTextAlign(ColumnTextAlign.CENTER).setWidth("8rem").setFlexGrow(0);
+		rangeGrid.addColumn(range -> range.gradeLevel().getDisplayName()).setHeader("Note").setWidth("10rem")
 				.setFlexGrow(0);
-		rangeGrid.addColumn(range -> range.gradeLevel().getDisplayName())
-				.setHeader("Note")
-				.setWidth("16rem")
-				.setFlexGrow(0);
-		rangeGrid.addColumn(range -> range.gradeLevel().getPoints())
-				.setHeader("Notenpunkte")
-				.setTextAlign(ColumnTextAlign.END)
-				.setWidth("8rem")
-				.setFlexGrow(0);
+		rangeGrid.addColumn(range -> range.gradeLevel().getPoints()).setHeader("Notenpunkte")
+				.setTextAlign(ColumnTextAlign.END).setWidth("8rem").setFlexGrow(0);
 		rangeGrid.addClassName("tt-grading-scale-grid");
 		rangeGrid.setItems(List.of());
 		rangeGrid.setSelectionMode(Grid.SelectionMode.NONE);
-		rangeGrid.setWidth("32rem");
+		rangeGrid.setWidth("26rem");
 		rangeGrid.setHeightFull();
 	}
 
