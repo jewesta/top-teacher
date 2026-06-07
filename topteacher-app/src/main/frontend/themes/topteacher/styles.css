@@ -196,11 +196,6 @@ vaadin-app-layout::part(navbar) {
 	width: var(--lumo-icon-size-s);
 }
 
-.tt-evaluation-summary {
-	color: var(--lumo-secondary-text-color);
-	font-weight: 600;
-}
-
 .tt-spreadsheet-grid::part(header-cell) {
 	height: 10rem;
 	overflow: visible;

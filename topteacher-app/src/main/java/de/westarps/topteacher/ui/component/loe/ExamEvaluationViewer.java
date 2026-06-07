@@ -102,7 +102,6 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 		grid.setItems(pupils.stream().map(this::evaluationRow).toList());
 
 		toolbar().add(excelButton);
-		toolbarSummary().add(summary(pupils));
 		content().add(grid);
 		content().expand(grid);
 		showDesigner();
@@ -192,12 +191,6 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 				.findFirst()
 				.map(range -> range.gradeLevel().getDisplayName())
 				.orElse("");
-	}
-
-	private static Span summary(final List<Pupil> pupils) {
-		final Span summary = new Span(pupils.size() + " Schüler");
-		summary.addClassName("tt-evaluation-summary");
-		return summary;
 	}
 
 	private static Span emptyState(final String text) {

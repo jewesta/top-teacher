@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Test;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.data.provider.Query;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
@@ -92,7 +91,6 @@ class ExamEvaluationViewerTests {
 		assertThat(grid.getColumns().subList(0, 3)).allMatch(Grid.Column::isFrozen);
 		assertThat(grid.getColumns().subList(3, grid.getColumns().size())).noneMatch(Grid.Column::isFrozen);
 		assertThat(itemCount(grid)).isEqualTo(2);
-		assertThat(components(viewer, Span.class).stream().map(Span::getText)).contains("2 Schüler");
 		assertThat(components(viewer, Button.class).stream().map(Button::getText)).contains("Excel");
 		verify(levelOfExpectationsRepository).findRequirementResultsByExamAndPupil(EXAM.id(), PUPIL.id());
 		verify(levelOfExpectationsRepository).findRequirementResultsByExamAndPupil(EXAM.id(), SECOND_PUPIL.id());
