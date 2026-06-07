@@ -64,7 +64,7 @@ class ExamResultsEditorTests {
 		final IntegerField points = components(editor, IntegerField.class).getFirst();
 		assertThat(saveButton.isEnabled()).isFalse();
 		assertThat(points.getLabel()).isNull();
-		assertThat(pointsText(editor)).containsExactly("Punkte von 5");
+		assertThat(pointsText(editor)).containsExactly("1 von 5 Punkten");
 		assertThat(points.getValue()).isEqualTo(1);
 		assertThat(badgeTexts(editor)).contains("Gesamtpunkte: 1 (+0)", "Summe: 1 (+0)");
 		assertThat(requirementNumberTexts(editor)).containsExactly("1");
@@ -72,6 +72,7 @@ class ExamResultsEditorTests {
 		points.setValue(3);
 
 		assertThat(saveButton.isEnabled()).isTrue();
+		assertThat(pointsText(editor)).containsExactly("3 von 5 Punkten");
 		assertThat(badgeTexts(editor)).contains("Gesamtpunkte: 3 (+0)", "Summe: 3 (+0)");
 		verify(expectationHorizonRepository, never()).saveRequirementResult(any());
 		verify(expectationHorizonRepository, never()).saveCriterionResult(any());
@@ -152,13 +153,14 @@ class ExamResultsEditorTests {
 		final TextArea comment = components(editor, TextArea.class).getFirst();
 		assertThat(points.getValue()).isEqualTo(1);
 		assertThat(comment.getValue()).isEmpty();
-		assertThat(criterionIndicatorTexts(editor)).containsExactly("0/1 Kriterium");
+		assertThat(criterionIndicatorTexts(editor)).containsExactly("0 von 1 Kriterien erfüllt");
 
 		pupilSelector(editor).setValue(SECOND_PUPIL);
 
 		assertThat(points.getValue()).isEqualTo(4);
 		assertThat(comment.getValue()).isEqualTo("Guter Fortschritt.");
-		assertThat(criterionIndicatorTexts(editor)).containsExactly("1/1 Kriterium");
+		assertThat(pointsText(editor)).containsExactly("4 von 5 Punkten");
+		assertThat(criterionIndicatorTexts(editor)).containsExactly("1 von 1 Kriterien erfüllt");
 		assertThat(components(editor, IntegerField.class).getFirst()).isSameAs(points);
 		assertThat(components(editor, TextArea.class).getFirst()).isSameAs(comment);
 		assertThat(badgeTexts(editor)).contains("Gesamtpunkte: 4 (+0)", "Summe: 4 (+0)");
@@ -199,7 +201,8 @@ class ExamResultsEditorTests {
 			assertThat(points.getValue()).isZero();
 			assertThat(comment.getValue()).isEmpty();
 			assertThat(deleteButton.isEnabled()).isFalse();
-			assertThat(criterionIndicatorTexts(editor)).containsExactly("0/1 Kriterium");
+			assertThat(pointsText(editor)).containsExactly("0 von 5 Punkten");
+			assertThat(criterionIndicatorTexts(editor)).containsExactly("0 von 1 Kriterien erfüllt");
 			assertThat(badgeTexts(editor)).contains("Gesamtpunkte: 0 (+0)", "Summe: 0 (+0)");
 		} finally {
 			UI.setCurrent(null);

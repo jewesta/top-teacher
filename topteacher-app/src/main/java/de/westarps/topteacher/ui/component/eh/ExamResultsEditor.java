@@ -51,6 +51,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private final EhSaveController saveController = new EhSaveController();
 	private final List<EhPointBadge> pointBadges = new ArrayList<>();
 	private final Map<Integer, IntegerField> requirementPointFields = new HashMap<>();
+	private final Map<Integer, Span> requirementPointTexts = new HashMap<>();
 	private final Map<Integer, TextArea> requirementCommentFields = new HashMap<>();
 	private final Map<Integer, MarkdownViewer> requirementDescriptions = new HashMap<>();
 	private final Map<Integer, Span> requirementCriterionIndicators = new HashMap<>();
@@ -94,7 +95,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 
 	private void configurePupilSelector() {
 		pupilSelector.setItemLabelGenerator(this::pupilLabel);
-		pupilSelector.setWidth("24rem");
+		pupilSelector.setWidth("16rem");
 		pupilSelector.setMaxWidth("100%");
 		pupilSelector.setAriaLabel("Schüler");
 		pupilSelector.addValueChangeListener(event -> {
@@ -166,8 +167,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 
 	private void refreshPupils() {
 		final List<Pupil> pupils = courseRepository.findPupils(exam.courseId());
-		final Pupil nextSelectedPupil = selectedPupil == null
-				? pupils.stream().findFirst().orElse(null)
+		final Pupil nextSelectedPupil = selectedPupil == null ? pupils.stream().findFirst().orElse(null)
 				: pupils.stream().filter(pupil -> pupil.id().equals(selectedPupil.id())).findFirst()
 						.orElseGet(() -> pupils.stream().findFirst().orElse(null));
 
@@ -199,6 +199,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 		results.removeAll();
 		pointBadges.clear();
 		requirementPointFields.clear();
+		requirementPointTexts.clear();
 		requirementCommentFields.clear();
 		requirementDescriptions.clear();
 		requirementCriterionIndicators.clear();
@@ -227,16 +228,16 @@ public class ExamResultsEditor extends AbstractDesigner {
 					comment.setValue(currentRequirementComment(requirement));
 				}
 			});
-			requirementDescriptions.forEach((requirementId, description) -> description.setCheckedTagKeys(criteria
-					.stream()
-					.filter(criterion -> criterion.requirementId().equals(requirementId))
-					.filter(this::currentCriterionAchieved)
-					.map(EhCriterion::criterionKey)
-					.toList()));
+			requirementDescriptions
+					.forEach((requirementId,
+							description) -> description.setCheckedTagKeys(criteria.stream()
+									.filter(criterion -> criterion.requirementId().equals(requirementId))
+									.filter(this::currentCriterionAchieved).map(EhCriterion::criterionKey).toList()));
 		} finally {
 			applyingResultState = false;
 		}
 		refreshCriterionIndicators();
+		refreshRequirementPointTexts();
 		refreshPointBadges();
 		saveController.update();
 		updateDeleteButton();
@@ -343,9 +344,8 @@ public class ExamResultsEditor extends AbstractDesigner {
 			final MarkdownViewer description = new MarkdownViewer(descriptionMarkdown);
 			description.setTag(EhSectionComponents.CRITERION_TAG);
 			description.setTagRenderMode(MarkdownTagRenderMode.CHECKBOX);
-			description.setCheckedTagKeys(requirementCriteria.stream()
-					.filter(this::currentCriterionAchieved).map(EhCriterion::criterionKey)
-					.toList());
+			description.setCheckedTagKeys(requirementCriteria.stream().filter(this::currentCriterionAchieved)
+					.map(EhCriterion::criterionKey).toList());
 			description.addTagCheckedChangeListener(change -> {
 				if (applyingResultState) {
 					return;
@@ -399,8 +399,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 
 		final List<EhCriterion> requirementCriteria = criteriaFor(requirement);
 		final long achieved = requirementCriteria.stream().filter(this::currentCriterionAchieved).count();
-		indicator.setText(achieved + "/" + requirementCriteria.size()
-				+ (requirementCriteria.size() == 1 ? " Kriterium" : " Kriterien"));
+		indicator.setText(achieved + " von " + requirementCriteria.size() + " Kriterien erfüllt");
 	}
 
 	private TextArea commentField(final EhRequirement requirement) {
@@ -466,15 +465,18 @@ public class ExamResultsEditor extends AbstractDesigner {
 				return;
 			}
 			editedRequirementResults.put(requirement.id(), valueOrZero(event.getValue()));
+			refreshRequirementPointText(requirement);
 			refreshPointBadges();
 			saveController.update();
 		});
 		requirementPointFields.put(requirement.id(), points);
 
-		final Span maxPoints = new Span("Punkte von " + requirement.maxPoints());
-		maxPoints.addClassName("tt-results-points-text");
+		final Span pointsText = new Span();
+		pointsText.addClassName("tt-results-points-text");
+		requirementPointTexts.put(requirement.id(), pointsText);
+		refreshRequirementPointText(requirement);
 
-		final VerticalLayout control = new VerticalLayout(points, maxPoints);
+		final VerticalLayout control = new VerticalLayout(points, pointsText);
 		control.addClassName("tt-results-points-control");
 		control.setPadding(false);
 		control.setSpacing(false);
@@ -523,6 +525,18 @@ public class ExamResultsEditor extends AbstractDesigner {
 			examPointsBadge.refreshBadges();
 		}
 		pointBadges.forEach(EhPointBadge::refreshBadges);
+	}
+
+	private void refreshRequirementPointTexts() {
+		requirements.forEach(this::refreshRequirementPointText);
+	}
+
+	private void refreshRequirementPointText(final EhRequirement requirement) {
+		final Span pointsText = requirementPointTexts.get(requirement.id());
+		if (pointsText == null) {
+			return;
+		}
+		pointsText.setText(currentRequirementPoints(requirement) + " von " + requirement.maxPoints() + " Punkten");
 	}
 
 	private List<EhCategory> categoriesFor(final EhPart part) {
@@ -598,11 +612,10 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private boolean isDirty() {
 		return criteria.stream()
 				.anyMatch(criterion -> currentCriterionAchieved(criterion) != persistedCriterionAchieved(criterion))
-				|| requirements.stream()
-						.anyMatch(requirement -> currentRequirementPoints(requirement) != persistedRequirementPoints(
-								requirement)
-								|| !currentRequirementComment(requirement).equals(
-										persistedRequirementComment(requirement)));
+				|| requirements.stream().anyMatch(
+						requirement -> currentRequirementPoints(requirement) != persistedRequirementPoints(requirement)
+								|| !currentRequirementComment(requirement)
+										.equals(persistedRequirementComment(requirement)));
 	}
 
 	private void saveResults() {
