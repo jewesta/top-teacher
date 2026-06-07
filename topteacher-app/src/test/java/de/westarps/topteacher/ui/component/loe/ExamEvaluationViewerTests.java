@@ -36,6 +36,7 @@ import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeRequirementResult;
 import de.westarps.topteacher.model.loe.LoeTask;
+import de.westarps.topteacher.ui.component.FullscreenButton;
 
 class ExamEvaluationViewerTests {
 
@@ -92,8 +93,46 @@ class ExamEvaluationViewerTests {
 		assertThat(grid.getColumns().subList(3, grid.getColumns().size())).noneMatch(Grid.Column::isFrozen);
 		assertThat(itemCount(grid)).isEqualTo(2);
 		assertThat(components(viewer, Button.class).stream().map(Button::getText)).contains("Excel");
+		assertThat(components(viewer, Button.class).stream()
+				.map(button -> button.getElement().getAttribute("aria-label"))).contains("Vollbild");
 		verify(levelOfExpectationsRepository).findRequirementResultsByExamAndPupil(EXAM.id(), PUPIL.id());
 		verify(levelOfExpectationsRepository).findRequirementResultsByExamAndPupil(EXAM.id(), SECOND_PUPIL.id());
+	}
+
+	@Test
+	void updatesFullscreenButtonState() {
+		final CourseRepository courseRepository = mock(CourseRepository.class);
+		when(courseRepository.findById(EXAM.courseId())).thenReturn(Optional.of(COURSE));
+		when(courseRepository.findPupils(EXAM.courseId())).thenReturn(List.of(PUPIL));
+
+		final LevelOfExpectationsRepository levelOfExpectationsRepository = mock(LevelOfExpectationsRepository.class);
+		when(levelOfExpectationsRepository.findPartsByExamId(EXAM.id())).thenReturn(List.of(PART));
+		when(levelOfExpectationsRepository.findCategoriesByExamId(EXAM.id())).thenReturn(List.of(CATEGORY));
+		when(levelOfExpectationsRepository.findTasksByExamId(EXAM.id())).thenReturn(List.of(TASK));
+		when(levelOfExpectationsRepository.findRequirementsByExamId(EXAM.id())).thenReturn(List.of(REQUIREMENT));
+		when(levelOfExpectationsRepository.findRequirementResultsByExamAndPupil(EXAM.id(), PUPIL.id()))
+				.thenReturn(List.of());
+
+		final GradingScaleRepository gradingScaleRepository = mock(GradingScaleRepository.class);
+		when(gradingScaleRepository.findById(COURSE.gradingScaleId())).thenReturn(Optional.of(GRADING_SCALE));
+		when(gradingScaleRepository.findRangesByGradingScaleId(GRADING_SCALE.id())).thenReturn(List.of());
+
+		final ExamEvaluationViewer viewer =
+				new ExamEvaluationViewer(courseRepository, levelOfExpectationsRepository, gradingScaleRepository);
+		viewer.setExam(EXAM);
+
+		final FullscreenButton fullscreenButton = components(viewer, FullscreenButton.class).stream()
+				.filter(button -> "Vollbild".equals(button.getElement().getAttribute("aria-label")))
+				.findFirst()
+				.orElseThrow();
+
+		fullscreenButton.setFullscreenActive(true);
+
+		assertThat(fullscreenButton.getElement().getAttribute("aria-label")).isEqualTo("Vollbild verlassen");
+
+		fullscreenButton.setFullscreenActive(false);
+
+		assertThat(fullscreenButton.getElement().getAttribute("aria-label")).isEqualTo("Vollbild");
 	}
 
 	@Test

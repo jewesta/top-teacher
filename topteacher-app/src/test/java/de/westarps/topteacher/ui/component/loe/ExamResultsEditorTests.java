@@ -45,6 +45,7 @@ import de.westarps.topteacher.model.Pupil;
 import de.westarps.topteacher.model.SchoolClass;
 import de.westarps.topteacher.model.SchoolYear;
 import de.westarps.topteacher.model.Subject;
+import de.westarps.topteacher.ui.component.FullscreenButton;
 import de.westarps.topteacher.ui.component.StepperComboBox;
 
 class ExamResultsEditorTests {
@@ -84,6 +85,7 @@ class ExamResultsEditorTests {
 		assertThat(points.getValue()).isEqualTo(1);
 		assertThat(badgeTexts(editor)).contains("Gesamt: 1 (+0)", "Summe: 1 (+0)");
 		assertThat(requirementNumberTexts(editor)).containsExactly("1");
+		assertThat(components(editor, FullscreenButton.class)).hasSize(1);
 
 		points.setValue(3);
 

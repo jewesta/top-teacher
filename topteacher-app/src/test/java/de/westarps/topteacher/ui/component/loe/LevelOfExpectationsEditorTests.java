@@ -30,6 +30,7 @@ import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeTask;
 import de.westarps.topteacher.model.Exam;
+import de.westarps.topteacher.ui.component.FullscreenButton;
 
 class LevelOfExpectationsEditorTests {
 
@@ -55,6 +56,7 @@ class LevelOfExpectationsEditorTests {
 		editor.setExam(EXAM);
 		final List<Details> details = components(editor, Details.class);
 		assertThat(details).hasSize(3);
+		assertThat(components(editor, FullscreenButton.class)).hasSize(1);
 
 		details.get(1).setOpened(false);
 		editor.setExam(EXAM);

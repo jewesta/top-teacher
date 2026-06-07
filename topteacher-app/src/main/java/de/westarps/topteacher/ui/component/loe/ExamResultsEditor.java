@@ -41,6 +41,7 @@ import de.westarps.topteacher.model.loe.LoeRequirementResult;
 import de.westarps.topteacher.model.loe.LoeTask;
 import de.westarps.topteacher.ui.UiUrls;
 import de.westarps.topteacher.ui.component.AbstractDesigner;
+import de.westarps.topteacher.ui.component.FullscreenButton;
 import de.westarps.topteacher.ui.component.StepperComboBox;
 import de.westarps.vaadin.markdown.MarkdownViewer;
 import de.westarps.vaadin.markdown.MarkdownTagRenderMode;
@@ -55,6 +56,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private final Button deleteButton = new Button(VaadinIcon.TRASH.create());
 	private final MenuBar pdfMenu = new MenuBar();
 	private final ConfirmDialog deleteConfirmation = new ConfirmDialog();
+	private final FullscreenButton fullscreenButton;
 	private final VerticalLayout results;
 	private final LoeSaveController saveController = new LoeSaveController();
 	private final List<LoePointBadge> pointBadges = new ArrayList<>();
@@ -92,6 +94,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 		this.courseRepository = courseRepository;
 		this.levelOfExpectationsRepository = levelOfExpectationsRepository;
 		this.gradingScaleRepository = gradingScaleRepository;
+		fullscreenButton = new FullscreenButton(this);
 		results = content();
 
 		configurePupilSelector();
@@ -199,7 +202,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 
 	private void configureToolbar() {
 		examPointsBadge = new LoePointBadge("Gesamt", this::pointsForExam);
-		toolbar().add(pupilSelector, saveButton, deleteButton, pdfMenu, deleteConfirmation);
+		toolbar().add(pupilSelector, saveButton, deleteButton, pdfMenu, fullscreenButton, deleteConfirmation);
 		toolbarSummary().add(examPointsBadge);
 	}
 

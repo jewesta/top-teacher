@@ -19,10 +19,12 @@ import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeTask;
 import de.westarps.topteacher.ui.component.AbstractDesigner;
+import de.westarps.topteacher.ui.component.FullscreenButton;
 
 public class LevelOfExpectationsEditor extends AbstractDesigner {
 
 	private final LevelOfExpectationsRepository levelOfExpectationsRepository;
+	private final FullscreenButton fullscreenButton;
 	private final LoeSaveController saveController = new LoeSaveController();
 	private final LoeSectionComponents components = new LoeSectionComponents(saveController);
 	private final LoeCollapseState collapseState = new LoeCollapseState(components);
@@ -127,6 +129,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 	public LevelOfExpectationsEditor(final LevelOfExpectationsRepository levelOfExpectationsRepository) {
 		super("tt-eh-editor");
 		this.levelOfExpectationsRepository = levelOfExpectationsRepository;
+		fullscreenButton = new FullscreenButton(this);
 
 		saveController.setDirtySupplier(this::isDirty);
 		saveController.setSaveAction(this::saveDirtySections);
@@ -211,7 +214,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 		addPart.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
 		examPointsBadge = components.pointBadge("Gesamt", this::pointsForExam);
-		toolbar().add(save, addPart, collapseState.toggleButton(allDetailKeys()));
+		toolbar().add(save, addPart, collapseState.toggleButton(allDetailKeys()), fullscreenButton);
 		toolbarSummary().add(examPointsBadge);
 	}
 

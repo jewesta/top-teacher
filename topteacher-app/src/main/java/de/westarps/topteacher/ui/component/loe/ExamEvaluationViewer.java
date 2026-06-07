@@ -28,6 +28,7 @@ import de.westarps.topteacher.model.loe.LoeRequirementResult;
 import de.westarps.topteacher.model.loe.LoeTask;
 import de.westarps.topteacher.ui.UiUrls;
 import de.westarps.topteacher.ui.component.AbstractDesigner;
+import de.westarps.topteacher.ui.component.FullscreenButton;
 import de.westarps.topteacher.ui.component.SpreadsheetGrid;
 
 public class ExamEvaluationViewer extends AbstractDesigner {
@@ -40,6 +41,7 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 	private final GradingScaleRepository gradingScaleRepository;
 	private final SpreadsheetGrid<EvaluationRow> grid = new SpreadsheetGrid<>(EvaluationRow.class, false);
 	private final Button excelButton = new Button("Excel", VaadinIcon.DOWNLOAD.create());
+	private final FullscreenButton fullscreenButton;
 
 	private Exam exam;
 	private List<LoePart> parts = List.of();
@@ -63,6 +65,8 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 		excelButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
 		excelButton.setTooltipText("Excel herunterladen");
 		excelButton.addClickListener(event -> downloadExcel());
+
+		fullscreenButton = new FullscreenButton(this);
 	}
 
 	public void setExam(final Exam exam) {
@@ -102,7 +106,7 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 		configureGrid(LoeAggregationColumns.from(parts, categories, tasks, requirements));
 		grid.setItems(pupils.stream().map(this::evaluationRow).toList());
 
-		toolbar().add(excelButton);
+		toolbar().add(excelButton, fullscreenButton);
 		content().add(grid);
 		content().expand(grid);
 		showDesigner();

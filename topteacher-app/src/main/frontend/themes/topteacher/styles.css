@@ -159,6 +159,15 @@ vaadin-app-layout::part(navbar) {
 	--tt-results-points-column-width: 10rem;
 }
 
+.tt-fullscreen-target:fullscreen,
+.tt-fullscreen-target:-webkit-full-screen {
+	background: var(--lumo-base-color);
+	box-sizing: border-box;
+	height: 100%;
+	padding: var(--lumo-space-m);
+	width: 100%;
+}
+
 .tt-designer-toolbar {
 	align-items: center;
 	box-sizing: border-box;
