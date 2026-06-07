@@ -369,7 +369,7 @@ from (
 - [Parallelismus](eh:3), z. B. „The emissions we release today ...“
 - [Metaphorik](eh:4), z. B. „the wheels need to be set in motion“'),
 
-        ('Klausurteil A: Schreiben mit Leseverstehen (integriert)', '1. Inhaltliche Leistung', 'Teilaufgabe 2 (Analysis)', 3, 0, true,
+        ('Klausurteil A: Schreiben mit Leseverstehen (integriert)', '1. Inhaltliche Leistung', 'Teilaufgabe 2 (Analysis)', 3, 2, true,
 'erfüllt ein weiteres aufgabenbezogenes Kriterium'),
 
         ('Klausurteil A: Schreiben mit Leseverstehen (integriert)', '1. Inhaltliche Leistung', 'Teilaufgabe 3 (Re-creation of text)', 0, 2, false,
@@ -391,7 +391,7 @@ from (
         ('Klausurteil A: Schreiben mit Leseverstehen (integriert)', '1. Inhaltliche Leistung', 'Teilaufgabe 3 (Re-creation of text)', 2, 2, false,
 'schließt die Rede mit Blick auf die in der Aufgabe zum Ausdruck gebrachten [Ideen](eh:1) und auf Basis der vorangegangenen [Ausführungen](eh:2)'),
 
-        ('Klausurteil A: Schreiben mit Leseverstehen (integriert)', '1. Inhaltliche Leistung', 'Teilaufgabe 3 (Re-creation of text)', 3, 0, true,
+        ('Klausurteil A: Schreiben mit Leseverstehen (integriert)', '1. Inhaltliche Leistung', 'Teilaufgabe 3 (Re-creation of text)', 3, 2, true,
 'erfüllt ein weiteres aufgabenbezogenes Kriterium'),
 
         ('Klausurteil A: Schreiben mit Leseverstehen (integriert)', '2. Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 0, 6, false,
@@ -441,7 +441,7 @@ from (
 - weniger Verbrauch von [Gas](eh:5) sei in der aktuellen Weltlage wichtig
 - die Entscheidung habe einen [Vorteil für Europa](eh:6)'),
 
-        ('Klausurteil B: schriftliche Sprachmittlung D-E (isoliert)', '1. Inhaltliche Leistung', 'Inhaltliche Leistung', 2, 0, true,
+        ('Klausurteil B: schriftliche Sprachmittlung D-E (isoliert)', '1. Inhaltliche Leistung', 'Inhaltliche Leistung', 2, 2, true,
 'erfüllt ein weiteres aufgabenbezogenes Kriterium'),
 
         ('Klausurteil B: schriftliche Sprachmittlung D-E (isoliert)', '2. Sprachliche Leistung / Darstellungsleistung', 'Sprachliche Leistung', 0, 6, false,

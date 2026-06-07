@@ -26,12 +26,14 @@ import com.vaadin.flow.data.value.ValueChangeMode;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.ExpectationHorizonRepository;
+import de.westarps.topteacher.backend.repo.GradingScaleRepository;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.Pupil;
 import de.westarps.topteacher.model.eh.EhCategory;
 import de.westarps.topteacher.model.eh.EhCriterion;
 import de.westarps.topteacher.model.eh.EhCriterionResult;
 import de.westarps.topteacher.model.eh.EhPart;
+import de.westarps.topteacher.model.eh.EhPointRules;
 import de.westarps.topteacher.model.eh.EhRequirement;
 import de.westarps.topteacher.model.eh.EhRequirementResult;
 import de.westarps.topteacher.model.eh.EhTask;
@@ -44,6 +46,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 
 	private final CourseRepository courseRepository;
 	private final ExpectationHorizonRepository expectationHorizonRepository;
+	private final GradingScaleRepository gradingScaleRepository;
 	private final StepperComboBox<Pupil> pupilSelector = new StepperComboBox<>();
 	private final Button saveButton = new Button("Speichern", VaadinIcon.CHECK.create());
 	private final Button deleteButton = new Button(VaadinIcon.TRASH.create());
@@ -72,15 +75,18 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private List<EhRequirement> requirements = List.of();
 	private List<EhCriterion> criteria = List.of();
 	private EhPointBadge examPointsBadge;
+	private Integer gradingScaleMaxPoints;
 	private Map<Integer, Boolean> persistedCriterionResults = Map.of();
 	private Map<Integer, Integer> persistedRequirementResults = Map.of();
 	private Map<Integer, String> persistedRequirementComments = Map.of();
 
 	public ExamResultsEditor(final CourseRepository courseRepository,
-			final ExpectationHorizonRepository expectationHorizonRepository) {
+			final ExpectationHorizonRepository expectationHorizonRepository,
+			final GradingScaleRepository gradingScaleRepository) {
 		super("tt-exam-results-editor");
 		this.courseRepository = courseRepository;
 		this.expectationHorizonRepository = expectationHorizonRepository;
+		this.gradingScaleRepository = gradingScaleRepository;
 		results = content();
 
 		configurePupilSelector();
@@ -159,12 +165,14 @@ public class ExamResultsEditor extends AbstractDesigner {
 
 		if (exam == null) {
 			clearResultState();
+			gradingScaleMaxPoints = null;
 			updateActionButtons();
 			showDesignerMessage(emptyState("Bitte wählen Sie eine Klausur aus."));
 			return;
 		}
 
 		expectationHorizonRepository.syncCriteriaForExam(exam.id());
+		loadGradingScaleMaxPoints();
 		loadItems();
 		refreshPupils();
 		configureToolbar();
@@ -261,6 +269,12 @@ public class ExamResultsEditor extends AbstractDesigner {
 		tasks = expectationHorizonRepository.findTasksByExamId(exam.id());
 		requirements = expectationHorizonRepository.findRequirementsByExamId(exam.id());
 		criteria = expectationHorizonRepository.findActiveCriteriaByExamId(exam.id());
+	}
+
+	private void loadGradingScaleMaxPoints() {
+		gradingScaleMaxPoints = courseRepository.findById(exam.courseId())
+				.flatMap(course -> gradingScaleRepository.findById(course.gradingScaleId()))
+				.map(gradingScale -> gradingScale.maxPoints()).orElse(null);
 	}
 
 	private void loadResultState() {
@@ -695,6 +709,17 @@ public class ExamResultsEditor extends AbstractDesigner {
 				return false;
 			}
 		}
+		if (gradingScaleMaxPoints == null) {
+			Notification.show("Für den Kurs wurde kein Notenschlüssel gefunden.");
+			return false;
+		}
+		final int regularMaxPoints = EhPointRules.regularMaxPoints(requirements);
+		if (regularMaxPoints != gradingScaleMaxPoints) {
+			Notification.show("Der Erwartungshorizont hat " + regularMaxPoints
+					+ " reguläre Punkte. Der Notenschlüssel erwartet " + gradingScaleMaxPoints + " Punkte.");
+			return false;
+		}
+		EhPointRules.cappedAchievedTotal(requirements, this::currentRequirementPoints, gradingScaleMaxPoints);
 		return true;
 	}
 

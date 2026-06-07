@@ -48,7 +48,21 @@ class ExpectationHorizonExportModelFactoryTests {
 		assertThat(firstRequirement.description().value()).doesNotContain("eh:1", "tt-criterion", "mark");
 		assertThat(firstRequirement.comment()).isEqualTo("Sauber");
 
+		final var bonusRequirement = model.parts().getFirst().categories().getFirst().tasks().getFirst()
+				.requirements().get(1);
+		assertThat(bonusRequirement.maxPointsDisplayName()).isEqualTo("(2)");
+		assertThat(bonusRequirement.achievedPointsDisplayName()).isEqualTo("(1)");
+
 		assertThat(model.noteSections().getFirst().description().value()).contains("<em>Notiz</em>");
+	}
+
+	@Test
+	void displaysZeroBonusPointsInBraces() {
+		final var requirement = new ExpectationHorizonExportModelFactory.Requirement(1, new SafeHtml("Bonuspunkt"),
+				0, true, 0, "");
+
+		assertThat(requirement.maxPointsDisplayName()).isEqualTo("(0)");
+		assertThat(requirement.achievedPointsDisplayName()).isEqualTo("(0)");
 	}
 
 	@Test

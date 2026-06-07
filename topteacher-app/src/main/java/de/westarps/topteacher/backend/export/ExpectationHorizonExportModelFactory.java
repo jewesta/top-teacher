@@ -234,14 +234,14 @@ public class ExpectationHorizonExportModelFactory {
 			if (!bonus) {
 				return String.valueOf(maxPoints);
 			}
-			return maxPoints == 0 ? "( )" : "(" + maxPoints + ")";
+			return "(" + maxPoints + ")";
 		}
 
 		public String achievedPointsDisplayName() {
 			if (!bonus) {
 				return String.valueOf(achievedPoints);
 			}
-			return achievedPoints == 0 ? "" : "(" + achievedPoints + ")";
+			return "(" + achievedPoints + ")";
 		}
 	}
 

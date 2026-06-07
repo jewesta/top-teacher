@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,9 @@ import com.vaadin.flow.component.textfield.TextArea;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.ExpectationHorizonRepository;
+import de.westarps.topteacher.backend.repo.GradingScaleRepository;
+import de.westarps.topteacher.model.Course;
+import de.westarps.topteacher.model.CoursePeriod;
 import de.westarps.topteacher.model.eh.EhCategory;
 import de.westarps.topteacher.model.eh.EhCriterion;
 import de.westarps.topteacher.model.eh.EhCriterionResult;
@@ -34,13 +38,21 @@ import de.westarps.topteacher.model.eh.EhRequirement;
 import de.westarps.topteacher.model.eh.EhRequirementResult;
 import de.westarps.topteacher.model.eh.EhTask;
 import de.westarps.topteacher.model.Exam;
+import de.westarps.topteacher.model.GradingScale;
 import de.westarps.topteacher.model.Lifecycle;
 import de.westarps.topteacher.model.Pupil;
+import de.westarps.topteacher.model.SchoolClass;
+import de.westarps.topteacher.model.SchoolYear;
+import de.westarps.topteacher.model.Subject;
 import de.westarps.topteacher.ui.component.StepperComboBox;
 
 class ExamResultsEditorTests {
 
 	private static final Exam EXAM = new Exam(1, 10, "Klausur", LocalDate.of(2026, 9, 1));
+	private static final Course COURSE = new Course(EXAM.courseId(), SchoolClass.CLS_5A, Subject.ENGLISH,
+			new SchoolYear(2026), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, 30);
+	private static final GradingScale GRADING_SCALE = new GradingScale(COURSE.gradingScaleId(), "Standard", 5,
+			Lifecycle.ACTIVE);
 	private static final Pupil PUPIL = new Pupil(20, "Anna", "Ergebnis", Lifecycle.ACTIVE);
 	private static final Pupil SECOND_PUPIL = new Pupil(21, "Berta", "Ergebnis", Lifecycle.ACTIVE);
 	private static final EhPart PART = new EhPart(1, EXAM.id(), "Klausurteil A", 0);
@@ -56,7 +68,8 @@ class ExamResultsEditorTests {
 	void savesRequirementPointsOnlyWhenToolbarSaveIsClicked() {
 		final ExpectationHorizonRepository expectationHorizonRepository = expectationHorizonRepository();
 		final CourseRepository courseRepository = courseRepository();
-		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, expectationHorizonRepository);
+		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, expectationHorizonRepository,
+				gradingScaleRepository());
 
 		editor.setExam(EXAM);
 
@@ -95,7 +108,8 @@ class ExamResultsEditorTests {
 				List.of(REQUIREMENT, BONUS_REQUIREMENT), List.of(CRITERION),
 				List.of(new EhRequirementResult(REQUIREMENT.id(), PUPIL.id(), 1)));
 		final CourseRepository courseRepository = courseRepository();
-		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, expectationHorizonRepository);
+		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, expectationHorizonRepository,
+				gradingScaleRepository());
 
 		editor.setExam(EXAM);
 
@@ -119,7 +133,8 @@ class ExamResultsEditorTests {
 	void savesRequirementCommentWithoutRerendering() {
 		final ExpectationHorizonRepository expectationHorizonRepository = expectationHorizonRepository();
 		final CourseRepository courseRepository = courseRepository();
-		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, expectationHorizonRepository);
+		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, expectationHorizonRepository,
+				gradingScaleRepository());
 
 		editor.setExam(EXAM);
 
@@ -149,7 +164,8 @@ class ExamResultsEditorTests {
 				.thenReturn(List.of(new EhRequirementResult(REQUIREMENT.id(), SECOND_PUPIL.id(), 4,
 						"Guter Fortschritt.")));
 		final CourseRepository courseRepository = courseRepository(List.of(PUPIL, SECOND_PUPIL));
-		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, expectationHorizonRepository);
+		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, expectationHorizonRepository,
+				gradingScaleRepository());
 
 		editor.setExam(EXAM);
 
@@ -183,7 +199,8 @@ class ExamResultsEditorTests {
 		final UI ui = new UI();
 		UI.setCurrent(ui);
 		try {
-			final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, expectationHorizonRepository);
+			final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, expectationHorizonRepository,
+					gradingScaleRepository());
 			ui.add(editor);
 			editor.setExam(EXAM);
 
@@ -211,6 +228,47 @@ class ExamResultsEditorTests {
 		} finally {
 			UI.setCurrent(null);
 		}
+	}
+
+	@Test
+	void rejectsSavingResultsWhenRegularEhPointsDoNotMatchTheGradingScale() {
+		final ExpectationHorizonRepository expectationHorizonRepository = expectationHorizonRepository();
+		final CourseRepository courseRepository = courseRepository();
+		final UI ui = new UI();
+		UI.setCurrent(ui);
+		try {
+			final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, expectationHorizonRepository,
+					gradingScaleRepository(6));
+			ui.add(editor);
+			editor.setExam(EXAM);
+
+			components(editor, IntegerField.class).getFirst().setValue(2);
+			saveButton(editor).click();
+
+			verify(expectationHorizonRepository, never()).saveRequirementResult(any(EhRequirementResult.class));
+			verify(expectationHorizonRepository, never()).saveCriterionResult(any(EhCriterionResult.class));
+		} finally {
+			UI.setCurrent(null);
+		}
+	}
+
+	@Test
+	void allowsBonusResultsThatWouldOnlyApplyUpToTheGradingScaleMaximum() {
+		final ExpectationHorizonRepository expectationHorizonRepository = expectationHorizonRepository(
+				List.of(REQUIREMENT, BONUS_REQUIREMENT), List.of(CRITERION),
+				List.of(
+						new EhRequirementResult(REQUIREMENT.id(), PUPIL.id(), 5),
+						new EhRequirementResult(BONUS_REQUIREMENT.id(), PUPIL.id(), 0)));
+		final CourseRepository courseRepository = courseRepository();
+		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, expectationHorizonRepository,
+				gradingScaleRepository());
+		editor.setExam(EXAM);
+
+		components(editor, IntegerField.class).get(1).setValue(2);
+		saveButton(editor).click();
+
+		verify(expectationHorizonRepository).saveRequirementResult(
+				new EhRequirementResult(BONUS_REQUIREMENT.id(), PUPIL.id(), 2));
 	}
 
 	private static ExpectationHorizonRepository expectationHorizonRepository() {
@@ -241,6 +299,19 @@ class ExamResultsEditorTests {
 	private static CourseRepository courseRepository(final List<Pupil> pupils) {
 		final CourseRepository repository = mock(CourseRepository.class);
 		when(repository.findPupils(EXAM.courseId())).thenReturn(pupils);
+		when(repository.findById(EXAM.courseId())).thenReturn(Optional.of(COURSE));
+		return repository;
+	}
+
+	private static GradingScaleRepository gradingScaleRepository() {
+		return gradingScaleRepository(GRADING_SCALE.maxPoints());
+	}
+
+	private static GradingScaleRepository gradingScaleRepository(final int maxPoints) {
+		final GradingScaleRepository repository = mock(GradingScaleRepository.class);
+		when(repository.findById(COURSE.gradingScaleId()))
+				.thenReturn(Optional.of(new GradingScale(COURSE.gradingScaleId(), "Standard", maxPoints,
+						Lifecycle.ACTIVE)));
 		return repository;
 	}
 

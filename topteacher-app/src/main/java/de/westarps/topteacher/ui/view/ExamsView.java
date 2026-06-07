@@ -77,7 +77,8 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		this.expectationHorizonRepository = expectationHorizonRepository;
 		this.expectationHorizonEditor = new ExpectationHorizonEditor(expectationHorizonRepository);
 		this.examNotesEditor = new ExamNotesEditor(expectationHorizonRepository);
-		this.examResultsEditor = new ExamResultsEditor(courseRepository, expectationHorizonRepository);
+		this.examResultsEditor = new ExamResultsEditor(courseRepository, expectationHorizonRepository,
+				gradingScaleRepository);
 		this.gradingScaleViewer = new GradingScaleViewer(gradingScaleRepository);
 
 		configureCourseFilter();
