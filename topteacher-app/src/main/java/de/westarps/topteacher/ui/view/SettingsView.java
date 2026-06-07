@@ -268,6 +268,7 @@ public class SettingsView extends VerticalLayout implements HasDynamicTitle {
 		try {
 			final Options options = new Options();
 			options.setLocale(Locale.GERMANY);
+			options.setVerbose(true);
 			return CronExpressionDescriptor.getDescription(cron, options);
 		} catch (final RuntimeException exception) {
 			return "Gültiger Cron-Ausdruck.";
