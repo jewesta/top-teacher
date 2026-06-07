@@ -59,12 +59,12 @@ body {
 .tt-notes,
 .tt-grade-scale {
     -fs-table-paginate: paginate;
+    border: 1px solid #111;
     border-collapse: collapse;
     width: 100%;
 }
 
 .tt-export-info-box {
-    border: 1px solid #111;
     margin-bottom: 3mm;
 }
 
@@ -137,6 +137,18 @@ h4 {
 .tt-grade-scale th {
     font-weight: 700;
     text-align: left;
+}
+
+.tt-requirements-heading {
+    text-align: left;
+    vertical-align: middle;
+}
+
+.tt-eh-table th.tt-number-column,
+.tt-points-heading,
+.tt-points-column {
+    text-align: center;
+    vertical-align: middle;
 }
 
 .tt-number-column {
