@@ -29,3 +29,19 @@ python -m fontTools.subset Kalam-Regular.ttf \
 ```
 
 The same command shape was used for `Kalam-Light.ttf` and `Kalam-Bold.ttf`.
+
+## PDF embedding observations
+
+OpenHTMLToPDF performs another per-document font subset when generating the actual PDF. This means
+the PDF does not embed the full TTF file, and it does not even embed the full `*-subset.ttf` file.
+
+Measured examples from the demo teacher PDF:
+
+- Before using the generated source subset, the embedded `Kalam-Regular` font stream was about 10 KB.
+- After switching to `Kalam-Regular-subset.ttf`, the embedded `Kalam-Regular` font stream was about 4.8 KB.
+- The complete teacher PDF only shrank from about 123 KB to about 120 KB, because OpenHTMLToPDF had
+  already subset the font aggressively.
+
+We still keep and use the reduced `*-subset.ttf` files because they make the source assets smaller,
+document the expected character coverage, and avoid carrying large unused writing systems in the
+application resources.
