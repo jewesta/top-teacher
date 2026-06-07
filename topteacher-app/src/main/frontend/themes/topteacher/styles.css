@@ -28,10 +28,10 @@ vaadin-app-layout::part(navbar) {
 
 .tt-app-logo {
 	display: block;
-	height: 2.25rem;
+	height: 3rem;
 	justify-self: start;
 	margin: 0;
-	max-width: 12rem;
+	max-width: 15rem;
 	object-fit: contain;
 	width: auto;
 }

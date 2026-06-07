@@ -44,7 +44,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
 		final Header header = new Header();
 		header.addClassName("tt-header");
 
-		final Image logo = new Image("images/topteacher-logo.png", "TopTeacher!");
+		final Image logo = new Image("images/topteacher-logo.svg", "TopTeacher!");
 		logo.addClassName("tt-app-logo");
 
 		navigationTabs.addClassName("tt-top-navigation");
