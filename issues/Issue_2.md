@@ -10,8 +10,8 @@ PDF exports.
 ## Application Foundation
 
 - Initialized the project as a Maven multi-module build.
-- Added the main `topteacher-app` module with Java 21, Spring Boot, Vaadin 25,
-  JDBC, and H2.
+- Added `topteacher-model`, `topteacher-backend`, and `topteacher-app` modules
+  with Java 21, Spring Boot, Vaadin 25, JDBC, and H2.
 - Added a reusable `westarps-vaadin-markdown` module for Markdown editing and
   viewing.
 - Added local run support, live reload/dev tooling, a Spring Boot startup

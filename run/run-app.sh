@@ -23,7 +23,7 @@ echo "Starting TopTeacher..."
 echo "App:        http://localhost:8080/"
 echo "H2 console: http://localhost:8080/h2-console/"
 
-mvn -pl westarps-vaadin-markdown -am install -DskipTests
+mvn -pl westarps-vaadin-markdown,topteacher-backend -am install -DskipTests
 mvn -pl topteacher-app vaadin:prepare-frontend -DskipTests
 
 rm -f topteacher-app/src/main/bundles/dev.bundle

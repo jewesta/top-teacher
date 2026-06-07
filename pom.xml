@@ -20,6 +20,8 @@
 
     <modules>
         <module>westarps-vaadin-markdown</module>
+        <module>topteacher-model</module>
+        <module>topteacher-backend</module>
         <module>topteacher-app</module>
     </modules>
 
