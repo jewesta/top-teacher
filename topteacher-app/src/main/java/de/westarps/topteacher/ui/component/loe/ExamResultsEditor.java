@@ -190,9 +190,9 @@ public class ExamResultsEditor extends AbstractDesigner {
 	}
 
 	private void configureToolbar() {
-		examPointsBadge = new LoePointBadge("Gesamtpunkte", this::pointsForExam);
-		toolbar().add(pupilSelector, saveButton, deleteButton, pdfDownload, teacherPdfDownload, examPointsBadge,
-				deleteConfirmation);
+		examPointsBadge = new LoePointBadge("Gesamt", this::pointsForExam);
+		toolbar().add(pupilSelector, saveButton, deleteButton, pdfDownload, teacherPdfDownload, deleteConfirmation);
+		toolbarSummary().add(examPointsBadge);
 	}
 
 	private void refreshPupils() {

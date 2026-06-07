@@ -83,7 +83,7 @@ class ExamResultsEditorTests {
 		assertThat(points.getLabel()).isNull();
 		assertThat(pointsText(editor)).containsExactly("1 von 5 Punkten");
 		assertThat(points.getValue()).isEqualTo(1);
-		assertThat(badgeTexts(editor)).contains("Gesamtpunkte: 1 (+0)", "Summe: 1 (+0)");
+		assertThat(badgeTexts(editor)).contains("Gesamt: 1 (+0)", "Summe: 1 (+0)");
 		assertThat(requirementNumberTexts(editor)).containsExactly("1");
 
 		points.setValue(3);
@@ -92,7 +92,7 @@ class ExamResultsEditorTests {
 		assertThat(pdfButton.isEnabled()).isFalse();
 		assertThat(teacherPdfButton.isEnabled()).isFalse();
 		assertThat(pointsText(editor)).containsExactly("3 von 5 Punkten");
-		assertThat(badgeTexts(editor)).contains("Gesamtpunkte: 3 (+0)", "Summe: 3 (+0)");
+		assertThat(badgeTexts(editor)).contains("Gesamt: 3 (+0)", "Summe: 3 (+0)");
 		verify(levelOfExpectationsRepository, never()).saveRequirementResult(any());
 		verify(levelOfExpectationsRepository, never()).saveCriterionResult(any());
 
@@ -187,7 +187,7 @@ class ExamResultsEditorTests {
 		assertThat(criterionIndicatorTexts(editor)).containsExactly("1 von 1 Kriterien erfüllt");
 		assertThat(components(editor, IntegerField.class).getFirst()).isSameAs(points);
 		assertThat(components(editor, TextArea.class).getFirst()).isSameAs(comment);
-		assertThat(badgeTexts(editor)).contains("Gesamtpunkte: 4 (+0)", "Summe: 4 (+0)");
+		assertThat(badgeTexts(editor)).contains("Gesamt: 4 (+0)", "Summe: 4 (+0)");
 		verify(levelOfExpectationsRepository, times(1)).syncCriteriaForExam(EXAM.id());
 		verify(levelOfExpectationsRepository, times(1)).findPartsByExamId(EXAM.id());
 		verify(levelOfExpectationsRepository, times(1)).findCategoriesByExamId(EXAM.id());
@@ -228,7 +228,7 @@ class ExamResultsEditorTests {
 			assertThat(deleteButton.isEnabled()).isFalse();
 			assertThat(pointsText(editor)).containsExactly("0 von 5 Punkten");
 			assertThat(criterionIndicatorTexts(editor)).containsExactly("0 von 1 Kriterien erfüllt");
-			assertThat(badgeTexts(editor)).contains("Gesamtpunkte: 0 (+0)", "Summe: 0 (+0)");
+			assertThat(badgeTexts(editor)).contains("Gesamt: 0 (+0)", "Summe: 0 (+0)");
 		} finally {
 			UI.setCurrent(null);
 		}

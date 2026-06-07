@@ -5,6 +5,7 @@ import java.util.List;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.grid.ColumnTextAlign;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 
 import de.westarps.topteacher.backend.repo.GradingScaleRepository;
@@ -46,7 +47,7 @@ public class GradingScaleViewer extends AbstractDesigner {
 	}
 
 	private void configureGrid() {
-		rangeGrid.addColumn(GradingScaleRange::getPointRangeDisplayName).setHeader("Punktzahl")
+		rangeGrid.addComponentColumn(GradingScaleViewer::pointRange).setHeader("Punktzahl")
 				.setTextAlign(ColumnTextAlign.CENTER).setWidth("8rem").setFlexGrow(0);
 		rangeGrid.addColumn(range -> range.gradeLevel().getDisplayName()).setHeader("Note").setWidth("11rem")
 				.setFlexGrow(0);
@@ -57,6 +58,19 @@ public class GradingScaleViewer extends AbstractDesigner {
 		rangeGrid.setSelectionMode(Grid.SelectionMode.NONE);
 		rangeGrid.setWidth("27rem");
 		rangeGrid.setHeightFull();
+	}
+
+	private static Component pointRange(final GradingScaleRange range) {
+		final Span from = new Span(String.valueOf(range.minPoints()));
+		from.addClassName("tt-grading-scale-range-from");
+		final Span dash = new Span("-");
+		dash.addClassName("tt-grading-scale-range-dash");
+		final Span until = new Span(String.valueOf(range.maxPoints()));
+		until.addClassName("tt-grading-scale-range-until");
+
+		final Div pointRange = new Div(from, dash, until);
+		pointRange.addClassName("tt-grading-scale-point-range");
+		return pointRange;
 	}
 
 	private static Component title(final GradingScale gradingScale) {

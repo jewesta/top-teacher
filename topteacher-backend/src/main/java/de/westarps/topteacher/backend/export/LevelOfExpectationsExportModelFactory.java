@@ -237,6 +237,49 @@ public class LevelOfExpectationsExportModelFactory {
 					.map(range -> range.gradeLevel().getDisplayName())
 					.orElse("");
 		}
+
+		public List<GradingScaleTableRow> gradingScaleTableRows() {
+			final List<GradingScaleRange> sortedRanges = gradingScaleRanges.stream()
+					.sorted(Comparator.comparingInt((GradingScaleRange range) -> range.gradeLevel().getPoints())
+							.reversed())
+					.toList();
+			final List<GradingScaleTableRow> rows = new ArrayList<>();
+			for (int index = 0; index < sortedRanges.size(); index += 3) {
+				rows.add(new GradingScaleTableRow(List.of(
+						new GradingScaleTableCell(sortedRanges.get(index)),
+						new GradingScaleTableCell(index + 1 < sortedRanges.size() ? sortedRanges.get(index + 1)
+								: null),
+						new GradingScaleTableCell(index + 2 < sortedRanges.size() ? sortedRanges.get(index + 2)
+								: null))));
+			}
+			return rows;
+		}
+	}
+
+	public record GradingScaleTableRow(List<GradingScaleTableCell> cells) {
+
+		public GradingScaleTableRow {
+			cells = copy(cells);
+		}
+	}
+
+	public record GradingScaleTableCell(GradingScaleRange range) {
+
+		public String minPointsDisplayName() {
+			return range == null ? "" : String.valueOf(range.minPoints());
+		}
+
+		public String maxPointsDisplayName() {
+			return range == null ? "" : String.valueOf(range.maxPoints());
+		}
+
+		public String pointRangeSeparatorDisplayName() {
+			return range == null ? "" : "-";
+		}
+
+		public String gradeDisplayName() {
+			return range == null ? "" : range.gradeLevel().getDisplayName();
+		}
 	}
 
 	public record Part(String title, PointSummary points, List<Category> categories) {

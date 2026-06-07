@@ -163,20 +163,29 @@ vaadin-app-layout::part(navbar) {
 	align-items: center;
 	box-sizing: border-box;
 	flex: 0 0 auto;
+	flex-wrap: wrap;
 	gap: var(--lumo-space-m);
 	padding-top: var(--lumo-space-m);
 	width: 100%;
 }
 
-.tt-designer-toolbar::after {
-	content: "";
-	flex: 1 1 auto;
-	order: 1;
+.tt-designer-toolbar-summary {
+	align-items: center;
+	box-sizing: border-box;
+	flex: 0 0 auto;
+	gap: var(--lumo-space-m);
+	justify-content: flex-end;
+	margin-bottom: var(--lumo-space-s);
+	width: 100%;
 }
 
-.tt-designer-toolbar .tt-eh-points {
+.tt-designer-toolbar-summary .tt-eh-points {
+	margin-left: 0;
 	margin-right: var(--lumo-space-m);
-	order: 2;
+}
+
+.tt-exam-results-editor .tt-designer-toolbar-summary .tt-eh-points {
+	width: var(--tt-results-points-column-width);
 }
 
 .tt-eh-gag {
@@ -383,6 +392,24 @@ vaadin-app-layout::part(navbar) {
 
 .tt-grading-scale-grid {
 	max-width: 100%;
+}
+
+.tt-grading-scale-point-range {
+	column-gap: var(--lumo-space-xs);
+	display: inline-grid;
+	font-variant-numeric: tabular-nums;
+	grid-template-columns: 1fr auto 1fr;
+	margin: 0 auto;
+	width: 5.5rem;
+}
+
+.tt-grading-scale-range-from,
+.tt-grading-scale-range-until {
+	text-align: right;
+}
+
+.tt-grading-scale-range-dash {
+	text-align: center;
 }
 
 .tt-grading-scale-title {

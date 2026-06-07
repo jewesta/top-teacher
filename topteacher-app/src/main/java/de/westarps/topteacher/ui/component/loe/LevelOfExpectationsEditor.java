@@ -210,8 +210,9 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 		});
 		addPart.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-		examPointsBadge = components.pointBadge("Gesamtpunktzahl", this::pointsForExam);
-		toolbar().add(save, addPart, collapseState.toggleButton(allDetailKeys()), examPointsBadge);
+		examPointsBadge = components.pointBadge("Gesamt", this::pointsForExam);
+		toolbar().add(save, addPart, collapseState.toggleButton(allDetailKeys()));
+		toolbarSummary().add(examPointsBadge);
 	}
 
 	private LoePartSection createPartSection(final LoePart part) {

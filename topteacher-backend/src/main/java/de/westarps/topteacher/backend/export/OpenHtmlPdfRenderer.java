@@ -18,6 +18,7 @@ import org.jsoup.nodes.Document.OutputSettings.Syntax;
 import org.springframework.stereotype.Component;
 
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
+import com.openhtmltopdf.util.XRLog;
 
 @Component
 public class OpenHtmlPdfRenderer implements PdfRenderer {
@@ -26,6 +27,11 @@ public class OpenHtmlPdfRenderer implements PdfRenderer {
 			new PDRectangle(PDRectangle.A4.getHeight(), PDRectangle.A4.getWidth());
 	private static final String TEMPLATE_BASE_URI =
 			OpenHtmlPdfRenderer.class.getClassLoader().getResource("templates/export/").toExternalForm();
+
+	// OpenHTMLToPDF writes its own JUL-style messages directly to the console unless disabled.
+	static {
+		XRLog.setLoggingEnabled(false);
+	}
 
 	@Override
 	public byte[] renderA5Pdf(final String html) {

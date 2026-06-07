@@ -7,6 +7,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 public abstract class AbstractDesigner extends VerticalLayout {
 
 	private final HorizontalLayout toolbar = new HorizontalLayout();
+	private final HorizontalLayout toolbarSummary = new HorizontalLayout();
 	private final VerticalLayout content = new VerticalLayout();
 
 	protected AbstractDesigner(final String className) {
@@ -21,6 +22,13 @@ public abstract class AbstractDesigner extends VerticalLayout {
 		toolbar.setSpacing(false);
 		toolbar.setWidthFull();
 
+		toolbarSummary.addClassName("tt-designer-toolbar-summary");
+		toolbarSummary.setAlignItems(Alignment.CENTER);
+		toolbarSummary.setJustifyContentMode(JustifyContentMode.END);
+		toolbarSummary.setPadding(false);
+		toolbarSummary.setSpacing(false);
+		toolbarSummary.setWidthFull();
+
 		content.addClassName("tt-designer-content");
 		content.setPadding(false);
 		content.setSpacing(false);
@@ -31,6 +39,10 @@ public abstract class AbstractDesigner extends VerticalLayout {
 		return toolbar;
 	}
 
+	protected HorizontalLayout toolbarSummary() {
+		return toolbarSummary;
+	}
+
 	protected VerticalLayout content() {
 		return content;
 	}
@@ -38,12 +50,17 @@ public abstract class AbstractDesigner extends VerticalLayout {
 	protected void resetDesigner() {
 		removeAll();
 		toolbar.removeAll();
+		toolbarSummary.removeAll();
 		content.removeAll();
 	}
 
 	protected void showDesigner() {
 		removeAll();
-		add(toolbar, content);
+		add(toolbar);
+		if (toolbarSummary.getChildren().findAny().isPresent()) {
+			add(toolbarSummary);
+		}
+		add(content);
 		expand(content);
 	}
 

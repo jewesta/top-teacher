@@ -84,7 +84,7 @@ class LevelOfExpectationsEditorTests {
 		verify(repository, never()).findTasksByExamId(anyInt());
 		verify(repository, never()).findRequirementsByExamId(anyInt());
 		assertThat(components(editor, Details.class).getFirst()).isSameAs(partDetails);
-		assertThat(badgeTexts(editor)).contains("Gesamtpunktzahl: 7 (+0)", "100 %");
+		assertThat(badgeTexts(editor)).contains("Gesamt: 7 (+0)", "100 %");
 	}
 
 	@Test
@@ -107,7 +107,7 @@ class LevelOfExpectationsEditorTests {
 		verify(repository, never()).findTasksByExamId(anyInt());
 		verify(repository, never()).findRequirementsByExamId(anyInt());
 		assertThat(components(editor, Details.class).getFirst()).isSameAs(partDetails);
-		assertThat(badgeTexts(editor)).contains("Gesamtpunktzahl: 0 (+7)");
+		assertThat(badgeTexts(editor)).contains("Gesamt: 0 (+7)");
 	}
 
 	@Test
@@ -159,7 +159,7 @@ class LevelOfExpectationsEditorTests {
 
 		editor.setExam(EXAM);
 
-		assertThat(badgeTexts(editor)).contains("Summe: 5 (+4)", "Gesamtpunktzahl: 5 (+4)", "100 %");
+		assertThat(badgeTexts(editor)).contains("Summe: 5 (+4)", "Gesamt: 5 (+4)", "100 %");
 	}
 
 	@Test
@@ -169,7 +169,7 @@ class LevelOfExpectationsEditorTests {
 
 		editor.setExam(EXAM);
 
-		assertThat(badgeTexts(editor)).contains("Summe: 5 (+0)", "Gesamtpunktzahl: 5 (+0)");
+		assertThat(badgeTexts(editor)).contains("Summe: 5 (+0)", "Gesamt: 5 (+0)");
 		assertThat(components(editor, Span.class).stream()
 				.filter(span -> span.getClassNames().contains("tt-eh-point-regular")).map(Span::getText)).contains("5");
 		assertThat(components(editor, Span.class).stream()
