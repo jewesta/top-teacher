@@ -196,6 +196,54 @@ vaadin-app-layout::part(navbar) {
 	width: var(--lumo-icon-size-s);
 }
 
+.tt-evaluation-summary {
+	color: var(--lumo-secondary-text-color);
+	font-weight: 600;
+}
+
+.tt-evaluation-grid::part(header-cell) {
+	height: 10rem;
+	overflow: visible;
+	vertical-align: bottom;
+}
+
+.tt-evaluation-grid::part(evaluation-rotated-header-cell) {
+	background: transparent;
+	overflow: visible;
+	z-index: 1;
+}
+
+.tt-evaluation-grid::part(first-column-cell),
+.tt-evaluation-grid::part(frozen-cell) {
+	background: var(--lumo-base-color);
+	z-index: 3;
+}
+
+.tt-evaluation-grid > vaadin-grid-cell-content:has(.tt-evaluation-header) {
+	background: transparent !important;
+	overflow: visible !important;
+	text-overflow: clip !important;
+}
+
+.tt-evaluation-header {
+	height: 9rem;
+	overflow: visible;
+	position: relative;
+	width: 100%;
+}
+
+.tt-evaluation-header-label {
+	bottom: var(--lumo-space-s);
+	display: block;
+	left: 50%;
+	overflow: visible;
+	position: absolute;
+	transform: rotate(-45deg);
+	transform-origin: left bottom;
+	white-space: nowrap;
+	z-index: 2;
+}
+
 .tt-eh-gag {
 	color: var(--lumo-secondary-text-color);
 	font-size: var(--lumo-font-size-s);

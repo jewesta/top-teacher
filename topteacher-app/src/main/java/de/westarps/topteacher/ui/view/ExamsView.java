@@ -29,6 +29,7 @@ import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.ui.MainLayout;
 import de.westarps.topteacher.ui.component.AbstractFormEditor;
+import de.westarps.topteacher.ui.component.loe.ExamEvaluationViewer;
 import de.westarps.topteacher.ui.component.loe.ExamNotesEditor;
 import de.westarps.topteacher.ui.component.loe.ExamResultsEditor;
 import de.westarps.topteacher.ui.component.loe.LevelOfExpectationsEditor;
@@ -47,6 +48,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 	private final LevelOfExpectationsEditor levelOfExpectationsEditor;
 	private final ExamNotesEditor examNotesEditor;
 	private final ExamResultsEditor examResultsEditor;
+	private final ExamEvaluationViewer examEvaluationViewer;
 	private final GradingScaleViewer gradingScaleViewer;
 	private final ComboBox<Course> courseFilter = new ComboBox<>("Kurs");
 	private final TextField title = new TextField("Titel");
@@ -66,6 +68,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 	private Tab levelOfExpectationsTab;
 	private Tab notesTab;
 	private Tab resultsTab;
+	private Tab evaluationTab;
 	private Tab gradingScaleTab;
 
 	public ExamsView(final CourseRepository courseRepository, final ExamRepository examRepository,
@@ -78,6 +81,8 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		this.levelOfExpectationsEditor = new LevelOfExpectationsEditor(levelOfExpectationsRepository);
 		this.examNotesEditor = new ExamNotesEditor(levelOfExpectationsRepository);
 		this.examResultsEditor = new ExamResultsEditor(courseRepository, levelOfExpectationsRepository,
+				gradingScaleRepository);
+		this.examEvaluationViewer = new ExamEvaluationViewer(courseRepository, levelOfExpectationsRepository,
 				gradingScaleRepository);
 		this.gradingScaleViewer = new GradingScaleViewer(gradingScaleRepository);
 
@@ -327,12 +332,14 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 			levelOfExpectationsTab = getContextTabs().add("EH", levelOfExpectationsEditor);
 			notesTab = getContextTabs().add("Notizen", examNotesEditor);
 			resultsTab = getContextTabs().add("Ergebnisse", examResultsEditor);
+			evaluationTab = getContextTabs().add("Auswertung", examEvaluationViewer);
 			gradingScaleTab = getContextTabs().add("Notenschlüssel", gradingScaleViewer);
 		}
 
 		levelOfExpectationsEditor.setExam(exam);
 		examNotesEditor.setExam(exam);
 		examResultsEditor.setExam(exam);
+		examEvaluationViewer.setExam(exam);
 		gradingScaleViewer.setCourse(selectedCourse);
 	}
 
@@ -341,26 +348,31 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 			levelOfExpectationsEditor.setExam(null);
 			examNotesEditor.setExam(null);
 			examResultsEditor.setExam(null);
+			examEvaluationViewer.setExam(null);
 			gradingScaleViewer.setCourse(null);
 			return;
 		}
 
 		if (getContextTabs().getSelectedTab() == levelOfExpectationsTab
 				|| getContextTabs().getSelectedTab() == notesTab || getContextTabs().getSelectedTab() == resultsTab
+				|| getContextTabs().getSelectedTab() == evaluationTab
 				|| getContextTabs().getSelectedTab() == gradingScaleTab) {
 			getContextTabs().setSelectedIndex(0);
 		}
 		getContextTabs().remove(levelOfExpectationsTab);
 		getContextTabs().remove(notesTab);
 		getContextTabs().remove(resultsTab);
+		getContextTabs().remove(evaluationTab);
 		getContextTabs().remove(gradingScaleTab);
 		levelOfExpectationsTab = null;
 		notesTab = null;
 		resultsTab = null;
+		evaluationTab = null;
 		gradingScaleTab = null;
 		levelOfExpectationsEditor.setExam(null);
 		examNotesEditor.setExam(null);
 		examResultsEditor.setExam(null);
+		examEvaluationViewer.setExam(null);
 		gradingScaleViewer.setCourse(null);
 	}
 

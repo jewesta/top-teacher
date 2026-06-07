@@ -1,0 +1,11 @@
+:host(.tt-evaluation-grid) [part~="evaluation-rotated-header-cell"] {
+	background: transparent;
+	overflow: visible;
+	z-index: 1;
+}
+
+:host(.tt-evaluation-grid) [part~="evaluation-rotated-header-cell"] ::slotted(vaadin-grid-cell-content) {
+	background: transparent;
+	overflow: visible;
+	text-overflow: clip;
+}
