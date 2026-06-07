@@ -56,8 +56,10 @@ public abstract class AbstractDesigner extends VerticalLayout {
 
 	protected void showDesigner() {
 		removeAll();
-		add(toolbar);
-		if (toolbarSummary.getChildren().findAny().isPresent()) {
+		if (hasChildren(toolbar)) {
+			add(toolbar);
+		}
+		if (hasChildren(toolbarSummary)) {
 			add(toolbarSummary);
 		}
 		add(content);
@@ -67,5 +69,9 @@ public abstract class AbstractDesigner extends VerticalLayout {
 	protected void showDesignerMessage(final Component message) {
 		resetDesigner();
 		add(message);
+	}
+
+	private static boolean hasChildren(final Component component) {
+		return component.getChildren().findAny().isPresent();
 	}
 }

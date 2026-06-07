@@ -28,6 +28,20 @@ class AbstractDesignerTests {
 		assertThat(children.get(1).getClassNames()).contains("tt-designer-content");
 	}
 
+	@Test
+	void skipsEmptyToolbarRows() {
+		final TestDesigner designer = new TestDesigner();
+
+		designer.renderSummaryOnly();
+
+		final List<Component> children = designer.getChildren().toList();
+		assertThat(children).hasSize(2);
+		assertThat(children.get(0)).isInstanceOf(HorizontalLayout.class);
+		assertThat(children.get(0).getClassNames()).contains("tt-designer-toolbar-summary");
+		assertThat(children.get(1)).isInstanceOf(VerticalLayout.class);
+		assertThat(children.get(1).getClassNames()).contains("tt-designer-content");
+	}
+
 	private static final class TestDesigner extends AbstractDesigner {
 
 		private TestDesigner() {
@@ -37,6 +51,13 @@ class AbstractDesignerTests {
 		private void render() {
 			resetDesigner();
 			toolbar().add(new Span("Toolbar"));
+			content().add(new Span("Content"));
+			showDesigner();
+		}
+
+		private void renderSummaryOnly() {
+			resetDesigner();
+			toolbarSummary().add(new Span("Summary"));
 			content().add(new Span("Content"));
 			showDesigner();
 		}

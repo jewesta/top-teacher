@@ -1,14 +1,15 @@
 package de.westarps.topteacher.ui.component.loe;
 
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.grid.ColumnTextAlign;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.VaadinIcon;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.GradingScaleRepository;
@@ -18,6 +19,7 @@ import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.GradingScale;
 import de.westarps.topteacher.model.GradingScaleRange;
 import de.westarps.topteacher.model.Pupil;
+import de.westarps.topteacher.model.loe.LoeAggregationColumns;
 import de.westarps.topteacher.model.loe.LoeCategory;
 import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoePointRules;
@@ -36,6 +38,7 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 	private final LevelOfExpectationsRepository levelOfExpectationsRepository;
 	private final GradingScaleRepository gradingScaleRepository;
 	private final SpreadsheetGrid<EvaluationRow> grid = new SpreadsheetGrid<>(EvaluationRow.class, false);
+	private final Button excelButton = new Button("Excel", VaadinIcon.DOWNLOAD.create());
 
 	private Exam exam;
 	private List<LoePart> parts = List.of();
@@ -55,6 +58,10 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 
 		grid.setSelectionMode(Grid.SelectionMode.NONE);
 		grid.setSizeFull();
+
+		excelButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
+		excelButton.setTooltipText("Excel herunterladen");
+		excelButton.addClickListener(event -> downloadExcel());
 	}
 
 	public void setExam(final Exam exam) {
@@ -91,10 +98,11 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 		}
 
 		loadPointRules(course);
-		configureGrid(aggregationColumns());
+		configureGrid(LoeAggregationColumns.from(parts, categories, tasks, requirements));
 		grid.setItems(pupils.stream().map(this::evaluationRow).toList());
 
-		toolbar().add(summary(pupils));
+		toolbar().add(excelButton);
+		toolbarSummary().add(summary(pupils));
 		content().add(grid);
 		content().expand(grid);
 		showDesigner();
@@ -123,7 +131,7 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 		gradingScaleRanges = gradingScaleRepository.findRangesByGradingScaleId(gradingScale.id());
 	}
 
-	private void configureGrid(final List<AggregationColumn> aggregationColumns) {
+	private void configureGrid(final List<LoeAggregationColumns.Column> aggregationColumns) {
 		grid.addSpreadsheetColumn(EvaluationRow::pupilName, "Schüler").setFrozen(true).setAutoWidth(true)
 				.setFlexGrow(0);
 		grid.addSpreadsheetColumn(row -> pointsDisplayName(row.pointsFor(requirements), hasBonus(requirements)),
@@ -146,39 +154,27 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 		return new EvaluationRow(pupil, achievedPointsByRequirementId);
 	}
 
-	private List<AggregationColumn> aggregationColumns() {
-		final List<AggregationColumn> columns = new ArrayList<>();
-		parts.forEach(part -> {
-			final List<LoeRequirement> partRequirements = categoriesFor(part).stream()
-					.flatMap(category -> tasksFor(category).stream())
-					.flatMap(task -> requirementsFor(task).stream()).toList();
-			columns.add(new AggregationColumn(part.title(), partRequirements));
-
-			categoriesFor(part).forEach(category -> {
-				final List<LoeRequirement> categoryRequirements = tasksFor(category).stream()
-						.flatMap(task -> requirementsFor(task).stream()).toList();
-				columns.add(new AggregationColumn(category.title(), categoryRequirements));
-
-				tasksFor(category).forEach(task -> columns.add(new AggregationColumn(task.title(),
-						requirementsFor(task))));
-			});
-		});
-		return collapseRedundantColumns(columns);
+	private void downloadExcel() {
+		if (exam == null) {
+			return;
+		}
+		getUI().ifPresent(ui -> ui.getPage().executeJs("""
+				const anchor = document.createElement('a');
+				anchor.href = $0;
+				anchor.download = $1;
+				anchor.style.display = 'none';
+				document.body.appendChild(anchor);
+				anchor.click();
+				anchor.remove();
+				""", excelUrl(), excelFileName()));
 	}
 
-	private List<AggregationColumn> collapseRedundantColumns(final List<AggregationColumn> columns) {
-		final List<AggregationColumn> collapsedColumns = new ArrayList<>();
-		columns.forEach(column -> {
-			if (sameRequirements(column.requirements(), requirements)) {
-				return;
-			}
-			if (!collapsedColumns.isEmpty()
-					&& sameRequirements(collapsedColumns.getLast().requirements(), column.requirements())) {
-				return;
-			}
-			collapsedColumns.add(column);
-		});
-		return collapsedColumns;
+	private String excelUrl() {
+		return "/export/exams/" + exam.id() + "/evaluation.xlsx";
+	}
+
+	private String excelFileName() {
+		return "auswertung-" + fileNamePart(exam.title()) + ".xlsx";
 	}
 
 	private String gradeDisplayName(final EvaluationRow row) {
@@ -198,21 +194,6 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 				.orElse("");
 	}
 
-	private List<LoeCategory> categoriesFor(final LoePart part) {
-		return categories.stream().filter(category -> category.partId().equals(part.id()))
-				.sorted(Comparator.comparingInt(LoeCategory::sortOrder).thenComparing(LoeCategory::id)).toList();
-	}
-
-	private List<LoeTask> tasksFor(final LoeCategory category) {
-		return tasks.stream().filter(task -> task.categoryId().equals(category.id()))
-				.sorted(Comparator.comparingInt(LoeTask::sortOrder).thenComparing(LoeTask::id)).toList();
-	}
-
-	private List<LoeRequirement> requirementsFor(final LoeTask task) {
-		return requirements.stream().filter(requirement -> requirement.taskId().equals(task.id()))
-				.sorted(Comparator.comparingInt(LoeRequirement::sortOrder).thenComparing(LoeRequirement::id)).toList();
-	}
-
 	private static Span summary(final List<Pupil> pupils) {
 		final Span summary = new Span(pupils.size() + " Schüler");
 		summary.addClassName("tt-evaluation-summary");
@@ -229,14 +210,6 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 		return requirements.stream().anyMatch(LoeRequirement::bonus);
 	}
 
-	private static boolean sameRequirements(final List<LoeRequirement> left, final List<LoeRequirement> right) {
-		return requirementIds(left).equals(requirementIds(right));
-	}
-
-	private static List<Integer> requirementIds(final List<LoeRequirement> requirements) {
-		return requirements.stream().map(LoeRequirement::id).sorted().toList();
-	}
-
 	private static String pointsDisplayName(final LoePoints points, final boolean showBonus) {
 		if (!showBonus && points.bonus() == 0) {
 			return String.valueOf(points.regular());
@@ -244,7 +217,9 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 		return points.regular() + " (+" + points.bonus() + ")";
 	}
 
-	private record AggregationColumn(String title, List<LoeRequirement> requirements) {
+	private static String fileNamePart(final String value) {
+		return (value == null ? "" : value).replaceAll("[^a-zA-Z0-9_-]+", "-").replaceAll("(^-+|-+$)", "")
+				.toLowerCase();
 	}
 
 	private record EvaluationRow(Pupil pupil, Map<Integer, Integer> achievedPointsByRequirementId) {
