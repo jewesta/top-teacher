@@ -181,7 +181,6 @@ vaadin-app-layout::part(navbar) {
 
 .tt-designer-toolbar-summary .tt-eh-points {
 	margin-left: 0;
-	margin-right: var(--lumo-space-m);
 }
 
 .tt-exam-results-editor .tt-designer-toolbar-summary .tt-eh-points {
