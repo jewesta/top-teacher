@@ -2,7 +2,10 @@ insert into app_setting (setting_key, setting_value)
 select demo.setting_key, demo.setting_value
 from (
     values
-        ('tt.loe.export.show_watermark', 'true')
+        ('tt.loe.export.show_watermark', 'true'),
+        ('tt.database.backup.target_folder', ''),
+        ('tt.database.backup.schedule.enabled', 'false'),
+        ('tt.database.backup.schedule.cron', '0 0 2 * * *')
 ) demo(setting_key, setting_value)
 where not exists (
     select 1

@@ -57,6 +57,12 @@
         </dependency>
 
         <dependency>
+            <groupId>it.burning</groupId>
+            <artifactId>cron-expression-descriptor</artifactId>
+            <version>${cron-expression-descriptor.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>

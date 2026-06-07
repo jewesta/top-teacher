@@ -1,7 +1,9 @@
 package de.westarps.topteacher.ui;
 
+import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.applayout.AppLayout;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.html.Header;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Span;
@@ -13,19 +15,31 @@ import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.RouterLink;
 
+import de.westarps.topteacher.backend.settings.AppSettings;
 import de.westarps.topteacher.ui.view.CoursesView;
 import de.westarps.topteacher.ui.view.ExamsView;
 import de.westarps.topteacher.ui.view.PupilsView;
+import de.westarps.topteacher.ui.view.SettingsView;
 
 public class MainLayout extends AppLayout implements AfterNavigationObserver {
 
+	private final AppSettings appSettings;
 	private final Tabs navigationTabs = new Tabs();
 	private final Tab pupilsTab = navigationTab("Schüler", VaadinIcon.ACADEMY_CAP, PupilsView.class);
 	private final Tab coursesTab = navigationTab("Kurse", VaadinIcon.BOOK, CoursesView.class);
 	private final Tab examsTab = navigationTab("Klausuren", VaadinIcon.EDIT, ExamsView.class);
+	private final Tab settingsTab = navigationTab("Einstellungen", VaadinIcon.COG, SettingsView.class);
+	private boolean backupErrorShown;
 
-	public MainLayout() {
+	public MainLayout(final AppSettings appSettings) {
+		this.appSettings = appSettings;
 		addToNavbar(createHeader());
+	}
+
+	@Override
+	protected void onAttach(final AttachEvent attachEvent) {
+		super.onAttach(attachEvent);
+		showBackupErrorIfPresent();
 	}
 
 	@Override
@@ -37,6 +51,8 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
 			navigationTabs.setSelectedTab(coursesTab);
 		} else if (content instanceof ExamsView) {
 			navigationTabs.setSelectedTab(examsTab);
+		} else if (content instanceof SettingsView) {
+			navigationTabs.setSelectedTab(settingsTab);
 		}
 	}
 
@@ -48,7 +64,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
 		logo.addClassName("tt-app-logo");
 
 		navigationTabs.addClassName("tt-top-navigation");
-		navigationTabs.add(pupilsTab, coursesTab, examsTab);
+		navigationTabs.add(pupilsTab, coursesTab, examsTab, settingsTab);
 
 		final HorizontalLayout spacer = new HorizontalLayout();
 		spacer.addClassName("tt-header-spacer");
@@ -63,5 +79,21 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
 		link.setRoute(view);
 		link.add(icon.create(), new Span(label));
 		return new Tab(link);
+	}
+
+	private void showBackupErrorIfPresent() {
+		if (backupErrorShown) {
+			return;
+		}
+
+		appSettings.ttEventDatabaseBackupError().ifPresent(error -> {
+			backupErrorShown = true;
+			final ConfirmDialog dialog = new ConfirmDialog();
+			dialog.setHeader("Datenbank-Backup fehlgeschlagen");
+			dialog.setText(error);
+			dialog.setConfirmText("OK");
+			dialog.addConfirmListener(event -> appSettings.clearTtEventDatabaseBackupError());
+			dialog.open();
+		});
 	}
 }
