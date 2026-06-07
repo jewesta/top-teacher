@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<body>
+<section th:fragment="ehBody(parts)">
+    <section class="tt-part" th:each="part : ${parts}">
+        <h2 th:text="${part.title()}">Klausurteil A</h2>
+
+        <section class="tt-category" th:each="category : ${part.categories()}">
+            <h3 th:text="${category.title()}">1. Inhaltliche Leistung</h3>
+            <div class="tt-category-description"
+                 th:if="${!category.description().value().isBlank()}"
+                 th:utext="${category.description().value()}"></div>
+
+            <section class="tt-task" th:each="task : ${category.tasks()}">
+                <h4 th:text="${task.title()}">Teilaufgabe 1</h4>
+                <table class="tt-eh-table">
+                    <colgroup>
+                        <col class="tt-number-column">
+                        <col class="tt-description-column">
+                        <col class="tt-points-column">
+                        <col class="tt-points-column">
+                    </colgroup>
+                    <thead>
+                    <tr>
+                        <th></th>
+                        <th>Anforderungen: Die Schülerin / Der Schüler</th>
+                        <th class="tt-points-column">max. Punktzahl</th>
+                        <th class="tt-points-column">erreichte Punkte</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="requirement : ${task.requirements()}">
+                        <td class="tt-number-column" th:text="${requirement.number()}">1</td>
+                        <td class="tt-requirement-text">
+                            <div th:utext="${requirement.description().value()}"></div>
+                            <div class="tt-comment" th:if="${!requirement.comment().isBlank()}"
+                                 th:text="${requirement.comment()}"></div>
+                        </td>
+                        <td class="tt-points-column" th:text="${requirement.maxPointsDisplayName()}">6</td>
+                        <td class="tt-points-column" th:text="${requirement.achievedPointsDisplayName()}"></td>
+                    </tr>
+                    <tr class="tt-sum-row">
+                        <td></td>
+                        <td th:text="${'SUMME ' + task.title()}">SUMME Teilaufgabe</td>
+                        <td class="tt-points-column" th:text="${task.points().maxDisplayName()}">6</td>
+                        <td class="tt-points-column" th:text="${task.points().achievedDisplayName()}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </section>
+        </section>
+    </section>
+</section>
+</body>
+</html>

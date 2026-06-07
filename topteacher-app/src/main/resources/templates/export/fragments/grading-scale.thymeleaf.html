@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<body>
+<section th:fragment="gradingScale(model)" class="tt-grade-scale-section">
+    <div class="tt-grade-scale-caption">* Zuordnung der Notenstufen zu den Punktzahlen:</div>
+    <table class="tt-grade-scale">
+        <thead>
+        <tr>
+            <th>erreichte Gesamtpunktzahl</th>
+            <th>Note</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="range : ${model.gradingScaleRanges()}">
+            <td th:text="${range.getPointRangeDisplayName()}">95 - 100</td>
+            <td th:text="${range.gradeLevel().getDisplayName()}">sehr gut plus</td>
+        </tr>
+        </tbody>
+    </table>
+</section>
+</body>
+</html>

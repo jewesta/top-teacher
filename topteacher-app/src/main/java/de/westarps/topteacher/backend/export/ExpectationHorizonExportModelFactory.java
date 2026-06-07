@@ -1,5 +1,6 @@
 package de.westarps.topteacher.backend.export;
 
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -13,6 +14,8 @@ import org.springframework.stereotype.Component;
 import de.westarps.topteacher.backend.export.Sanitizer.MarkdownView;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.Exam;
+import de.westarps.topteacher.model.GradingScale;
+import de.westarps.topteacher.model.GradingScaleRange;
 import de.westarps.topteacher.model.Pupil;
 import de.westarps.topteacher.model.eh.EhCategory;
 import de.westarps.topteacher.model.eh.EhPart;
@@ -23,6 +26,8 @@ import de.westarps.topteacher.model.eh.ExamNoteSection;
 
 @Component
 public class ExpectationHorizonExportModelFactory {
+
+	private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd. MM. yyyy");
 
 	private final Sanitizer sanitizer;
 
@@ -65,8 +70,8 @@ public class ExpectationHorizonExportModelFactory {
 						sanitizer.markdownToHtml(noteSection.descriptionMarkdown(), view)))
 				.toList();
 
-		return new ExpectationHorizonExportModel(data.course(), data.exam(), data.pupil(), PointSummary.sum(parts,
-				Part::points), parts, notes);
+		return new ExpectationHorizonExportModel(data.course(), data.exam(), data.pupil(), data.gradingScale(),
+				data.gradingScaleRanges(), PointSummary.sum(parts, Part::points), parts, notes);
 	}
 
 	private Part createPart(final EhPart part, final Map<Integer, List<EhCategory>> categoriesByPartId,
@@ -127,14 +132,17 @@ public class ExpectationHorizonExportModelFactory {
 		return itemsById;
 	}
 
-	public record ExpectationHorizonExportData(Course course, Exam exam, Pupil pupil, List<EhPart> parts,
-			List<EhCategory> categories, List<EhTask> tasks, List<EhRequirement> requirements,
-			List<EhRequirementResult> requirementResults, List<ExamNoteSection> noteSections) {
+	public record ExpectationHorizonExportData(Course course, Exam exam, Pupil pupil, GradingScale gradingScale,
+			List<GradingScaleRange> gradingScaleRanges, List<EhPart> parts, List<EhCategory> categories,
+			List<EhTask> tasks, List<EhRequirement> requirements, List<EhRequirementResult> requirementResults,
+			List<ExamNoteSection> noteSections) {
 
 		public ExpectationHorizonExportData {
 			course = Objects.requireNonNull(course, "course must not be null");
 			exam = Objects.requireNonNull(exam, "exam must not be null");
 			pupil = Objects.requireNonNull(pupil, "pupil must not be null");
+			gradingScale = Objects.requireNonNull(gradingScale, "gradingScale must not be null");
+			gradingScaleRanges = copy(gradingScaleRanges);
 			parts = copy(parts);
 			categories = copy(categories);
 			tasks = copy(tasks);
@@ -144,16 +152,31 @@ public class ExpectationHorizonExportModelFactory {
 		}
 	}
 
-	public record ExpectationHorizonExportModel(Course course, Exam exam, Pupil pupil, PointSummary points,
-			List<Part> parts, List<NoteSection> noteSections) {
+	public record ExpectationHorizonExportModel(Course course, Exam exam, Pupil pupil, GradingScale gradingScale,
+			List<GradingScaleRange> gradingScaleRanges, PointSummary points, List<Part> parts,
+			List<NoteSection> noteSections) {
 
 		public ExpectationHorizonExportModel {
 			course = Objects.requireNonNull(course, "course must not be null");
 			exam = Objects.requireNonNull(exam, "exam must not be null");
 			pupil = Objects.requireNonNull(pupil, "pupil must not be null");
+			gradingScale = Objects.requireNonNull(gradingScale, "gradingScale must not be null");
+			gradingScaleRanges = copy(gradingScaleRanges);
 			points = Objects.requireNonNull(points, "points must not be null");
 			parts = copy(parts);
 			noteSections = copy(noteSections);
+		}
+
+		public String courseDisplayName() {
+			return course.schoolClass().getDisplayName() + "_" + course.subject().getDisplayName();
+		}
+
+		public String examDateDisplayName() {
+			return DATE_FORMAT.format(exam.date());
+		}
+
+		public String pupilDisplayName() {
+			return pupil.name() + " " + pupil.surname();
 		}
 	}
 
@@ -205,6 +228,20 @@ public class ExpectationHorizonExportModelFactory {
 		public PointSummary points() {
 			return bonus ? new PointSummary(0, maxPoints, 0, achievedPoints)
 					: new PointSummary(maxPoints, 0, achievedPoints, 0);
+		}
+
+		public String maxPointsDisplayName() {
+			if (!bonus) {
+				return String.valueOf(maxPoints);
+			}
+			return maxPoints == 0 ? "( )" : "(" + maxPoints + ")";
+		}
+
+		public String achievedPointsDisplayName() {
+			if (!bonus) {
+				return String.valueOf(achievedPoints);
+			}
+			return achievedPoints == 0 ? "" : "(" + achievedPoints + ")";
 		}
 	}
 

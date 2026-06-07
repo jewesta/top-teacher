@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<body>
+<section th:fragment="header(model)">
+    <table class="tt-export-topline">
+        <tbody>
+        <tr>
+            <td th:text="${model.courseDisplayName()}">EF_Englisch</td>
+            <td th:text="${model.exam().title()}">Klausur Nr. 4</td>
+            <td th:text="${model.examDateDisplayName()}">21. 05. 2026</td>
+            <td class="tt-export-topline-title">Erwartungshorizont</td>
+            <td>Name:</td>
+            <td class="tt-name-line" th:text="${model.pupilDisplayName()}"></td>
+        </tr>
+        </tbody>
+    </table>
+
+    <table class="tt-export-info-box">
+        <thead>
+        <tr>
+            <th colspan="2">Kriteriales Bewertungsraster für Aufgabenart 1.1 (EF)</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td><strong>Gesamtpunktzahl:</strong></td>
+            <td th:text="${model.points().maxDisplayName() + ' P.'}">100 P.</td>
+        </tr>
+        <tr th:each="part : ${model.parts()}">
+            <td><strong th:text="${part.title().contains(':') ? part.title().substring(0, part.title().indexOf(':')) : part.title()}">Klausurteil A</strong></td>
+            <td>
+                <span th:text="${part.title().contains(':') ? part.title().substring(part.title().indexOf(':') + 1).trim() : ''}">Schreiben mit Leseverstehen</span>
+                <span th:text="${', ' + part.points().maxDisplayName() + ' P.'}">, 70 P.</span>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</section>
+</body>
+</html>

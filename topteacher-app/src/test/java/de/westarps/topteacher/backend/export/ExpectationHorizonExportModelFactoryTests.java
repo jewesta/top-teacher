@@ -13,6 +13,9 @@ import de.westarps.topteacher.backend.export.Sanitizer.MarkdownView;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.CoursePeriod;
 import de.westarps.topteacher.model.Exam;
+import de.westarps.topteacher.model.GradeLevel;
+import de.westarps.topteacher.model.GradingScale;
+import de.westarps.topteacher.model.GradingScaleRange;
 import de.westarps.topteacher.model.Lifecycle;
 import de.westarps.topteacher.model.Pupil;
 import de.westarps.topteacher.model.SchoolClass;
@@ -64,6 +67,8 @@ class ExpectationHorizonExportModelFactoryTests {
 						Lifecycle.ACTIVE, 1),
 				new Exam(1, 1, "Klausur Nr. 1", LocalDate.of(2026, 5, 21)),
 				new Pupil(1, "Anna", "Muster", Lifecycle.ACTIVE),
+				new GradingScale(1, "Standard", 100, Lifecycle.ACTIVE),
+				List.of(new GradingScaleRange(1, 1, GradeLevel.SEHR_GUT_PLUS, 95, 100)),
 				List.of(new EhPart(1, 1, "Klausurteil A", 0)),
 				List.of(new EhCategory(1, 1, "Inhaltliche Leistung", "", 0)),
 				List.of(new EhTask(1, 1, "Teilaufgabe 1", 0)),

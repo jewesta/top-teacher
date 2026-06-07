@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<body>
+<section th:fragment="summary(model)" class="tt-summary">
+    <table class="tt-summary-table">
+        <tbody>
+        <tr th:each="part : ${model.parts()}">
+            <td th:text="${'Gesamtpunktzahl ' + part.title()}">Gesamtpunktzahl Klausurteil</td>
+            <td class="tt-points-column" th:text="${part.points().maxDisplayName()}">70</td>
+            <td class="tt-points-column" th:text="${part.points().achievedDisplayName()}"></td>
+        </tr>
+        <tr>
+            <td>GESAMTPUNKTZAHL KLAUSUR</td>
+            <td class="tt-points-column" th:text="${model.points().maxDisplayName()}">100</td>
+            <td class="tt-points-column" th:text="${model.points().achievedDisplayName()}"></td>
+        </tr>
+        <tr>
+            <td>GESAMTNOTE*</td>
+            <td colspan="2"></td>
+        </tr>
+        </tbody>
+    </table>
+</section>
+</body>
+</html>

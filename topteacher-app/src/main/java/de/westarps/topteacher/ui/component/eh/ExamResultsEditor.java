@@ -12,6 +12,7 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
@@ -46,6 +47,8 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private final StepperComboBox<Pupil> pupilSelector = new StepperComboBox<>();
 	private final Button saveButton = new Button("Speichern", VaadinIcon.CHECK.create());
 	private final Button deleteButton = new Button(VaadinIcon.TRASH.create());
+	private final Button pdfButton = new Button("PDF", VaadinIcon.DOWNLOAD.create());
+	private final Anchor pdfDownload = new Anchor();
 	private final ConfirmDialog deleteConfirmation = new ConfirmDialog();
 	private final VerticalLayout results;
 	private final EhSaveController saveController = new EhSaveController();
@@ -83,6 +86,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 		configurePupilSelector();
 		configureSaveButton();
 		configureDeleteButton();
+		configurePdfDownload();
 	}
 
 	public void setExam(final Exam exam) {
@@ -139,6 +143,15 @@ public class ExamResultsEditor extends AbstractDesigner {
 		updateDeleteButton();
 	}
 
+	private void configurePdfDownload() {
+		pdfButton.setAriaLabel("Erwartungshorizont als PDF herunterladen");
+		pdfButton.setTooltipText("Erwartungshorizont als PDF herunterladen");
+		pdfButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
+		pdfDownload.add(pdfButton);
+		pdfDownload.getElement().setAttribute("download", true);
+		updatePdfDownload();
+	}
+
 	private void refresh() {
 		resetDesigner();
 		clearRenderedResults();
@@ -146,7 +159,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 
 		if (exam == null) {
 			clearResultState();
-			saveController.update();
+			updateActionButtons();
 			showDesignerMessage(emptyState("Bitte wählen Sie eine Klausur aus."));
 			return;
 		}
@@ -162,7 +175,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 
 	private void configureToolbar() {
 		examPointsBadge = new EhPointBadge("Gesamtpunkte", this::pointsForExam);
-		toolbar().add(pupilSelector, saveButton, deleteButton, examPointsBadge, deleteConfirmation);
+		toolbar().add(pupilSelector, saveButton, deleteButton, pdfDownload, examPointsBadge, deleteConfirmation);
 	}
 
 	private void refreshPupils() {
@@ -239,8 +252,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 		refreshCriterionIndicators();
 		refreshRequirementPointTexts();
 		refreshPointBadges();
-		saveController.update();
-		updateDeleteButton();
+		updateActionButtons();
 	}
 
 	private void loadItems() {
@@ -357,7 +369,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 				if (criterion != null) {
 					editedCriterionResults.put(criterion.id(), change.checked());
 					refreshCriterionIndicator(requirement);
-					saveController.update();
+					updateActionButtons();
 				}
 			});
 			description.addClassName("tt-results-requirement-description");
@@ -418,7 +430,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 				return;
 			}
 			editedRequirementComments.put(requirement.id(), normalized(event.getValue()));
-			saveController.update();
+			updateActionButtons();
 		});
 		requirementCommentFields.put(requirement.id(), comment);
 		return comment;
@@ -467,7 +479,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 			editedRequirementResults.put(requirement.id(), valueOrZero(event.getValue()));
 			refreshRequirementPointText(requirement);
 			refreshPointBadges();
-			saveController.update();
+			updateActionButtons();
 		});
 		requirementPointFields.put(requirement.id(), points);
 
@@ -623,7 +635,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 			return;
 		}
 		if (!validateRequirementPoints()) {
-			saveController.update();
+			updateActionButtons();
 			return;
 		}
 
@@ -645,11 +657,30 @@ public class ExamResultsEditor extends AbstractDesigner {
 				.collect(Collectors.toMap(EhRequirement::id, this::currentRequirementPoints));
 		persistedRequirementComments = requirements.stream()
 				.collect(Collectors.toMap(EhRequirement::id, this::currentRequirementComment));
+		updateActionButtons();
+	}
+
+	private void updateActionButtons() {
+		saveController.update();
 		updateDeleteButton();
+		updatePdfDownload();
 	}
 
 	private void updateDeleteButton() {
 		deleteButton.setEnabled(selectedPupil != null && hasPersistedResults());
+	}
+
+	private void updatePdfDownload() {
+		final boolean enabled = exam != null && selectedPupil != null && !isDirty();
+		pdfButton.setEnabled(enabled);
+		if (enabled) {
+			pdfDownload.setHref("/export/exams/" + exam.id() + "/pupils/" + selectedPupil.id()
+					+ "/expectation-horizon.pdf");
+			pdfDownload.getElement().setAttribute("download", pdfFileName());
+		} else {
+			pdfDownload.removeHref();
+			pdfDownload.getElement().removeAttribute("download");
+		}
 	}
 
 	private boolean hasPersistedResults() {
@@ -694,7 +725,21 @@ public class ExamResultsEditor extends AbstractDesigner {
 		return pupil.surname() + ", " + pupil.name();
 	}
 
+	private String pdfFileName() {
+		return "erwartungshorizont-" + fileNamePart(exam.title()) + "-" + fileNamePart(selectedPupil.surname())
+				+ "-" + fileNamePart(selectedPupil.name()) + ".pdf";
+	}
+
+	private static String fileNamePart(final String value) {
+		return normalizedStatic(value).replaceAll("[^a-zA-Z0-9_-]+", "-").replaceAll("(^-+|-+$)", "")
+				.toLowerCase();
+	}
+
 	private String normalized(final String value) {
+		return normalizedStatic(value);
+	}
+
+	private static String normalizedStatic(final String value) {
 		return value == null ? "" : value;
 	}
 }
