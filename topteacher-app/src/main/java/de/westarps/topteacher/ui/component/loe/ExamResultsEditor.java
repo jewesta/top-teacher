@@ -39,6 +39,7 @@ import de.westarps.topteacher.model.loe.LoePointRules;
 import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeRequirementResult;
 import de.westarps.topteacher.model.loe.LoeTask;
+import de.westarps.topteacher.ui.UiUrls;
 import de.westarps.topteacher.ui.component.AbstractDesigner;
 import de.westarps.topteacher.ui.component.StepperComboBox;
 import de.westarps.vaadin.markdown.MarkdownViewer;
@@ -726,7 +727,8 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private String pdfUrl(final boolean teacherVersion) {
 		final String fileName =
 				teacherVersion ? "level-of-expectations-teacher.pdf" : "level-of-expectations.pdf";
-		return "/export/exams/" + exam.id() + "/pupils/" + selectedPupil.id() + "/" + fileName;
+		return UiUrls.contextRelative("/export/exams/" + exam.id() + "/pupils/" + selectedPupil.id() + "/"
+				+ fileName);
 	}
 
 	private boolean hasPersistedResults() {

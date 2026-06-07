@@ -26,7 +26,9 @@ Anwendung starten:
 ./run/run-app.sh
 ```
 
-Die App ist danach unter <http://localhost:8080> erreichbar.
+Die App ist danach unter <http://localhost:8081/top-teacher> erreichbar. Port und Pfad werden über
+`server.port` und `server.servlet.context-path` in `topteacher-app/src/main/resources/application.properties`
+festgelegt.
 
 Die lokale H2-Datenbank liegt unter `./data/topteacher.mv.db`. Für DBeaver kann eine H2-Embedded-Verbindung mit folgender JDBC-URL verwendet werden:
 
@@ -35,4 +37,4 @@ jdbc:h2:file:/Users/jens/repositories/TopTeacher/data/topteacher;AUTO_SERVER=TRU
 ```
 
 Die H2-Konsole ist in der Entwicklungsumgebung hier erreichbar:
-<http://localhost:8080/h2-console>.
+<http://localhost:8081/top-teacher/h2-console>.

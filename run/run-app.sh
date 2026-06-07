@@ -19,9 +19,16 @@ fi
 
 cd "$PROJECT_ROOT"
 
+APPLICATION_PROPERTIES="topteacher-app/src/main/resources/application.properties"
+APP_PORT=$(sed -n 's/^server\.port=//p' "$APPLICATION_PROPERTIES" | tail -n 1)
+APP_CONTEXT_PATH=$(sed -n 's/^server\.servlet\.context-path=//p' "$APPLICATION_PROPERTIES" | tail -n 1)
+H2_CONSOLE_PATH=$(sed -n 's/^spring\.h2\.console\.path=//p' "$APPLICATION_PROPERTIES" | tail -n 1)
+APP_PORT=${APP_PORT:-8080}
+H2_CONSOLE_PATH=${H2_CONSOLE_PATH:-/h2-console}
+
 echo "Starting TopTeacher..."
-echo "App:        http://localhost:8080/"
-echo "H2 console: http://localhost:8080/h2-console/"
+echo "App:        http://localhost:${APP_PORT}${APP_CONTEXT_PATH}/"
+echo "H2 console: http://localhost:${APP_PORT}${APP_CONTEXT_PATH}${H2_CONSOLE_PATH}/"
 
 mvn -pl westarps-vaadin-markdown,topteacher-backend -am install -DskipTests
 mvn -pl topteacher-app vaadin:prepare-frontend -DskipTests

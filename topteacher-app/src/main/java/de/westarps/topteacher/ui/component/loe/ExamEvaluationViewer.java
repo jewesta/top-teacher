@@ -26,6 +26,7 @@ import de.westarps.topteacher.model.loe.LoePointRules;
 import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeRequirementResult;
 import de.westarps.topteacher.model.loe.LoeTask;
+import de.westarps.topteacher.ui.UiUrls;
 import de.westarps.topteacher.ui.component.AbstractDesigner;
 import de.westarps.topteacher.ui.component.SpreadsheetGrid;
 
@@ -169,7 +170,7 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 	}
 
 	private String excelUrl() {
-		return "/export/exams/" + exam.id() + "/evaluation.xlsx";
+		return UiUrls.contextRelative("/export/exams/" + exam.id() + "/evaluation.xlsx");
 	}
 
 	private String excelFileName() {
