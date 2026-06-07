@@ -1,0 +1,414 @@
+@page {
+    size: A5 portrait;
+    margin: 7mm;
+}
+
+@font-face {
+    font-family: "Frugal Sans";
+    src: url("../frugal-sans/FrugalSansLight.ttf") format("truetype");
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "Frugal Sans";
+    src: url("../frugal-sans/FrugalSansLightItalic.ttf") format("truetype");
+    font-weight: 400;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: "Frugal Sans";
+    src: url("../frugal-sans/FrugalSansBold.ttf") format("truetype");
+    font-weight: 700;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "Frugal Sans";
+    src: url("../frugal-sans/FrugalSansBoldItalic.ttf") format("truetype");
+    font-weight: 700;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: "Kalam";
+    src: url("../kalam/Kalam-Light-subset.ttf") format("truetype");
+    font-weight: 300;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "Kalam";
+    src: url("../kalam/Kalam-Regular-subset.ttf") format("truetype");
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "Kalam";
+    src: url("../kalam/Kalam-Bold-subset.ttf") format("truetype");
+    font-weight: 700;
+    font-style: normal;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body,
+table,
+th,
+td {
+    color: #111;
+    font-family: "Frugal Sans", sans-serif;
+    font-size: 9pt;
+    line-height: 1.16;
+}
+
+body {
+    margin: 0;
+}
+
+.tt-export-document {
+    width: 100%;
+}
+
+.tt-export-document-teacher {
+    position: relative;
+}
+
+.tt-export-topline {
+    border-collapse: collapse;
+    width: 100%;
+    font-weight: 700;
+    margin-bottom: 1.5mm;
+    white-space: nowrap;
+}
+
+.tt-export-topline td {
+    padding: 0 4mm 0 0;
+    vertical-align: bottom;
+}
+
+.tt-export-topline td:last-child {
+    padding-right: 0;
+}
+
+.tt-export-topline-title {
+    width: 100%;
+}
+
+.tt-name-line {
+    border-bottom: 1px solid #111;
+    min-height: 1.15em;
+    min-width: 34mm;
+}
+
+.tt-export-info-box,
+.tt-eh-table,
+.tt-summary-table,
+.tt-notes,
+.tt-grade-scale {
+    -fs-table-paginate: paginate;
+    border: 1px solid #111;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.tt-export-info-box {
+    margin-bottom: 3mm;
+}
+
+.tt-export-info-box th {
+    background: #ececec;
+    font-weight: 700;
+    text-align: center;
+    padding: 0.8mm 1.4mm;
+}
+
+.tt-export-info-box td {
+    padding: 0.6mm 1.4mm;
+}
+
+h2,
+h3,
+h4 {
+    font-size: 9pt;
+    font-weight: 700;
+    line-height: 1.16;
+    margin: 0;
+}
+
+.tt-part {
+    margin-top: 4mm;
+}
+
+.tt-category {
+    margin-top: 4mm;
+}
+
+.tt-category-description {
+    margin-top: 1mm;
+}
+
+.tt-task {
+    margin-top: 3mm;
+}
+
+.tt-eh-table {
+    margin-top: 1.5mm;
+    table-layout: fixed;
+}
+
+.tt-eh-table thead {
+    display: table-header-group;
+}
+
+.tt-eh-table tr,
+.tt-summary-table tr,
+.tt-notes tr,
+.tt-grade-scale tr {
+    page-break-inside: avoid;
+}
+
+.tt-eh-table th,
+.tt-eh-table td,
+.tt-summary-table td,
+.tt-notes th,
+.tt-notes td,
+.tt-grade-scale th,
+.tt-grade-scale td {
+    border: 1px solid #111;
+    padding: 0.9mm 1.1mm;
+    vertical-align: top;
+}
+
+.tt-eh-table th,
+.tt-notes th,
+.tt-grade-scale th {
+    font-weight: 700;
+    text-align: left;
+}
+
+.tt-eh-table th.tt-requirements-heading {
+    text-align: left;
+    vertical-align: middle;
+}
+
+.tt-eh-table th.tt-number-column,
+.tt-eh-table th.tt-points-heading,
+.tt-eh-table th.tt-points-column,
+.tt-eh-table td.tt-points-column {
+    text-align: center;
+    vertical-align: middle;
+}
+
+.tt-number-column {
+    text-align: center;
+    width: 7mm;
+}
+
+.tt-points-column {
+    text-align: center;
+    vertical-align: middle;
+    width: 15mm;
+}
+
+.tt-description-column {
+    width: auto;
+}
+
+.tt-requirement-text p {
+    margin: 0 0 0.7mm;
+}
+
+.tt-requirement-text p:last-child {
+    margin-bottom: 0;
+}
+
+.tt-requirement-text ul,
+.tt-requirement-text ol {
+    margin: 0.7mm 0 0;
+    padding-left: 6mm;
+}
+
+.tt-requirement-text li {
+    margin: 0.45mm 0;
+}
+
+.tt-comment {
+    color: #a3001b;
+    font-family: "Kalam", "Frugal Sans", sans-serif;
+    font-weight: 400;
+    margin-top: 1.2mm;
+}
+
+.tt-notes td {
+    font-family: "Kalam", "Frugal Sans", sans-serif;
+    font-weight: 400;
+}
+
+.tt-criterion {
+    display: inline;
+}
+
+.tt-criterion-highlight {
+    background: #fff3bf;
+    border-radius: 0.6mm;
+    padding: 0 0.45mm;
+}
+
+.tt-criterion-badge {
+    background: #555;
+    border-radius: 99mm;
+    color: #fff;
+    display: inline-block;
+    font-size: 7pt;
+    font-weight: 700;
+    height: 3.8mm;
+    line-height: 3.8mm;
+    margin-left: 0.45mm;
+    min-width: 3.8mm;
+    padding: 0 0.8mm;
+    text-align: center;
+    vertical-align: 0.2mm;
+}
+
+.tt-criterion-marker {
+    display: inline-block;
+    font-size: 0;
+    height: 3mm;
+    line-height: 0;
+    margin-left: 0.8mm;
+    position: relative;
+    vertical-align: -0.55mm;
+    width: 3mm;
+}
+
+.tt-criterion-marker-achieved {
+    border: solid #a3001b;
+    border-width: 0 0.55mm 0.55mm 0;
+    height: 2.6mm;
+    transform: rotate(45deg);
+    width: 1.35mm;
+}
+
+.tt-criterion-marker-missed {
+    height: 3mm;
+    width: 3mm;
+}
+
+.tt-criterion-marker-line {
+    background: #a3001b;
+    display: block;
+    font-size: 0;
+    height: 0.55mm;
+    left: 0.1mm;
+    line-height: 0;
+    position: absolute;
+    top: 1.25mm;
+    width: 2.8mm;
+}
+
+.tt-criterion-marker-line-a {
+    transform: rotate(45deg);
+}
+
+.tt-criterion-marker-line-b {
+    transform: rotate(-45deg);
+}
+
+.tt-teacher-watermark {
+    border: 0.45mm solid #a83a4b;
+    color: #a83a4b;
+    font-size: 13pt;
+    font-weight: 700;
+    padding: 1mm 3mm;
+    position: absolute;
+    right: 2mm;
+    top: 24mm;
+    transform: rotate(-13deg);
+    z-index: 1000;
+}
+
+.tt-sum-row td {
+    font-weight: 700;
+}
+
+.tt-summary {
+    margin-top: 4mm;
+}
+
+.tt-summary-table {
+    margin-top: 1.5mm;
+    table-layout: fixed;
+}
+
+.tt-summary-table td {
+    border-width: 2px;
+    font-weight: 700;
+}
+
+.tt-summary-table .tt-total-grade-value {
+    text-align: center;
+}
+
+.tt-notes-section {
+    margin-top: 5mm;
+}
+
+.tt-notes td {
+    min-height: 14mm;
+}
+
+.tt-grade-scale-section {
+    margin: 6mm auto 0;
+    width: 100%;
+}
+
+.tt-grade-scale-caption {
+    font-weight: 700;
+    margin-bottom: 1.5mm;
+    text-align: left;
+}
+
+.tt-grade-scale th,
+.tt-grade-scale td {
+    text-align: center;
+}
+
+.tt-grade-scale .tt-grade-scale-points {
+    width: 12%;
+}
+
+.tt-grade-scale .tt-grade-scale-grade {
+    text-align: left;
+    width: 21%;
+}
+
+.tt-grade-scale .tt-grade-scale-range-from,
+.tt-grade-scale .tt-grade-scale-range-until {
+    text-align: right;
+    width: 5%;
+}
+
+.tt-grade-scale .tt-grade-scale-range-from {
+    border-right: 0;
+}
+
+.tt-grade-scale .tt-grade-scale-range-dash {
+    border-left: 0;
+    border-right: 0;
+    text-align: center;
+    width: 2%;
+}
+
+.tt-grade-scale .tt-grade-scale-range-until {
+    border-left: 0;
+}
+
+.tt-grade-scale th {
+    background: #ececec;
+}

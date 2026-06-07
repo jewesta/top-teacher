@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<body>
+<section th:fragment="notes(noteSections)" class="tt-notes-section">
+    <table class="tt-notes">
+        <tbody>
+        <tr th:each="noteSection : ${noteSections}">
+            <th th:text="${noteSection.title()}">Hinweise / Tipps</th>
+        </tr>
+        <tr th:each="noteSection : ${noteSections}">
+            <td th:utext="${noteSection.description().value()}"></td>
+        </tr>
+        <tr th:if="${noteSections.isEmpty()}">
+            <th>Hinweise / Tipps</th>
+        </tr>
+        <tr th:if="${noteSections.isEmpty()}">
+            <td></td>
+        </tr>
+        </tbody>
+    </table>
+</section>
+</body>
+</html>

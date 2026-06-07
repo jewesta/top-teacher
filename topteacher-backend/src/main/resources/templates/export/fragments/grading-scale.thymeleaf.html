@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<body>
+<section th:fragment="gradingScale(model)" class="tt-grade-scale-section">
+    <div class="tt-grade-scale-caption">* Zuordnung der Notenstufen zu den Punktzahlen:</div>
+    <table class="tt-grade-scale">
+        <thead>
+        <tr>
+            <th class="tt-grade-scale-points" colspan="3">Punkte</th>
+            <th class="tt-grade-scale-grade">Note</th>
+            <th class="tt-grade-scale-points" colspan="3">Punkte</th>
+            <th class="tt-grade-scale-grade">Note</th>
+            <th class="tt-grade-scale-points" colspan="3">Punkte</th>
+            <th class="tt-grade-scale-grade">Note</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="row : ${model.gradingScaleTableRows()}">
+            <th:block th:each="cell : ${row.cells()}">
+                <td class="tt-grade-scale-range-from" th:text="${cell.minPointsDisplayName()}">95</td>
+                <td class="tt-grade-scale-range-dash" th:text="${cell.pointRangeSeparatorDisplayName()}">-</td>
+                <td class="tt-grade-scale-range-until" th:text="${cell.maxPointsDisplayName()}">100</td>
+                <td class="tt-grade-scale-grade" th:text="${cell.gradeDisplayName()}">sehr gut plus</td>
+            </th:block>
+        </tr>
+        </tbody>
+    </table>
+</section>
+</body>
+</html>

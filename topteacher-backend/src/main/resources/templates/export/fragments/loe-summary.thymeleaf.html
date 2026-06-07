@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<body>
+<section th:fragment="summary(model)" class="tt-summary">
+    <table class="tt-summary-table">
+        <colgroup>
+            <col class="tt-number-column">
+            <col class="tt-description-column">
+            <col class="tt-points-column">
+            <col class="tt-points-column">
+        </colgroup>
+        <tbody>
+        <tr th:each="part : ${model.parts()}">
+            <td class="tt-number-column"></td>
+            <td th:text="${'Gesamtpunktzahl ' + part.title()}">Gesamtpunktzahl Klausurteil</td>
+            <td class="tt-points-column" th:text="${part.points().maxDisplayName()}">70</td>
+            <td class="tt-points-column" th:text="${part.points().achievedDisplayName()}"></td>
+        </tr>
+        <tr>
+            <td class="tt-number-column"></td>
+            <td>GESAMTPUNKTZAHL KLAUSUR</td>
+            <td class="tt-points-column" th:text="${model.points().maxDisplayName()}">100</td>
+            <td class="tt-points-column" th:text="${model.points().achievedDisplayName()}"></td>
+        </tr>
+        <tr>
+            <td class="tt-number-column"></td>
+            <td>GESAMTNOTE*</td>
+            <td class="tt-total-grade-value" colspan="2" th:text="${model.totalGradeDisplayName()}"></td>
+        </tr>
+        </tbody>
+    </table>
+</section>
+</body>
+</html>
