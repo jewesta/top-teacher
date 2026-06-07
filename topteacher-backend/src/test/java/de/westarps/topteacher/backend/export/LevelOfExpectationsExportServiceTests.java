@@ -6,6 +6,7 @@ import java.io.IOException;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -52,6 +53,8 @@ class LevelOfExpectationsExportServiceTests {
 		assertThat(html).contains("Klausur Nr. 4");
 		assertThat(html).contains("Finn Becker");
 		assertThat(html).contains("Klausurteil A: Schreiben mit Leseverstehen");
+		assertThat(html).contains("Schreiben mit Leseverstehen (integriert), 70");
+		assertThat(html).doesNotContain("(integriert) ,");
 		assertThat(html).contains("GESAMTPUNKTZAHL KLAUSUR");
 		assertThat(html).contains("sehr gut plus");
 		assertThat(html).doesNotContain("eh:", "tt-criterion", "tt-criterion-badge");
@@ -71,6 +74,7 @@ class LevelOfExpectationsExportServiceTests {
 		assertThat(html).contains("Hinweise / Tipps");
 		assertThat(html).contains("Beim Überarbeiten besonders auf Belege");
 		assertThat(html).contains("Sehr klare Auswahl der Hauptgründe");
+		assertThat(html).doesNotContain("Notiz: ");
 	}
 
 	@Test
@@ -86,6 +90,20 @@ class LevelOfExpectationsExportServiceTests {
 					org.assertj.core.data.Offset.offset(1f));
 			assertThat(document.getPage(0).getMediaBox().getHeight()).isCloseTo(PDRectangle.A4.getWidth(),
 					org.assertj.core.data.Offset.offset(1f));
+		}
+	}
+
+	@Test
+	void rendersTeacherNotesInReviewedDemoTeacherLevelOfExpectationsPdf() throws IOException {
+		final DemoSelection demo = findReviewedDemoSelection();
+
+		final byte[] pdf = exportService.renderTeacherA4LandscapePdf(demo.exam().id(), demo.pupil().id());
+
+		try (PDDocument document = PDDocument.load(pdf)) {
+			final String text = new PDFTextStripper().getText(document);
+			assertThat(text).contains("Beim Überarbeiten besonders auf Belege");
+			assertThat(text).contains("Sehr klare Auswahl der Hauptgründe");
+			assertThat(text).doesNotContain("Notiz:");
 		}
 	}
 

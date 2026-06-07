@@ -28,10 +28,7 @@
         </tr>
         <tr th:each="part : ${model.parts()}">
             <td><strong th:text="${part.title().contains(':') ? part.title().substring(0, part.title().indexOf(':')) : part.title()}">Klausurteil A</strong></td>
-            <td>
-                <span th:text="${part.title().contains(':') ? part.title().substring(part.title().indexOf(':') + 1).trim() : ''}">Schreiben mit Leseverstehen</span>
-                <span th:text="${', ' + part.points().maxDisplayName() + ' P.'}">, 70 P.</span>
-            </td>
+            <td th:text="${(part.title().contains(':') ? part.title().substring(part.title().indexOf(':') + 1).trim() : '') + ', ' + part.points().maxDisplayName() + ' P.'}">Schreiben mit Leseverstehen, 70 P.</td>
         </tr>
         </tbody>
     </table>

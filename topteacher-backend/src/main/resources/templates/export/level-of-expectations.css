@@ -31,6 +31,27 @@
     font-style: italic;
 }
 
+@font-face {
+    font-family: "Kalam";
+    src: url("../kalam/Kalam-Light-subset.ttf") format("truetype");
+    font-weight: 300;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "Kalam";
+    src: url("../kalam/Kalam-Regular-subset.ttf") format("truetype");
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "Kalam";
+    src: url("../kalam/Kalam-Bold-subset.ttf") format("truetype");
+    font-weight: 700;
+    font-style: normal;
+}
+
 * {
     box-sizing: border-box;
 }
@@ -218,8 +239,15 @@ h4 {
 }
 
 .tt-comment {
-    color: #444;
+    color: #a3001b;
+    font-family: "Kalam", "Frugal Sans", sans-serif;
+    font-weight: 400;
     margin-top: 1.2mm;
+}
+
+.tt-notes td {
+    font-family: "Kalam", "Frugal Sans", sans-serif;
+    font-weight: 400;
 }
 
 .tt-criterion {
@@ -300,8 +328,8 @@ h4 {
     padding: 1mm 3mm;
     position: absolute;
     right: 2mm;
-    top: 20mm;
-    transform: rotate(-18deg);
+    top: 24mm;
+    transform: rotate(-13deg);
     z-index: 1000;
 }
 
