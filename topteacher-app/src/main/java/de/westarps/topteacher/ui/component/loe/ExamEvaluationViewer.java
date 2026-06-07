@@ -30,6 +30,12 @@ import de.westarps.topteacher.ui.component.AbstractDesigner;
 
 public class ExamEvaluationViewer extends AbstractDesigner {
 
+	private static final int HEADER_LABEL_MAX_LENGTH = 24;
+	private static final String HEADER_LABEL_SUFFIX = "...";
+	private static final String RESULT_COLUMN_WIDTH = "5.5rem";
+	private static final String SPACER_COLUMN_WIDTH = RESULT_COLUMN_WIDTH;
+	private static final String ROTATED_HEADER_PART_NAME = "evaluation-rotated-header-cell";
+
 	private final CourseRepository courseRepository;
 	private final LevelOfExpectationsRepository levelOfExpectationsRepository;
 	private final GradingScaleRepository gradingScaleRepository;
@@ -123,19 +129,21 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 	}
 
 	private void configureGrid(final List<AggregationColumn> aggregationColumns) {
-		grid.addColumn(EvaluationRow::pupilName).setHeader("Schüler").setFrozen(true).setAutoWidth(true)
-				.setFlexGrow(0);
+		grid.addColumn(EvaluationRow::pupilName).setHeader(rotatedHeader("Schüler"))
+				.setHeaderPartName(ROTATED_HEADER_PART_NAME).setFrozen(true).setAutoWidth(true).setFlexGrow(0);
 		grid.addColumn(row -> pointsDisplayName(row.pointsFor(requirements), hasBonus(requirements)))
-				.setHeader(rotatedHeader("Gesamt")).setHeaderPartName("evaluation-rotated-header-cell")
-				.setTextAlign(ColumnTextAlign.CENTER).setWidth("5.5rem").setFlexGrow(0);
+				.setHeader(rotatedHeader("Gesamt")).setHeaderPartName(ROTATED_HEADER_PART_NAME)
+				.setTextAlign(ColumnTextAlign.CENTER).setFrozen(true).setWidth(RESULT_COLUMN_WIDTH).setFlexGrow(0);
 		grid.addColumn(this::gradeDisplayName).setHeader(rotatedHeader("Note")).setTextAlign(ColumnTextAlign.CENTER)
-				.setHeaderPartName("evaluation-rotated-header-cell").setWidth("8rem").setFlexGrow(0);
+				.setHeaderPartName(ROTATED_HEADER_PART_NAME).setFrozen(true).setWidth("8rem").setFlexGrow(0);
 		aggregationColumns.forEach(aggregationColumn -> grid
 				.addColumn(row -> pointsDisplayName(row.pointsFor(aggregationColumn.requirements()),
 						hasBonus(aggregationColumn.requirements())))
 				.setHeader(rotatedHeader(aggregationColumn.title()))
-				.setHeaderPartName("evaluation-rotated-header-cell").setTextAlign(ColumnTextAlign.CENTER)
-				.setWidth("5.5rem").setFlexGrow(0));
+				.setHeaderPartName(ROTATED_HEADER_PART_NAME).setTextAlign(ColumnTextAlign.CENTER)
+				.setWidth(RESULT_COLUMN_WIDTH).setFlexGrow(0));
+		grid.addColumn(row -> "").setHeader("").setHeaderPartName(ROTATED_HEADER_PART_NAME)
+				.setWidth(SPACER_COLUMN_WIDTH).setFlexGrow(0);
 	}
 
 	private EvaluationRow evaluationRow(final Pupil pupil) {
@@ -198,11 +206,19 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 	}
 
 	private static Component rotatedHeader(final String text) {
-		final Span label = new Span(text);
+		final Span label = new Span(abbreviatedHeaderText(text));
 		label.addClassName("tt-evaluation-header-label");
 		final Div header = new Div(label);
 		header.addClassName("tt-evaluation-header");
+		header.getElement().setAttribute("title", text);
 		return header;
+	}
+
+	private static String abbreviatedHeaderText(final String text) {
+		if (text.length() <= HEADER_LABEL_MAX_LENGTH) {
+			return text;
+		}
+		return text.substring(0, HEADER_LABEL_MAX_LENGTH - HEADER_LABEL_SUFFIX.length()) + HEADER_LABEL_SUFFIX;
 	}
 
 	private static Span summary(final List<Pupil> pupils) {

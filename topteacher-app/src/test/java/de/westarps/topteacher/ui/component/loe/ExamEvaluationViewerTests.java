@@ -82,7 +82,9 @@ class ExamEvaluationViewerTests {
 		viewer.setExam(EXAM);
 
 		final Grid<?> grid = components(viewer, Grid.class).getFirst();
-		assertThat(grid.getColumns()).hasSize(6);
+		assertThat(grid.getColumns()).hasSize(7);
+		assertThat(grid.getColumns().subList(0, 3)).allMatch(Grid.Column::isFrozen);
+		assertThat(grid.getColumns().subList(3, grid.getColumns().size())).noneMatch(Grid.Column::isFrozen);
 		assertThat(itemCount(grid)).isEqualTo(2);
 		assertThat(components(viewer, Span.class).stream().map(Span::getText)).contains("2 Schüler");
 		verify(levelOfExpectationsRepository).findRequirementResultsByExamAndPupil(EXAM.id(), PUPIL.id());
