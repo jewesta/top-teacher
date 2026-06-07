@@ -24,13 +24,15 @@ public class OpenHtmlPdfRenderer implements PdfRenderer {
 
 	private static final PDRectangle A4_LANDSCAPE =
 			new PDRectangle(PDRectangle.A4.getHeight(), PDRectangle.A4.getWidth());
+	private static final String TEMPLATE_BASE_URI =
+			OpenHtmlPdfRenderer.class.getClassLoader().getResource("templates/export/").toExternalForm();
 
 	@Override
 	public byte[] renderA5Pdf(final String html) {
 		try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
 			final PdfRendererBuilder builder = new PdfRendererBuilder();
 			builder.useFastMode();
-			builder.withHtmlContent(toXhtml(html), null);
+			builder.withHtmlContent(toXhtml(html), TEMPLATE_BASE_URI);
 			builder.toStream(output);
 			builder.run();
 			return output.toByteArray();
