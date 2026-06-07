@@ -12,6 +12,7 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -43,9 +44,13 @@ public class SettingsView extends VerticalLayout implements HasDynamicTitle {
 	private final Checkbox backupEnabled = new Checkbox("Automatische Sicherung aktiv");
 	private final TextField backupTargetFolder = new TextField("Zielordner");
 	private final TextField backupCron = new TextField("Zeitplan");
+	private final Span backupDescription = new Span(
+			"TopTeacher kann die H2-Datenbank regelmäßig als ZIP-Datei sichern. Der Zielordner muss auf diesem Rechner erreichbar und beschreibbar sein.");
+	private final Span backupFileNameDescription = new Span(
+			"Dateiname: topteacher-db-JJJJMMTT-HHMMSS.zip; bei Namensgleichheit wird -1, -2, ... ergänzt.");
 	private final Span cronDescription = new Span();
 	private final Button saveButton = new Button("Speichern", VaadinIcon.CHECK.create());
-	private final Button backupNowButton = new Button("Backup jetzt", VaadinIcon.DOWNLOAD.create());
+	private final Button backupNowButton = new Button("Backup jetzt", new Icon("vaadin", "lifebuoy"));
 	private BackupSettingsFormData loadedBackupSettings;
 
 	public SettingsView(final AppSettings appSettings, final DatabaseBackupService backupService,
@@ -78,12 +83,15 @@ public class SettingsView extends VerticalLayout implements HasDynamicTitle {
 		backupTargetFolder.addValueChangeListener(event -> updateButtonStates());
 
 		backupCron.setClearButtonVisible(true);
+		backupCron.addClassName("tt-settings-cron-field");
+		backupCron.setHelperText("Spring-Cron mit 6 Feldern: Sekunde Minute Stunde Tag Monat Wochentag, z. B. 0 0 2 * * *.");
 		backupCron.setValueChangeMode(ValueChangeMode.EAGER);
-		backupCron.setWidthFull();
 		backupCron.addValueChangeListener(event -> updateButtonStates());
 
 		backupEnabled.addValueChangeListener(event -> updateButtonStates());
 
+		backupDescription.addClassName("tt-settings-description");
+		backupFileNameDescription.addClassName("tt-settings-description");
 		cronDescription.addClassName("tt-settings-cron-description");
 
 		saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -119,7 +127,7 @@ public class SettingsView extends VerticalLayout implements HasDynamicTitle {
 		actions.addClassName("tt-settings-actions");
 		actions.setSpacing(true);
 
-		final VerticalLayout content = new VerticalLayout(form, actions);
+		final VerticalLayout content = new VerticalLayout(backupDescription, backupFileNameDescription, form, actions);
 		content.addClassName("tt-settings-content");
 		content.setPadding(false);
 		content.setWidthFull();
@@ -189,7 +197,7 @@ public class SettingsView extends VerticalLayout implements HasDynamicTitle {
 
 		try {
 			CronExpression.parse(cron);
-			cronDescription.setText(describeCron(cron));
+			cronDescription.setText("Aktueller Zeitplan: " + describeCron(cron));
 			backupCron.setInvalid(false);
 		} catch (final IllegalArgumentException exception) {
 			cronDescription.setText("Ungültiger Cron-Ausdruck.");

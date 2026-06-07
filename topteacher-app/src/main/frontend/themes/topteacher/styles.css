@@ -59,6 +59,7 @@ vaadin-app-layout::part(navbar) {
 }
 
 .tt-settings-view {
+	align-items: center;
 	box-sizing: border-box;
 	padding: var(--lumo-space-m);
 	width: 100%;
@@ -66,16 +67,40 @@ vaadin-app-layout::part(navbar) {
 
 .tt-settings-content {
 	box-sizing: border-box;
-	max-width: 56rem;
+	max-width: 42rem;
 	width: 100%;
 }
 
 .tt-settings-tabs {
+	max-width: 42rem;
 	width: 100%;
+}
+
+.tt-settings-tabs::part(tabs-container) {
+	justify-content: center;
+}
+
+.tt-settings-tabs vaadin-tabs[slot="tabs"] {
+	justify-content: center;
+}
+
+.tt-settings-tabs vaadin-tabs::part(tabs) {
+	justify-content: center;
+}
+
+.tt-settings-description {
+	color: var(--lumo-secondary-text-color);
+	font-size: var(--lumo-font-size-s);
+	line-height: var(--lumo-line-height-s);
 }
 
 .tt-settings-form {
 	width: 100%;
+}
+
+.tt-settings-cron-field {
+	max-width: 100%;
+	width: 18rem;
 }
 
 .tt-settings-cron-description {
