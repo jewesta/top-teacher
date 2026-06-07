@@ -22,6 +22,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.menubar.MenuBar;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
 
@@ -74,12 +75,10 @@ class ExamResultsEditorTests {
 		editor.setExam(EXAM);
 
 		final Button saveButton = saveButton(editor);
-		final Button pdfButton = pdfButton(editor);
-		final Button teacherPdfButton = teacherPdfButton(editor);
+		final MenuBar pdfMenu = pdfMenu(editor);
 		final IntegerField points = components(editor, IntegerField.class).getFirst();
 		assertThat(saveButton.isEnabled()).isFalse();
-		assertThat(pdfButton.isEnabled()).isTrue();
-		assertThat(teacherPdfButton.isEnabled()).isTrue();
+		assertThat(pdfMenu.isEnabled()).isTrue();
 		assertThat(points.getLabel()).isNull();
 		assertThat(pointsText(editor)).containsExactly("1 von 5 Punkten");
 		assertThat(points.getValue()).isEqualTo(1);
@@ -89,8 +88,7 @@ class ExamResultsEditorTests {
 		points.setValue(3);
 
 		assertThat(saveButton.isEnabled()).isTrue();
-		assertThat(pdfButton.isEnabled()).isFalse();
-		assertThat(teacherPdfButton.isEnabled()).isFalse();
+		assertThat(pdfMenu.isEnabled()).isFalse();
 		assertThat(pointsText(editor)).containsExactly("3 von 5 Punkten");
 		assertThat(badgeTexts(editor)).contains("Gesamt: 3 (+0)", "Summe: 3 (+0)");
 		verify(levelOfExpectationsRepository, never()).saveRequirementResult(any());
@@ -102,8 +100,7 @@ class ExamResultsEditorTests {
 				PUPIL.id(), 3));
 		verify(levelOfExpectationsRepository, never()).saveCriterionResult(any(LoeCriterionResult.class));
 		assertThat(saveButton.isEnabled()).isFalse();
-		assertThat(pdfButton.isEnabled()).isTrue();
-		assertThat(teacherPdfButton.isEnabled()).isTrue();
+		assertThat(pdfMenu.isEnabled()).isTrue();
 	}
 
 	@Test
@@ -205,7 +202,6 @@ class ExamResultsEditorTests {
 		try {
 			final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, levelOfExpectationsRepository,
 					gradingScaleRepository());
-			ui.add(editor);
 			editor.setExam(EXAM);
 
 			final Button deleteButton = deleteButton(editor);
@@ -243,7 +239,6 @@ class ExamResultsEditorTests {
 		try {
 			final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, levelOfExpectationsRepository,
 					gradingScaleRepository(6));
-			ui.add(editor);
 			editor.setExam(EXAM);
 
 			components(editor, IntegerField.class).getFirst().setValue(2);
@@ -330,17 +325,9 @@ class ExamResultsEditorTests {
 				.findFirst().orElseThrow();
 	}
 
-	private static Button pdfButton(final Component root) {
-		return components(root, Button.class).stream()
-				.filter(button -> "Schülerversion als PDF herunterladen"
-						.equals(button.getElement().getAttribute("aria-label")))
-				.findFirst().orElseThrow();
-	}
-
-	private static Button teacherPdfButton(final Component root) {
-		return components(root, Button.class).stream()
-				.filter(button -> "Lehrerversion als PDF herunterladen"
-						.equals(button.getElement().getAttribute("aria-label")))
+	private static MenuBar pdfMenu(final Component root) {
+		return components(root, MenuBar.class).stream()
+				.filter(menu -> menu.getClassNames().contains("tt-pdf-menu"))
 				.findFirst().orElseThrow();
 	}
 

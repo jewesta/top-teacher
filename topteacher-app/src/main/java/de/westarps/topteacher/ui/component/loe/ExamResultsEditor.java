@@ -12,11 +12,13 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
-import com.vaadin.flow.component.html.Anchor;
+import com.vaadin.flow.component.contextmenu.MenuItem;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.menubar.MenuBar;
+import com.vaadin.flow.component.menubar.MenuBarVariant;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -50,10 +52,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private final StepperComboBox<Pupil> pupilSelector = new StepperComboBox<>();
 	private final Button saveButton = new Button("Speichern", VaadinIcon.CHECK.create());
 	private final Button deleteButton = new Button(VaadinIcon.TRASH.create());
-	private final Button pdfButton = new Button("Schüler-PDF", VaadinIcon.DOWNLOAD.create());
-	private final Button teacherPdfButton = new Button("Lehrer-PDF", VaadinIcon.DOWNLOAD.create());
-	private final Anchor pdfDownload = new Anchor();
-	private final Anchor teacherPdfDownload = new Anchor();
+	private final MenuBar pdfMenu = new MenuBar();
 	private final ConfirmDialog deleteConfirmation = new ConfirmDialog();
 	private final VerticalLayout results;
 	private final LoeSaveController saveController = new LoeSaveController();
@@ -77,6 +76,9 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private List<LoeRequirement> requirements = List.of();
 	private List<LoeCriterion> criteria = List.of();
 	private LoePointBadge examPointsBadge;
+	private MenuItem pdfMenuItem;
+	private MenuItem pupilPdfItem;
+	private MenuItem teacherPdfItem;
 	private LoePointRules pointRules;
 	private Map<Integer, Boolean> persistedCriterionResults = Map.of();
 	private Map<Integer, Integer> persistedRequirementResults = Map.of();
@@ -152,18 +154,23 @@ public class ExamResultsEditor extends AbstractDesigner {
 	}
 
 	private void configurePdfDownload() {
-		pdfButton.setAriaLabel("Schülerversion als PDF herunterladen");
-		pdfButton.setTooltipText("Schülerversion als PDF herunterladen");
-		pdfButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
-		pdfDownload.add(pdfButton);
-		pdfDownload.getElement().setAttribute("download", true);
-
-		teacherPdfButton.setAriaLabel("Lehrerversion als PDF herunterladen");
-		teacherPdfButton.setTooltipText("Lehrerversion als PDF herunterladen");
-		teacherPdfButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
-		teacherPdfDownload.add(teacherPdfButton);
-		teacherPdfDownload.getElement().setAttribute("download", true);
+		pdfMenu.addClassName("tt-pdf-menu");
+		pdfMenu.addThemeVariants(MenuBarVariant.LUMO_SMALL);
+		pdfMenuItem = pdfMenu.addItem(pdfMenuLabel());
+		pdfMenuItem.setAriaLabel("PDF herunterladen");
+		pdfMenu.setTooltipText(pdfMenuItem, "PDF herunterladen");
+		pupilPdfItem = pdfMenuItem.getSubMenu().addItem("Schülerversion", event -> downloadPdf(false));
+		teacherPdfItem = pdfMenuItem.getSubMenu().addItem("Lehrerversion", event -> downloadPdf(true));
 		updatePdfDownload();
+	}
+
+	private static HorizontalLayout pdfMenuLabel() {
+		final HorizontalLayout label = new HorizontalLayout(VaadinIcon.DOWNLOAD.create(), new Span("PDF"));
+		label.addClassName("tt-pdf-menu-label");
+		label.setAlignItems(Alignment.CENTER);
+		label.setPadding(false);
+		label.setSpacing(false);
+		return label;
 	}
 
 	private void refresh() {
@@ -191,7 +198,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 
 	private void configureToolbar() {
 		examPointsBadge = new LoePointBadge("Gesamt", this::pointsForExam);
-		toolbar().add(pupilSelector, saveButton, deleteButton, pdfDownload, teacherPdfDownload, deleteConfirmation);
+		toolbar().add(pupilSelector, saveButton, deleteButton, pdfMenu, deleteConfirmation);
 		toolbarSummary().add(examPointsBadge);
 	}
 
@@ -695,21 +702,31 @@ public class ExamResultsEditor extends AbstractDesigner {
 
 	private void updatePdfDownload() {
 		final boolean enabled = exam != null && selectedPupil != null && !isDirty();
-		pdfButton.setEnabled(enabled);
-		teacherPdfButton.setEnabled(enabled);
-		if (enabled) {
-			pdfDownload.setHref("/export/exams/" + exam.id() + "/pupils/" + selectedPupil.id()
-					+ "/level-of-expectations.pdf");
-			pdfDownload.getElement().setAttribute("download", pdfFileName(false));
-			teacherPdfDownload.setHref("/export/exams/" + exam.id() + "/pupils/" + selectedPupil.id()
-					+ "/level-of-expectations-teacher.pdf");
-			teacherPdfDownload.getElement().setAttribute("download", pdfFileName(true));
-		} else {
-			pdfDownload.removeHref();
-			pdfDownload.getElement().removeAttribute("download");
-			teacherPdfDownload.removeHref();
-			teacherPdfDownload.getElement().removeAttribute("download");
+		pdfMenu.setEnabled(enabled);
+		pdfMenuItem.setEnabled(enabled);
+		pupilPdfItem.setEnabled(enabled);
+		teacherPdfItem.setEnabled(enabled);
+	}
+
+	private void downloadPdf(final boolean teacherVersion) {
+		if (exam == null || selectedPupil == null || isDirty()) {
+			return;
 		}
+		getUI().ifPresent(ui -> ui.getPage().executeJs("""
+				const anchor = document.createElement('a');
+				anchor.href = $0;
+				anchor.download = $1;
+				anchor.style.display = 'none';
+				document.body.appendChild(anchor);
+				anchor.click();
+				anchor.remove();
+				""", pdfUrl(teacherVersion), pdfFileName(teacherVersion)));
+	}
+
+	private String pdfUrl(final boolean teacherVersion) {
+		final String fileName =
+				teacherVersion ? "level-of-expectations-teacher.pdf" : "level-of-expectations.pdf";
+		return "/export/exams/" + exam.id() + "/pupils/" + selectedPupil.id() + "/" + fileName;
 	}
 
 	private boolean hasPersistedResults() {

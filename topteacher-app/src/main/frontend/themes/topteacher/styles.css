@@ -187,6 +187,15 @@ vaadin-app-layout::part(navbar) {
 	width: var(--tt-results-points-column-width);
 }
 
+.tt-pdf-menu-label {
+	gap: var(--lumo-space-xs);
+}
+
+.tt-pdf-menu-label vaadin-icon {
+	height: var(--lumo-icon-size-s);
+	width: var(--lumo-icon-size-s);
+}
+
 .tt-eh-gag {
 	color: var(--lumo-secondary-text-color);
 	font-size: var(--lumo-font-size-s);
