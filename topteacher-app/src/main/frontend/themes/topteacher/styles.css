@@ -312,7 +312,9 @@ vaadin-app-layout::part(navbar) {
 	flex: 0 0 3rem;
 	gap: var(--lumo-space-s);
 	justify-content: flex-start;
-	padding: var(--lumo-space-s); 0px; var(--lumo-space-m); var(--lumo-space-s);
+	padding: var(--lumo-space-m) var(--lumo-space-s) var(--lumo-space-m) var(--lumo-space-s);
+	/* To compensate for the points control top margin */
+	margin-top: var(--lumo-space-xs)
 }
 
 .tt-results-requirement-content {
@@ -320,8 +322,10 @@ vaadin-app-layout::part(navbar) {
 	border-radius: 0 var(--lumo-border-radius-m) var(--lumo-border-radius-m) 0;
 	box-sizing: border-box;
 	min-width: 0;
-	padding: var(--lumo-space-s) var(--lumo-space-s) var(--lumo-space-m) var(--lumo-space-s);
+	padding: var(--lumo-space-m) var(--lumo-space-m) var(--lumo-space-m) 0;
 	width: 100%;
+	/* To compensate for the points control top margin */
+	margin-top: var(--lumo-space-xs)
 }
 
 .tt-results-requirement-description {
@@ -345,9 +349,10 @@ vaadin-app-layout::part(navbar) {
 	align-items: flex-start;
 	box-sizing: border-box;
 	display: flex;
-	flex: 0 0 var(--tt-results-points-column-width);
+	flex: 0 0 calc(var(--tt-results-points-column-width) + var(--lumo-space-s) + var(--lumo-space-s));
 	justify-content: flex-start;
 	padding: 0 var(--lumo-space-s) var(--lumo-space-m) var(--lumo-space-s);
+	width: calc(var(--tt-results-points-column-width) + var(--lumo-space-s) + var(--lumo-space-s));
 }
 
 .tt-results-bonus-icon {
@@ -356,12 +361,25 @@ vaadin-app-layout::part(navbar) {
 }
 
 .tt-results-points-control {
-	flex: 0 0 var(--tt-results-points-column-width);
-	width: var(--tt-results-points-column-width);
+	align-items: stretch;
+	min-width: 0;
+	width: 100%;
 }
 
 .tt-results-points-field {
 	max-width: 100%;
+	min-width: 0;
+	width: 100%;
+}
+
+.tt-results-points-field::part(input-field) {
+	min-width: 0;
+}
+
+.tt-results-points-text {
+	align-self: flex-start;
+	color: var(--lumo-secondary-text-color);
+	font-size: var(--lumo-font-size-xs);
 }
 
 .tt-grading-scale-grid {

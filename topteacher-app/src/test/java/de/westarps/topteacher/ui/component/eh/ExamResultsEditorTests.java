@@ -63,7 +63,8 @@ class ExamResultsEditorTests {
 		final Button saveButton = saveButton(editor);
 		final IntegerField points = components(editor, IntegerField.class).getFirst();
 		assertThat(saveButton.isEnabled()).isFalse();
-		assertThat(points.getLabel()).isEqualTo("Punkte von 5");
+		assertThat(points.getLabel()).isNull();
+		assertThat(pointsText(editor)).containsExactly("Punkte von 5");
 		assertThat(points.getValue()).isEqualTo(1);
 		assertThat(badgeTexts(editor)).contains("Gesamtpunkte: 1 (+0)", "Summe: 1 (+0)");
 		assertThat(requirementNumberTexts(editor)).containsExactly("1");
@@ -173,10 +174,11 @@ class ExamResultsEditorTests {
 	void deletesSelectedPupilResultsOnlyAfterConfirmation() {
 		final ExpectationHorizonRepository expectationHorizonRepository = expectationHorizonRepository();
 		final CourseRepository courseRepository = courseRepository();
-		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, expectationHorizonRepository);
-
-		UI.setCurrent(new UI());
+		final UI ui = new UI();
+		UI.setCurrent(ui);
 		try {
+			final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, expectationHorizonRepository);
+			ui.add(editor);
 			editor.setExam(EXAM);
 
 			final Button deleteButton = deleteButton(editor);
@@ -266,6 +268,13 @@ class ExamResultsEditorTests {
 	private static List<String> criterionIndicatorTexts(final Component root) {
 		return components(root, Span.class).stream()
 				.filter(span -> span.getClassNames().contains("tt-results-criteria-indicator"))
+				.map(Span::getText)
+				.toList();
+	}
+
+	private static List<String> pointsText(final Component root) {
+		return components(root, Span.class).stream()
+				.filter(span -> span.getClassNames().contains("tt-results-points-text"))
 				.map(Span::getText)
 				.toList();
 	}
