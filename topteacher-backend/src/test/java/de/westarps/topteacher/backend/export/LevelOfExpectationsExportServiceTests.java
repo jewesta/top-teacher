@@ -18,6 +18,8 @@ import org.springframework.test.context.jdbc.Sql;
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.ExamRepository;
 import de.westarps.topteacher.backend.repo.PupilRepository;
+import de.westarps.topteacher.backend.repo.SettingsRepository;
+import de.westarps.topteacher.backend.settings.AppSettings;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.Pupil;
@@ -42,6 +44,9 @@ class LevelOfExpectationsExportServiceTests {
 
 	@Autowired
 	private PupilRepository pupilRepository;
+
+	@Autowired
+	private SettingsRepository settingsRepository;
 
 	@Test
 	void rendersReviewedDemoLevelOfExpectationsAsPupilHtml() {
@@ -75,6 +80,20 @@ class LevelOfExpectationsExportServiceTests {
 		assertThat(html).contains("Beim Überarbeiten besonders auf Belege");
 		assertThat(html).contains("Sehr klare Auswahl der Hauptgründe");
 		assertThat(html).doesNotContain("Notiz: ");
+	}
+
+	@Test
+	void hidesTeacherWatermarkWhenSettingIsDisabled() {
+		final DemoSelection demo = findReviewedDemoSelection();
+
+		settingsRepository.save(AppSettings.TT_LOE_EXPORT_SHOW_WATERMARK_KEY, "false");
+		try {
+			final String html = exportService.renderTeacherHtml(demo.exam().id(), demo.pupil().id());
+
+			assertThat(html).doesNotContain("tt-teacher-watermark");
+		} finally {
+			settingsRepository.save(AppSettings.TT_LOE_EXPORT_SHOW_WATERMARK_KEY, "true");
+		}
 	}
 
 	@Test

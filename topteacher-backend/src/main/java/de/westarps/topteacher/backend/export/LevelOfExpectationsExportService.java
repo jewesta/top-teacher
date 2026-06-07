@@ -9,6 +9,7 @@ import de.westarps.topteacher.backend.repo.ExamRepository;
 import de.westarps.topteacher.backend.repo.GradingScaleRepository;
 import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.backend.repo.PupilRepository;
+import de.westarps.topteacher.backend.settings.AppSettings;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.GradingScale;
@@ -25,6 +26,7 @@ public class LevelOfExpectationsExportService {
 	private final PupilRepository pupilRepository;
 	private final GradingScaleRepository gradingScaleRepository;
 	private final LevelOfExpectationsRepository levelOfExpectationsRepository;
+	private final AppSettings appSettings;
 	private final LevelOfExpectationsExportModelFactory modelFactory;
 	private final HtmlRenderer htmlRenderer;
 	private final PdfRenderer pdfRenderer;
@@ -33,6 +35,7 @@ public class LevelOfExpectationsExportService {
 			final ExamRepository examRepository, final PupilRepository pupilRepository,
 			final GradingScaleRepository gradingScaleRepository,
 			final LevelOfExpectationsRepository levelOfExpectationsRepository,
+			final AppSettings appSettings,
 			final LevelOfExpectationsExportModelFactory modelFactory, final HtmlRenderer htmlRenderer,
 			final PdfRenderer pdfRenderer) {
 		this.courseRepository = courseRepository;
@@ -40,6 +43,7 @@ public class LevelOfExpectationsExportService {
 		this.pupilRepository = pupilRepository;
 		this.gradingScaleRepository = gradingScaleRepository;
 		this.levelOfExpectationsRepository = levelOfExpectationsRepository;
+		this.appSettings = appSettings;
 		this.modelFactory = modelFactory;
 		this.htmlRenderer = htmlRenderer;
 		this.pdfRenderer = pdfRenderer;
@@ -98,7 +102,8 @@ public class LevelOfExpectationsExportService {
 	}
 
 	public LevelOfExpectationsExportModel createTeacherModel(final int examId, final int pupilId) {
-		return modelFactory.createTeacherModel(createExportData(examId, pupilId));
+		return modelFactory.createTeacherModel(createExportData(examId, pupilId),
+				appSettings.ttLoeExportShowWatermark());
 	}
 
 	private LevelOfExpectationsExportData createExportData(final int examId, final int pupilId) {

@@ -1,3 +1,15 @@
+insert into app_setting (setting_key, setting_value)
+select demo.setting_key, demo.setting_value
+from (
+    values
+        ('tt.loe.export.show_watermark', 'true')
+) demo(setting_key, setting_value)
+where not exists (
+    select 1
+    from app_setting setting
+    where setting.setting_key = demo.setting_key
+);
+
 insert into pupil (name, surname, lifecycle)
 select demo.name, demo.surname, demo.lifecycle
 from (

@@ -7,7 +7,7 @@
 </head>
 <body>
 <main class="tt-export-document tt-export-document-teacher">
-    <div class="tt-teacher-watermark">Lehrerversion</div>
+    <div th:if="${model.showWatermark()}" class="tt-teacher-watermark">Lehrerversion</div>
     <div th:replace="~{export/fragments/loe-header.thymeleaf.html :: header(${model})}"></div>
     <div th:replace="~{export/fragments/loe-body.thymeleaf.html :: levelOfExpectationsBody(${model.parts()})}"></div>
     <div th:replace="~{export/fragments/loe-summary.thymeleaf.html :: summary(${model})}"></div>

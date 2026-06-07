@@ -42,11 +42,21 @@ public class LevelOfExpectationsExportModelFactory {
 	}
 
 	public LevelOfExpectationsExportModel createTeacherModel(final LevelOfExpectationsExportData data) {
-		return createModel(data, MarkdownView.TEACHER, true);
+		return createTeacherModel(data, true);
+	}
+
+	public LevelOfExpectationsExportModel createTeacherModel(final LevelOfExpectationsExportData data,
+			final boolean showWatermark) {
+		return createModel(data, MarkdownView.TEACHER, true, showWatermark);
 	}
 
 	private LevelOfExpectationsExportModel createModel(final LevelOfExpectationsExportData data,
 			final MarkdownView view, final boolean includeTeacherOnlyContent) {
+		return createModel(data, view, includeTeacherOnlyContent, false);
+	}
+
+	private LevelOfExpectationsExportModel createModel(final LevelOfExpectationsExportData data,
+			final MarkdownView view, final boolean includeTeacherOnlyContent, final boolean showWatermark) {
 		final Map<Integer, List<LoeCategory>> categoriesByPartId = groupByParentId(
 				sorted(data.categories(), Comparator.comparingInt(LoeCategory::sortOrder).thenComparing(LoeCategory::id,
 						Comparator.nullsLast(Integer::compareTo))),
@@ -83,7 +93,7 @@ public class LevelOfExpectationsExportModelFactory {
 				.toList() : List.of();
 
 		return new LevelOfExpectationsExportModel(data.course(), data.exam(), data.pupil(), data.gradingScale(),
-				data.gradingScaleRanges(), PointSummary.sum(parts, Part::points), parts, notes);
+				data.gradingScaleRanges(), PointSummary.sum(parts, Part::points), parts, notes, showWatermark);
 	}
 
 	private Part createPart(final LoePart part, final Map<Integer, List<LoeCategory>> categoriesByPartId,
@@ -203,7 +213,7 @@ public class LevelOfExpectationsExportModelFactory {
 
 	public record LevelOfExpectationsExportModel(Course course, Exam exam, Pupil pupil, GradingScale gradingScale,
 			List<GradingScaleRange> gradingScaleRanges, PointSummary points, List<Part> parts,
-			List<NoteSection> noteSections) {
+			List<NoteSection> noteSections, boolean showWatermark) {
 
 		public LevelOfExpectationsExportModel {
 			course = Objects.requireNonNull(course, "course must not be null");
