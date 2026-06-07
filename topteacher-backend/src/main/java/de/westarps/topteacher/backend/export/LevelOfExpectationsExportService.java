@@ -6,8 +6,8 @@ import de.westarps.topteacher.backend.export.LevelOfExpectationsExportModelFacto
 import de.westarps.topteacher.backend.export.LevelOfExpectationsExportModelFactory.LevelOfExpectationsExportModel;
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.ExamRepository;
-import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.backend.repo.GradingScaleRepository;
+import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.backend.repo.PupilRepository;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.Exam;
@@ -18,6 +18,7 @@ import de.westarps.topteacher.model.Pupil;
 public class LevelOfExpectationsExportService {
 
 	private static final String PUPIL_TEMPLATE = "export/level-of-expectations-pupil.thymeleaf.html";
+	private static final String TEACHER_TEMPLATE = "export/level-of-expectations-teacher.thymeleaf.html";
 
 	private final CourseRepository courseRepository;
 	private final ExamRepository examRepository;
@@ -52,6 +53,14 @@ public class LevelOfExpectationsExportService {
 		return htmlRenderer.renderModel(PUPIL_TEMPLATE, model);
 	}
 
+	public String renderTeacherHtml(final int examId, final int pupilId) {
+		return htmlRenderer.renderModel(TEACHER_TEMPLATE, createTeacherModel(examId, pupilId));
+	}
+
+	public String renderTeacherHtml(final LevelOfExpectationsExportModel model) {
+		return htmlRenderer.renderModel(TEACHER_TEMPLATE, model);
+	}
+
 	public byte[] renderPupilA5Pdf(final int examId, final int pupilId) {
 		return renderPupilA5Pdf(createPupilModel(examId, pupilId));
 	}
@@ -68,7 +77,31 @@ public class LevelOfExpectationsExportService {
 		return pdfRenderer.imposeA5OnA4Landscape(renderPupilA5Pdf(model));
 	}
 
+	public byte[] renderTeacherA5Pdf(final int examId, final int pupilId) {
+		return renderTeacherA5Pdf(createTeacherModel(examId, pupilId));
+	}
+
+	public byte[] renderTeacherA5Pdf(final LevelOfExpectationsExportModel model) {
+		return pdfRenderer.renderA5Pdf(renderTeacherHtml(model));
+	}
+
+	public byte[] renderTeacherA4LandscapePdf(final int examId, final int pupilId) {
+		return renderTeacherA4LandscapePdf(createTeacherModel(examId, pupilId));
+	}
+
+	public byte[] renderTeacherA4LandscapePdf(final LevelOfExpectationsExportModel model) {
+		return pdfRenderer.imposeA5OnA4Landscape(renderTeacherA5Pdf(model));
+	}
+
 	public LevelOfExpectationsExportModel createPupilModel(final int examId, final int pupilId) {
+		return modelFactory.createPupilModel(createExportData(examId, pupilId));
+	}
+
+	public LevelOfExpectationsExportModel createTeacherModel(final int examId, final int pupilId) {
+		return modelFactory.createTeacherModel(createExportData(examId, pupilId));
+	}
+
+	private LevelOfExpectationsExportData createExportData(final int examId, final int pupilId) {
 		final Exam exam = examRepository.findById(examId)
 				.orElseThrow(() -> new IllegalArgumentException("Exam does not exist: " + examId));
 		final Course course = courseRepository.findById(exam.courseId())
@@ -79,13 +112,15 @@ public class LevelOfExpectationsExportService {
 				.orElseThrow(() -> new IllegalArgumentException("Grading scale does not exist: "
 						+ course.gradingScaleId()));
 
-		return modelFactory.createPupilModel(new LevelOfExpectationsExportData(course, exam, pupil, gradingScale,
+		return new LevelOfExpectationsExportData(course, exam, pupil, gradingScale,
 				gradingScaleRepository.findRangesByGradingScaleId(gradingScale.id()),
 				levelOfExpectationsRepository.findPartsByExamId(examId),
 				levelOfExpectationsRepository.findCategoriesByExamId(examId),
 				levelOfExpectationsRepository.findTasksByExamId(examId),
 				levelOfExpectationsRepository.findRequirementsByExamId(examId),
 				levelOfExpectationsRepository.findRequirementResultsByExamAndPupil(examId, pupilId),
-				levelOfExpectationsRepository.findNoteSectionsByExamId(examId)));
+				levelOfExpectationsRepository.findActiveCriteriaByExamId(examId),
+				levelOfExpectationsRepository.findCriterionResultsByExamAndPupil(examId, pupilId),
+				levelOfExpectationsRepository.findNoteSectionsByExamId(examId));
 	}
 }

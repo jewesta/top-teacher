@@ -33,7 +33,6 @@ class LevelOfExpectationsExportServiceTests {
 	@Autowired
 	private LevelOfExpectationsExportController exportController;
 
-
 	@Autowired
 	private CourseRepository courseRepository;
 
@@ -56,6 +55,22 @@ class LevelOfExpectationsExportServiceTests {
 		assertThat(html).contains("GESAMTPUNKTZAHL KLAUSUR");
 		assertThat(html).contains("sehr gut plus");
 		assertThat(html).doesNotContain("eh:", "tt-criterion", "tt-criterion-badge");
+		assertThat(html).doesNotContain("Hinweise / Tipps", "Sehr klare Auswahl der Hauptgründe");
+	}
+
+	@Test
+	void rendersReviewedDemoLevelOfExpectationsAsTeacherHtml() {
+		final DemoSelection demo = findReviewedDemoSelection();
+
+		final String html = exportService.renderTeacherHtml(demo.exam().id(), demo.pupil().id());
+
+		assertThat(html).contains("Lehrerversion");
+		assertThat(html).contains("tt-teacher-watermark");
+		assertThat(html).contains("tt-criterion-highlight");
+		assertThat(html).contains("tt-criterion-marker");
+		assertThat(html).contains("Hinweise / Tipps");
+		assertThat(html).contains("Beim Überarbeiten besonders auf Belege");
+		assertThat(html).contains("Sehr klare Auswahl der Hauptgründe");
 	}
 
 	@Test
@@ -85,6 +100,20 @@ class LevelOfExpectationsExportServiceTests {
 		assertThat(response.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_PDF);
 		assertThat(response.getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION))
 				.isEqualTo("attachment; filename=erwartungshorizont-klausur-nr-4-becker-finn.pdf");
+		assertThat(response.getBody()).startsWith("%PDF".getBytes());
+	}
+
+	@Test
+	void exportsReviewedDemoTeacherLevelOfExpectationsThroughDownloadController() {
+		final DemoSelection demo = findReviewedDemoSelection();
+
+		final ResponseEntity<byte[]> response =
+				exportController.exportTeacherLevelOfExpectations(demo.exam().id(), demo.pupil().id());
+
+		assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+		assertThat(response.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_PDF);
+		assertThat(response.getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION))
+				.isEqualTo("attachment; filename=lehrerversion-erwartungshorizont-klausur-nr-4-becker-finn.pdf");
 		assertThat(response.getBody()).startsWith("%PDF".getBytes());
 	}
 

@@ -17,17 +17,19 @@ import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.GradingScale;
 import de.westarps.topteacher.model.GradingScaleRange;
 import de.westarps.topteacher.model.Pupil;
+import de.westarps.topteacher.model.loe.ExamNoteSection;
 import de.westarps.topteacher.model.loe.LoeCategory;
+import de.westarps.topteacher.model.loe.LoeCriterion;
+import de.westarps.topteacher.model.loe.LoeCriterionResult;
 import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeRequirementResult;
 import de.westarps.topteacher.model.loe.LoeTask;
-import de.westarps.topteacher.model.loe.ExamNoteSection;
 
 @Component
 public class LevelOfExpectationsExportModelFactory {
 
-	private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd. MM. yyyy");
+	private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
 	private final Sanitizer sanitizer;
 
@@ -36,12 +38,15 @@ public class LevelOfExpectationsExportModelFactory {
 	}
 
 	public LevelOfExpectationsExportModel createPupilModel(final LevelOfExpectationsExportData data) {
-		return createPupilModel(data, MarkdownView.PUPIL);
+		return createModel(data, MarkdownView.PUPIL, false);
 	}
 
-	public LevelOfExpectationsExportModel createPupilModel(final LevelOfExpectationsExportData data,
-			final MarkdownView markdownView) {
-		final MarkdownView view = markdownView == null ? MarkdownView.PUPIL : markdownView;
+	public LevelOfExpectationsExportModel createTeacherModel(final LevelOfExpectationsExportData data) {
+		return createModel(data, MarkdownView.TEACHER, true);
+	}
+
+	private LevelOfExpectationsExportModel createModel(final LevelOfExpectationsExportData data,
+			final MarkdownView view, final boolean includeTeacherOnlyContent) {
 		final Map<Integer, List<LoeCategory>> categoriesByPartId = groupByParentId(
 				sorted(data.categories(), Comparator.comparingInt(LoeCategory::sortOrder).thenComparing(LoeCategory::id,
 						Comparator.nullsLast(Integer::compareTo))),
@@ -54,21 +59,28 @@ public class LevelOfExpectationsExportModelFactory {
 				Comparator.comparingInt(LoeRequirement::sortOrder).thenComparing(LoeRequirement::id,
 						Comparator.nullsLast(Integer::compareTo))),
 				LoeRequirement::taskId);
+		final Map<Integer, List<LoeCriterion>> criteriaByRequirementId = groupByParentId(sorted(data.criteria(),
+				Comparator.comparingInt(LoeCriterion::sortOrder).thenComparing(LoeCriterion::id,
+						Comparator.nullsLast(Integer::compareTo))),
+				LoeCriterion::requirementId);
 		final Map<Integer, LoeRequirementResult> resultsByRequirementId = mapById(data.requirementResults(),
 				LoeRequirementResult::requirementId);
+		final Map<Integer, LoeCriterionResult> resultsByCriterionId = mapById(data.criterionResults(),
+				LoeCriterionResult::criterionId);
 
 		final List<Part> parts = sorted(data.parts(),
 				Comparator.comparingInt(LoePart::sortOrder).thenComparing(LoePart::id,
 						Comparator.nullsLast(Integer::compareTo))).stream()
 				.map(part -> createPart(part, categoriesByPartId, tasksByCategoryId, requirementsByTaskId,
-						resultsByRequirementId, view))
+						criteriaByRequirementId, resultsByRequirementId, resultsByCriterionId, view,
+						includeTeacherOnlyContent))
 				.toList();
-		final List<NoteSection> notes = sorted(data.noteSections(),
+		final List<NoteSection> notes = includeTeacherOnlyContent ? sorted(data.noteSections(),
 				Comparator.comparingInt(ExamNoteSection::sortOrder).thenComparing(ExamNoteSection::id,
 						Comparator.nullsLast(Integer::compareTo))).stream()
 				.map(noteSection -> new NoteSection(noteSection.title(),
 						sanitizer.markdownToHtml(noteSection.descriptionMarkdown(), view)))
-				.toList();
+				.toList() : List.of();
 
 		return new LevelOfExpectationsExportModel(data.course(), data.exam(), data.pupil(), data.gradingScale(),
 				data.gradingScaleRanges(), PointSummary.sum(parts, Part::points), parts, notes);
@@ -77,41 +89,67 @@ public class LevelOfExpectationsExportModelFactory {
 	private Part createPart(final LoePart part, final Map<Integer, List<LoeCategory>> categoriesByPartId,
 			final Map<Integer, List<LoeTask>> tasksByCategoryId,
 			final Map<Integer, List<LoeRequirement>> requirementsByTaskId,
-			final Map<Integer, LoeRequirementResult> resultsByRequirementId, final MarkdownView view) {
+			final Map<Integer, List<LoeCriterion>> criteriaByRequirementId,
+			final Map<Integer, LoeRequirementResult> resultsByRequirementId,
+			final Map<Integer, LoeCriterionResult> resultsByCriterionId, final MarkdownView view,
+			final boolean includeTeacherOnlyContent) {
 		final List<Category> categories = categoriesByPartId.getOrDefault(part.id(), List.of()).stream()
 				.map(category -> createCategory(category, tasksByCategoryId, requirementsByTaskId,
-						resultsByRequirementId, view))
+						criteriaByRequirementId, resultsByRequirementId, resultsByCriterionId, view,
+						includeTeacherOnlyContent))
 				.toList();
 		return new Part(part.title(), PointSummary.sum(categories, Category::points), categories);
 	}
 
 	private Category createCategory(final LoeCategory category, final Map<Integer, List<LoeTask>> tasksByCategoryId,
 			final Map<Integer, List<LoeRequirement>> requirementsByTaskId,
-			final Map<Integer, LoeRequirementResult> resultsByRequirementId, final MarkdownView view) {
+			final Map<Integer, List<LoeCriterion>> criteriaByRequirementId,
+			final Map<Integer, LoeRequirementResult> resultsByRequirementId,
+			final Map<Integer, LoeCriterionResult> resultsByCriterionId, final MarkdownView view,
+			final boolean includeTeacherOnlyContent) {
 		final List<Task> tasks = tasksByCategoryId.getOrDefault(category.id(), List.of()).stream()
-				.map(task -> createTask(task, requirementsByTaskId, resultsByRequirementId, view)).toList();
+				.map(task -> createTask(task, requirementsByTaskId, criteriaByRequirementId, resultsByRequirementId,
+						resultsByCriterionId, view, includeTeacherOnlyContent))
+				.toList();
 		return new Category(category.title(), sanitizer.markdownToHtml(category.descriptionMarkdown(), view),
 				PointSummary.sum(tasks, Task::points), tasks);
 	}
 
 	private Task createTask(final LoeTask task, final Map<Integer, List<LoeRequirement>> requirementsByTaskId,
-			final Map<Integer, LoeRequirementResult> resultsByRequirementId, final MarkdownView view) {
+			final Map<Integer, List<LoeCriterion>> criteriaByRequirementId,
+			final Map<Integer, LoeRequirementResult> resultsByRequirementId,
+			final Map<Integer, LoeCriterionResult> resultsByCriterionId, final MarkdownView view,
+			final boolean includeTeacherOnlyContent) {
 		final List<LoeRequirement> requirements = requirementsByTaskId.getOrDefault(task.id(), List.of());
 		final List<Requirement> exportRequirements = new ArrayList<>();
 		for (int index = 0; index < requirements.size(); index++) {
-			exportRequirements.add(createRequirement(requirements.get(index), resultsByRequirementId, view,
-					index + 1));
+			exportRequirements.add(createRequirement(requirements.get(index), criteriaByRequirementId,
+					resultsByRequirementId, resultsByCriterionId, view, includeTeacherOnlyContent, index + 1));
 		}
 		return new Task(task.title(), PointSummary.sum(exportRequirements, Requirement::points), exportRequirements);
 	}
 
 	private Requirement createRequirement(final LoeRequirement requirement,
-			final Map<Integer, LoeRequirementResult> resultsByRequirementId, final MarkdownView view,
-			final int number) {
+			final Map<Integer, List<LoeCriterion>> criteriaByRequirementId,
+			final Map<Integer, LoeRequirementResult> resultsByRequirementId,
+			final Map<Integer, LoeCriterionResult> resultsByCriterionId, final MarkdownView view,
+			final boolean includeTeacherOnlyContent, final int number) {
 		final LoeRequirementResult result = resultsByRequirementId.get(requirement.id());
 		final int achievedPoints = result == null ? 0 : result.points();
-		return new Requirement(number, sanitizer.markdownToHtml(requirement.descriptionMarkdown(), view),
-				requirement.maxPoints(), requirement.bonus(), achievedPoints, result == null ? "" : result.comment());
+		final String comment = includeTeacherOnlyContent && result != null ? result.comment() : "";
+		return new Requirement(number, sanitizer.markdownToHtml(requirement.descriptionMarkdown(), view,
+				criterionStatusByKey(criteriaByRequirementId.getOrDefault(requirement.id(), List.of()),
+						resultsByCriterionId)), requirement.maxPoints(), requirement.bonus(), achievedPoints, comment);
+	}
+
+	private static Function<String, Boolean> criterionStatusByKey(final List<LoeCriterion> criteria,
+			final Map<Integer, LoeCriterionResult> resultsByCriterionId) {
+		final Map<String, Boolean> statusByKey = new HashMap<>();
+		criteria.forEach(criterion -> {
+			final LoeCriterionResult result = resultsByCriterionId.get(criterion.id());
+			statusByKey.put(criterion.criterionKey(), result != null && result.achieved());
+		});
+		return key -> statusByKey.getOrDefault(key, false);
 	}
 
 	private static <T> List<T> sorted(final List<T> items, final Comparator<T> comparator) {
@@ -135,7 +173,16 @@ public class LevelOfExpectationsExportModelFactory {
 	public record LevelOfExpectationsExportData(Course course, Exam exam, Pupil pupil, GradingScale gradingScale,
 			List<GradingScaleRange> gradingScaleRanges, List<LoePart> parts, List<LoeCategory> categories,
 			List<LoeTask> tasks, List<LoeRequirement> requirements, List<LoeRequirementResult> requirementResults,
-			List<ExamNoteSection> noteSections) {
+			List<LoeCriterion> criteria, List<LoeCriterionResult> criterionResults, List<ExamNoteSection> noteSections) {
+
+		public LevelOfExpectationsExportData(final Course course, final Exam exam, final Pupil pupil,
+				final GradingScale gradingScale, final List<GradingScaleRange> gradingScaleRanges,
+				final List<LoePart> parts, final List<LoeCategory> categories, final List<LoeTask> tasks,
+				final List<LoeRequirement> requirements, final List<LoeRequirementResult> requirementResults,
+				final List<ExamNoteSection> noteSections) {
+			this(course, exam, pupil, gradingScale, gradingScaleRanges, parts, categories, tasks, requirements,
+					requirementResults, List.of(), List.of(), noteSections);
+		}
 
 		public LevelOfExpectationsExportData {
 			course = Objects.requireNonNull(course, "course must not be null");
@@ -148,6 +195,8 @@ public class LevelOfExpectationsExportModelFactory {
 			tasks = copy(tasks);
 			requirements = copy(requirements);
 			requirementResults = copy(requirementResults);
+			criteria = copy(criteria);
+			criterionResults = copy(criterionResults);
 			noteSections = copy(noteSections);
 		}
 	}
@@ -177,6 +226,16 @@ public class LevelOfExpectationsExportModelFactory {
 
 		public String pupilDisplayName() {
 			return pupil.name() + " " + pupil.surname();
+		}
+
+		public String totalGradeDisplayName() {
+			final int effectiveAchievedPoints = points.effectiveAchievedPoints(gradingScale.maxPoints());
+			return gradingScaleRanges.stream()
+					.filter(range -> range.minPoints() <= effectiveAchievedPoints
+							&& effectiveAchievedPoints <= range.maxPoints())
+					.findFirst()
+					.map(range -> range.gradeLevel().getDisplayName())
+					.orElse("");
 		}
 	}
 
@@ -276,6 +335,14 @@ public class LevelOfExpectationsExportModelFactory {
 
 		public String achievedDisplayName() {
 			return displayName(achievedPoints, bonusAchievedPoints);
+		}
+
+		public int effectiveAchievedPoints(final int maxPoints) {
+			if (maxPoints < 0) {
+				throw new IllegalArgumentException("maxPoints must not be negative");
+			}
+			final int applicableBonusPoints = Math.min(bonusAchievedPoints, Math.max(0, maxPoints - achievedPoints));
+			return achievedPoints + applicableBonusPoints;
 		}
 
 		private static String displayName(final int points, final int bonusPoints) {

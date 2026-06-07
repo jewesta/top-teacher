@@ -75,9 +75,11 @@ class ExamResultsEditorTests {
 
 		final Button saveButton = saveButton(editor);
 		final Button pdfButton = pdfButton(editor);
+		final Button teacherPdfButton = teacherPdfButton(editor);
 		final IntegerField points = components(editor, IntegerField.class).getFirst();
 		assertThat(saveButton.isEnabled()).isFalse();
 		assertThat(pdfButton.isEnabled()).isTrue();
+		assertThat(teacherPdfButton.isEnabled()).isTrue();
 		assertThat(points.getLabel()).isNull();
 		assertThat(pointsText(editor)).containsExactly("1 von 5 Punkten");
 		assertThat(points.getValue()).isEqualTo(1);
@@ -88,6 +90,7 @@ class ExamResultsEditorTests {
 
 		assertThat(saveButton.isEnabled()).isTrue();
 		assertThat(pdfButton.isEnabled()).isFalse();
+		assertThat(teacherPdfButton.isEnabled()).isFalse();
 		assertThat(pointsText(editor)).containsExactly("3 von 5 Punkten");
 		assertThat(badgeTexts(editor)).contains("Gesamtpunkte: 3 (+0)", "Summe: 3 (+0)");
 		verify(levelOfExpectationsRepository, never()).saveRequirementResult(any());
@@ -100,6 +103,7 @@ class ExamResultsEditorTests {
 		verify(levelOfExpectationsRepository, never()).saveCriterionResult(any(LoeCriterionResult.class));
 		assertThat(saveButton.isEnabled()).isFalse();
 		assertThat(pdfButton.isEnabled()).isTrue();
+		assertThat(teacherPdfButton.isEnabled()).isTrue();
 	}
 
 	@Test
@@ -328,7 +332,14 @@ class ExamResultsEditorTests {
 
 	private static Button pdfButton(final Component root) {
 		return components(root, Button.class).stream()
-				.filter(button -> "Erwartungshorizont als PDF herunterladen"
+				.filter(button -> "Schülerversion als PDF herunterladen"
+						.equals(button.getElement().getAttribute("aria-label")))
+				.findFirst().orElseThrow();
+	}
+
+	private static Button teacherPdfButton(final Component root) {
+		return components(root, Button.class).stream()
+				.filter(button -> "Lehrerversion als PDF herunterladen"
 						.equals(button.getElement().getAttribute("aria-label")))
 				.findFirst().orElseThrow();
 	}

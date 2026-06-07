@@ -50,8 +50,10 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private final StepperComboBox<Pupil> pupilSelector = new StepperComboBox<>();
 	private final Button saveButton = new Button("Speichern", VaadinIcon.CHECK.create());
 	private final Button deleteButton = new Button(VaadinIcon.TRASH.create());
-	private final Button pdfButton = new Button("PDF", VaadinIcon.DOWNLOAD.create());
+	private final Button pdfButton = new Button("Schüler-PDF", VaadinIcon.DOWNLOAD.create());
+	private final Button teacherPdfButton = new Button("Lehrer-PDF", VaadinIcon.DOWNLOAD.create());
 	private final Anchor pdfDownload = new Anchor();
+	private final Anchor teacherPdfDownload = new Anchor();
 	private final ConfirmDialog deleteConfirmation = new ConfirmDialog();
 	private final VerticalLayout results;
 	private final LoeSaveController saveController = new LoeSaveController();
@@ -150,11 +152,17 @@ public class ExamResultsEditor extends AbstractDesigner {
 	}
 
 	private void configurePdfDownload() {
-		pdfButton.setAriaLabel("Erwartungshorizont als PDF herunterladen");
-		pdfButton.setTooltipText("Erwartungshorizont als PDF herunterladen");
+		pdfButton.setAriaLabel("Schülerversion als PDF herunterladen");
+		pdfButton.setTooltipText("Schülerversion als PDF herunterladen");
 		pdfButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
 		pdfDownload.add(pdfButton);
 		pdfDownload.getElement().setAttribute("download", true);
+
+		teacherPdfButton.setAriaLabel("Lehrerversion als PDF herunterladen");
+		teacherPdfButton.setTooltipText("Lehrerversion als PDF herunterladen");
+		teacherPdfButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
+		teacherPdfDownload.add(teacherPdfButton);
+		teacherPdfDownload.getElement().setAttribute("download", true);
 		updatePdfDownload();
 	}
 
@@ -183,7 +191,8 @@ public class ExamResultsEditor extends AbstractDesigner {
 
 	private void configureToolbar() {
 		examPointsBadge = new LoePointBadge("Gesamtpunkte", this::pointsForExam);
-		toolbar().add(pupilSelector, saveButton, deleteButton, pdfDownload, examPointsBadge, deleteConfirmation);
+		toolbar().add(pupilSelector, saveButton, deleteButton, pdfDownload, teacherPdfDownload, examPointsBadge,
+				deleteConfirmation);
 	}
 
 	private void refreshPupils() {
@@ -687,13 +696,19 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private void updatePdfDownload() {
 		final boolean enabled = exam != null && selectedPupil != null && !isDirty();
 		pdfButton.setEnabled(enabled);
+		teacherPdfButton.setEnabled(enabled);
 		if (enabled) {
 			pdfDownload.setHref("/export/exams/" + exam.id() + "/pupils/" + selectedPupil.id()
 					+ "/level-of-expectations.pdf");
-			pdfDownload.getElement().setAttribute("download", pdfFileName());
+			pdfDownload.getElement().setAttribute("download", pdfFileName(false));
+			teacherPdfDownload.setHref("/export/exams/" + exam.id() + "/pupils/" + selectedPupil.id()
+					+ "/level-of-expectations-teacher.pdf");
+			teacherPdfDownload.getElement().setAttribute("download", pdfFileName(true));
 		} else {
 			pdfDownload.removeHref();
 			pdfDownload.getElement().removeAttribute("download");
+			teacherPdfDownload.removeHref();
+			teacherPdfDownload.getElement().removeAttribute("download");
 		}
 	}
 
@@ -750,8 +765,9 @@ public class ExamResultsEditor extends AbstractDesigner {
 		return pupil.surname() + ", " + pupil.name();
 	}
 
-	private String pdfFileName() {
-		return "erwartungshorizont-" + fileNamePart(exam.title()) + "-" + fileNamePart(selectedPupil.surname())
+	private String pdfFileName(final boolean teacherVersion) {
+		final String prefix = teacherVersion ? "lehrerversion-erwartungshorizont" : "erwartungshorizont";
+		return prefix + "-" + fileNamePart(exam.title()) + "-" + fileNamePart(selectedPupil.surname())
 				+ "-" + fileNamePart(selectedPupil.name()) + ".pdf";
 	}
 

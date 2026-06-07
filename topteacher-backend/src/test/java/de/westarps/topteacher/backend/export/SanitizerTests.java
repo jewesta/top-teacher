@@ -20,13 +20,16 @@ class SanitizerTests {
 
 	@Test
 	void rendersCriterionLinksForTeacherFacingHtml() {
-		final SafeHtml html = sanitizer.markdownToHtml("[korrekte Zeitform](eh:1)",
-				Sanitizer.MarkdownView.TEACHER);
+		final SafeHtml html = sanitizer.markdownToHtml("[korrekte Zeitform](eh:1) [Wortwahl](eh:2)",
+				Sanitizer.MarkdownView.TEACHER, key -> "1".equals(key));
 
 		assertThat(html.value()).contains("class=\"tt-criterion\"");
 		assertThat(html.value()).contains("class=\"tt-criterion-highlight\"");
 		assertThat(html.value()).contains("class=\"tt-criterion-badge\">1</span>");
-		assertThat(html.value()).doesNotContain("eh:1");
+		assertThat(html.value()).contains("tt-criterion-marker-achieved");
+		assertThat(html.value()).contains("tt-criterion-marker-missed");
+		assertThat(html.value()).doesNotContain("✓", "✗");
+		assertThat(html.value()).doesNotContain("eh:1", "eh:2");
 	}
 
 	@Test

@@ -2,6 +2,7 @@ package de.westarps.topteacher.backend.export;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 import org.commonmark.node.AbstractVisitor;
 import org.commonmark.node.HtmlInline;
@@ -34,12 +35,19 @@ public class Sanitizer {
 	}
 
 	public SafeHtml markdownToHtml(final String markdown, final MarkdownView view) {
+		return markdownToHtml(markdown, view, ignored -> false);
+	}
+
+	public SafeHtml markdownToHtml(final String markdown, final MarkdownView view,
+			final Function<String, Boolean> criterionStatusByKey) {
 		final Node document = parser.parse(markdown == null ? "" : markdown);
-		transformCriterionLinks(document, view == null ? MarkdownView.PUPIL : view);
+		transformCriterionLinks(document, view == null ? MarkdownView.PUPIL : view,
+				criterionStatusByKey == null ? ignored -> false : criterionStatusByKey);
 		return new SafeHtml(Jsoup.clean(markdownRenderer.render(document), "", SAFE_HTML, OUTPUT_SETTINGS));
 	}
 
-	private void transformCriterionLinks(final Node document, final MarkdownView view) {
+	private void transformCriterionLinks(final Node document, final MarkdownView view,
+			final Function<String, Boolean> criterionStatusByKey) {
 		final List<Link> criterionLinks = new ArrayList<>();
 		document.accept(new AbstractVisitor() {
 
@@ -51,12 +59,13 @@ public class Sanitizer {
 				visitChildren(link);
 			}
 		});
-		criterionLinks.forEach(link -> transformCriterionLink(link, view));
+		criterionLinks.forEach(link -> transformCriterionLink(link, view, criterionStatusByKey));
 	}
 
-	private void transformCriterionLink(final Link link, final MarkdownView view) {
+	private void transformCriterionLink(final Link link, final MarkdownView view,
+			final Function<String, Boolean> criterionStatusByKey) {
 		if (view == MarkdownView.TEACHER) {
-			wrapCriterionLink(link);
+			wrapCriterionLink(link, criterionStatusByKey);
 		} else {
 			unwrapLink(link);
 		}
@@ -71,13 +80,26 @@ public class Sanitizer {
 		link.unlink();
 	}
 
-	private static void wrapCriterionLink(final Link link) {
+	private static void wrapCriterionLink(final Link link, final Function<String, Boolean> criterionStatusByKey) {
 		final String criterionKey = link.getDestination().substring(CRITERION_DESTINATION_PREFIX.length()).trim();
+		final boolean achieved = Boolean.TRUE.equals(criterionStatusByKey.apply(criterionKey));
 		link.insertBefore(html("<span class=\"tt-criterion\"><mark class=\"tt-criterion-highlight\">"));
 		moveChildrenBefore(link);
 		link.insertBefore(html("</mark><span class=\"tt-criterion-badge\">" + escapeHtml(criterionKey)
-				+ "</span></span>"));
+				+ "</span>" + criterionMarker(achieved) + "</span>"));
 		link.unlink();
+	}
+
+	private static String criterionMarker(final boolean achieved) {
+		if (achieved) {
+			return "<span class=\"tt-criterion-marker tt-criterion-marker-achieved\">&nbsp;</span>";
+		}
+		return """
+				<span class="tt-criterion-marker tt-criterion-marker-missed">\
+				<span class="tt-criterion-marker-line tt-criterion-marker-line-a">&nbsp;</span>\
+				<span class="tt-criterion-marker-line tt-criterion-marker-line-b">&nbsp;</span>\
+				</span>\
+				""";
 	}
 
 	private static HtmlInline html(final String literal) {

@@ -42,8 +42,8 @@ th,
 td {
     color: #111;
     font-family: "Frugal Sans", sans-serif;
-    font-size: 10pt;
-    line-height: 1.22;
+    font-size: 9pt;
+    line-height: 1.16;
 }
 
 body {
@@ -110,9 +110,9 @@ body {
 h2,
 h3,
 h4 {
-    font-size: 10pt;
+    font-size: 9pt;
     font-weight: 700;
-    line-height: 1.22;
+    line-height: 1.16;
     margin: 0;
 }
 
@@ -167,7 +167,7 @@ h4 {
     text-align: left;
 }
 
-.tt-requirements-heading {
+.tt-eh-table th.tt-requirements-heading {
     text-align: left;
     vertical-align: middle;
 }
@@ -217,6 +217,89 @@ h4 {
     margin-top: 1.2mm;
 }
 
+.tt-criterion {
+    display: inline;
+}
+
+.tt-criterion-highlight {
+    background: #fff3bf;
+    border-radius: 0.6mm;
+    padding: 0 0.45mm;
+}
+
+.tt-criterion-badge {
+    background: #555;
+    border-radius: 99mm;
+    color: #fff;
+    display: inline-block;
+    font-size: 7pt;
+    font-weight: 700;
+    height: 3.8mm;
+    line-height: 3.8mm;
+    margin-left: 0.45mm;
+    min-width: 3.8mm;
+    padding: 0 0.8mm;
+    text-align: center;
+    vertical-align: 0.2mm;
+}
+
+.tt-criterion-marker {
+    display: inline-block;
+    font-size: 0;
+    height: 3mm;
+    line-height: 0;
+    margin-left: 0.8mm;
+    position: relative;
+    vertical-align: -0.55mm;
+    width: 3mm;
+}
+
+.tt-criterion-marker-achieved {
+    border: solid #a3001b;
+    border-width: 0 0.55mm 0.55mm 0;
+    height: 2.6mm;
+    transform: rotate(45deg);
+    width: 1.35mm;
+}
+
+.tt-criterion-marker-missed {
+    height: 3mm;
+    width: 3mm;
+}
+
+.tt-criterion-marker-line {
+    background: #a3001b;
+    display: block;
+    font-size: 0;
+    height: 0.55mm;
+    left: 0.1mm;
+    line-height: 0;
+    position: absolute;
+    top: 1.25mm;
+    width: 2.8mm;
+}
+
+.tt-criterion-marker-line-a {
+    transform: rotate(45deg);
+}
+
+.tt-criterion-marker-line-b {
+    transform: rotate(-45deg);
+}
+
+.tt-teacher-watermark {
+    border: 0.45mm solid #a83a4b;
+    color: #a83a4b;
+    font-size: 13pt;
+    font-weight: 700;
+    left: -1mm;
+    padding: 1mm 3mm;
+    position: fixed;
+    top: 8mm;
+    transform: rotate(-18deg);
+    z-index: 1000;
+}
+
 .tt-sum-row td {
     font-weight: 700;
 }
@@ -257,6 +340,11 @@ h4 {
 .tt-grade-scale th,
 .tt-grade-scale td {
     text-align: center;
+}
+
+.tt-grade-scale th:nth-child(2),
+.tt-grade-scale td:nth-child(2) {
+    text-align: left;
 }
 
 .tt-grade-scale th {
