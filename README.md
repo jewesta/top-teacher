@@ -1,38 +1,40 @@
-# TopTeacher
+# TopTeacher!
 
-TopTeacher is planned as a local-network web utility for managing pupils' grades
-and printing result sheets.
+![TopTeacher](topteacher-app/src/main/resources/META-INF/resources/images/topteacher-logo-github.png)
 
-Planned technology:
+TopTeacher! ist eine Web-App für das lokale Netzwerk zur Verwaltung von Schülerinnen und Schülern, Kursen, Klausuren, Erwartungshorizonten und Ergebnissen. Die App unterstützt Lehrkräfte bei der Eingabe von Bewertungsdaten, der Auswertung von Klausuren sowie beim Erstellen druckbarer Ergebnisbögen und Exporte.
+
+Technologie:
 
 - Java 21
 - Spring Boot 4
 - Vaadin 25
 - Maven
 - JDBC
-- H2 database
+- H2-Datenbank
 
-## Development
+## Entwicklung
 
-The repository is a Maven multi-module build:
+Das Repository ist ein Maven-Multimodul-Projekt:
 
-- `topteacher-app` contains the Spring Boot and Vaadin application.
-- `westarps-vaadin-markdown` contains reusable Vaadin markdown editor components.
+- `topteacher-model` enthält gemeinsam genutzte Domänentypen.
+- `topteacher-backend` enthält Persistenz- und Export-Services.
+- `topteacher-app` enthält die Spring-Boot- und Vaadin-Anwendung.
+- `westarps-vaadin-markdown` enthält wiederverwendbare Vaadin-Markdown-Editor-Komponenten.
 
-Run the application:
+Anwendung starten:
 
 ```shell
 ./run/run-app.sh
 ```
 
-Open the app at <http://localhost:8080>.
+Die App ist danach unter <http://localhost:8080> erreichbar.
 
-The local H2 database is stored at `./data/topteacher.mv.db`. For DBeaver, use
-an H2 Embedded connection with this JDBC URL:
+Die lokale H2-Datenbank liegt unter `./data/topteacher.mv.db`. Für DBeaver kann eine H2-Embedded-Verbindung mit folgender JDBC-URL verwendet werden:
 
 ```text
 jdbc:h2:file:/Users/jens/repositories/TopTeacher/data/topteacher;AUTO_SERVER=TRUE
 ```
 
-The H2 console is available in development at
+Die H2-Konsole ist in der Entwicklungsumgebung hier erreichbar:
 <http://localhost:8080/h2-console>.
