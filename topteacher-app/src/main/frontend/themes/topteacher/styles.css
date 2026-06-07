@@ -289,7 +289,6 @@ vaadin-app-layout::part(navbar) {
 .tt-results-requirement-number {
 	align-items: center;
 	background: var(--lumo-contrast-10pct);
-	border: 1px solid var(--lumo-contrast-20pct);
 	border-radius: 50%;
 	box-sizing: border-box;
 	color: var(--lumo-secondary-text-color);
