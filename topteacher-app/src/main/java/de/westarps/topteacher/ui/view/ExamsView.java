@@ -23,15 +23,15 @@ import com.vaadin.flow.router.Route;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.ExamRepository;
-import de.westarps.topteacher.backend.repo.ExpectationHorizonRepository;
+import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.backend.repo.GradingScaleRepository;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.ui.MainLayout;
 import de.westarps.topteacher.ui.component.AbstractFormEditor;
-import de.westarps.topteacher.ui.component.eh.ExamNotesEditor;
-import de.westarps.topteacher.ui.component.eh.ExamResultsEditor;
-import de.westarps.topteacher.ui.component.eh.ExpectationHorizonEditor;
+import de.westarps.topteacher.ui.component.loe.ExamNotesEditor;
+import de.westarps.topteacher.ui.component.loe.ExamResultsEditor;
+import de.westarps.topteacher.ui.component.loe.LevelOfExpectationsEditor;
 import de.westarps.topteacher.ui.component.FormBinders;
 import de.westarps.topteacher.ui.component.GradingScaleViewer;
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
@@ -43,8 +43,8 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 
 	private final CourseRepository courseRepository;
 	private final ExamRepository examRepository;
-	private final ExpectationHorizonRepository expectationHorizonRepository;
-	private final ExpectationHorizonEditor expectationHorizonEditor;
+	private final LevelOfExpectationsRepository levelOfExpectationsRepository;
+	private final LevelOfExpectationsEditor levelOfExpectationsEditor;
 	private final ExamNotesEditor examNotesEditor;
 	private final ExamResultsEditor examResultsEditor;
 	private final GradingScaleViewer gradingScaleViewer;
@@ -63,21 +63,21 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 
 	private Course selectedCourse;
 	private Exam selectedExam;
-	private Tab expectationHorizonTab;
+	private Tab levelOfExpectationsTab;
 	private Tab notesTab;
 	private Tab resultsTab;
 	private Tab gradingScaleTab;
 
 	public ExamsView(final CourseRepository courseRepository, final ExamRepository examRepository,
-			final ExpectationHorizonRepository expectationHorizonRepository,
+			final LevelOfExpectationsRepository levelOfExpectationsRepository,
 			final GradingScaleRepository gradingScaleRepository) {
 		super("Klausuren", "tt-exams-view", new MultiSelectionGrid<>(Exam.class, false));
 		this.courseRepository = courseRepository;
 		this.examRepository = examRepository;
-		this.expectationHorizonRepository = expectationHorizonRepository;
-		this.expectationHorizonEditor = new ExpectationHorizonEditor(expectationHorizonRepository);
-		this.examNotesEditor = new ExamNotesEditor(expectationHorizonRepository);
-		this.examResultsEditor = new ExamResultsEditor(courseRepository, expectationHorizonRepository,
+		this.levelOfExpectationsRepository = levelOfExpectationsRepository;
+		this.levelOfExpectationsEditor = new LevelOfExpectationsEditor(levelOfExpectationsRepository);
+		this.examNotesEditor = new ExamNotesEditor(levelOfExpectationsRepository);
+		this.examResultsEditor = new ExamResultsEditor(courseRepository, levelOfExpectationsRepository,
 				gradingScaleRepository);
 		this.gradingScaleViewer = new GradingScaleViewer(gradingScaleRepository);
 
@@ -280,7 +280,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		final String duplicateExamTitle = nextAvailableTitle(formData.getCourse().id(), formData.getTitle());
 		final Exam duplicatedExam = examRepository.save(new Exam(null, formData.getCourse().id(), duplicateExamTitle,
 				formData.getDate()));
-		expectationHorizonRepository.copyDesignAndNotes(selectedExam.id(), duplicatedExam.id());
+		levelOfExpectationsRepository.copyDesignAndNotes(selectedExam.id(), duplicatedExam.id());
 
 		duplicateDialog.close();
 		if (!formData.getCourse().id().equals(selectedCourse.id())) {
@@ -323,42 +323,42 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 			return;
 		}
 
-		if (expectationHorizonTab == null) {
-			expectationHorizonTab = getContextTabs().add("EH", expectationHorizonEditor);
+		if (levelOfExpectationsTab == null) {
+			levelOfExpectationsTab = getContextTabs().add("EH", levelOfExpectationsEditor);
 			notesTab = getContextTabs().add("Notizen", examNotesEditor);
 			resultsTab = getContextTabs().add("Ergebnisse", examResultsEditor);
 			gradingScaleTab = getContextTabs().add("Notenschlüssel", gradingScaleViewer);
 		}
 
-		expectationHorizonEditor.setExam(exam);
+		levelOfExpectationsEditor.setExam(exam);
 		examNotesEditor.setExam(exam);
 		examResultsEditor.setExam(exam);
 		gradingScaleViewer.setCourse(selectedCourse);
 	}
 
 	private void removeExamContextTabs() {
-		if (expectationHorizonTab == null) {
-			expectationHorizonEditor.setExam(null);
+		if (levelOfExpectationsTab == null) {
+			levelOfExpectationsEditor.setExam(null);
 			examNotesEditor.setExam(null);
 			examResultsEditor.setExam(null);
 			gradingScaleViewer.setCourse(null);
 			return;
 		}
 
-		if (getContextTabs().getSelectedTab() == expectationHorizonTab
+		if (getContextTabs().getSelectedTab() == levelOfExpectationsTab
 				|| getContextTabs().getSelectedTab() == notesTab || getContextTabs().getSelectedTab() == resultsTab
 				|| getContextTabs().getSelectedTab() == gradingScaleTab) {
 			getContextTabs().setSelectedIndex(0);
 		}
-		getContextTabs().remove(expectationHorizonTab);
+		getContextTabs().remove(levelOfExpectationsTab);
 		getContextTabs().remove(notesTab);
 		getContextTabs().remove(resultsTab);
 		getContextTabs().remove(gradingScaleTab);
-		expectationHorizonTab = null;
+		levelOfExpectationsTab = null;
 		notesTab = null;
 		resultsTab = null;
 		gradingScaleTab = null;
-		expectationHorizonEditor.setExam(null);
+		levelOfExpectationsEditor.setExam(null);
 		examNotesEditor.setExam(null);
 		examResultsEditor.setExam(null);
 		gradingScaleViewer.setCourse(null);

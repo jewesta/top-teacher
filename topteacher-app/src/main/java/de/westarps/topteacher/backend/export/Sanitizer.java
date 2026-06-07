@@ -13,12 +13,12 @@ import org.jsoup.nodes.Document.OutputSettings;
 import org.jsoup.safety.Safelist;
 import org.springframework.stereotype.Component;
 
-import de.westarps.topteacher.model.eh.EhCriterionParser;
+import de.westarps.topteacher.model.loe.LoeCriterionParser;
 
 @Component
 public class Sanitizer {
 
-	private static final String CRITERION_DESTINATION_PREFIX = EhCriterionParser.TAG_NAMESPACE + ":";
+	private static final String CRITERION_DESTINATION_PREFIX = LoeCriterionParser.TAG_NAMESPACE + ":";
 	private static final Safelist SAFE_HTML = Safelist.basic()
 			.addTags("h1", "h2", "h3", "h4", "h5", "h6", "mark", "span")
 			.addAttributes("mark", "class")

@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <title th:text="'Erwartungshorizont - ' + ${model.pupilDisplayName()}">Erwartungshorizont</title>
+    <link rel="stylesheet" href="level-of-expectations.css">
+</head>
+<body>
+<main class="tt-export-document">
+    <div th:replace="~{export/fragments/loe-header.thymeleaf.html :: header(${model})}"></div>
+    <div th:replace="~{export/fragments/loe-body.thymeleaf.html :: levelOfExpectationsBody(${model.parts()})}"></div>
+    <div th:replace="~{export/fragments/loe-summary.thymeleaf.html :: summary(${model})}"></div>
+    <div th:replace="~{export/fragments/loe-notes.thymeleaf.html :: notes(${model.noteSections()})}"></div>
+    <div th:replace="~{export/fragments/grading-scale.thymeleaf.html :: gradingScale(${model})}"></div>
+</main>
+</body>
+</html>
