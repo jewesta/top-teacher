@@ -75,7 +75,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private List<EhRequirement> requirements = List.of();
 	private List<EhCriterion> criteria = List.of();
 	private EhPointBadge examPointsBadge;
-	private Integer gradingScaleMaxPoints;
+	private EhPointRules pointRules;
 	private Map<Integer, Boolean> persistedCriterionResults = Map.of();
 	private Map<Integer, Integer> persistedRequirementResults = Map.of();
 	private Map<Integer, String> persistedRequirementComments = Map.of();
@@ -165,14 +165,14 @@ public class ExamResultsEditor extends AbstractDesigner {
 
 		if (exam == null) {
 			clearResultState();
-			gradingScaleMaxPoints = null;
+			pointRules = null;
 			updateActionButtons();
 			showDesignerMessage(emptyState("Bitte wählen Sie eine Klausur aus."));
 			return;
 		}
 
 		expectationHorizonRepository.syncCriteriaForExam(exam.id());
-		loadGradingScaleMaxPoints();
+		loadPointRules();
 		loadItems();
 		refreshPupils();
 		configureToolbar();
@@ -271,10 +271,10 @@ public class ExamResultsEditor extends AbstractDesigner {
 		criteria = expectationHorizonRepository.findActiveCriteriaByExamId(exam.id());
 	}
 
-	private void loadGradingScaleMaxPoints() {
-		gradingScaleMaxPoints = courseRepository.findById(exam.courseId())
+	private void loadPointRules() {
+		pointRules = courseRepository.findById(exam.courseId())
 				.flatMap(course -> gradingScaleRepository.findById(course.gradingScaleId()))
-				.map(gradingScale -> gradingScale.maxPoints()).orElse(null);
+				.map(EhPointRules::new).orElse(null);
 	}
 
 	private void loadResultState() {
@@ -709,17 +709,17 @@ public class ExamResultsEditor extends AbstractDesigner {
 				return false;
 			}
 		}
-		if (gradingScaleMaxPoints == null) {
+		if (pointRules == null) {
 			Notification.show("Für den Kurs wurde kein Notenschlüssel gefunden.");
 			return false;
 		}
-		final int regularMaxPoints = EhPointRules.regularMaxPoints(requirements);
-		if (regularMaxPoints != gradingScaleMaxPoints) {
+		final int regularMaxPoints = pointRules.regularMaxPoints(requirements);
+		if (!pointRules.regularMaxPointsMatch(requirements)) {
 			Notification.show("Der Erwartungshorizont hat " + regularMaxPoints
-					+ " reguläre Punkte. Der Notenschlüssel erwartet " + gradingScaleMaxPoints + " Punkte.");
+					+ " reguläre Punkte. Der Notenschlüssel erwartet " + pointRules.maxPoints() + " Punkte.");
 			return false;
 		}
-		EhPointRules.cappedAchievedTotal(requirements, this::currentRequirementPoints, gradingScaleMaxPoints);
+		pointRules.cappedAchievedTotal(requirements, this::currentRequirementPoints);
 		return true;
 	}
 

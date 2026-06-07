@@ -4,51 +4,56 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.ToIntFunction;
 
+import de.westarps.topteacher.model.GradingScale;
+
 public final class EhPointRules {
 
-	private EhPointRules() {
+	private final GradingScale gradingScale;
+
+	public EhPointRules(final GradingScale gradingScale) {
+		this.gradingScale = Objects.requireNonNull(gradingScale, "gradingScale must not be null");
 	}
 
-	public static int regularMaxPoints(final List<EhRequirement> requirements) {
+	public int maxPoints() {
+		return gradingScale.maxPoints();
+	}
+
+	public int regularMaxPoints(final List<EhRequirement> requirements) {
 		return requirements(requirements).stream().filter(requirement -> !requirement.bonus())
 				.mapToInt(EhRequirement::maxPoints).sum();
 	}
 
-	public static int bonusMaxPoints(final List<EhRequirement> requirements) {
+	public int bonusMaxPoints(final List<EhRequirement> requirements) {
 		return requirements(requirements).stream().filter(EhRequirement::bonus).mapToInt(EhRequirement::maxPoints)
 				.sum();
 	}
 
-	public static boolean regularMaxPointsMatch(final List<EhRequirement> requirements,
-			final int gradingScaleMaxPoints) {
-		validateNonNegative(gradingScaleMaxPoints, "gradingScaleMaxPoints");
-		return regularMaxPoints(requirements) == gradingScaleMaxPoints;
+	public boolean regularMaxPointsMatch(final List<EhRequirement> requirements) {
+		return regularMaxPoints(requirements) == gradingScale.maxPoints();
 	}
 
-	public static int cappedAchievedTotal(final List<EhRequirement> requirements,
-			final ToIntFunction<EhRequirement> achievedPoints, final int gradingScaleMaxPoints) {
+	public int cappedAchievedTotal(final List<EhRequirement> requirements,
+			final ToIntFunction<EhRequirement> achievedPoints) {
 		final int regularPoints = regularAchievedPoints(requirements, achievedPoints);
 		final int bonusPoints = bonusAchievedPoints(requirements, achievedPoints);
-		return regularPoints + applicableBonusPoints(regularPoints, bonusPoints, gradingScaleMaxPoints);
+		return regularPoints + applicableBonusPoints(regularPoints, bonusPoints);
 	}
 
-	public static int applicableBonusPoints(final int regularAchievedPoints, final int bonusAchievedPoints,
-			final int gradingScaleMaxPoints) {
+	public int applicableBonusPoints(final int regularAchievedPoints, final int bonusAchievedPoints) {
 		validateNonNegative(regularAchievedPoints, "regularAchievedPoints");
 		validateNonNegative(bonusAchievedPoints, "bonusAchievedPoints");
-		validateNonNegative(gradingScaleMaxPoints, "gradingScaleMaxPoints");
-		if (regularAchievedPoints > gradingScaleMaxPoints) {
+		if (regularAchievedPoints > gradingScale.maxPoints()) {
 			throw new IllegalArgumentException("regularAchievedPoints must not exceed gradingScaleMaxPoints");
 		}
-		return Math.min(bonusAchievedPoints, gradingScaleMaxPoints - regularAchievedPoints);
+		return Math.min(bonusAchievedPoints, gradingScale.maxPoints() - regularAchievedPoints);
 	}
 
-	private static int regularAchievedPoints(final List<EhRequirement> requirements,
+	private int regularAchievedPoints(final List<EhRequirement> requirements,
 			final ToIntFunction<EhRequirement> achievedPoints) {
 		return achievedPoints(requirements, achievedPoints, false);
 	}
 
-	private static int bonusAchievedPoints(final List<EhRequirement> requirements,
+	private int bonusAchievedPoints(final List<EhRequirement> requirements,
 			final ToIntFunction<EhRequirement> achievedPoints) {
 		return achievedPoints(requirements, achievedPoints, true);
 	}
