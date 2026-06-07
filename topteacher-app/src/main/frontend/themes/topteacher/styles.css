@@ -263,8 +263,6 @@ vaadin-app-layout::part(navbar) {
 
 .tt-results-requirement {
 	align-items: stretch;
-	background: var(--lumo-contrast-5pct);
-	border-radius: var(--lumo-border-radius-m);
 	box-sizing: border-box;
 	gap: 0;
 	width: 100%;
@@ -308,17 +306,21 @@ vaadin-app-layout::part(navbar) {
 
 .tt-results-requirement-marker {
 	align-items: center;
+	background: var(--lumo-contrast-5pct);
+	border-radius: var(--lumo-border-radius-m) 0 0 var(--lumo-border-radius-m);
 	box-sizing: border-box;
 	flex: 0 0 3rem;
 	gap: var(--lumo-space-s);
 	justify-content: flex-start;
-	padding: var(--lumo-space-s) var(--lumo-space-s) var(--lumo-space-m);
+	padding: var(--lumo-space-s); 0px; var(--lumo-space-m); var(--lumo-space-s);
 }
 
 .tt-results-requirement-content {
+	background: var(--lumo-contrast-5pct);
+	border-radius: 0 var(--lumo-border-radius-m) var(--lumo-border-radius-m) 0;
 	box-sizing: border-box;
 	min-width: 0;
-	padding: var(--lumo-space-s) 0 var(--lumo-space-m);
+	padding: var(--lumo-space-s) var(--lumo-space-s) var(--lumo-space-m) var(--lumo-space-s);
 	width: 100%;
 }
 
@@ -345,7 +347,7 @@ vaadin-app-layout::part(navbar) {
 	display: flex;
 	flex: 0 0 var(--tt-results-points-column-width);
 	justify-content: flex-start;
-	padding: 0 var(--lumo-space-s) var(--lumo-space-m) var(--lumo-space-m);
+	padding: 0 var(--lumo-space-s) var(--lumo-space-m) var(--lumo-space-s);
 }
 
 .tt-results-bonus-icon {
