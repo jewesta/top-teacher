@@ -23,17 +23,22 @@ Das Repository ist ein Maven-Multimodul-Projekt:
 Anwendung starten:
 
 ```shell
-./run/run-app.sh
+mkdir -p /Users/jens/topteacher/data
+./run/start.sh /Users/jens/topteacher/data/topteacher
 ```
 
 Die App ist danach unter <http://localhost:8081/top-teacher> erreichbar. Port und Pfad werden über
 `server.port` und `server.servlet.context-path` in `topteacher-app/src/main/resources/application.properties`
 festgelegt.
 
-Die lokale H2-Datenbank liegt unter `./data/topteacher.mv.db`. Für DBeaver kann eine H2-Embedded-Verbindung mit folgender JDBC-URL verwendet werden:
+Die H2-Datenbank liegt dort, wo `tt.database.file` hinzeigt. Die Property ist
+absichtlich verpflichtend; TopTeacher startet nicht, wenn sie fehlt oder der
+Pfad nicht erreichbar ist. H2 ergänzt die eigentliche Datei-Endung `.mv.db`
+selbst. Für DBeaver kann eine H2-Embedded-Verbindung mit folgender JDBC-URL
+verwendet werden:
 
 ```text
-jdbc:h2:file:/Users/jens/repositories/TopTeacher/data/topteacher;AUTO_SERVER=TRUE
+jdbc:h2:file:/Users/jens/topteacher/data/topteacher;AUTO_SERVER=TRUE
 ```
 
 Die H2-Konsole ist in der Entwicklungsumgebung hier erreichbar:
@@ -55,16 +60,17 @@ Sonderzeichen wie `;` sollten in Anführungszeichen gesetzt werden:
 java -jar topteacher-app-0.0.1-SNAPSHOT.jar \
   --server.port=8081 \
   --server.servlet.context-path=/top-teacher \
-  '--spring.datasource.url=jdbc:h2:file:/Users/jens/topteacher/data/topteacher;AUTO_SERVER=TRUE'
+  --tt.database.file=/Users/jens/topteacher/data/topteacher
 ```
 
 Wichtige Properties:
 
 | Property | Standardwert | Bedeutung |
 | --- | --- | --- |
+| `tt.database.file` | keiner | Verpflichtender Pfad zur H2-Datenbank ohne `.mv.db`-Suffix, z. B. `/Users/jens/topteacher/data/topteacher`. Der Ordner muss existieren und beschreibbar sein. |
 | `server.port` | `8081` | HTTP-Port der Anwendung. |
 | `server.servlet.context-path` | `/top-teacher` | Pfad, unter dem die Anwendung erreichbar ist. |
-| `spring.datasource.url` | `jdbc:h2:file:./data/topteacher;AUTO_SERVER=TRUE` | Speicherort der H2-Datenbank. Der Live-Datenbankpfad sollte lokal auf dem Rechner liegen; Backups können auf ein NAS geschrieben werden. |
+| `spring.datasource.url` | `jdbc:h2:file:${tt.database.file};AUTO_SERVER=TRUE` | JDBC-URL der H2-Datenbank. Normalerweise muss nur `tt.database.file` gesetzt werden. |
 | `spring.datasource.username` | `sa` | Benutzername der H2-Verbindung. |
 | `spring.datasource.password` | leer | Passwort der H2-Verbindung. |
 | `spring.h2.console.enabled` | `true` | Aktiviert die H2-Konsole. Für produktiven Betrieb kann sie per `false` deaktiviert werden. |
@@ -75,7 +81,7 @@ Demo-Daten für eine neue Demo-Datenbank erzeugen:
 
 ```shell
 java -jar topteacher-app-0.0.1-SNAPSHOT.jar \
-  '--spring.datasource.url=jdbc:h2:file:./data/topteacher-demo;AUTO_SERVER=TRUE' \
+  --tt.database.file=/Users/jens/topteacher/data/topteacher-demo \
   --tt.demo-data.create=true
 ```
 
@@ -86,8 +92,8 @@ oder andere fachliche Daten vorhanden sind, bricht der Start bewusst ab. Nach de
 Erzeugen der Demo-Daten sollte `--tt.demo-data.create=true` wieder weggelassen
 werden.
 
-In der Entwicklung kann dieselbe Property über das Maven-Plugin gesetzt werden:
+In der Entwicklung gibt es dafür ein eigenes Skript:
 
 ```shell
-./run/run-app.sh -Dspring-boot.run.arguments=--tt.demo-data.create=true
+./run/start-demo.sh /Users/jens/topteacher/data/topteacher-demo
 ```
