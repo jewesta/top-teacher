@@ -29,9 +29,9 @@ final class LoeCategorySection extends AbstractLoeSection<LoeCategory> {
 	}
 
 	private LoeCategorySection(final LoeCategory category, final List<LoeCategory> siblings,
-			final List<LoeTaskSection> tasks, final LoeSectionComponents components, final LoeCollapseState collapseState,
-			final Handler handler, final List<String> descendantKeys, final TextField title,
-			final MarkdownEditor description, final LoePointBadge pointBadge) {
+			final List<LoeTaskSection> tasks, final LoeSectionComponents components,
+			final LoeCollapseState collapseState, final Handler handler, final List<String> descendantKeys,
+			final TextField title, final MarkdownEditor description, final LoePointBadge pointBadge) {
 		super(category, "tt-eh-category", components.summary("Leistungskategorie", title, pointBadge), pointBadge,
 				tasks);
 		this.title = title;

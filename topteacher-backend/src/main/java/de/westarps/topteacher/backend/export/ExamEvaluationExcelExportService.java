@@ -74,8 +74,8 @@ public class ExamEvaluationExcelExportService {
 	private void renderSheet(final Workbook workbook, final EvaluationExportData data) {
 		final Sheet sheet = workbook.createSheet(SHEET_NAME);
 		final WorkbookStyles styles = WorkbookStyles.create(workbook);
-		final List<LoeAggregationColumns.Column> aggregationColumns =
-				LoeAggregationColumns.from(data.parts(), data.categories(), data.tasks(), data.requirements());
+		final List<LoeAggregationColumns.Column> aggregationColumns = LoeAggregationColumns.from(data.parts(),
+				data.categories(), data.tasks(), data.requirements());
 
 		renderHeader(sheet, styles, aggregationColumns);
 		renderRows(sheet, styles, data, aggregationColumns);
@@ -101,8 +101,9 @@ public class ExamEvaluationExcelExportService {
 			final EvaluationRow evaluationRow = data.evaluationRow(data.pupils().get(index));
 			final Row row = sheet.createRow(index + 1);
 			textCell(row, 0, evaluationRow.pupilName(), styles.text());
-			textCell(row, 1, pointsDisplayName(evaluationRow.pointsFor(data.requirements()),
-					hasBonus(data.requirements())), styles.centered());
+			textCell(row, 1,
+					pointsDisplayName(evaluationRow.pointsFor(data.requirements()), hasBonus(data.requirements())),
+					styles.centered());
 			textCell(row, 2, data.gradeDisplayName(evaluationRow), styles.centered());
 			for (int columnIndex = 0; columnIndex < aggregationColumns.size(); columnIndex++) {
 				final LoeAggregationColumns.Column aggregationColumn = aggregationColumns.get(columnIndex);
@@ -116,8 +117,8 @@ public class ExamEvaluationExcelExportService {
 
 	private void configureSheet(final Sheet sheet, final int aggregationColumnCount, final int pupilCount) {
 		sheet.createFreezePane(FROZEN_COLUMNS, 1);
-		sheet.setAutoFilter(new CellRangeAddress(HEADER_ROW_INDEX, pupilCount, 0,
-				FROZEN_COLUMNS + aggregationColumnCount - 1));
+		sheet.setAutoFilter(
+				new CellRangeAddress(HEADER_ROW_INDEX, pupilCount, 0, FROZEN_COLUMNS + aggregationColumnCount - 1));
 		sheet.setColumnWidth(0, 26 * 256);
 		sheet.setColumnWidth(1, 10 * 256);
 		sheet.setColumnWidth(2, 18 * 256);
@@ -150,8 +151,7 @@ public class ExamEvaluationExcelExportService {
 					achievedPointsByPupilId);
 		}
 		return new EvaluationExportData(pupils, parts, categories, tasks, requirements, new LoePointRules(gradingScale),
-				gradingScaleRepository.findRangesByGradingScaleId(gradingScale.id()),
-				achievedPointsByPupilId);
+				gradingScaleRepository.findRangesByGradingScaleId(gradingScale.id()), achievedPointsByPupilId);
 	}
 
 	private Map<Integer, Integer> achievedPointsByRequirementId(final Exam exam, final Pupil pupil) {
@@ -183,12 +183,11 @@ public class ExamEvaluationExcelExportService {
 
 	private record EvaluationExportData(List<Pupil> pupils, List<LoePart> parts, List<LoeCategory> categories,
 			List<LoeTask> tasks, List<LoeRequirement> requirements, LoePointRules pointRules,
-			List<GradingScaleRange> gradingScaleRanges,
-			Map<Integer, Map<Integer, Integer>> achievedPointsByPupilId) {
+			List<GradingScaleRange> gradingScaleRanges, Map<Integer, Map<Integer, Integer>> achievedPointsByPupilId) {
 
 		EvaluationRow evaluationRow(final Pupil pupil) {
-			final Map<Integer, Integer> achievedPointsByRequirementId =
-					achievedPointsByPupilId.getOrDefault(pupil.id(), Map.of());
+			final Map<Integer, Integer> achievedPointsByRequirementId = achievedPointsByPupilId.getOrDefault(pupil.id(),
+					Map.of());
 			return new EvaluationRow(pupil, achievedPointsByRequirementId);
 		}
 
@@ -204,9 +203,7 @@ public class ExamEvaluationExcelExportService {
 			}
 			return gradingScaleRanges.stream()
 					.filter(range -> range.minPoints() <= effectivePoints && effectivePoints <= range.maxPoints())
-					.findFirst()
-					.map(range -> range.gradeLevel().getDisplayName())
-					.orElse("");
+					.findFirst().map(range -> range.gradeLevel().getDisplayName()).orElse("");
 		}
 
 	}

@@ -55,8 +55,8 @@ class ExamEvaluationViewerTests {
 	private static final LoePart SECOND_PART = new LoePart(6, EXAM.id(), "Klausurteil B", 1);
 	private static final LoeCategory SECOND_CATEGORY = new LoeCategory(7, SECOND_PART.id(), "Sprache", "", 0);
 	private static final LoeTask SECOND_TASK = new LoeTask(8, SECOND_CATEGORY.id(), "Teilaufgabe 2", 0);
-	private static final LoeRequirement SECOND_REQUIREMENT =
-			new LoeRequirement(9, SECOND_TASK.id(), "Zweite Anforderung", 2, false, 0);
+	private static final LoeRequirement SECOND_REQUIREMENT = new LoeRequirement(9, SECOND_TASK.id(),
+			"Zweite Anforderung", 2, false, 0);
 
 	@Test
 	void collapsesAggregationColumnsThatDuplicateTotal() {
@@ -78,12 +78,12 @@ class ExamEvaluationViewerTests {
 
 		final GradingScaleRepository gradingScaleRepository = mock(GradingScaleRepository.class);
 		when(gradingScaleRepository.findById(COURSE.gradingScaleId())).thenReturn(Optional.of(GRADING_SCALE));
-		when(gradingScaleRepository.findRangesByGradingScaleId(GRADING_SCALE.id())).thenReturn(List.of(
-				new GradingScaleRange(1, GRADING_SCALE.id(), GradeLevel.SEHR_GUT_PLUS, 5, 5),
-				new GradingScaleRange(2, GRADING_SCALE.id(), GradeLevel.AUSREICHEND, 0, 4)));
+		when(gradingScaleRepository.findRangesByGradingScaleId(GRADING_SCALE.id()))
+				.thenReturn(List.of(new GradingScaleRange(1, GRADING_SCALE.id(), GradeLevel.SEHR_GUT_PLUS, 5, 5),
+						new GradingScaleRange(2, GRADING_SCALE.id(), GradeLevel.AUSREICHEND, 0, 4)));
 
-		final ExamEvaluationViewer viewer =
-				new ExamEvaluationViewer(courseRepository, levelOfExpectationsRepository, gradingScaleRepository);
+		final ExamEvaluationViewer viewer = new ExamEvaluationViewer(courseRepository, levelOfExpectationsRepository,
+				gradingScaleRepository);
 
 		viewer.setExam(EXAM);
 
@@ -93,8 +93,9 @@ class ExamEvaluationViewerTests {
 		assertThat(grid.getColumns().subList(3, grid.getColumns().size())).noneMatch(Grid.Column::isFrozen);
 		assertThat(itemCount(grid)).isEqualTo(2);
 		assertThat(components(viewer, Button.class).stream().map(Button::getText)).contains("Excel");
-		assertThat(components(viewer, Button.class).stream()
-				.map(button -> button.getElement().getAttribute("aria-label"))).contains("Vollbild");
+		assertThat(
+				components(viewer, Button.class).stream().map(button -> button.getElement().getAttribute("aria-label")))
+				.contains("Vollbild");
 		verify(levelOfExpectationsRepository).findRequirementResultsByExamAndPupil(EXAM.id(), PUPIL.id());
 		verify(levelOfExpectationsRepository).findRequirementResultsByExamAndPupil(EXAM.id(), SECOND_PUPIL.id());
 	}
@@ -117,13 +118,12 @@ class ExamEvaluationViewerTests {
 		when(gradingScaleRepository.findById(COURSE.gradingScaleId())).thenReturn(Optional.of(GRADING_SCALE));
 		when(gradingScaleRepository.findRangesByGradingScaleId(GRADING_SCALE.id())).thenReturn(List.of());
 
-		final ExamEvaluationViewer viewer =
-				new ExamEvaluationViewer(courseRepository, levelOfExpectationsRepository, gradingScaleRepository);
+		final ExamEvaluationViewer viewer = new ExamEvaluationViewer(courseRepository, levelOfExpectationsRepository,
+				gradingScaleRepository);
 		viewer.setExam(EXAM);
 
 		final FullscreenButton fullscreenButton = components(viewer, FullscreenButton.class).stream()
-				.filter(button -> "Vollbild".equals(button.getElement().getAttribute("aria-label")))
-				.findFirst()
+				.filter(button -> "Vollbild".equals(button.getElement().getAttribute("aria-label"))).findFirst()
 				.orElseThrow();
 
 		fullscreenButton.setFullscreenActive(true);
@@ -156,8 +156,8 @@ class ExamEvaluationViewerTests {
 		when(gradingScaleRepository.findById(COURSE.gradingScaleId())).thenReturn(Optional.of(GRADING_SCALE));
 		when(gradingScaleRepository.findRangesByGradingScaleId(GRADING_SCALE.id())).thenReturn(List.of());
 
-		final ExamEvaluationViewer viewer =
-				new ExamEvaluationViewer(courseRepository, levelOfExpectationsRepository, gradingScaleRepository);
+		final ExamEvaluationViewer viewer = new ExamEvaluationViewer(courseRepository, levelOfExpectationsRepository,
+				gradingScaleRepository);
 
 		viewer.setExam(EXAM);
 

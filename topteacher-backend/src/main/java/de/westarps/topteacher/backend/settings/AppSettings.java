@@ -33,8 +33,7 @@ public class AppSettings {
 	}
 
 	public String ttDatabaseBackupTargetFolder() {
-		return settingsRepository.findValue(TT_DATABASE_BACKUP_TARGET_FOLDER_KEY)
-				.map(String::trim)
+		return settingsRepository.findValue(TT_DATABASE_BACKUP_TARGET_FOLDER_KEY).map(String::trim)
 				.orElse(TT_DATABASE_BACKUP_TARGET_FOLDER_DEFAULT);
 	}
 
@@ -53,10 +52,8 @@ public class AppSettings {
 	}
 
 	public String ttDatabaseBackupScheduleCron() {
-		return settingsRepository.findValue(TT_DATABASE_BACKUP_SCHEDULE_CRON_KEY)
-				.map(String::trim)
-				.filter(value -> !value.isBlank())
-				.orElse(TT_DATABASE_BACKUP_SCHEDULE_CRON_DEFAULT);
+		return settingsRepository.findValue(TT_DATABASE_BACKUP_SCHEDULE_CRON_KEY).map(String::trim)
+				.filter(value -> !value.isBlank()).orElse(TT_DATABASE_BACKUP_SCHEDULE_CRON_DEFAULT);
 	}
 
 	public void saveTtDatabaseBackupScheduleCron(final String cron) {
@@ -78,10 +75,10 @@ public class AppSettings {
 
 	private static boolean parseBoolean(final String key, final String value) {
 		return switch (value.trim().toLowerCase(Locale.ROOT)) {
-			case "true" -> true;
-			case "false" -> false;
-			default -> throw new IllegalArgumentException(
-					"Setting " + key + " must be true or false, but was '" + value + "'.");
+		case "true" -> true;
+		case "false" -> false;
+		default ->
+			throw new IllegalArgumentException("Setting " + key + " must be true or false, but was '" + value + "'.");
 		};
 	}
 }

@@ -21,14 +21,13 @@ public class Sanitizer {
 
 	private static final String CRITERION_DESTINATION_PREFIX = LoeCriterionParser.TAG_NAMESPACE + ":";
 	private static final Safelist SAFE_HTML = Safelist.basic()
-			.addTags("h1", "h2", "h3", "h4", "h5", "h6", "mark", "span")
-			.addAttributes("mark", "class")
+			.addTags("h1", "h2", "h3", "h4", "h5", "h6", "mark", "span").addAttributes("mark", "class")
 			.addAttributes("span", "class");
 	private static final OutputSettings OUTPUT_SETTINGS = new OutputSettings().prettyPrint(false);
 
 	private final Parser parser = Parser.builder().build();
-	private final org.commonmark.renderer.html.HtmlRenderer markdownRenderer =
-			org.commonmark.renderer.html.HtmlRenderer.builder().build();
+	private final org.commonmark.renderer.html.HtmlRenderer markdownRenderer = org.commonmark.renderer.html.HtmlRenderer
+			.builder().build();
 
 	public SafeHtml markdownToHtml(final String markdown) {
 		return markdownToHtml(markdown, MarkdownView.PUPIL);
@@ -85,8 +84,8 @@ public class Sanitizer {
 		final boolean achieved = Boolean.TRUE.equals(criterionStatusByKey.apply(criterionKey));
 		link.insertBefore(html("<span class=\"tt-criterion\"><mark class=\"tt-criterion-highlight\">"));
 		moveChildrenBefore(link);
-		link.insertBefore(html("</mark><span class=\"tt-criterion-badge\">" + escapeHtml(criterionKey)
-				+ "</span>" + criterionMarker(achieved) + "</span>"));
+		link.insertBefore(html("</mark><span class=\"tt-criterion-badge\">" + escapeHtml(criterionKey) + "</span>"
+				+ criterionMarker(achieved) + "</span>"));
 		link.unlink();
 	}
 
@@ -119,16 +118,12 @@ public class Sanitizer {
 	}
 
 	private static String escapeHtml(final String value) {
-		return value == null ? "" : value
-				.replace("&", "&amp;")
-				.replace("<", "&lt;")
-				.replace(">", "&gt;")
-				.replace("\"", "&quot;")
-				.replace("'", "&#39;");
+		return value == null ? ""
+				: value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;")
+						.replace("'", "&#39;");
 	}
 
 	public enum MarkdownView {
-		PUPIL,
-		TEACHER
+		PUPIL, TEACHER
 	}
 }

@@ -95,8 +95,7 @@ public class GradingScaleRepository {
 			throw new IllegalStateException("Grading scale insert did not return a generated id");
 		}
 
-		return new GradingScale(id.intValue(), gradingScale.name(), gradingScale.maxPoints(),
-				gradingScale.lifecycle());
+		return new GradingScale(id.intValue(), gradingScale.name(), gradingScale.maxPoints(), gradingScale.lifecycle());
 	}
 
 	private void update(final GradingScale gradingScale) {
@@ -140,20 +139,18 @@ public class GradingScaleRepository {
 
 	private MapSqlParameterSource gradingScaleParameters(final GradingScale gradingScale) {
 		return new MapSqlParameterSource().addValue("name", gradingScale.name())
-				.addValue("maxPoints", gradingScale.maxPoints())
-				.addValue("lifecycle", gradingScale.lifecycle().name());
+				.addValue("maxPoints", gradingScale.maxPoints()).addValue("lifecycle", gradingScale.lifecycle().name());
 	}
 
 	private MapSqlParameterSource rangeParameters(final GradingScaleRange range) {
 		return new MapSqlParameterSource().addValue("gradingScaleId", range.gradingScaleId())
-				.addValue("gradePoints", range.gradeLevel().getPoints())
-				.addValue("minPoints", range.minPoints())
+				.addValue("gradePoints", range.gradeLevel().getPoints()).addValue("minPoints", range.minPoints())
 				.addValue("maxPoints", range.maxPoints());
 	}
 
 	private GradingScale mapGradingScale(final ResultSet resultSet, final int rowNumber) throws SQLException {
-		return new GradingScale(resultSet.getInt("id"), resultSet.getString("name"),
-				resultSet.getInt("max_points"), Lifecycle.valueOf(resultSet.getString("lifecycle")));
+		return new GradingScale(resultSet.getInt("id"), resultSet.getString("name"), resultSet.getInt("max_points"),
+				Lifecycle.valueOf(resultSet.getString("lifecycle")));
 	}
 
 	private GradingScaleRange mapGradingScaleRange(final ResultSet resultSet, final int rowNumber) throws SQLException {

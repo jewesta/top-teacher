@@ -42,9 +42,7 @@ class AbstractFormEditorTests {
 	}
 
 	private static <T extends Component> List<T> components(final Component root, final Class<T> type) {
-		return root.getChildren()
-				.flatMap(child -> java.util.stream.Stream.concat(java.util.stream.Stream.of(child),
-						components(child, type).stream()))
-				.filter(type::isInstance).map(type::cast).toList();
+		return root.getChildren().flatMap(child -> java.util.stream.Stream.concat(java.util.stream.Stream.of(child),
+				components(child, type).stream())).filter(type::isInstance).map(type::cast).toList();
 	}
 }

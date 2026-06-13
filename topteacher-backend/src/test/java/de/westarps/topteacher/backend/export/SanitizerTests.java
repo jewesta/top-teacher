@@ -10,8 +10,8 @@ class SanitizerTests {
 
 	@Test
 	void removesCriterionLinksForPupilFacingHtml() {
-		final SafeHtml html = sanitizer.markdownToHtml(
-				"Die Schülerin nutzt die **[korrekte Zeitform](eh:1)** und `präzise Begriffe`.");
+		final SafeHtml html = sanitizer
+				.markdownToHtml("Die Schülerin nutzt die **[korrekte Zeitform](eh:1)** und `präzise Begriffe`.");
 
 		assertThat(html.value()).contains("<strong>korrekte Zeitform</strong>");
 		assertThat(html.value()).contains("<code>präzise Begriffe</code>");

@@ -433,8 +433,8 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 	}
 
 	private void save(final LoeCategory category, final String title, final String descriptionMarkdown) {
-		final LoeCategory updatedCategory = new LoeCategory(category.id(), category.partId(), title, descriptionMarkdown,
-				category.sortOrder());
+		final LoeCategory updatedCategory = new LoeCategory(category.id(), category.partId(), title,
+				descriptionMarkdown, category.sortOrder());
 		levelOfExpectationsRepository.saveCategory(updatedCategory);
 		replaceCategory(updatedCategory);
 	}

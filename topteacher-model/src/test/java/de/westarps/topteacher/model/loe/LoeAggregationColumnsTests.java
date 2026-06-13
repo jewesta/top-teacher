@@ -15,13 +15,13 @@ class LoeAggregationColumnsTests {
 	private static final LoePart SECOND_PART = new LoePart(5, 1, "Klausurteil B", 1);
 	private static final LoeCategory SECOND_CATEGORY = new LoeCategory(6, SECOND_PART.id(), "Sprache", "", 0);
 	private static final LoeTask SECOND_TASK = new LoeTask(7, SECOND_CATEGORY.id(), "Teilaufgabe 2", 0);
-	private static final LoeRequirement SECOND_REQUIREMENT =
-			new LoeRequirement(8, SECOND_TASK.id(), "Zweite Anforderung", 2, false, 0);
+	private static final LoeRequirement SECOND_REQUIREMENT = new LoeRequirement(8, SECOND_TASK.id(),
+			"Zweite Anforderung", 2, false, 0);
 
 	@Test
 	void removesColumnsThatDuplicateTheWholeLevelOfExpectations() {
-		final List<LoeAggregationColumns.Column> columns = LoeAggregationColumns.from(List.of(PART),
-				List.of(CATEGORY), List.of(TASK), List.of(REQUIREMENT));
+		final List<LoeAggregationColumns.Column> columns = LoeAggregationColumns.from(List.of(PART), List.of(CATEGORY),
+				List.of(TASK), List.of(REQUIREMENT));
 
 		assertThat(columns).isEmpty();
 	}
@@ -32,7 +32,7 @@ class LoeAggregationColumnsTests {
 				List.of(CATEGORY, SECOND_CATEGORY), List.of(TASK, SECOND_TASK),
 				List.of(REQUIREMENT, SECOND_REQUIREMENT));
 
-		assertThat(columns).extracting(LoeAggregationColumns.Column::title)
-				.containsExactly("Klausurteil A", "Klausurteil B");
+		assertThat(columns).extracting(LoeAggregationColumns.Column::title).containsExactly("Klausurteil A",
+				"Klausurteil B");
 	}
 }

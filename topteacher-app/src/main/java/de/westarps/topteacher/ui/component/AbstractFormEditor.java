@@ -65,8 +65,7 @@ public abstract class AbstractFormEditor extends VerticalLayout {
 	}
 
 	protected enum FormColumns {
-		SINGLE(List.of(SINGLE_COLUMN)),
-		RESPONSIVE(List.of(SINGLE_COLUMN, TWO_COLUMNS));
+		SINGLE(List.of(SINGLE_COLUMN)), RESPONSIVE(List.of(SINGLE_COLUMN, TWO_COLUMNS));
 
 		private final List<FormLayout.ResponsiveStep> responsiveSteps;
 
