@@ -34,8 +34,7 @@ public class LevelOfExpectationsExportService {
 	public LevelOfExpectationsExportService(final CourseRepository courseRepository,
 			final ExamRepository examRepository, final PupilRepository pupilRepository,
 			final GradingScaleRepository gradingScaleRepository,
-			final LevelOfExpectationsRepository levelOfExpectationsRepository,
-			final AppSettings appSettings,
+			final LevelOfExpectationsRepository levelOfExpectationsRepository, final AppSettings appSettings,
 			final LevelOfExpectationsExportModelFactory modelFactory, final HtmlRenderer htmlRenderer,
 			final PdfRenderer pdfRenderer) {
 		this.courseRepository = courseRepository;
@@ -113,9 +112,8 @@ public class LevelOfExpectationsExportService {
 				.orElseThrow(() -> new IllegalArgumentException("Course does not exist: " + exam.courseId()));
 		final Pupil pupil = pupilRepository.findById(pupilId)
 				.orElseThrow(() -> new IllegalArgumentException("Pupil does not exist: " + pupilId));
-		final GradingScale gradingScale = gradingScaleRepository.findById(course.gradingScaleId())
-				.orElseThrow(() -> new IllegalArgumentException("Grading scale does not exist: "
-						+ course.gradingScaleId()));
+		final GradingScale gradingScale = gradingScaleRepository.findById(course.gradingScaleId()).orElseThrow(
+				() -> new IllegalArgumentException("Grading scale does not exist: " + course.gradingScaleId()));
 
 		return new LevelOfExpectationsExportData(course, exam, pupil, gradingScale,
 				gradingScaleRepository.findRangesByGradingScaleId(gradingScale.id()),

@@ -28,17 +28,10 @@ import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
-import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.backend.repo.GradingScaleRepository;
+import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.CoursePeriod;
-import de.westarps.topteacher.model.loe.LoeCategory;
-import de.westarps.topteacher.model.loe.LoeCriterion;
-import de.westarps.topteacher.model.loe.LoeCriterionResult;
-import de.westarps.topteacher.model.loe.LoePart;
-import de.westarps.topteacher.model.loe.LoeRequirement;
-import de.westarps.topteacher.model.loe.LoeRequirementResult;
-import de.westarps.topteacher.model.loe.LoeTask;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.GradingScale;
 import de.westarps.topteacher.model.Lifecycle;
@@ -46,6 +39,13 @@ import de.westarps.topteacher.model.Pupil;
 import de.westarps.topteacher.model.SchoolClass;
 import de.westarps.topteacher.model.SchoolYear;
 import de.westarps.topteacher.model.Subject;
+import de.westarps.topteacher.model.loe.LoeCategory;
+import de.westarps.topteacher.model.loe.LoeCriterion;
+import de.westarps.topteacher.model.loe.LoeCriterionResult;
+import de.westarps.topteacher.model.loe.LoePart;
+import de.westarps.topteacher.model.loe.LoeRequirement;
+import de.westarps.topteacher.model.loe.LoeRequirementResult;
+import de.westarps.topteacher.model.loe.LoeTask;
 import de.westarps.topteacher.ui.component.FullscreenButton;
 import de.westarps.topteacher.ui.component.StepperComboBox;
 import de.westarps.vaadin.markdown.MarkdownViewer;
@@ -66,7 +66,8 @@ class ExamResultsEditorTests {
 			"Nutzt die [korrekte Zeitform](eh:1).", 5, false, 0);
 	private static final LoeCriterion CRITERION = new LoeCriterion(5, REQUIREMENT.id(), "1", "korrekte Zeitform", 0,
 			true);
-	private static final LoeRequirement BONUS_REQUIREMENT = new LoeRequirement(6, TASK.id(), "Bonusaufgabe", 2, true, 1);
+	private static final LoeRequirement BONUS_REQUIREMENT = new LoeRequirement(6, TASK.id(), "Bonusaufgabe", 2, true,
+			1);
 
 	@Test
 	void savesRequirementPointsOnlyWhenToolbarSaveIsClicked() {
@@ -103,8 +104,8 @@ class ExamResultsEditorTests {
 
 		saveButton.click();
 
-		verify(levelOfExpectationsRepository).saveRequirementResult(new LoeRequirementResult(REQUIREMENT.id(),
-				PUPIL.id(), 3));
+		verify(levelOfExpectationsRepository)
+				.saveRequirementResult(new LoeRequirementResult(REQUIREMENT.id(), PUPIL.id(), 3));
 		verify(levelOfExpectationsRepository, never()).saveCriterionResult(any(LoeCriterionResult.class));
 		assertThat(saveButton.isEnabled()).isFalse();
 		assertThat(pdfMenu.isEnabled()).isTrue();
@@ -135,8 +136,8 @@ class ExamResultsEditorTests {
 
 		saveButton.click();
 
-		verify(levelOfExpectationsRepository).saveCriterionResult(
-				new LoeCriterionResult(CRITERION.id(), PUPIL.id(), true));
+		verify(levelOfExpectationsRepository)
+				.saveCriterionResult(new LoeCriterionResult(CRITERION.id(), PUPIL.id(), true));
 		assertThat(saveButton.isEnabled()).isFalse();
 	}
 
@@ -188,8 +189,8 @@ class ExamResultsEditorTests {
 
 		saveButton.click();
 
-		verify(levelOfExpectationsRepository).saveRequirementResult(new LoeRequirementResult(REQUIREMENT.id(),
-				PUPIL.id(), 1, "Zeitform noch einmal besprechen."));
+		verify(levelOfExpectationsRepository).saveRequirementResult(
+				new LoeRequirementResult(REQUIREMENT.id(), PUPIL.id(), 1, "Zeitform noch einmal besprechen."));
 		assertThat(saveButton.isEnabled()).isFalse();
 	}
 
@@ -199,8 +200,8 @@ class ExamResultsEditorTests {
 		when(levelOfExpectationsRepository.findCriterionResultsByExamAndPupil(EXAM.id(), SECOND_PUPIL.id()))
 				.thenReturn(List.of(new LoeCriterionResult(CRITERION.id(), SECOND_PUPIL.id(), true)));
 		when(levelOfExpectationsRepository.findRequirementResultsByExamAndPupil(EXAM.id(), SECOND_PUPIL.id()))
-				.thenReturn(List.of(new LoeRequirementResult(REQUIREMENT.id(), SECOND_PUPIL.id(), 4,
-						"Guter Fortschritt.")));
+				.thenReturn(List
+						.of(new LoeRequirementResult(REQUIREMENT.id(), SECOND_PUPIL.id(), 4, "Guter Fortschritt.")));
 		final CourseRepository courseRepository = courseRepository(List.of(PUPIL, SECOND_PUPIL));
 		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, levelOfExpectationsRepository,
 				gradingScaleRepository());
@@ -296,8 +297,7 @@ class ExamResultsEditorTests {
 	void allowsBonusResultsThatWouldOnlyApplyUpToTheGradingScaleMaximum() {
 		final LevelOfExpectationsRepository levelOfExpectationsRepository = levelOfExpectationsRepository(
 				List.of(REQUIREMENT, BONUS_REQUIREMENT), List.of(CRITERION),
-				List.of(
-						new LoeRequirementResult(REQUIREMENT.id(), PUPIL.id(), 5),
+				List.of(new LoeRequirementResult(REQUIREMENT.id(), PUPIL.id(), 5),
 						new LoeRequirementResult(BONUS_REQUIREMENT.id(), PUPIL.id(), 0)));
 		final CourseRepository courseRepository = courseRepository();
 		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, levelOfExpectationsRepository,
@@ -307,8 +307,8 @@ class ExamResultsEditorTests {
 		components(editor, IntegerField.class).get(1).setValue(2);
 		saveButton(editor).click();
 
-		verify(levelOfExpectationsRepository).saveRequirementResult(
-				new LoeRequirementResult(BONUS_REQUIREMENT.id(), PUPIL.id(), 2));
+		verify(levelOfExpectationsRepository)
+				.saveRequirementResult(new LoeRequirementResult(BONUS_REQUIREMENT.id(), PUPIL.id(), 2));
 	}
 
 	private static LevelOfExpectationsRepository levelOfExpectationsRepository() {
@@ -324,10 +324,8 @@ class ExamResultsEditorTests {
 		when(repository.findTasksByExamId(EXAM.id())).thenReturn(List.of(TASK));
 		when(repository.findRequirementsByExamId(EXAM.id())).thenReturn(requirements);
 		when(repository.findActiveCriteriaByExamId(EXAM.id())).thenReturn(criteria);
-		when(repository.findCriterionResultsByExamAndPupil(EXAM.id(), PUPIL.id()))
-				.thenReturn(criteria.stream()
-						.map(criterion -> new LoeCriterionResult(criterion.id(), PUPIL.id(), false))
-						.toList());
+		when(repository.findCriterionResultsByExamAndPupil(EXAM.id(), PUPIL.id())).thenReturn(
+				criteria.stream().map(criterion -> new LoeCriterionResult(criterion.id(), PUPIL.id(), false)).toList());
 		when(repository.findRequirementResultsByExamAndPupil(EXAM.id(), PUPIL.id())).thenReturn(requirementResults);
 		return repository;
 	}
@@ -349,9 +347,8 @@ class ExamResultsEditorTests {
 
 	private static GradingScaleRepository gradingScaleRepository(final int maxPoints) {
 		final GradingScaleRepository repository = mock(GradingScaleRepository.class);
-		when(repository.findById(COURSE.gradingScaleId()))
-				.thenReturn(Optional.of(new GradingScale(COURSE.gradingScaleId(), "Standard", maxPoints,
-						Lifecycle.ACTIVE)));
+		when(repository.findById(COURSE.gradingScaleId())).thenReturn(
+				Optional.of(new GradingScale(COURSE.gradingScaleId(), "Standard", maxPoints, Lifecycle.ACTIVE)));
 		return repository;
 	}
 
@@ -367,8 +364,7 @@ class ExamResultsEditorTests {
 	}
 
 	private static MenuBar pdfMenu(final Component root) {
-		return components(root, MenuBar.class).stream()
-				.filter(menu -> menu.getClassNames().contains("tt-pdf-menu"))
+		return components(root, MenuBar.class).stream().filter(menu -> menu.getClassNames().contains("tt-pdf-menu"))
 				.findFirst().orElseThrow();
 	}
 
@@ -378,40 +374,34 @@ class ExamResultsEditorTests {
 
 	private static List<Icon> bonusIcons(final Component root) {
 		return components(root, Icon.class).stream()
-				.filter(icon -> icon.getClassNames().contains("tt-results-bonus-icon"))
-				.toList();
+				.filter(icon -> icon.getClassNames().contains("tt-results-bonus-icon")).toList();
 	}
 
 	private static List<String> requirementNumberTexts(final Component root) {
 		return components(root, Span.class).stream()
-				.filter(span -> span.getClassNames().contains("tt-results-requirement-number"))
-				.map(Span::getText)
+				.filter(span -> span.getClassNames().contains("tt-results-requirement-number")).map(Span::getText)
 				.toList();
 	}
 
 	private static List<String> criterionIndicatorTexts(final Component root) {
 		return components(root, Span.class).stream()
-				.filter(span -> span.getClassNames().contains("tt-results-criteria-indicator"))
-				.map(Span::getText)
+				.filter(span -> span.getClassNames().contains("tt-results-criteria-indicator")).map(Span::getText)
 				.toList();
 	}
 
 	private static List<String> pointsText(final Component root) {
 		return components(root, Span.class).stream()
-				.filter(span -> span.getClassNames().contains("tt-results-points-text"))
-				.map(Span::getText)
-				.toList();
+				.filter(span -> span.getClassNames().contains("tt-results-points-text")).map(Span::getText).toList();
 	}
 
 	private static List<Checkbox> criterionCheckboxes(final Component root) {
 		return components(root, Checkbox.class).stream()
-				.filter(checkbox -> checkbox.getClassNames().contains("tt-results-criterion-checkbox"))
-				.toList();
+				.filter(checkbox -> checkbox.getClassNames().contains("tt-results-criterion-checkbox")).toList();
 	}
 
 	@SuppressWarnings("unchecked")
 	private static StepperComboBox<Pupil> pupilSelector(final Component root) {
-		return (StepperComboBox<Pupil>) components(root, StepperComboBox.class).getFirst();
+		return components(root, StepperComboBox.class).getFirst();
 	}
 
 	private static <T extends Component> List<T> components(final Component root, final Class<T> type) {

@@ -23,12 +23,13 @@ import com.openhtmltopdf.util.XRLog;
 @Component
 public class OpenHtmlPdfRenderer implements PdfRenderer {
 
-	private static final PDRectangle A4_LANDSCAPE =
-			new PDRectangle(PDRectangle.A4.getHeight(), PDRectangle.A4.getWidth());
-	private static final String TEMPLATE_BASE_URI =
-			OpenHtmlPdfRenderer.class.getClassLoader().getResource("templates/export/").toExternalForm();
+	private static final PDRectangle A4_LANDSCAPE = new PDRectangle(PDRectangle.A4.getHeight(),
+			PDRectangle.A4.getWidth());
+	private static final String TEMPLATE_BASE_URI = OpenHtmlPdfRenderer.class.getClassLoader()
+			.getResource("templates/export/").toExternalForm();
 
-	// OpenHTMLToPDF writes its own JUL-style messages directly to the console unless disabled.
+	// OpenHTMLToPDF writes its own JUL-style messages directly to the console
+	// unless disabled.
 	static {
 		XRLog.setLoggingEnabled(false);
 	}
@@ -70,11 +71,8 @@ public class OpenHtmlPdfRenderer implements PdfRenderer {
 
 	private static String toXhtml(final String html) {
 		final Document document = Jsoup.parse(html == null ? "" : html);
-		document.outputSettings()
-				.syntax(Syntax.xml)
-				.escapeMode(org.jsoup.nodes.Entities.EscapeMode.xhtml)
-				.charset(StandardCharsets.UTF_8)
-				.prettyPrint(false);
+		document.outputSettings().syntax(Syntax.xml).escapeMode(org.jsoup.nodes.Entities.EscapeMode.xhtml)
+				.charset(StandardCharsets.UTF_8).prettyPrint(false);
 		return document.html();
 	}
 
@@ -91,8 +89,8 @@ public class OpenHtmlPdfRenderer implements PdfRenderer {
 		final float x = slotIndex * slotWidth + (slotWidth - sourceBox.getWidth() * scale) / 2;
 		final float y = (targetHeight - sourceBox.getHeight() * scale) / 2;
 
-		try (PDPageContentStream contentStream =
-				new PDPageContentStream(target, targetPage, AppendMode.APPEND, true, true)) {
+		try (PDPageContentStream contentStream = new PDPageContentStream(target, targetPage, AppendMode.APPEND, true,
+				true)) {
 			contentStream.transform(Matrix.getTranslateInstance(x, y));
 			contentStream.transform(Matrix.getScaleInstance(scale, scale));
 			contentStream.drawForm(sourceForm);

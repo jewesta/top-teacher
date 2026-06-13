@@ -41,8 +41,7 @@ class ExamRepositoryTests {
 		final Course otherCourse = courseRepository.save(new Course(null, SchoolClass.CLS_8A, Subject.SPANISH,
 				new SchoolYear(2030), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, gradingScale.id()));
 
-		final Exam saved = examRepository
-				.save(new Exam(null, course.id(), "1. Klausur", LocalDate.of(2030, 9, 17)));
+		final Exam saved = examRepository.save(new Exam(null, course.id(), "1. Klausur", LocalDate.of(2030, 9, 17)));
 		examRepository.save(new Exam(null, otherCourse.id(), "Andere Klausur", LocalDate.of(2030, 9, 18)));
 
 		assertThat(saved.id()).isNotNull();

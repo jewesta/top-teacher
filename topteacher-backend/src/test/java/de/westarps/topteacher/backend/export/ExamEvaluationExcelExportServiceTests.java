@@ -50,8 +50,8 @@ class ExamEvaluationExcelExportServiceTests {
 	private static final LoePart SECOND_PART = new LoePart(5, EXAM.id(), "Klausurteil B", 1);
 	private static final LoeCategory SECOND_CATEGORY = new LoeCategory(6, SECOND_PART.id(), "Sprache", "", 0);
 	private static final LoeTask SECOND_TASK = new LoeTask(7, SECOND_CATEGORY.id(), "Teilaufgabe 2", 0);
-	private static final LoeRequirement SECOND_REQUIREMENT =
-			new LoeRequirement(8, SECOND_TASK.id(), "Zweite Anforderung", 2, false, 0);
+	private static final LoeRequirement SECOND_REQUIREMENT = new LoeRequirement(8, SECOND_TASK.id(),
+			"Zweite Anforderung", 2, false, 0);
 
 	@Test
 	void rendersEvaluationWorkbookWithFrozenSummaryColumns() throws IOException {
@@ -64,9 +64,9 @@ class ExamEvaluationExcelExportServiceTests {
 
 		final GradingScaleRepository gradingScaleRepository = mock(GradingScaleRepository.class);
 		when(gradingScaleRepository.findById(COURSE.gradingScaleId())).thenReturn(Optional.of(GRADING_SCALE));
-		when(gradingScaleRepository.findRangesByGradingScaleId(GRADING_SCALE.id())).thenReturn(List.of(
-				new GradingScaleRange(1, GRADING_SCALE.id(), GradeLevel.SEHR_GUT_PLUS, 7, 7),
-				new GradingScaleRange(2, GRADING_SCALE.id(), GradeLevel.UNGENUEGEND, 0, 6)));
+		when(gradingScaleRepository.findRangesByGradingScaleId(GRADING_SCALE.id()))
+				.thenReturn(List.of(new GradingScaleRange(1, GRADING_SCALE.id(), GradeLevel.SEHR_GUT_PLUS, 7, 7),
+						new GradingScaleRange(2, GRADING_SCALE.id(), GradeLevel.UNGENUEGEND, 0, 6)));
 
 		final LevelOfExpectationsRepository levelOfExpectationsRepository = mock(LevelOfExpectationsRepository.class);
 		when(levelOfExpectationsRepository.findPartsByExamId(EXAM.id())).thenReturn(List.of(PART, SECOND_PART));

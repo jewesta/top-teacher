@@ -23,19 +23,19 @@ import com.vaadin.flow.router.Route;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.ExamRepository;
-import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.backend.repo.GradingScaleRepository;
+import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.ui.MainLayout;
 import de.westarps.topteacher.ui.component.AbstractFormEditor;
+import de.westarps.topteacher.ui.component.FormBinders;
+import de.westarps.topteacher.ui.component.GradingScaleViewer;
+import de.westarps.topteacher.ui.component.MultiSelectionGrid;
 import de.westarps.topteacher.ui.component.loe.ExamEvaluationViewer;
 import de.westarps.topteacher.ui.component.loe.ExamNotesEditor;
 import de.westarps.topteacher.ui.component.loe.ExamResultsEditor;
 import de.westarps.topteacher.ui.component.loe.LevelOfExpectationsEditor;
-import de.westarps.topteacher.ui.component.FormBinders;
-import de.westarps.topteacher.ui.component.GradingScaleViewer;
-import de.westarps.topteacher.ui.component.MultiSelectionGrid;
 
 @Route(value = "exams", layout = MainLayout.class)
 public class ExamsView extends AbstractMasterDataView<Exam> {
@@ -283,8 +283,8 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		}
 
 		final String duplicateExamTitle = nextAvailableTitle(formData.getCourse().id(), formData.getTitle());
-		final Exam duplicatedExam = examRepository.save(new Exam(null, formData.getCourse().id(), duplicateExamTitle,
-				formData.getDate()));
+		final Exam duplicatedExam = examRepository
+				.save(new Exam(null, formData.getCourse().id(), duplicateExamTitle, formData.getDate()));
 		levelOfExpectationsRepository.copyDesignAndNotes(selectedExam.id(), duplicatedExam.id());
 
 		duplicateDialog.close();
@@ -353,9 +353,8 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 			return;
 		}
 
-		if (getContextTabs().getSelectedTab() == levelOfExpectationsTab
-				|| getContextTabs().getSelectedTab() == notesTab || getContextTabs().getSelectedTab() == resultsTab
-				|| getContextTabs().getSelectedTab() == evaluationTab
+		if (getContextTabs().getSelectedTab() == levelOfExpectationsTab || getContextTabs().getSelectedTab() == notesTab
+				|| getContextTabs().getSelectedTab() == resultsTab || getContextTabs().getSelectedTab() == evaluationTab
 				|| getContextTabs().getSelectedTab() == gradingScaleTab) {
 			getContextTabs().setSelectedIndex(0);
 		}

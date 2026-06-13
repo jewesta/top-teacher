@@ -24,9 +24,9 @@ public class DemoDataInitializer implements ApplicationRunner {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(DemoDataInitializer.class);
 	private static final String DEMO_DATA_SCRIPT = "classpath:db/demo-data.sql";
-	private static final List<String> BLOCKING_TABLES = List.of("pupil", "course", "course_pupil", "exam",
-			"eh_part", "eh_category", "eh_task", "eh_requirement", "eh_criterion", "eh_criterion_result",
-			"eh_requirement_result", "exam_note_section");
+	private static final List<String> BLOCKING_TABLES = List.of("pupil", "course", "course_pupil", "exam", "eh_part",
+			"eh_category", "eh_task", "eh_requirement", "eh_criterion", "eh_criterion_result", "eh_requirement_result",
+			"exam_note_section");
 
 	private final DataSource dataSource;
 	private final JdbcTemplate jdbc;
@@ -42,7 +42,8 @@ public class DemoDataInitializer implements ApplicationRunner {
 	@Override
 	public void run(final ApplicationArguments args) {
 		findBlockingData().ifPresent(reason -> {
-			throw new IllegalStateException("Demo data can only be created in an empty database. Found " + reason + ".");
+			throw new IllegalStateException(
+					"Demo data can only be created in an empty database. Found " + reason + ".");
 		});
 
 		final Resource script = resourceLoader.getResource(DEMO_DATA_SCRIPT);

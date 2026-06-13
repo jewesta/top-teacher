@@ -17,7 +17,6 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.shared.Tooltip;
@@ -282,9 +281,9 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 			return;
 		}
 
-		readSingleEditor(new CourseFormData(course.schoolClass(), course.subject(),
-				course.schoolYear().getCalendarYear(), course.coursePeriod(), gradingScaleFor(course),
-				course.lifecycle()));
+		readSingleEditor(
+				new CourseFormData(course.schoolClass(), course.subject(), course.schoolYear().getCalendarYear(),
+						course.coursePeriod(), gradingScaleFor(course), course.lifecycle()));
 		updateEditorModeControls();
 	}
 
@@ -331,9 +330,9 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 			return;
 		}
 
-		selectedCourses.forEach(course -> courseRepository.save(new Course(course.id(), course.schoolClass(),
-				course.subject(), course.schoolYear(), course.coursePeriod(), selectedLifecycle,
-				course.gradingScaleId())));
+		selectedCourses
+				.forEach(course -> courseRepository.save(new Course(course.id(), course.schoolClass(), course.subject(),
+						course.schoolYear(), course.coursePeriod(), selectedLifecycle, course.gradingScaleId())));
 		Notification.show("Status für " + selectedCourses.size() + " Kurse aktualisiert.");
 		refreshGrid();
 	}
@@ -450,16 +449,12 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 	}
 
 	private GradingScale gradingScaleFor(final Course course) {
-		return gradingScales.stream()
-				.filter(candidate -> candidate.id().equals(course.gradingScaleId()))
-				.findFirst()
+		return gradingScales.stream().filter(candidate -> candidate.id().equals(course.gradingScaleId())).findFirst()
 				.orElse(null);
 	}
 
 	private GradingScale defaultGradingScale() {
-		return gradingScales.stream()
-				.filter(candidate -> candidate.lifecycle() == Lifecycle.ACTIVE)
-				.findFirst()
+		return gradingScales.stream().filter(candidate -> candidate.lifecycle() == Lifecycle.ACTIVE).findFirst()
 				.orElseGet(() -> gradingScales.stream().findFirst().orElse(null));
 	}
 
@@ -525,8 +520,8 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 	}
 
 	private void bindSingleEditor() {
-		courseBinder.forField(schoolClass).asRequired("Klasse ist erforderlich.")
-				.bind(CourseFormData::getSchoolClass, CourseFormData::setSchoolClass);
+		courseBinder.forField(schoolClass).asRequired("Klasse ist erforderlich.").bind(CourseFormData::getSchoolClass,
+				CourseFormData::setSchoolClass);
 		courseBinder.forField(subject).asRequired("Fach ist erforderlich.").bind(CourseFormData::getSubject,
 				CourseFormData::setSubject);
 		courseBinder.forField(calendarYear).asRequired("Startjahr ist erforderlich.")

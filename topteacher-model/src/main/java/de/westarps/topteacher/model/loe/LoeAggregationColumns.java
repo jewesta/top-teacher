@@ -23,8 +23,8 @@ public final class LoeAggregationColumns {
 						.flatMap(task -> requirementsFor(task, requirements).stream()).toList();
 				columns.add(new Column(category.title(), categoryRequirements));
 
-				tasksFor(category, tasks).forEach(task -> columns.add(new Column(task.title(),
-						requirementsFor(task, requirements))));
+				tasksFor(category, tasks)
+						.forEach(task -> columns.add(new Column(task.title(), requirementsFor(task, requirements))));
 			});
 		});
 		return collapseRedundantColumns(columns, requirements);
@@ -34,11 +34,8 @@ public final class LoeAggregationColumns {
 			final List<LoeRequirement> allRequirements) {
 		final List<Column> collapsedColumns = new ArrayList<>();
 		columns.forEach(column -> {
-			if (sameRequirements(column.requirements(), allRequirements)) {
-				return;
-			}
-			if (!collapsedColumns.isEmpty()
-					&& sameRequirements(collapsedColumns.getLast().requirements(), column.requirements())) {
+			if (sameRequirements(column.requirements(), allRequirements) || (!collapsedColumns.isEmpty()
+					&& sameRequirements(collapsedColumns.getLast().requirements(), column.requirements()))) {
 				return;
 			}
 			collapsedColumns.add(column);
@@ -47,8 +44,7 @@ public final class LoeAggregationColumns {
 	}
 
 	private static List<LoePart> sortedParts(final List<LoePart> parts) {
-		return parts.stream().sorted(Comparator.comparingInt(LoePart::sortOrder).thenComparing(LoePart::id))
-				.toList();
+		return parts.stream().sorted(Comparator.comparingInt(LoePart::sortOrder).thenComparing(LoePart::id)).toList();
 	}
 
 	private static List<LoeCategory> categoriesFor(final LoePart part, final List<LoeCategory> categories) {
@@ -61,8 +57,7 @@ public final class LoeAggregationColumns {
 				.sorted(Comparator.comparingInt(LoeTask::sortOrder).thenComparing(LoeTask::id)).toList();
 	}
 
-	private static List<LoeRequirement> requirementsFor(final LoeTask task,
-			final List<LoeRequirement> requirements) {
+	private static List<LoeRequirement> requirementsFor(final LoeTask task, final List<LoeRequirement> requirements) {
 		return requirements.stream().filter(requirement -> requirement.taskId().equals(task.id()))
 				.sorted(Comparator.comparingInt(LoeRequirement::sortOrder).thenComparing(LoeRequirement::id)).toList();
 	}

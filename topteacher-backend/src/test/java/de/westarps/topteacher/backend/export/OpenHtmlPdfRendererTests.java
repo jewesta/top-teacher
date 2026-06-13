@@ -36,10 +36,8 @@ class OpenHtmlPdfRendererTests {
 		assertThat(a5Pdf).startsWith("%PDF".getBytes());
 		try (PDDocument document = PDDocument.load(a5Pdf)) {
 			assertThat(document.getNumberOfPages()).isEqualTo(3);
-			assertThat(document.getPage(0).getMediaBox().getWidth()).isCloseTo(PDRectangle.A5.getWidth(),
-					offset());
-			assertThat(document.getPage(0).getMediaBox().getHeight()).isCloseTo(PDRectangle.A5.getHeight(),
-					offset());
+			assertThat(document.getPage(0).getMediaBox().getWidth()).isCloseTo(PDRectangle.A5.getWidth(), offset());
+			assertThat(document.getPage(0).getMediaBox().getHeight()).isCloseTo(PDRectangle.A5.getHeight(), offset());
 		}
 
 		final byte[] a4Pdf = renderer.imposeA5OnA4Landscape(a5Pdf);
@@ -47,10 +45,8 @@ class OpenHtmlPdfRendererTests {
 		assertThat(a4Pdf).startsWith("%PDF".getBytes());
 		try (PDDocument document = PDDocument.load(a4Pdf)) {
 			assertThat(document.getNumberOfPages()).isEqualTo(2);
-			assertThat(document.getPage(0).getMediaBox().getWidth()).isCloseTo(PDRectangle.A4.getHeight(),
-					offset());
-			assertThat(document.getPage(0).getMediaBox().getHeight()).isCloseTo(PDRectangle.A4.getWidth(),
-					offset());
+			assertThat(document.getPage(0).getMediaBox().getWidth()).isCloseTo(PDRectangle.A4.getHeight(), offset());
+			assertThat(document.getPage(0).getMediaBox().getHeight()).isCloseTo(PDRectangle.A4.getWidth(), offset());
 		}
 	}
 

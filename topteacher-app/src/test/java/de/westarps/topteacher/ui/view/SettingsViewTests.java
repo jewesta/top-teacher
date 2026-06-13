@@ -11,6 +11,7 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.springframework.mock.env.MockEnvironment;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
@@ -23,6 +24,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import de.westarps.topteacher.backend.backup.DatabaseBackupScheduler;
 import de.westarps.topteacher.backend.backup.DatabaseBackupService;
 import de.westarps.topteacher.backend.settings.AppSettings;
+import de.westarps.topteacher.ui.component.ClipboardCopyButton;
 
 class SettingsViewTests {
 
@@ -47,6 +49,23 @@ class SettingsViewTests {
 	}
 
 	@Test
+	void showsCurrentH2FileAsReadOnlyCopyableField() {
+		final Path databaseFile = tempDir.resolve("topteacher");
+		final SettingsView view = view("", false, "0 0 2 * * *", databaseFile);
+		final Component backupContent = backupContent(view);
+
+		final TextField h2File = textField(backupContent, "Aktuelle H2-Datei");
+
+		assertThat(h2File.isReadOnly()).isTrue();
+		assertThat(h2File.getValue()).isEqualTo(databaseFile + ".mv.db");
+		final Component suffixComponent = h2File.getSuffixComponent();
+		assertThat(suffixComponent).isInstanceOf(ClipboardCopyButton.class);
+		assertThat(suffixComponent.getElement().getAttribute("aria-label")).isEqualTo("Pfad kopieren");
+		assertThat(backupContent.getChildren().toList().getFirst()).isSameAs(h2File);
+		assertThat(backupContent.getChildren().toList().get(1).getElement().getTag()).isEqualTo("hr");
+	}
+
+	@Test
 	void enablesSaveOnlyWhileSettingsAreDirtyAndValid() {
 		final SettingsView view = view("", false, "0 0 2 * * *");
 		final Component backupContent = backupContent(view);
@@ -63,7 +82,8 @@ class SettingsViewTests {
 		final DatabaseBackupScheduler backupScheduler = mock(DatabaseBackupScheduler.class);
 		final DatabaseBackupService backupService = mock(DatabaseBackupService.class);
 		when(backupService.backUpNow()).thenReturn(tempDir.resolve("topteacher-db.zip"));
-		final SettingsView view = new SettingsView(appSettings, backupService, backupScheduler);
+		final SettingsView view = new SettingsView(List.of(new DatabaseBackupSettingsTab(appSettings, backupService,
+				backupScheduler, databaseEnvironment(tempDir.resolve("topteacher")))));
 		final Component backupContent = backupContent(view);
 		final UI ui = new UI();
 		UI.setCurrent(ui);
@@ -108,9 +128,15 @@ class SettingsViewTests {
 		assertThat(button(backupContent, "Speichern").isEnabled()).isFalse();
 	}
 
-	private static SettingsView view(final String targetFolder, final boolean scheduleEnabled, final String cron) {
-		return new SettingsView(settings(targetFolder, scheduleEnabled, cron), mock(DatabaseBackupService.class),
-				mock(DatabaseBackupScheduler.class));
+	private SettingsView view(final String targetFolder, final boolean scheduleEnabled, final String cron) {
+		return view(targetFolder, scheduleEnabled, cron, tempDir.resolve("topteacher"));
+	}
+
+	private static SettingsView view(final String targetFolder, final boolean scheduleEnabled, final String cron,
+			final Path databaseFile) {
+		return new SettingsView(List.of(new DatabaseBackupSettingsTab(settings(targetFolder, scheduleEnabled, cron),
+				mock(DatabaseBackupService.class), mock(DatabaseBackupScheduler.class),
+				databaseEnvironment(databaseFile))));
 	}
 
 	private static AppSettings settings(final String targetFolder, final boolean scheduleEnabled, final String cron) {
@@ -121,10 +147,12 @@ class SettingsViewTests {
 		return appSettings;
 	}
 
+	private static MockEnvironment databaseEnvironment(final Path databaseFile) {
+		return new MockEnvironment().withProperty("tt.database.file", databaseFile.toString());
+	}
+
 	private static TextField textField(final Component root, final String label) {
-		return components(root, TextField.class).stream()
-				.filter(field -> label.equals(field.getLabel()))
-				.findFirst()
+		return components(root, TextField.class).stream().filter(field -> label.equals(field.getLabel())).findFirst()
 				.orElseThrow();
 	}
 
@@ -134,9 +162,7 @@ class SettingsViewTests {
 	}
 
 	private static Button button(final Component root, final String text) {
-		return components(root, Button.class).stream()
-				.filter(button -> text.equals(button.getText()))
-				.findFirst()
+		return components(root, Button.class).stream().filter(button -> text.equals(button.getText())).findFirst()
 				.orElseThrow();
 	}
 

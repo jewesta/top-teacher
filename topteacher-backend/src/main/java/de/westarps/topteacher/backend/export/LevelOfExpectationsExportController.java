@@ -18,32 +18,28 @@ public class LevelOfExpectationsExportController {
 		this.exportService = exportService;
 	}
 
-	@GetMapping(value = "/export/exams/{examId}/pupils/{pupilId}/level-of-expectations.pdf",
-			produces = MediaType.APPLICATION_PDF_VALUE)
+	@GetMapping(value = "/export/exams/{examId}/pupils/{pupilId}/level-of-expectations.pdf", produces = MediaType.APPLICATION_PDF_VALUE)
 	public ResponseEntity<byte[]> exportPupilLevelOfExpectations(@PathVariable final int examId,
 			@PathVariable final int pupilId) {
 		final LevelOfExpectationsExportModel model = exportService.createPupilModel(examId, pupilId);
 		return ResponseEntity.ok()
 				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + pdfFileName(model, false))
-				.contentType(MediaType.APPLICATION_PDF)
-				.body(exportService.renderPupilA4LandscapePdf(model));
+				.contentType(MediaType.APPLICATION_PDF).body(exportService.renderPupilA4LandscapePdf(model));
 	}
 
-	@GetMapping(value = "/export/exams/{examId}/pupils/{pupilId}/level-of-expectations-teacher.pdf",
-			produces = MediaType.APPLICATION_PDF_VALUE)
+	@GetMapping(value = "/export/exams/{examId}/pupils/{pupilId}/level-of-expectations-teacher.pdf", produces = MediaType.APPLICATION_PDF_VALUE)
 	public ResponseEntity<byte[]> exportTeacherLevelOfExpectations(@PathVariable final int examId,
 			@PathVariable final int pupilId) {
 		final LevelOfExpectationsExportModel model = exportService.createTeacherModel(examId, pupilId);
 		return ResponseEntity.ok()
 				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + pdfFileName(model, true))
-				.contentType(MediaType.APPLICATION_PDF)
-				.body(exportService.renderTeacherA4LandscapePdf(model));
+				.contentType(MediaType.APPLICATION_PDF).body(exportService.renderTeacherA4LandscapePdf(model));
 	}
 
 	private static String pdfFileName(final LevelOfExpectationsExportModel model, final boolean teacherVersion) {
 		final String prefix = teacherVersion ? "lehrerversion-erwartungshorizont" : "erwartungshorizont";
-		return prefix + "-" + fileNamePart(model.exam().title()) + "-"
-				+ fileNamePart(model.pupil().surname()) + "-" + fileNamePart(model.pupil().name()) + ".pdf";
+		return prefix + "-" + fileNamePart(model.exam().title()) + "-" + fileNamePart(model.pupil().surname()) + "-"
+				+ fileNamePart(model.pupil().name()) + ".pdf";
 	}
 
 	private static String fileNamePart(final String value) {

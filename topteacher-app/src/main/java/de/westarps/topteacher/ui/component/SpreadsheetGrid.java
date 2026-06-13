@@ -7,8 +7,8 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.function.ValueProvider;
 
 /**
- * Grid optimized for spreadsheet-like result tables with narrow data columns and
- * tilted column headers.
+ * Grid optimized for spreadsheet-like result tables with narrow data columns
+ * and tilted column headers.
  *
  * @param <T> item type
  */

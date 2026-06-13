@@ -47,8 +47,8 @@ public class PupilRepository {
 
 	public Map<Integer, SchoolClass> findLatestSchoolClassByPupilId() {
 		final Map<Integer, SchoolClass> schoolClassesByPupilId = new HashMap<>();
-		final RowCallbackHandler collectSchoolClasses = resultSet -> schoolClassesByPupilId.put(
-				resultSet.getInt("pupil_id"), SchoolClass.valueOf(resultSet.getString("school_class")));
+		final RowCallbackHandler collectSchoolClasses = resultSet -> schoolClassesByPupilId
+				.put(resultSet.getInt("pupil_id"), SchoolClass.valueOf(resultSet.getString("school_class")));
 		jdbc.query("""
 				select pupil_id, school_class
 				from (

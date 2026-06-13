@@ -61,16 +61,15 @@ public class LevelOfExpectationsExportModelFactory {
 				sorted(data.categories(), Comparator.comparingInt(LoeCategory::sortOrder).thenComparing(LoeCategory::id,
 						Comparator.nullsLast(Integer::compareTo))),
 				LoeCategory::partId);
-		final Map<Integer, List<LoeTask>> tasksByCategoryId = groupByParentId(
-				sorted(data.tasks(), Comparator.comparingInt(LoeTask::sortOrder).thenComparing(LoeTask::id,
-						Comparator.nullsLast(Integer::compareTo))),
+		final Map<Integer, List<LoeTask>> tasksByCategoryId = groupByParentId(sorted(data.tasks(), Comparator
+				.comparingInt(LoeTask::sortOrder).thenComparing(LoeTask::id, Comparator.nullsLast(Integer::compareTo))),
 				LoeTask::categoryId);
-		final Map<Integer, List<LoeRequirement>> requirementsByTaskId = groupByParentId(sorted(data.requirements(),
-				Comparator.comparingInt(LoeRequirement::sortOrder).thenComparing(LoeRequirement::id,
-						Comparator.nullsLast(Integer::compareTo))),
+		final Map<Integer, List<LoeRequirement>> requirementsByTaskId = groupByParentId(
+				sorted(data.requirements(), Comparator.comparingInt(LoeRequirement::sortOrder)
+						.thenComparing(LoeRequirement::id, Comparator.nullsLast(Integer::compareTo))),
 				LoeRequirement::taskId);
-		final Map<Integer, List<LoeCriterion>> criteriaByRequirementId = groupByParentId(sorted(data.criteria(),
-				Comparator.comparingInt(LoeCriterion::sortOrder).thenComparing(LoeCriterion::id,
+		final Map<Integer, List<LoeCriterion>> criteriaByRequirementId = groupByParentId(
+				sorted(data.criteria(), Comparator.comparingInt(LoeCriterion::sortOrder).thenComparing(LoeCriterion::id,
 						Comparator.nullsLast(Integer::compareTo))),
 				LoeCriterion::requirementId);
 		final Map<Integer, LoeRequirementResult> resultsByRequirementId = mapById(data.requirementResults(),
@@ -80,17 +79,21 @@ public class LevelOfExpectationsExportModelFactory {
 
 		final List<Part> parts = sorted(data.parts(),
 				Comparator.comparingInt(LoePart::sortOrder).thenComparing(LoePart::id,
-						Comparator.nullsLast(Integer::compareTo))).stream()
+						Comparator.nullsLast(Integer::compareTo)))
+				.stream()
 				.map(part -> createPart(part, categoriesByPartId, tasksByCategoryId, requirementsByTaskId,
 						criteriaByRequirementId, resultsByRequirementId, resultsByCriterionId, view,
 						includeTeacherOnlyContent))
 				.toList();
-		final List<NoteSection> notes = includeTeacherOnlyContent ? sorted(data.noteSections(),
-				Comparator.comparingInt(ExamNoteSection::sortOrder).thenComparing(ExamNoteSection::id,
-						Comparator.nullsLast(Integer::compareTo))).stream()
-				.map(noteSection -> new NoteSection(noteSection.title(),
-						sanitizer.markdownToHtml(noteSection.descriptionMarkdown(), view)))
-				.toList() : List.of();
+		final List<NoteSection> notes = includeTeacherOnlyContent
+				? sorted(data.noteSections(),
+						Comparator.comparingInt(ExamNoteSection::sortOrder).thenComparing(ExamNoteSection::id,
+								Comparator.nullsLast(Integer::compareTo)))
+						.stream()
+						.map(noteSection -> new NoteSection(noteSection.title(),
+								sanitizer.markdownToHtml(noteSection.descriptionMarkdown(), view)))
+						.toList()
+				: List.of();
 
 		return new LevelOfExpectationsExportModel(data.course(), data.exam(), data.pupil(), data.gradingScale(),
 				data.gradingScaleRanges(), PointSummary.sum(parts, Part::points), parts, notes, showWatermark);
@@ -147,9 +150,11 @@ public class LevelOfExpectationsExportModelFactory {
 		final LoeRequirementResult result = resultsByRequirementId.get(requirement.id());
 		final int achievedPoints = result == null ? 0 : result.points();
 		final String comment = includeTeacherOnlyContent && result != null ? result.comment() : "";
-		return new Requirement(number, sanitizer.markdownToHtml(requirement.descriptionMarkdown(), view,
-				criterionStatusByKey(criteriaByRequirementId.getOrDefault(requirement.id(), List.of()),
-						resultsByCriterionId)), requirement.maxPoints(), requirement.bonus(), achievedPoints, comment);
+		return new Requirement(number,
+				sanitizer.markdownToHtml(requirement.descriptionMarkdown(), view,
+						criterionStatusByKey(criteriaByRequirementId.getOrDefault(requirement.id(), List.of()),
+								resultsByCriterionId)),
+				requirement.maxPoints(), requirement.bonus(), achievedPoints, comment);
 	}
 
 	private static Function<String, Boolean> criterionStatusByKey(final List<LoeCriterion> criteria,
@@ -166,8 +171,7 @@ public class LevelOfExpectationsExportModelFactory {
 		return items.stream().sorted(comparator).toList();
 	}
 
-	private static <T> Map<Integer, List<T>> groupByParentId(final List<T> items,
-			final Function<T, Integer> parentId) {
+	private static <T> Map<Integer, List<T>> groupByParentId(final List<T> items, final Function<T, Integer> parentId) {
 		final Map<Integer, List<T>> childrenByParentId = new HashMap<>();
 		items.forEach(item -> childrenByParentId.computeIfAbsent(parentId.apply(item), ignored -> new ArrayList<>())
 				.add(item));
@@ -183,7 +187,8 @@ public class LevelOfExpectationsExportModelFactory {
 	public record LevelOfExpectationsExportData(Course course, Exam exam, Pupil pupil, GradingScale gradingScale,
 			List<GradingScaleRange> gradingScaleRanges, List<LoePart> parts, List<LoeCategory> categories,
 			List<LoeTask> tasks, List<LoeRequirement> requirements, List<LoeRequirementResult> requirementResults,
-			List<LoeCriterion> criteria, List<LoeCriterionResult> criterionResults, List<ExamNoteSection> noteSections) {
+			List<LoeCriterion> criteria, List<LoeCriterionResult> criterionResults,
+			List<ExamNoteSection> noteSections) {
 
 		public LevelOfExpectationsExportData(final Course course, final Exam exam, final Pupil pupil,
 				final GradingScale gradingScale, final List<GradingScaleRange> gradingScaleRanges,
@@ -243,24 +248,20 @@ public class LevelOfExpectationsExportModelFactory {
 			return gradingScaleRanges.stream()
 					.filter(range -> range.minPoints() <= effectiveAchievedPoints
 							&& effectiveAchievedPoints <= range.maxPoints())
-					.findFirst()
-					.map(range -> range.gradeLevel().getDisplayName())
-					.orElse("");
+					.findFirst().map(range -> range.gradeLevel().getDisplayName()).orElse("");
 		}
 
 		public List<GradingScaleTableRow> gradingScaleTableRows() {
-			final List<GradingScaleRange> sortedRanges = gradingScaleRanges.stream()
-					.sorted(Comparator.comparingInt((GradingScaleRange range) -> range.gradeLevel().getPoints())
-							.reversed())
+			final List<GradingScaleRange> sortedRanges = gradingScaleRanges
+					.stream().sorted(Comparator
+							.comparingInt((GradingScaleRange range) -> range.gradeLevel().getPoints()).reversed())
 					.toList();
 			final List<GradingScaleTableRow> rows = new ArrayList<>();
 			for (int index = 0; index < sortedRanges.size(); index += 3) {
-				rows.add(new GradingScaleTableRow(List.of(
-						new GradingScaleTableCell(sortedRanges.get(index)),
-						new GradingScaleTableCell(index + 1 < sortedRanges.size() ? sortedRanges.get(index + 1)
-								: null),
-						new GradingScaleTableCell(index + 2 < sortedRanges.size() ? sortedRanges.get(index + 2)
-								: null))));
+				rows.add(new GradingScaleTableRow(List.of(new GradingScaleTableCell(sortedRanges.get(index)),
+						new GradingScaleTableCell(index + 1 < sortedRanges.size() ? sortedRanges.get(index + 1) : null),
+						new GradingScaleTableCell(
+								index + 2 < sortedRanges.size() ? sortedRanges.get(index + 2) : null))));
 			}
 			return rows;
 		}

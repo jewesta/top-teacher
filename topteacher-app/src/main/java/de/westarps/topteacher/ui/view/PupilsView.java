@@ -212,8 +212,8 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 		pupilBinder.forField(surname).withConverter(PupilsView::trim, value -> value)
 				.withValidator(value -> !value.isBlank(), "Nachname ist erforderlich.")
 				.bind(PupilFormData::getSurname, PupilFormData::setSurname);
-		pupilBinder.forField(lifecycle).asRequired("Status ist erforderlich.")
-				.bind(PupilFormData::getLifecycle, PupilFormData::setLifecycle);
+		pupilBinder.forField(lifecycle).asRequired("Status ist erforderlich.").bind(PupilFormData::getLifecycle,
+				PupilFormData::setLifecycle);
 	}
 
 	private void readSingleEditor(final PupilFormData formData) {

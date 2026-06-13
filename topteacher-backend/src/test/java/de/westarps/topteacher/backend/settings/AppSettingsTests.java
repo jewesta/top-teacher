@@ -48,8 +48,7 @@ class AppSettingsTests {
 	void rejectsInvalidBooleanValues() {
 		settingsRepository.save(AppSettings.TT_LOE_EXPORT_SHOW_WATERMARK_KEY, "sometimes");
 
-		assertThatThrownBy(appSettings::ttLoeExportShowWatermark)
-				.isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(appSettings::ttLoeExportShowWatermark).isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining(AppSettings.TT_LOE_EXPORT_SHOW_WATERMARK_KEY);
 	}
 

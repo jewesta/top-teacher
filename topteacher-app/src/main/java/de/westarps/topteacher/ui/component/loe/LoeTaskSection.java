@@ -23,9 +23,10 @@ final class LoeTaskSection extends AbstractLoeSection<LoeTask> {
 				components.summaryTitleField(task.title()), components.pointBadge("Summe", pointsSupplier));
 	}
 
-	private LoeTaskSection(final LoeTask task, final List<LoeTask> siblings, final List<LoeRequirementSection> requirements,
-			final LoeSectionComponents components, final LoeCollapseState collapseState, final Handler handler,
-			final List<String> descendantKeys, final TextField title, final LoePointBadge pointBadge) {
+	private LoeTaskSection(final LoeTask task, final List<LoeTask> siblings,
+			final List<LoeRequirementSection> requirements, final LoeSectionComponents components,
+			final LoeCollapseState collapseState, final Handler handler, final List<String> descendantKeys,
+			final TextField title, final LoePointBadge pointBadge) {
 		super(task, "tt-eh-task", components.summary("Teilaufgabe", title, pointBadge), pointBadge, requirements);
 		this.title = title;
 		this.handler = handler;

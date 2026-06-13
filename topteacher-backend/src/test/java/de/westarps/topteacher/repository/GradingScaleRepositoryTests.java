@@ -31,7 +31,7 @@ class GradingScaleRepositoryTests {
 		assertThat(saved.getDisplayName()).isEqualTo("Repository Scale 100 (100 Punkte)");
 		assertThat(gradingScaleRepository.findById(saved.id())).contains(saved);
 		assertThat(gradingScaleRepository.findActive()).contains(saved);
-		assertThat(gradingScaleRepository.findRangesByGradingScaleId(saved.id()))
-				.containsExactly(topRange, bottomRange);
+		assertThat(gradingScaleRepository.findRangesByGradingScaleId(saved.id())).containsExactly(topRange,
+				bottomRange);
 	}
 }

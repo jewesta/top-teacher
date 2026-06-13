@@ -27,11 +27,9 @@ public class SettingsRepository {
 				select setting_key, setting_value
 				from app_setting
 				where setting_key = :key
-				""", Map.of("key", setting.key()),
-				(resultSet, rowNumber) -> new AppSetting(resultSet.getString("setting_key"),
-						resultSet.getString("setting_value")))
-				.stream()
-				.findFirst();
+				""", Map.of("key", setting.key()), (resultSet,
+				rowNumber) -> new AppSetting(resultSet.getString("setting_key"), resultSet.getString("setting_value")))
+				.stream().findFirst();
 	}
 
 	public void save(final String key, final String value) {

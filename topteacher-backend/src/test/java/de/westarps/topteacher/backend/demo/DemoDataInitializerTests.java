@@ -23,8 +23,8 @@ class DemoDataInitializerTests {
 	@BeforeEach
 	void setUp() {
 		final String databaseName = "topteacher-demo-test-" + UUID.randomUUID();
-		dataSource = new SingleConnectionDataSource("jdbc:h2:mem:" + databaseName
-				+ ";DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE", "sa", "", true);
+		dataSource = new SingleConnectionDataSource(
+				"jdbc:h2:mem:" + databaseName + ";DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE", "sa", "", true);
 		jdbc = new JdbcTemplate(dataSource);
 		new ResourceDatabasePopulator(new ClassPathResource("db/schema.sql"), new ClassPathResource("db/base-data.sql"))
 				.execute(dataSource);
@@ -60,10 +60,8 @@ class DemoDataInitializerTests {
 				values ('Real', 'Pupil', 'ACTIVE')
 				""");
 
-		assertThatThrownBy(() -> initializer.run(null))
-				.isInstanceOf(IllegalStateException.class)
-				.hasMessageContaining("empty database")
-				.hasMessageContaining("pupil");
+		assertThatThrownBy(() -> initializer.run(null)).isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("empty database").hasMessageContaining("pupil");
 
 		assertThat(countRows("course")).isZero();
 	}
@@ -75,8 +73,7 @@ class DemoDataInitializerTests {
 				values ('Custom', 150, 'ACTIVE')
 				""");
 
-		assertThatThrownBy(() -> initializer.run(null))
-				.isInstanceOf(IllegalStateException.class)
+		assertThatThrownBy(() -> initializer.run(null)).isInstanceOf(IllegalStateException.class)
 				.hasMessageContaining("custom grading scales");
 
 		assertThat(countRows("pupil")).isZero();

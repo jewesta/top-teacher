@@ -17,11 +17,9 @@ class AppSettingTests {
 
 	@Test
 	void rejectsBlankKeysAndNullValues() {
-		assertThatThrownBy(() -> new AppSetting(" ", "true"))
-				.isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> new AppSetting(" ", "true")).isInstanceOf(IllegalArgumentException.class)
 				.hasMessage("key must not be blank");
 		assertThatThrownBy(() -> new AppSetting("tt.loe.export.show_watermark", null))
-				.isInstanceOf(NullPointerException.class)
-				.hasMessage("value must not be null");
+				.isInstanceOf(NullPointerException.class).hasMessage("value must not be null");
 	}
 }
