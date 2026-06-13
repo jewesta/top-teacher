@@ -26,14 +26,35 @@ vaadin-app-layout::part(navbar) {
 	width: 100%;
 }
 
+.tt-app-brand {
+	align-items: center;
+	display: inline-block;
+	justify-self: start;
+	line-height: 0;
+	min-width: 0;
+	position: relative;
+	/* found empirically */
+	--tt-app-version-left: 3.9rem;
+	--tt-app-version-top: 2.55rem;
+}
+
 .tt-app-logo {
 	display: block;
 	height: 3rem;
-	justify-self: start;
 	margin: 0;
 	max-width: 15rem;
 	object-fit: contain;
 	width: auto;
+}
+
+.tt-app-version {
+	color: var(--lumo-secondary-text-color);
+	font-size: var(--lumo-font-size-xs);
+	line-height: 1;
+	position: absolute;
+	left: var(--tt-app-version-left);
+	top: var(--tt-app-version-top);
+	white-space: nowrap;
 }
 
 .tt-top-navigation {

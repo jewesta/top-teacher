@@ -63,7 +63,7 @@ public class DatabaseBackupSettingsTab extends VerticalLayout implements Setting
 			"Dateiname: topteacher-db-JJJJMMTT-HHMMSS.zip; bei Namensgleichheit wird -1, -2, ... ergänzt.");
 	private final Span cronDescription = new Span();
 	private final Button saveButton = new Button("Speichern", VaadinIcon.CHECK.create());
-	private final Button backupNowButton = new Button("Backup jetzt", new Icon("vaadin", "lifebuoy"));
+	private final Button backupNowButton = new Button("Jetzt sichern", new Icon("vaadin", "lifebuoy"));
 	private final String currentDatabaseFilePath;
 	private BackupSettingsFormData loadedBackupSettings;
 
@@ -82,7 +82,7 @@ public class DatabaseBackupSettingsTab extends VerticalLayout implements Setting
 
 	@Override
 	public String label() {
-		return "Backup";
+		return "Sicherung";
 	}
 
 	@Override
@@ -177,7 +177,7 @@ public class DatabaseBackupSettingsTab extends VerticalLayout implements Setting
 
 		try {
 			final Path backupFile = backupService.backUpNow();
-			Notification.show("Backup erstellt: " + backupFile.getFileName());
+			Notification.show("Sicherung erstellt: " + backupFile.getFileName());
 		} catch (final IllegalStateException exception) {
 			Notification.show(exception.getMessage());
 		}

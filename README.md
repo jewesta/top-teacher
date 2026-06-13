@@ -1,8 +1,22 @@
 ## ![TopTeacher!](topteacher-app/src/main/resources/META-INF/resources/images/topteacher-logo-github.png)
 
-TopTeacher! ist eine Web-App für das lokale Netzwerk zur Verwaltung von Schülerinnen und Schülern, Kursen, Klausuren, Erwartungshorizonten und Ergebnissen. Die App unterstützt Lehrkräfte bei der Eingabe von Bewertungsdaten, der Auswertung von Klausuren sowie beim Erstellen druckbarer Ergebnisbögen und Exporte.
+TopTeacher! ist eine Web-App für Lehrkräfte. Sie unterstützt bei der aufwändigen Erstellung und Verwaltung von Erwartungshorizonten und der Erfassung von Klausurergebnissen. Besonderer Kniff von TopTeacher! ist, dass die Erwartungshorizonte direkt digital pro Schüler ausgefüllt werden können. Anschließend kann eine optisch ansprechende Schüler- und Lehrer-Version davon als PDF erzeugt werden.
 
-Technologie:
+Die App ist aus persönlichen Gründen entstanden und löst ein persönliches Problem. Ich stelle sie trotzdem offen zur Verfügung in der Hoffnung, dass sie anderen auch das Leben erleichtert. Ich kann aber keine Garantie dafür übernehmen, dass sie fehlerfrei funktioniert und allgemeingültig einsetzbar ist. Das Programm ist aktuell nur Einzelplatz-Fähig; eine Benutzerverwaltung habe ich vorgedacht, gibt es aktuell aber nicht.
+
+# TopTeacher! Server
+
+TopTeacher! ist dazu gedacht, als Server zu laufen und dann per Web-Browser aufgerufen zu werden. Als Java-Anwendung kann TopTeacher! im Server-Betrieb auf so gut wie jeder Plattform als `jar` gestartet werden. Dem Betrieb unter Linux und Windows steht damit grundsätzlich nichts im Weg.
+
+# TopTeacher! App
+
+Um technisch weniger Versierten die Benutzung zu erleichtern, stelle ich TopTeacher! auch als alleinstehend lauffähige macOS App zur Verfügung. Das macht auch einen unkomplizierten Test möglich. Die App läuft dann ganz normal im Dock und öffnet automatisch ein Browser-Fenster mit der Benutzeroberfläche. Die nötige Datenbank wird unter `/Users/<Benutzername>/Library/Application Support/TopTeacher/topteacher.mv.db` angelegt, falls sie noch nicht existiert. Weil ich die App nicht signiere gibt es beim ersten Start die üblichen Dinge zu beachten: Starten per Rechtsklick > Öffnen und dann ein ausdrückliches Erlauben des Programmstarts über `Systemeinstellungen` > `Datenschutz & Sicherheit`.
+
+Ich bitte um Verständnis, dass ich diese App aktuell nur für moderne Macs mit M-Prozessoren bauen lasse. Technisch versierten steht es frei, diese alleinstehende App auch für macOS x86 oder Windows erstellen zu lassen.
+
+# Technische Details
+
+## Verwendete Technologien
 
 - Java 21
 - Spring Boot 4
@@ -11,37 +25,53 @@ Technologie:
 - JDBC
 - H2-Datenbank
 
-## Entwicklung
+## Struktur
 
 Das Repository ist ein Maven-Multimodul-Projekt:
 
-- `topteacher-model` enthält gemeinsam genutzte Domänentypen.
-- `topteacher-backend` enthält Persistenz- und Export-Services.
-- `topteacher-app` enthält die Spring-Boot- und Vaadin-Anwendung.
-- `westarps-vaadin-markdown` enthält wiederverwendbare Vaadin-Markdown-Editor-Komponenten.
+| Modul | Funktion |
+|:---|:---|
+| `topteacher-model`| Gemeinsam genutzte Domänentypen |
+| `topteacher-backend` | Persistenz- und Export-Services |
+| `topteacher-app` | Spring-Boot- und Vaadin-Anwendung |
+| `westarps-vaadin-markdown` | Wiederverwendbare Vaadin-Markdown-Editor-Komponenten. |
 
-Anwendung starten:
+## Start
 
 ```shell
-mkdir -p /Users/jens/topteacher/data
-./run/start.sh /Users/jens/topteacher/data/topteacher
+./run/start-dev.sh /Users/<Benutzername>/Documents/<top-teacher-db>
 ```
 
-Die App ist danach unter <http://localhost:8081/top-teacher> erreichbar. Port und Pfad werden über
-`server.port` und `server.servlet.context-path` in `topteacher-app/src/main/resources/application.properties`
-festgelegt.
+Der Pfad ist frei wählbar und muss lediglich beschreibbar sein. TopTeacher erstellt ihn selbst, wenn er noch fehlt. Der Name der Datenbank `<top-teacher-db>` wird ohne Endung angegeben. Die Endung `.mv.db` wird automatisch hinzugefügt.
 
-Die H2-Datenbank liegt dort, wo `tt.database.file` hinzeigt. Die Property ist
-absichtlich verpflichtend; TopTeacher startet nicht, wenn sie fehlt oder der
-Pfad nicht erreichbar ist. H2 ergänzt die eigentliche Datei-Endung `.mv.db`
-selbst. Für DBeaver kann eine H2-Embedded-Verbindung mit folgender JDBC-URL
-verwendet werden:
+Die App ist danach unter <http://localhost:8081/top-teacher> erreichbar. Port `8081` und Kontext-Pfad `top-teacher` können über
+`server.port` und `server.servlet.context-path` in `topteacher-app/src/main/resources/application.properties` angepasst werden.
+
+Wer möchte, kann initial einen Demo-Daten-Bestand anlegen lassen. Das funktioniert aber aus Sicherheitsgründen nur, wenn unter dem Zielpfad noch keine Datenbank existiert.
+
+```shell
+./run/start-dev-demo.sh /Users/<Benutzername>/Documents/<top-teacher-demo-db>
+```
+
+Das Release-`jar` ist so gebaut, dass Vaadin im Produktiv-Modus gestartet wird. Die oben genannten Startskripte starten Vaadin im Entwicklermodus. Deshalb auch der Namenszusatz `-dev`.
+
+## Standardpfade:
+
+| Betriebssystem | Datenbankpfad ohne `.mv.db` |
+| --- | --- |
+| macOS | `~/Library/Application Support/TopTeacher/topteacher` |
+| Windows | `%APPDATA%\TopTeacher\topteacher` |
+| Linux | `$XDG_DATA_HOME/TopTeacher/topteacher` oder `~/.local/share/TopTeacher/topteacher` |
+
+## Überwachung der Datenbank
+
+Wer möchte, kann z.B. mit [DBeaver](https://dbeaver.io/) eine Verbindung zu der H2-Datenbank aufbauen. Zum Beispiel unter macOS mit dieser URL:
 
 ```text
-jdbc:h2:file:/Users/jens/topteacher/data/topteacher;AUTO_SERVER=TRUE
+jdbc:h2:file:/Users/<Benutzername>/Library/Application Support/TopTeacher/topteacher;AUTO_SERVER=TRUE
 ```
 
-Die H2-Konsole ist in der Entwicklungsumgebung hier erreichbar:
+...oder wo auch immer die lokale H2-Datenbankdatei abgelegt wurde. Die H2-Konsole ist in der Entwicklungsumgebung hier erreichbar:
 <http://localhost:8081/top-teacher/h2-console>.
 
 ## Kommandozeilen-Properties
@@ -50,27 +80,27 @@ Für den Betrieb als Jar können Spring-Boot-Properties direkt auf der Kommandoz
 übergeben werden:
 
 ```shell
-java -jar topteacher-app-0.0.1-SNAPSHOT.jar --server.port=8081
+java -jar TopTeacher.jar --server.port=8081
 ```
 
 Mehrere Properties werden einfach hintereinander angegeben. Werte mit
 Sonderzeichen wie `;` sollten in Anführungszeichen gesetzt werden:
 
 ```shell
-java -jar topteacher-app-0.0.1-SNAPSHOT.jar \
+java -jar TopTeacher.jar \
   --server.port=8081 \
   --server.servlet.context-path=/top-teacher \
-  --tt.database.file=/Users/jens/topteacher/data/topteacher
+  --tt.database.file=/Users/<Benutzername>/topteacher/data/topteacher
 ```
 
 Wichtige Properties:
 
 | Property | Standardwert | Bedeutung |
 | --- | --- | --- |
-| `tt.database.file` | keiner | Verpflichtender Pfad zur H2-Datenbank ohne `.mv.db`-Suffix, z. B. `/Users/jens/topteacher/data/topteacher`. Der Ordner muss existieren und beschreibbar sein. |
+| `tt.database.file` | Betriebssystemabhängiger Benutzerdatenpfad | Optionaler Pfad zur H2-Datenbank ohne `.mv.db`-Suffix, z. B. `/Users/<Benutzername>/topteacher/data/topteacher`. Wenn die Property gesetzt ist, muss der Ordner existieren und beschreibbar sein. |
 | `server.port` | `8081` | HTTP-Port der Anwendung. |
 | `server.servlet.context-path` | `/top-teacher` | Pfad, unter dem die Anwendung erreichbar ist. |
-| `spring.datasource.url` | `jdbc:h2:file:${tt.database.file};AUTO_SERVER=TRUE` | JDBC-URL der H2-Datenbank. Normalerweise muss nur `tt.database.file` gesetzt werden. |
+| `spring.datasource.url` | `jdbc:h2:file:${tt.database.file};AUTO_SERVER=TRUE` | JDBC-URL der H2-Datenbank. Normalerweise muss diese Property nicht gesetzt werden. |
 | `spring.datasource.username` | `sa` | Benutzername der H2-Verbindung. |
 | `spring.datasource.password` | leer | Passwort der H2-Verbindung. |
 | `spring.h2.console.enabled` | `true` | Aktiviert die H2-Konsole. Für produktiven Betrieb kann sie per `false` deaktiviert werden. |
@@ -80,20 +110,28 @@ Wichtige Properties:
 Demo-Daten für eine neue Demo-Datenbank erzeugen:
 
 ```shell
-java -jar topteacher-app-0.0.1-SNAPSHOT.jar \
-  --tt.database.file=/Users/jens/topteacher/data/topteacher-demo \
+java -jar TopTeacher.jar \
+  --tt.database.file=/Users/<Benutzername>/topteacher/data/topteacher-demo \
   --tt.demo-data.create=true
 ```
 
-Die Anwendung erstellt dabei zuerst Schema und Basisdaten, prüft dann, ob die
-Datenbank noch keine fachlichen Daten enthält, und lädt anschließend die
-Demo-Daten. Wenn bereits Schülerinnen, Kurse, Klausuren, Level-of-Expectations
-oder andere fachliche Daten vorhanden sind, bricht der Start bewusst ab. Nach dem
-Erzeugen der Demo-Daten sollte `--tt.demo-data.create=true` wieder weggelassen
-werden.
+Die Anwendung erstellt dabei zuerst Schema und Basisdaten, prüft dann, ob die Datenbank noch keine Daten (jenseits leerer Tabellenstrukturen) enthält, und bespielt sie anschließend mit einem Satz Demo-Daten. Wenn bereits Schülerinnen, Kurse, Klausuren, Level-of-Expectations oder andere fachliche Daten vorhanden sind, bricht der Start bewusst ab. Nach dem Erzeugen der Demo-Daten sollte `--tt.demo-data.create=true` wieder weggelassen werden.
 
-In der Entwicklung gibt es dafür ein eigenes Skript:
+## macOS App
+
+Eine lokal ausführbare App mit eingebettetem Java-Runtime kann mit `jpackage`
+aus dem JDK 21 gebaut werden:
 
 ```shell
-./run/start-demo.sh /Users/jens/topteacher/data/topteacher-demo
+./run/package.sh macos-app /Volumes/topteacher-builds
+```
+
+Das Skript baut zuerst das Produktions-Jar, erzeugt danach lokal ein App-Image und kopiert ein ZIP-Archiv unter `<release-target>/v<version>/TopTeacher.app.<architecture>.zip`, zum Beispiel `/Volumes/topteacher-builds/v0.0.1-SNAPSHOT/TopTeacher.app.arm64.zip`. Beim Start öffnet die App automatisch <http://localhost:8081/top-teacher/> im Standardbrowser. Auf macOS erscheint TopTeacher! als Dock-App; ein Klick auf das Dock-Icon öffnet TopTeacher! wieder im Standardbrowser. Der native Menüpunkt zum Beenden der App beendet den lokalen Server. Das Dock-Kontextmenü enthält `About TopTeacher!`. Die H2-Konsole ist in diesem App-Modus deaktiviert; die Datenbank verwendet weiterhin den betriebssystemabhängigen Benutzerdatenpfad.
+
+Auf macOS erzeugt das Skript `packaging/topteacher.icns` aus `topteacher-app/src/main/resources/META-INF/resources/images/topteacher-icon.png`.
+
+Jar und macOS-App können zusammen gebaut werden:
+
+```shell
+./run/package-all.sh /Volumes/topteacher-builds
 ```

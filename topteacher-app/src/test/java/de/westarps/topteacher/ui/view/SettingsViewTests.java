@@ -54,7 +54,7 @@ class SettingsViewTests {
 		final SettingsView view = view("", false, "0 0 2 * * *", databaseFile);
 		final Component backupContent = backupContent(view);
 
-		final TextField h2File = textField(backupContent, "Aktuelle H2-Datei");
+		final TextField h2File = textField(backupContent, "Aktuelle H2-Datenbank-Datei");
 
 		assertThat(h2File.isReadOnly()).isTrue();
 		assertThat(h2File.getValue()).isEqualTo(databaseFile + ".mv.db");

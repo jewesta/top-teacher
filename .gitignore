@@ -13,6 +13,7 @@ src/main/frontend/index.html
 topteacher-app/src/main/bundles/
 topteacher-app/src/main/frontend/generated/
 topteacher-app/src/main/frontend/index.html
+.vaadin-node-tasks.lock
 
 # IDEs
 .idea/
