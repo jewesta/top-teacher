@@ -21,10 +21,10 @@ class DatabaseLocationEnvironmentPostProcessorTests {
 	@Test
 	void createsDefaultDatabaseFilePropertyWhenDatasourceUrlUsesIt() {
 		final Path databaseFile = tempDir.resolve("Application Support/TopTeacher/topteacher");
-		final DatabaseLocationEnvironmentPostProcessor processor =
-				new DatabaseLocationEnvironmentPostProcessor(() -> databaseFile);
-		final MockEnvironment environment = new MockEnvironment()
-				.withProperty("spring.datasource.url", "jdbc:h2:file:${tt.database.file};AUTO_SERVER=TRUE");
+		final DatabaseLocationEnvironmentPostProcessor processor = new DatabaseLocationEnvironmentPostProcessor(
+				() -> databaseFile);
+		final MockEnvironment environment = new MockEnvironment().withProperty("spring.datasource.url",
+				"jdbc:h2:file:${tt.database.file};AUTO_SERVER=TRUE");
 
 		assertThatCode(() -> process(processor, environment)).doesNotThrowAnyException();
 		assertThat(environment.getProperty("tt.database.file")).isEqualTo(databaseFile.toString());
@@ -68,8 +68,8 @@ class DatabaseLocationEnvironmentPostProcessorTests {
 
 	@Test
 	void choosesMacOsDefaultDatabaseFile() {
-		assertThat(DatabaseLocationEnvironmentPostProcessor.defaultDatabaseFile("Mac OS X", "/Users/jens", null, null))
-				.isEqualTo(Path.of("/Users/jens/Library/Application Support/TopTeacher/topteacher"));
+		assertThat(DatabaseLocationEnvironmentPostProcessor.defaultDatabaseFile("Mac OS X", "/Users/example", null, null))
+				.isEqualTo(Path.of("/Users/example/Library/Application Support/TopTeacher/topteacher"));
 	}
 
 	@Test
@@ -81,16 +81,15 @@ class DatabaseLocationEnvironmentPostProcessorTests {
 
 	@Test
 	void choosesLinuxDefaultDatabaseFile() {
-		assertThat(DatabaseLocationEnvironmentPostProcessor.defaultDatabaseFile("Linux", "/home/jens", null, null))
-				.isEqualTo(Path.of("/home/jens/.local/share/TopTeacher/topteacher"));
+		assertThat(DatabaseLocationEnvironmentPostProcessor.defaultDatabaseFile("Linux", "/home/example", null, null))
+				.isEqualTo(Path.of("/home/example/.local/share/TopTeacher/topteacher"));
 	}
 
 	private void process(final MockEnvironment environment) {
 		process(processor, environment);
 	}
 
-	private void process(final DatabaseLocationEnvironmentPostProcessor processor,
-			final MockEnvironment environment) {
+	private void process(final DatabaseLocationEnvironmentPostProcessor processor, final MockEnvironment environment) {
 		processor.postProcessEnvironment(environment, new SpringApplication(Object.class));
 	}
 }

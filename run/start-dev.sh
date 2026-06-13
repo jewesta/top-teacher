@@ -6,7 +6,7 @@ PROJECT_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
 
 usage() {
     echo "Usage: $0 <h2-file>" >&2
-    echo "Example: $0 /Users/jens/topteacher/data/topteacher" >&2
+    echo "Example: $0 /Users/<user_name>/topteacher/data/topteacher" >&2
     echo "Note: pass the H2 file path without .mv.db; the suffix is stripped if present." >&2
 }
 
@@ -26,8 +26,7 @@ H2_DIR=$(dirname -- "$H2_FILE")
 H2_NAME=$(basename -- "$H2_FILE")
 
 if [ ! -d "$H2_DIR" ]; then
-    echo "H2 database directory does not exist: $H2_DIR" >&2
-    exit 1
+    mkdir -p "$H2_DIR"
 fi
 
 if [ ! -w "$H2_DIR" ]; then

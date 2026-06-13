@@ -15,6 +15,7 @@ import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationObserver;
 import com.vaadin.flow.router.RouterLink;
 
+import de.westarps.topteacher.ApplicationVersion;
 import de.westarps.topteacher.backend.settings.AppSettings;
 import de.westarps.topteacher.ui.view.CoursesView;
 import de.westarps.topteacher.ui.view.ExamsView;
@@ -60,8 +61,17 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
 		final Header header = new Header();
 		header.addClassName("tt-header");
 
-		final Image logo = new Image("images/topteacher-logo.svg", "TopTeacher!");
+		final Image logo = new Image("images/topteacher-logo.svg", ApplicationVersion.DISPLAY_APP_NAME);
 		logo.addClassName("tt-app-logo");
+		final Span appBrand = new Span();
+		appBrand.addClassName("tt-app-brand");
+		appBrand.add(logo);
+
+		ApplicationVersion.displayVersion().ifPresent(version -> {
+			final Span versionLabel = new Span(version);
+			versionLabel.addClassName("tt-app-version");
+			appBrand.add(versionLabel);
+		});
 
 		navigationTabs.addClassName("tt-top-navigation");
 		navigationTabs.add(pupilsTab, coursesTab, examsTab, settingsTab);
@@ -69,7 +79,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
 		final HorizontalLayout spacer = new HorizontalLayout();
 		spacer.addClassName("tt-header-spacer");
 
-		header.add(logo, navigationTabs, spacer);
+		header.add(appBrand, navigationTabs, spacer);
 		return header;
 	}
 

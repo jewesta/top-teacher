@@ -104,7 +104,8 @@ public class DatabaseLocationEnvironmentPostProcessor implements EnvironmentPost
 			return base.resolve(APP_NAME).resolve(DATABASE_NAME);
 		}
 
-		final Path base = StringUtils.hasText(xdgDataHome) ? Path.of(xdgDataHome) : Path.of(userHome, ".local", "share");
+		final Path base = StringUtils.hasText(xdgDataHome) ? Path.of(xdgDataHome)
+				: Path.of(userHome, ".local", "share");
 		return base.resolve(APP_NAME).resolve(DATABASE_NAME);
 	}
 

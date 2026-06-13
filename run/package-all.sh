@@ -1,0 +1,12 @@
+#!/usr/bin/env sh
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <release-target-directory>" >&2
+    exit 2
+fi
+
+"$SCRIPT_DIR/package.sh" jar "$1"
+"$SCRIPT_DIR/package.sh" macos-app "$1"
