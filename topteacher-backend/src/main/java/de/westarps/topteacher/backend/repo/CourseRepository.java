@@ -178,8 +178,7 @@ public class CourseRepository {
 		return new MapSqlParameterSource().addValue("schoolClass", course.schoolClass().name())
 				.addValue("subject", course.subject().name())
 				.addValue("calendarYear", course.schoolYear().getCalendarYear())
-				.addValue("coursePeriod", course.coursePeriod().name())
-				.addValue("lifecycle", course.lifecycle().name())
+				.addValue("coursePeriod", course.coursePeriod().name()).addValue("lifecycle", course.lifecycle().name())
 				.addValue("gradingScaleId", course.gradingScaleId());
 	}
 

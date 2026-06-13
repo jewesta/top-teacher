@@ -28,8 +28,8 @@ import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.data.value.ValueChangeMode;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
-import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.backend.repo.GradingScaleRepository;
+import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.Pupil;
 import de.westarps.topteacher.model.loe.LoeCategory;
@@ -44,8 +44,8 @@ import de.westarps.topteacher.ui.UiUrls;
 import de.westarps.topteacher.ui.component.AbstractDesigner;
 import de.westarps.topteacher.ui.component.FullscreenButton;
 import de.westarps.topteacher.ui.component.StepperComboBox;
-import de.westarps.vaadin.markdown.MarkdownViewer;
 import de.westarps.vaadin.markdown.MarkdownTagRenderMode;
+import de.westarps.vaadin.markdown.MarkdownViewer;
 
 public class ExamResultsEditor extends AbstractDesigner {
 
@@ -292,8 +292,8 @@ public class ExamResultsEditor extends AbstractDesigner {
 
 	private void loadPointRules() {
 		pointRules = courseRepository.findById(exam.courseId())
-				.flatMap(course -> gradingScaleRepository.findById(course.gradingScaleId()))
-				.map(LoePointRules::new).orElse(null);
+				.flatMap(course -> gradingScaleRepository.findById(course.gradingScaleId())).map(LoePointRules::new)
+				.orElse(null);
 	}
 
 	private void loadResultState() {
@@ -398,10 +398,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 			description.setCheckedTagKeys(requirementCriteria.stream().filter(this::currentCriterionAchieved)
 					.map(LoeCriterion::criterionKey).toList());
 			description.addTagCheckedChangeListener(change -> {
-				if (applyingResultState) {
-					return;
-				}
-				if (selectedPupil == null) {
+				if (applyingResultState || (selectedPupil == null)) {
 					return;
 				}
 				final LoeCriterion criterion = criteriaByKey.get(change.key());
@@ -569,7 +566,8 @@ public class ExamResultsEditor extends AbstractDesigner {
 		return control;
 	}
 
-	private Component criteriaChecklist(final LoeRequirement requirement, final List<LoeCriterion> requirementCriteria) {
+	private Component criteriaChecklist(final LoeRequirement requirement,
+			final List<LoeCriterion> requirementCriteria) {
 		final VerticalLayout checklist = new VerticalLayout();
 		checklist.addClassName("tt-results-criteria-checklist");
 		checklist.setPadding(false);
@@ -613,7 +611,8 @@ public class ExamResultsEditor extends AbstractDesigner {
 		return block;
 	}
 
-	private Component header(final String titleText, final String badgeLabel, final Supplier<LoePoints> pointsSupplier) {
+	private Component header(final String titleText, final String badgeLabel,
+			final Supplier<LoePoints> pointsSupplier) {
 		final HorizontalLayout header = header(titleText);
 		header.add(pointBadge(badgeLabel, pointsSupplier));
 		return header;
@@ -802,10 +801,8 @@ public class ExamResultsEditor extends AbstractDesigner {
 	}
 
 	private String pdfUrl(final boolean teacherVersion) {
-		final String fileName =
-				teacherVersion ? "level-of-expectations-teacher.pdf" : "level-of-expectations.pdf";
-		return UiUrls.contextRelative("/export/exams/" + exam.id() + "/pupils/" + selectedPupil.id() + "/"
-				+ fileName);
+		final String fileName = teacherVersion ? "level-of-expectations-teacher.pdf" : "level-of-expectations.pdf";
+		return UiUrls.contextRelative("/export/exams/" + exam.id() + "/pupils/" + selectedPupil.id() + "/" + fileName);
 	}
 
 	private boolean hasPersistedResults() {
@@ -863,13 +860,12 @@ public class ExamResultsEditor extends AbstractDesigner {
 
 	private String pdfFileName(final boolean teacherVersion) {
 		final String prefix = teacherVersion ? "lehrerversion-erwartungshorizont" : "erwartungshorizont";
-		return prefix + "-" + fileNamePart(exam.title()) + "-" + fileNamePart(selectedPupil.surname())
-				+ "-" + fileNamePart(selectedPupil.name()) + ".pdf";
+		return prefix + "-" + fileNamePart(exam.title()) + "-" + fileNamePart(selectedPupil.surname()) + "-"
+				+ fileNamePart(selectedPupil.name()) + ".pdf";
 	}
 
 	private static String fileNamePart(final String value) {
-		return normalizedStatic(value).replaceAll("[^a-zA-Z0-9_-]+", "-").replaceAll("(^-+|-+$)", "")
-				.toLowerCase();
+		return normalizedStatic(value).replaceAll("[^a-zA-Z0-9_-]+", "-").replaceAll("(^-+|-+$)", "").toLowerCase();
 	}
 
 	private String normalized(final String value) {

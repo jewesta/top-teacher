@@ -66,10 +66,8 @@ class DatabaseBackupServiceTests {
 
 		final DatabaseBackupService service = new DatabaseBackupService(appSettings, jdbc, fixedClock());
 
-		assertThatThrownBy(service::backUpNow)
-				.isInstanceOf(IllegalStateException.class)
-				.hasMessageContaining("Datenbank-Backup fehlgeschlagen")
-				.hasMessageContaining("boom");
+		assertThatThrownBy(service::backUpNow).isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("Datenbank-Backup fehlgeschlagen").hasMessageContaining("boom");
 		verify(appSettings).saveTtEventDatabaseBackupError(contains("boom"));
 	}
 

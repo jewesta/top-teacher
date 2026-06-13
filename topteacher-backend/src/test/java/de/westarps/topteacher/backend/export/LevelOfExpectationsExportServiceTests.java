@@ -130,8 +130,8 @@ class LevelOfExpectationsExportServiceTests {
 	void exportsReviewedDemoLevelOfExpectationsThroughDownloadController() {
 		final DemoSelection demo = findReviewedDemoSelection();
 
-		final ResponseEntity<byte[]> response =
-				exportController.exportPupilLevelOfExpectations(demo.exam().id(), demo.pupil().id());
+		final ResponseEntity<byte[]> response = exportController.exportPupilLevelOfExpectations(demo.exam().id(),
+				demo.pupil().id());
 
 		assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
 		assertThat(response.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_PDF);
@@ -144,8 +144,8 @@ class LevelOfExpectationsExportServiceTests {
 	void exportsReviewedDemoTeacherLevelOfExpectationsThroughDownloadController() {
 		final DemoSelection demo = findReviewedDemoSelection();
 
-		final ResponseEntity<byte[]> response =
-				exportController.exportTeacherLevelOfExpectations(demo.exam().id(), demo.pupil().id());
+		final ResponseEntity<byte[]> response = exportController.exportTeacherLevelOfExpectations(demo.exam().id(),
+				demo.pupil().id());
 
 		assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
 		assertThat(response.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_PDF);
@@ -158,18 +158,11 @@ class LevelOfExpectationsExportServiceTests {
 		final Course course = courseRepository.findAll().stream()
 				.filter(candidate -> candidate.schoolClass() == SchoolClass.CLS_EF)
 				.filter(candidate -> candidate.subject() == Subject.ENGLISH)
-				.filter(candidate -> candidate.schoolYear().getCalendarYear() == 2026)
-				.findFirst()
-				.orElseThrow();
+				.filter(candidate -> candidate.schoolYear().getCalendarYear() == 2026).findFirst().orElseThrow();
 		final Exam exam = examRepository.findByCourseId(course.id()).stream()
-				.filter(candidate -> candidate.title().equals("Klausur Nr. 4"))
-				.findFirst()
-				.orElseThrow();
-		final Pupil pupil = pupilRepository.findAll().stream()
-				.filter(candidate -> candidate.name().equals("Finn"))
-				.filter(candidate -> candidate.surname().equals("Becker"))
-				.findFirst()
-				.orElseThrow();
+				.filter(candidate -> candidate.title().equals("Klausur Nr. 4")).findFirst().orElseThrow();
+		final Pupil pupil = pupilRepository.findAll().stream().filter(candidate -> candidate.name().equals("Finn"))
+				.filter(candidate -> candidate.surname().equals("Becker")).findFirst().orElseThrow();
 		return new DemoSelection(exam, pupil);
 	}
 

@@ -24,8 +24,7 @@ public class DatabaseLocationEnvironmentPostProcessor implements EnvironmentPost
 	}
 
 	@Override
-	public void postProcessEnvironment(final ConfigurableEnvironment environment,
-			final SpringApplication application) {
+	public void postProcessEnvironment(final ConfigurableEnvironment environment, final SpringApplication application) {
 		final String databaseFile = environment.getProperty(DATABASE_FILE_PROPERTY);
 		if (StringUtils.hasText(databaseFile)) {
 			validateDatabaseFile(databaseFile);

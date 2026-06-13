@@ -25,11 +25,11 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
 
 import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
+import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.loe.LoeCategory;
 import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeTask;
-import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.ui.component.FullscreenButton;
 
 class LevelOfExpectationsEditorTests {
@@ -42,8 +42,8 @@ class LevelOfExpectationsEditorTests {
 	private static final LoePart SECOND_PART = new LoePart(5, EXAM.id(), "Klausurteil B", 1);
 	private static final LoeCategory SECOND_CATEGORY = new LoeCategory(6, SECOND_PART.id(), "Sprache", "", 0);
 	private static final LoeTask SECOND_TASK = new LoeTask(7, SECOND_CATEGORY.id(), "Teilaufgabe 2", 0);
-	private static final LoeRequirement SECOND_REQUIREMENT = new LoeRequirement(8, SECOND_TASK.id(), "Second requirement",
-			15, false, 0);
+	private static final LoeRequirement SECOND_REQUIREMENT = new LoeRequirement(8, SECOND_TASK.id(),
+			"Second requirement", 15, false, 0);
 	private static final LoeRequirement FOLLOWING_REQUIREMENT = new LoeRequirement(9, TASK.id(),
 			"Very long user-entered requirement text that should not become a summary title", 2, false, 1);
 	private static final LoeRequirement BONUS_REQUIREMENT = new LoeRequirement(10, TASK.id(), "Bonus requirement", 4,

@@ -31,8 +31,8 @@ import de.westarps.topteacher.model.loe.LoeTask;
 
 class LevelOfExpectationsExportModelFactoryTests {
 
-	private final LevelOfExpectationsExportModelFactory factory =
-			new LevelOfExpectationsExportModelFactory(new Sanitizer());
+	private final LevelOfExpectationsExportModelFactory factory = new LevelOfExpectationsExportModelFactory(
+			new Sanitizer());
 
 	@Test
 	void createsPupilFacingExportModelWithSanitizedMarkdownAndAggregatedPoints() {
@@ -45,21 +45,19 @@ class LevelOfExpectationsExportModelFactoryTests {
 		assertThat(model.points().achievedDisplayName()).isEqualTo("4 (+ 1)");
 		assertThat(model.totalGradeDisplayName()).isEqualTo("ungenügend");
 		assertThat(model.gradingScaleTableRows().getFirst().cells().stream()
-				.map(LevelOfExpectationsExportModelFactory.GradingScaleTableCell::gradeDisplayName)
-				.toList()).containsExactly("sehr gut plus", "ungenügend", "");
-		assertThat(model.gradingScaleTableRows().getFirst().cells().getFirst().minPointsDisplayName())
-				.isEqualTo("95");
-		assertThat(model.gradingScaleTableRows().getFirst().cells().getFirst().maxPointsDisplayName())
-				.isEqualTo("100");
+				.map(LevelOfExpectationsExportModelFactory.GradingScaleTableCell::gradeDisplayName).toList())
+				.containsExactly("sehr gut plus", "ungenügend", "");
+		assertThat(model.gradingScaleTableRows().getFirst().cells().getFirst().minPointsDisplayName()).isEqualTo("95");
+		assertThat(model.gradingScaleTableRows().getFirst().cells().getFirst().maxPointsDisplayName()).isEqualTo("100");
 
-		final var firstRequirement = model.parts().getFirst().categories().getFirst().tasks().getFirst()
-				.requirements().getFirst();
+		final var firstRequirement = model.parts().getFirst().categories().getFirst().tasks().getFirst().requirements()
+				.getFirst();
 		assertThat(firstRequirement.description().value()).contains("<strong>Zeitform</strong>");
 		assertThat(firstRequirement.description().value()).doesNotContain("eh:1", "tt-criterion", "mark");
 		assertThat(firstRequirement.comment()).isEmpty();
 
-		final var bonusRequirement = model.parts().getFirst().categories().getFirst().tasks().getFirst()
-				.requirements().get(1);
+		final var bonusRequirement = model.parts().getFirst().categories().getFirst().tasks().getFirst().requirements()
+				.get(1);
 		assertThat(bonusRequirement.maxPointsDisplayName()).isEqualTo("(2)");
 		assertThat(bonusRequirement.achievedPointsDisplayName()).isEqualTo("(1)");
 
@@ -68,8 +66,8 @@ class LevelOfExpectationsExportModelFactoryTests {
 
 	@Test
 	void displaysZeroBonusPointsInBraces() {
-		final var requirement = new LevelOfExpectationsExportModelFactory.Requirement(1, new SafeHtml("Bonuspunkt"),
-				0, true, 0, "");
+		final var requirement = new LevelOfExpectationsExportModelFactory.Requirement(1, new SafeHtml("Bonuspunkt"), 0,
+				true, 0, "");
 
 		assertThat(requirement.maxPointsDisplayName()).isEqualTo("(0)");
 		assertThat(requirement.achievedPointsDisplayName()).isEqualTo("(0)");
@@ -79,8 +77,8 @@ class LevelOfExpectationsExportModelFactoryTests {
 	void canCreateTeacherFacingExportModelWithCriterionRendering() {
 		final LevelOfExpectationsExportModel model = factory.createTeacherModel(data());
 
-		final var firstRequirement = model.parts().getFirst().categories().getFirst().tasks().getFirst()
-				.requirements().getFirst();
+		final var firstRequirement = model.parts().getFirst().categories().getFirst().tasks().getFirst().requirements()
+				.getFirst();
 		assertThat(firstRequirement.comment()).isEqualTo("Sauber");
 		assertThat(firstRequirement.description().value()).contains("tt-criterion");
 		assertThat(firstRequirement.description().value()).contains("tt-criterion-badge");
@@ -95,24 +93,17 @@ class LevelOfExpectationsExportModelFactoryTests {
 				new Exam(1, 1, "Klausur Nr. 1", LocalDate.of(2026, 5, 21)),
 				new Pupil(1, "Anna", "Muster", Lifecycle.ACTIVE),
 				new GradingScale(1, "Standard", 100, Lifecycle.ACTIVE),
-				List.of(
-						new GradingScaleRange(1, 1, GradeLevel.SEHR_GUT_PLUS, 95, 100),
+				List.of(new GradingScaleRange(1, 1, GradeLevel.SEHR_GUT_PLUS, 95, 100),
 						new GradingScaleRange(2, 1, GradeLevel.UNGENUEGEND, 0, 19)),
 				List.of(new LoePart(1, 1, "Klausurteil A", 0)),
 				List.of(new LoeCategory(1, 1, "Inhaltliche Leistung", "", 0)),
 				List.of(new LoeTask(1, 1, "Teilaufgabe 1", 0)),
-				List.of(
-						new LoeRequirement(1, 1, "**[Zeitform](eh:1)** und [Wortwahl](eh:2) nutzen", 6, false, 0),
+				List.of(new LoeRequirement(1, 1, "**[Zeitform](eh:1)** und [Wortwahl](eh:2) nutzen", 6, false, 0),
 						new LoeRequirement(2, 1, "Bonuspunkt", 2, true, 1)),
-				List.of(
-						new LoeRequirementResult(1, 1, 4, "Sauber"),
-						new LoeRequirementResult(2, 1, 1, "")),
-				List.of(
-						new LoeCriterion(10, 1, "1", "Zeitform", 0, true),
+				List.of(new LoeRequirementResult(1, 1, 4, "Sauber"), new LoeRequirementResult(2, 1, 1, "")),
+				List.of(new LoeCriterion(10, 1, "1", "Zeitform", 0, true),
 						new LoeCriterion(11, 1, "2", "Wortwahl", 1, true)),
-				List.of(
-						new LoeCriterionResult(10, 1, true),
-						new LoeCriterionResult(11, 1, false)),
+				List.of(new LoeCriterionResult(10, 1, true), new LoeCriterionResult(11, 1, false)),
 				List.of(new ExamNoteSection(1, 1, "Hinweis", "*Notiz*", 0)));
 	}
 }

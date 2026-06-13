@@ -135,7 +135,8 @@ class SettingsViewTests {
 	private static SettingsView view(final String targetFolder, final boolean scheduleEnabled, final String cron,
 			final Path databaseFile) {
 		return new SettingsView(List.of(new DatabaseBackupSettingsTab(settings(targetFolder, scheduleEnabled, cron),
-				mock(DatabaseBackupService.class), mock(DatabaseBackupScheduler.class), databaseEnvironment(databaseFile))));
+				mock(DatabaseBackupService.class), mock(DatabaseBackupScheduler.class),
+				databaseEnvironment(databaseFile))));
 	}
 
 	private static AppSettings settings(final String targetFolder, final boolean scheduleEnabled, final String cron) {
@@ -151,9 +152,7 @@ class SettingsViewTests {
 	}
 
 	private static TextField textField(final Component root, final String label) {
-		return components(root, TextField.class).stream()
-				.filter(field -> label.equals(field.getLabel()))
-				.findFirst()
+		return components(root, TextField.class).stream().filter(field -> label.equals(field.getLabel())).findFirst()
 				.orElseThrow();
 	}
 
@@ -163,9 +162,7 @@ class SettingsViewTests {
 	}
 
 	private static Button button(final Component root, final String text) {
-		return components(root, Button.class).stream()
-				.filter(button -> text.equals(button.getText()))
-				.findFirst()
+		return components(root, Button.class).stream().filter(button -> text.equals(button.getText())).findFirst()
 				.orElseThrow();
 	}
 

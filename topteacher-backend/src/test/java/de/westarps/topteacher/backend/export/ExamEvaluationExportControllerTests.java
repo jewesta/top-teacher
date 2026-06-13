@@ -24,8 +24,8 @@ class ExamEvaluationExportControllerTests {
 		final ExamEvaluationExcelExportService exportService = mock(ExamEvaluationExcelExportService.class);
 		when(exportService.renderWorkbook(exam.id())).thenReturn(new byte[] { 1, 2, 3 });
 
-		final ExamEvaluationExportController controller =
-				new ExamEvaluationExportController(examRepository, exportService);
+		final ExamEvaluationExportController controller = new ExamEvaluationExportController(examRepository,
+				exportService);
 
 		final var response = controller.exportEvaluation(exam.id());
 

@@ -14,6 +14,7 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import de.westarps.topteacher.model.loe.ExamNoteSection;
 import de.westarps.topteacher.model.loe.LoeCategory;
 import de.westarps.topteacher.model.loe.LoeCriterion;
 import de.westarps.topteacher.model.loe.LoeCriterionParser;
@@ -22,7 +23,6 @@ import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeRequirementResult;
 import de.westarps.topteacher.model.loe.LoeTask;
-import de.westarps.topteacher.model.loe.ExamNoteSection;
 
 @Repository
 public class LevelOfExpectationsRepository {
@@ -152,15 +152,15 @@ public class LevelOfExpectationsRepository {
 		}
 
 		for (final LoeTask task : findTasksByExamId(sourceExamId)) {
-			final LoeTask copiedTask = saveTask(new LoeTask(null, categoryIds.get(task.categoryId()), task.title(),
-					task.sortOrder()));
+			final LoeTask copiedTask = saveTask(
+					new LoeTask(null, categoryIds.get(task.categoryId()), task.title(), task.sortOrder()));
 			taskIds.put(task.id(), copiedTask.id());
 		}
 
 		for (final LoeRequirement requirement : findRequirementsByExamId(sourceExamId)) {
-			saveRequirement(new LoeRequirement(null, taskIds.get(requirement.taskId()),
-					requirement.descriptionMarkdown(), requirement.maxPoints(), requirement.bonus(),
-					requirement.sortOrder()));
+			saveRequirement(
+					new LoeRequirement(null, taskIds.get(requirement.taskId()), requirement.descriptionMarkdown(),
+							requirement.maxPoints(), requirement.bonus(), requirement.sortOrder()));
 		}
 
 		for (final ExamNoteSection noteSection : findNoteSectionsByExamId(sourceExamId)) {
@@ -254,9 +254,10 @@ public class LevelOfExpectationsRepository {
 				merge into eh_requirement_result (requirement_id, pupil_id, points, comment_text)
 				key (requirement_id, pupil_id)
 				values (:requirementId, :pupilId, :points, :comment)
-				""", new MapSqlParameterSource().addValue("requirementId", result.requirementId())
-				.addValue("pupilId", result.pupilId()).addValue("points", result.points())
-				.addValue("comment", result.comment()));
+				""",
+				new MapSqlParameterSource().addValue("requirementId", result.requirementId())
+						.addValue("pupilId", result.pupilId()).addValue("points", result.points())
+						.addValue("comment", result.comment()));
 	}
 
 	@Transactional
@@ -388,7 +389,8 @@ public class LevelOfExpectationsRepository {
 		move("eh_task", siblings.stream().map(SortableItem::fromTask).toList(), task.id(), offset);
 	}
 
-	public void moveRequirement(final LoeRequirement requirement, final List<LoeRequirement> siblings, final int offset) {
+	public void moveRequirement(final LoeRequirement requirement, final List<LoeRequirement> siblings,
+			final int offset) {
 		move("eh_requirement", siblings.stream().map(SortableItem::fromRequirement).toList(), requirement.id(), offset);
 	}
 
@@ -459,16 +461,15 @@ public class LevelOfExpectationsRepository {
 				where requirement_id = :requirementId
 				""", Map.of("requirementId", requirement.id()));
 
-		for (final LoeCriterion criterion : LoeCriterionParser.parse(requirement.id(), requirement.descriptionMarkdown())) {
+		for (final LoeCriterion criterion : LoeCriterionParser.parse(requirement.id(),
+				requirement.descriptionMarkdown())) {
 			final List<Integer> existingIds = jdbc.queryForList("""
 					select id
 					from eh_criterion
 					where requirement_id = :requirementId
 					  and criterion_key = :criterionKey
-					""",
-					new MapSqlParameterSource().addValue("requirementId", criterion.requirementId())
-							.addValue("criterionKey", criterion.criterionKey()),
-					Integer.class);
+					""", new MapSqlParameterSource().addValue("requirementId", criterion.requirementId())
+					.addValue("criterionKey", criterion.criterionKey()), Integer.class);
 			if (existingIds.isEmpty()) {
 				insertCriterion(criterion);
 			} else {

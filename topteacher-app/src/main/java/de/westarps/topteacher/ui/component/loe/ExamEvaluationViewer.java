@@ -141,13 +141,12 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 		grid.addSpreadsheetColumn(row -> pointsDisplayName(row.pointsFor(requirements), hasBonus(requirements)),
 				"Gesamt").setTextAlign(ColumnTextAlign.CENTER).setFrozen(true).setWidth(RESULT_COLUMN_WIDTH)
 				.setFlexGrow(0);
-		grid.addSpreadsheetColumn(this::gradeDisplayName, "Note").setTextAlign(ColumnTextAlign.CENTER)
-				.setFrozen(true).setWidth("8rem").setFlexGrow(0);
+		grid.addSpreadsheetColumn(this::gradeDisplayName, "Note").setTextAlign(ColumnTextAlign.CENTER).setFrozen(true)
+				.setWidth("8rem").setFlexGrow(0);
 		aggregationColumns.forEach(aggregationColumn -> grid
 				.addSpreadsheetColumn(row -> pointsDisplayName(row.pointsFor(aggregationColumn.requirements()),
 						hasBonus(aggregationColumn.requirements())), aggregationColumn.title())
-				.setTextAlign(ColumnTextAlign.CENTER)
-				.setWidth(RESULT_COLUMN_WIDTH).setFlexGrow(0));
+				.setTextAlign(ColumnTextAlign.CENTER).setWidth(RESULT_COLUMN_WIDTH).setFlexGrow(0));
 		grid.addSpacerColumn(SPACER_COLUMN_WIDTH);
 	}
 
@@ -193,9 +192,7 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 		}
 		return gradingScaleRanges.stream()
 				.filter(range -> range.minPoints() <= effectivePoints && effectivePoints <= range.maxPoints())
-				.findFirst()
-				.map(range -> range.gradeLevel().getDisplayName())
-				.orElse("");
+				.findFirst().map(range -> range.gradeLevel().getDisplayName()).orElse("");
 	}
 
 	private static Span emptyState(final String text) {

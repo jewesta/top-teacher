@@ -35,10 +35,12 @@ public class MarkdownViewer extends MarkdownComponent {
 		super(content);
 	}
 
+	@Override
 	public MarkdownTag getTag() {
 		return super.getTag();
 	}
 
+	@Override
 	public void setTag(final MarkdownTag tag) {
 		super.setTag(tag);
 	}
@@ -67,8 +69,7 @@ public class MarkdownViewer extends MarkdownComponent {
 		setState("checkedTagKeys", List.copyOf(this.checkedTagKeys));
 	}
 
-	public Registration addTagCheckedChangeListener(
-			final SerializableConsumer<MarkdownTagCheckedChange> listener) {
+	public Registration addTagCheckedChangeListener(final SerializableConsumer<MarkdownTagCheckedChange> listener) {
 		Objects.requireNonNull(listener, "listener must not be null");
 		return getElement().addEventListener("tag-checked-changed", event -> {
 			final JsonNode eventData = event.getEventData();

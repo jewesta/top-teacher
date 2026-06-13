@@ -53,7 +53,7 @@ public class DatabaseBackupSettingsTab extends VerticalLayout implements Setting
 	private final DatabaseBackupScheduler backupScheduler;
 
 	private final Binder<BackupSettingsFormData> backupBinder = new Binder<>();
-	private final TextField currentDatabaseFile = new TextField("Aktuelle H2-Datei");
+	private final TextField currentDatabaseFile = new TextField("Aktuelle H2-Datenbank-Datei");
 	private final Checkbox backupEnabled = new Checkbox("Automatische Sicherung aktiv");
 	private final TextField backupTargetFolder = new TextField("Zielordner");
 	private final TextField backupCron = new TextField("Zeitplan");
@@ -97,14 +97,15 @@ public class DatabaseBackupSettingsTab extends VerticalLayout implements Setting
 		currentDatabaseFile.setSuffixComponent(createCopyCurrentDatabaseFileButton());
 
 		backupTargetFolder.setClearButtonVisible(true);
-		backupTargetFolder.setPlaceholder("/Volumes/Backups/TopTeacher");
+		backupTargetFolder.setPlaceholder("Beispiel: /Volumes/Backups/TopTeacher");
 		backupTargetFolder.setValueChangeMode(ValueChangeMode.EAGER);
 		backupTargetFolder.setWidthFull();
 		backupTargetFolder.addValueChangeListener(event -> updateButtonStates());
 
 		backupCron.setClearButtonVisible(true);
 		backupCron.addClassName("tt-settings-cron-field");
-		backupCron.setHelperText("Spring-Cron mit 6 Feldern: Sekunde Minute Stunde Tag Monat Wochentag, z. B. 0 0 2 * * *.");
+		backupCron.setHelperText(
+				"Spring-Cron mit 6 Feldern: Sekunde Minute Stunde Tag Monat Wochentag, z. B. 0 0 2 * * *.");
 		backupCron.setValueChangeMode(ValueChangeMode.EAGER);
 		backupCron.addValueChangeListener(event -> updateButtonStates());
 
@@ -237,15 +238,14 @@ public class DatabaseBackupSettingsTab extends VerticalLayout implements Setting
 	}
 
 	private void bindBackupSettings() {
-		backupBinder.forField(backupEnabled)
-				.bind(BackupSettingsFormData::isScheduleEnabled, BackupSettingsFormData::setScheduleEnabled);
+		backupBinder.forField(backupEnabled).bind(BackupSettingsFormData::isScheduleEnabled,
+				BackupSettingsFormData::setScheduleEnabled);
 		backupBinder.forField(backupTargetFolder).withConverter(DatabaseBackupSettingsTab::trim, value -> value)
 				.withValidator((value, context) -> {
-					final String errorMessage =
-							targetFolderValidationMessage(value, Boolean.TRUE.equals(backupEnabled.getValue()));
+					final String errorMessage = targetFolderValidationMessage(value,
+							Boolean.TRUE.equals(backupEnabled.getValue()));
 					return errorMessage == null ? ValidationResult.ok() : ValidationResult.error(errorMessage);
-				})
-				.bind(BackupSettingsFormData::getTargetFolder, BackupSettingsFormData::setTargetFolder);
+				}).bind(BackupSettingsFormData::getTargetFolder, BackupSettingsFormData::setTargetFolder);
 		backupBinder.forField(backupCron).withConverter(DatabaseBackupSettingsTab::trim, value -> value)
 				.withValidator(value -> !value.isBlank(), "Zeitplan ist erforderlich.")
 				.withValidator(DatabaseBackupSettingsTab::isValidCronExpression, "Ungültiger Cron-Ausdruck.")
