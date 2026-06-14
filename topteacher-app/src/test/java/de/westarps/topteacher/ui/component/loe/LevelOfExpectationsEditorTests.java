@@ -155,6 +155,31 @@ class LevelOfExpectationsEditorTests {
 	}
 
 	@Test
+	void correctionModeLocksStructureButKeepsTextCorrectionsEditable() {
+		final LevelOfExpectationsRepository repository = repositoryWithHierarchy();
+		when(repository.hasResultsForExam(EXAM.id())).thenReturn(true);
+		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repository);
+
+		editor.setExam(EXAM);
+
+		assertThat(button(editor, "Klausurteil hinzufügen").isEnabled()).isFalse();
+		assertThat(button(editor, "Leistungskategorie hinzufügen").isEnabled()).isFalse();
+		assertThat(button(editor, "Teilaufgabe hinzufügen").isEnabled()).isFalse();
+		assertThat(button(editor, "Anforderung hinzufügen").isEnabled()).isFalse();
+		assertThat(buttonsByAriaLabel(editor, "Löschen")).extracting(Button::isEnabled).containsOnly(false);
+		assertThat(buttonsByAriaLabel(editor, "Nach oben")).extracting(Button::isEnabled).containsOnly(false);
+		assertThat(buttonsByAriaLabel(editor, "Nach unten")).extracting(Button::isEnabled).containsOnly(false);
+		assertThat(components(editor, IntegerField.class)).extracting(IntegerField::isEnabled).containsOnly(false);
+		assertThat(bonusButtons(editor)).extracting(Button::isEnabled).containsOnly(false);
+
+		final TextField partTitle = titleField(editor, PART.title());
+		partTitle.setValue("Klausurteil Alpha");
+		saveButtons(editor).getFirst().click();
+
+		verify(repository).savePart(new LoePart(PART.id(), PART.examId(), "Klausurteil Alpha", PART.sortOrder()));
+	}
+
+	@Test
 	void aggregatesBonusPointsWithoutAddingThemToRegularTotal() {
 		final LevelOfExpectationsRepository repository = repositoryWithRegularAndBonusRequirement();
 		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repository);
@@ -388,6 +413,16 @@ class LevelOfExpectationsEditorTests {
 
 	private static List<Button> saveButtons(final Component root) {
 		return components(root, Button.class).stream().filter(button -> "Speichern".equals(button.getText())).toList();
+	}
+
+	private static Button button(final Component root, final String text) {
+		return components(root, Button.class).stream().filter(button -> text.equals(button.getText())).findFirst()
+				.orElseThrow();
+	}
+
+	private static List<Button> buttonsByAriaLabel(final Component root, final String ariaLabel) {
+		return components(root, Button.class).stream()
+				.filter(button -> ariaLabel.equals(button.getElement().getAttribute("aria-label"))).toList();
 	}
 
 	private static TextField titleField(final Component root, final String value) {

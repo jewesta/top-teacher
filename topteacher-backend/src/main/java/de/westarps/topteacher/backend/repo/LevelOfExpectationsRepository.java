@@ -27,6 +27,8 @@ import de.westarps.topteacher.model.loe.LoeTask;
 @Repository
 public class LevelOfExpectationsRepository {
 
+	private static final String CORRECTION_MODE_MESSAGE = "Der Erwartungshorizont ist im Korrekturmodus. Struktur, Punkte und Kriteriennummern können nicht geändert werden.";
+
 	private final NamedParameterJdbcTemplate jdbc;
 	private final RowMapper<LoePart> partRowMapper = this::mapPart;
 	private final RowMapper<LoeCategory> categoryRowMapper = this::mapCategory;
@@ -134,6 +136,31 @@ public class LevelOfExpectationsRepository {
 				""", Map.of("examId", examId), noteSectionRowMapper);
 	}
 
+	public boolean hasResultsForExam(final int examId) {
+		final Integer count = jdbc.queryForObject("""
+				select count(*)
+				from (
+				    select 1
+				    from eh_requirement_result result
+				    join eh_requirement r on r.id = result.requirement_id
+				    join eh_task t on t.id = r.task_id
+				    join eh_category c on c.id = t.category_id
+				    join eh_part p on p.id = c.part_id
+				    where p.exam_id = :examId
+				    union all
+				    select 1
+				    from eh_criterion_result result
+				    join eh_criterion cr on cr.id = result.criterion_id
+				    join eh_requirement r on r.id = cr.requirement_id
+				    join eh_task t on t.id = r.task_id
+				    join eh_category c on c.id = t.category_id
+				    join eh_part p on p.id = c.part_id
+				    where p.exam_id = :examId
+				) results
+				""", Map.of("examId", examId), Integer.class);
+		return count != null && count > 0;
+	}
+
 	@Transactional
 	public void copyDesignAndNotes(final int sourceExamId, final int targetExamId) {
 		final Map<Integer, Integer> partIds = new HashMap<>();
@@ -171,8 +198,10 @@ public class LevelOfExpectationsRepository {
 
 	public LoePart savePart(final LoePart part) {
 		if (part.id() == null) {
+			assertNoResultsForExam(part.examId());
 			return insertPart(part);
 		}
+		validatePartCorrectionMode(part);
 		jdbc.update("""
 				update eh_part
 				set title = :title,
@@ -185,8 +214,10 @@ public class LevelOfExpectationsRepository {
 
 	public LoeCategory saveCategory(final LoeCategory category) {
 		if (category.id() == null) {
+			assertNoResultsForExam(examIdForPart(category.partId()));
 			return insertCategory(category);
 		}
+		validateCategoryCorrectionMode(category);
 		jdbc.update("""
 				update eh_category
 				set title = :title,
@@ -202,8 +233,10 @@ public class LevelOfExpectationsRepository {
 
 	public LoeTask saveTask(final LoeTask task) {
 		if (task.id() == null) {
+			assertNoResultsForExam(examIdForCategory(task.categoryId()));
 			return insertTask(task);
 		}
+		validateTaskCorrectionMode(task);
 		jdbc.update("""
 				update eh_task
 				set title = :title,
@@ -216,10 +249,12 @@ public class LevelOfExpectationsRepository {
 
 	public LoeRequirement saveRequirement(final LoeRequirement requirement) {
 		if (requirement.id() == null) {
+			assertNoResultsForExam(examIdForTask(requirement.taskId()));
 			final LoeRequirement insertedRequirement = insertRequirement(requirement);
 			syncCriteria(insertedRequirement);
 			return insertedRequirement;
 		}
+		validateRequirementCorrectionMode(requirement);
 		jdbc.update("""
 				update eh_requirement
 				set description_markdown = :descriptionMarkdown,
@@ -309,24 +344,28 @@ public class LevelOfExpectationsRepository {
 	}
 
 	public void deletePart(final int id) {
+		assertNoResultsForExam(examIdForPart(id));
 		assertNoCriterionResultsForPart(id);
 		assertNoRequirementResultsForPart(id);
 		deleteById("eh_part", id);
 	}
 
 	public void deleteCategory(final int id) {
+		assertNoResultsForExam(examIdForCategory(id));
 		assertNoCriterionResultsForCategory(id);
 		assertNoRequirementResultsForCategory(id);
 		deleteById("eh_category", id);
 	}
 
 	public void deleteTask(final int id) {
+		assertNoResultsForExam(examIdForTask(id));
 		assertNoCriterionResultsForTask(id);
 		assertNoRequirementResultsForTask(id);
 		deleteById("eh_task", id);
 	}
 
 	public void deleteRequirement(final int id) {
+		assertNoResultsForExam(examIdForRequirement(id));
 		assertNoCriterionResultsForRequirement(id);
 		assertNoRequirementResultsForRequirement(id);
 		deleteById("eh_requirement", id);
@@ -377,20 +416,24 @@ public class LevelOfExpectationsRepository {
 	}
 
 	public void movePart(final LoePart part, final int offset) {
+		assertNoResultsForExam(part.examId());
 		final List<LoePart> siblings = findPartsByExamId(part.examId());
 		move("eh_part", siblings.stream().map(SortableItem::fromPart).toList(), part.id(), offset);
 	}
 
 	public void moveCategory(final LoeCategory category, final List<LoeCategory> siblings, final int offset) {
+		assertNoResultsForExam(examIdForCategory(category.id()));
 		move("eh_category", siblings.stream().map(SortableItem::fromCategory).toList(), category.id(), offset);
 	}
 
 	public void moveTask(final LoeTask task, final List<LoeTask> siblings, final int offset) {
+		assertNoResultsForExam(examIdForTask(task.id()));
 		move("eh_task", siblings.stream().map(SortableItem::fromTask).toList(), task.id(), offset);
 	}
 
 	public void moveRequirement(final LoeRequirement requirement, final List<LoeRequirement> siblings,
 			final int offset) {
+		assertNoResultsForExam(examIdForRequirement(requirement.id()));
 		move("eh_requirement", siblings.stream().map(SortableItem::fromRequirement).toList(), requirement.id(), offset);
 	}
 
@@ -398,6 +441,132 @@ public class LevelOfExpectationsRepository {
 		final List<ExamNoteSection> siblings = findNoteSectionsByExamId(noteSection.examId());
 		move("exam_note_section", siblings.stream().map(SortableItem::fromNoteSection).toList(), noteSection.id(),
 				offset);
+	}
+
+	private void validatePartCorrectionMode(final LoePart part) {
+		final LoePart existing = findPartById(part.id());
+		if (!hasResultsForExam(existing.examId())) {
+			return;
+		}
+		if (!existing.examId().equals(part.examId()) || existing.sortOrder() != part.sortOrder()) {
+			throw new IllegalStateException(CORRECTION_MODE_MESSAGE);
+		}
+	}
+
+	private void validateCategoryCorrectionMode(final LoeCategory category) {
+		final LoeCategory existing = findCategoryById(category.id());
+		final int examId = examIdForPart(existing.partId());
+		if (!hasResultsForExam(examId)) {
+			return;
+		}
+		if (!existing.partId().equals(category.partId()) || existing.sortOrder() != category.sortOrder()) {
+			throw new IllegalStateException(CORRECTION_MODE_MESSAGE);
+		}
+	}
+
+	private void validateTaskCorrectionMode(final LoeTask task) {
+		final LoeTask existing = findTaskById(task.id());
+		final int examId = examIdForCategory(existing.categoryId());
+		if (!hasResultsForExam(examId)) {
+			return;
+		}
+		if (!existing.categoryId().equals(task.categoryId()) || existing.sortOrder() != task.sortOrder()) {
+			throw new IllegalStateException(CORRECTION_MODE_MESSAGE);
+		}
+	}
+
+	private void validateRequirementCorrectionMode(final LoeRequirement requirement) {
+		final LoeRequirement existing = findRequirementById(requirement.id());
+		final int examId = examIdForTask(existing.taskId());
+		if (!hasResultsForExam(examId)) {
+			return;
+		}
+		if (!existing.taskId().equals(requirement.taskId()) || existing.maxPoints() != requirement.maxPoints()
+				|| existing.bonus() != requirement.bonus() || existing.sortOrder() != requirement.sortOrder()
+				|| !criterionKeys(existing).equals(criterionKeys(requirement))) {
+			throw new IllegalStateException(CORRECTION_MODE_MESSAGE);
+		}
+	}
+
+	private List<String> criterionKeys(final LoeRequirement requirement) {
+		return LoeCriterionParser.parse(requirement.id(), requirement.descriptionMarkdown()).stream()
+				.map(LoeCriterion::criterionKey).toList();
+	}
+
+	private void assertNoResultsForExam(final int examId) {
+		if (hasResultsForExam(examId)) {
+			throw new IllegalStateException(CORRECTION_MODE_MESSAGE);
+		}
+	}
+
+	private LoePart findPartById(final int id) {
+		return jdbc.queryForObject("""
+				select id, exam_id, title, sort_order
+				from eh_part
+				where id = :id
+				""", Map.of("id", id), partRowMapper);
+	}
+
+	private LoeCategory findCategoryById(final int id) {
+		return jdbc.queryForObject("""
+				select id, part_id, title, description_markdown, sort_order
+				from eh_category
+				where id = :id
+				""", Map.of("id", id), categoryRowMapper);
+	}
+
+	private LoeTask findTaskById(final int id) {
+		return jdbc.queryForObject("""
+				select id, category_id, title, sort_order
+				from eh_task
+				where id = :id
+				""", Map.of("id", id), taskRowMapper);
+	}
+
+	private LoeRequirement findRequirementById(final int id) {
+		return jdbc.queryForObject("""
+				select id, task_id, description_markdown, max_points, bonus, sort_order
+				from eh_requirement
+				where id = :id
+				""", Map.of("id", id), requirementRowMapper);
+	}
+
+	private int examIdForPart(final int partId) {
+		return jdbc.queryForObject("""
+				select exam_id
+				from eh_part
+				where id = :id
+				""", Map.of("id", partId), Integer.class);
+	}
+
+	private int examIdForCategory(final int categoryId) {
+		return jdbc.queryForObject("""
+				select p.exam_id
+				from eh_category c
+				join eh_part p on p.id = c.part_id
+				where c.id = :id
+				""", Map.of("id", categoryId), Integer.class);
+	}
+
+	private int examIdForTask(final int taskId) {
+		return jdbc.queryForObject("""
+				select p.exam_id
+				from eh_task t
+				join eh_category c on c.id = t.category_id
+				join eh_part p on p.id = c.part_id
+				where t.id = :id
+				""", Map.of("id", taskId), Integer.class);
+	}
+
+	private int examIdForRequirement(final int requirementId) {
+		return jdbc.queryForObject("""
+				select p.exam_id
+				from eh_requirement r
+				join eh_task t on t.id = r.task_id
+				join eh_category c on c.id = t.category_id
+				join eh_part p on p.id = c.part_id
+				where r.id = :id
+				""", Map.of("id", requirementId), Integer.class);
 	}
 
 	private LoePart insertPart(final LoePart part) {

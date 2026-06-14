@@ -38,6 +38,8 @@ import de.westarps.topteacher.model.loe.LoeTask;
 @SpringBootTest
 class LevelOfExpectationsRepositoryTests {
 
+	private static final String CORRECTION_MODE_MESSAGE = "Der Erwartungshorizont ist im Korrekturmodus. Struktur, Punkte und Kriteriennummern können nicht geändert werden.";
+
 	@Autowired
 	private CourseRepository courseRepository;
 
@@ -165,8 +167,7 @@ class LevelOfExpectationsRepositoryTests {
 		assertThat(levelOfExpectationsRepository.findCriterionResultsByExamAndPupil(exam.id(), pupil.id()))
 				.containsExactly(new LoeCriterionResult(firstCriterion.id(), pupil.id(), true));
 		assertThatThrownBy(() -> levelOfExpectationsRepository.deleteRequirement(requirement.id()))
-				.isInstanceOf(IllegalStateException.class)
-				.hasMessage("Für diesen Bereich wurden bereits Ergebnisse erfasst.");
+				.isInstanceOf(IllegalStateException.class).hasMessage(CORRECTION_MODE_MESSAGE);
 
 		levelOfExpectationsRepository
 				.saveCriterionResult(new LoeCriterionResult(firstCriterion.id(), pupil.id(), false));
@@ -192,13 +193,60 @@ class LevelOfExpectationsRepositoryTests {
 		assertThat(levelOfExpectationsRepository.findRequirementResultsByExamAndPupil(exam.id(), pupil.id()))
 				.containsExactly(new LoeRequirementResult(requirement.id(), pupil.id(), 3, "Sehr sauber."));
 		assertThatThrownBy(() -> levelOfExpectationsRepository.deleteRequirement(requirement.id()))
-				.isInstanceOf(IllegalStateException.class)
-				.hasMessage("Für diesen Bereich wurden bereits Ergebnisse erfasst.");
+				.isInstanceOf(IllegalStateException.class).hasMessage(CORRECTION_MODE_MESSAGE);
 
 		levelOfExpectationsRepository
 				.saveRequirementResult(new LoeRequirementResult(requirement.id(), pupil.id(), 4, "Noch besser."));
 		assertThat(levelOfExpectationsRepository.findRequirementResultsByExamAndPupil(exam.id(), pupil.id()))
 				.containsExactly(new LoeRequirementResult(requirement.id(), pupil.id(), 4, "Noch besser."));
+	}
+
+	@Test
+	void allowsTextCorrectionsButLocksStructureAfterResultsExist() {
+		final Exam exam = createExam(2044, "EH Correction Mode");
+		final LoePart part = levelOfExpectationsRepository.savePart(new LoePart(null, exam.id(), "Klausurteil A", 0));
+		final LoeCategory category = levelOfExpectationsRepository
+				.saveCategory(new LoeCategory(null, part.id(), "Sprache", "Beschreibung", 0));
+		final LoeTask task = levelOfExpectationsRepository
+				.saveTask(new LoeTask(null, category.id(), "Teilaufgabe 1", 0));
+		final LoeRequirement requirement = levelOfExpectationsRepository.saveRequirement(new LoeRequirement(null,
+				task.id(), "Nutzt die [korrekte Zeitform](eh:1) und [präzise Wortwahl](eh:2).", 8, false, 0));
+		final Pupil pupil = pupilRepository.save(new Pupil(null, "Test", "Korrektur", Lifecycle.ACTIVE));
+		final LoeCriterion criterion = levelOfExpectationsRepository.findActiveCriteriaByExamId(exam.id()).getFirst();
+		assertThat(levelOfExpectationsRepository.hasResultsForExam(exam.id())).isFalse();
+
+		levelOfExpectationsRepository.saveCriterionResult(new LoeCriterionResult(criterion.id(), pupil.id(), true));
+		levelOfExpectationsRepository
+				.saveRequirementResult(new LoeRequirementResult(requirement.id(), pupil.id(), 6, "Schon bewertet."));
+
+		assertThat(levelOfExpectationsRepository.hasResultsForExam(exam.id())).isTrue();
+
+		levelOfExpectationsRepository.savePart(new LoePart(part.id(), part.examId(), "Klausurteil Alpha", 0));
+		levelOfExpectationsRepository
+				.saveCategory(new LoeCategory(category.id(), category.partId(), "Stil", "Neue Beschreibung", 0));
+		levelOfExpectationsRepository.saveTask(new LoeTask(task.id(), task.categoryId(), "Aufgabe 1", 0));
+		levelOfExpectationsRepository.saveRequirement(new LoeRequirement(requirement.id(), requirement.taskId(),
+				"Nutzt die [richtige Zeitform](eh:1) und [treffende Wortwahl](eh:2).", 8, false, 0));
+
+		assertThat(levelOfExpectationsRepository.findActiveCriteriaByExamId(exam.id()))
+				.extracting(LoeCriterion::criterionKey, LoeCriterion::label)
+				.containsExactly(tuple("1", "richtige Zeitform"), tuple("2", "treffende Wortwahl"));
+		assertThatThrownBy(() -> levelOfExpectationsRepository.saveRequirement(new LoeRequirement(requirement.id(),
+				requirement.taskId(), "Nutzt die [richtige Zeitform](eh:1).", 8, false, 0)))
+				.isInstanceOf(IllegalStateException.class).hasMessage(CORRECTION_MODE_MESSAGE);
+		assertThatThrownBy(() -> levelOfExpectationsRepository.saveRequirement(new LoeRequirement(requirement.id(),
+				requirement.taskId(),
+				"Nutzt die [richtige Zeitform](eh:1), [treffende Wortwahl](eh:2) und [Satzbau](eh:3).", 8, false, 0)))
+				.isInstanceOf(IllegalStateException.class);
+		assertThatThrownBy(() -> levelOfExpectationsRepository.saveRequirement(new LoeRequirement(requirement.id(),
+				requirement.taskId(), requirement.descriptionMarkdown(), 10, false, 0)))
+				.isInstanceOf(IllegalStateException.class);
+		assertThatThrownBy(() -> levelOfExpectationsRepository.savePart(new LoePart(null, exam.id(), "Teil B", 1)))
+				.isInstanceOf(IllegalStateException.class);
+		assertThatThrownBy(() -> levelOfExpectationsRepository.movePart(part, 1))
+				.isInstanceOf(IllegalStateException.class);
+		assertThatThrownBy(() -> levelOfExpectationsRepository.deleteTask(task.id()))
+				.isInstanceOf(IllegalStateException.class);
 	}
 
 	@Test

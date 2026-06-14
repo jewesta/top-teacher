@@ -54,6 +54,13 @@ abstract class AbstractLoeSection<T> extends Composite<Details> implements LoeEd
 				components.actionComponentsWithMoveButtons(siblings, item, handler, leadingActions, trailingActions));
 	}
 
+	protected Component editorBlockWithMoveButtons(final LoeSectionComponents components, final List<T> siblings,
+			final LoeSectionHandler<T> handler, final Collection<? extends Component> leadingActions,
+			final Collection<? extends Component> trailingActions, final boolean correctionMode) {
+		return components.editorBlock(components.actionComponentsWithMoveButtons(siblings, item, handler,
+				leadingActions, trailingActions, correctionMode));
+	}
+
 	@Override
 	public void refreshBadges() {
 		refreshSectionBadges();

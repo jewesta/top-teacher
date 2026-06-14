@@ -13,6 +13,8 @@ import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.datepicker.DatePicker.DatePickerI18n;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -329,13 +331,14 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		}
 
 		if (levelOfExpectationsTab == null) {
-			levelOfExpectationsTab = getContextTabs().add("EH", levelOfExpectationsEditor);
+			levelOfExpectationsTab = getContextTabs().add(new Span("EH"), levelOfExpectationsEditor);
 			notesTab = getContextTabs().add("Notizen", examNotesEditor);
 			resultsTab = getContextTabs().add("Ergebnisse", examResultsEditor);
 			evaluationTab = getContextTabs().add("Auswertung", examEvaluationViewer);
 			gradingScaleTab = getContextTabs().add("Notenschlüssel", gradingScaleViewer);
 		}
 
+		updateLevelOfExpectationsTabLabel(exam);
 		levelOfExpectationsEditor.setExam(exam);
 		examNotesEditor.setExam(exam);
 		examResultsEditor.setExam(exam);
@@ -373,6 +376,32 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		examResultsEditor.setExam(null);
 		examEvaluationViewer.setExam(null);
 		gradingScaleViewer.setCourse(null);
+	}
+
+	private void updateLevelOfExpectationsTabLabel(final Exam exam) {
+		if (levelOfExpectationsTab == null) {
+			return;
+		}
+
+		final boolean correctionMode = exam != null && levelOfExpectationsRepository.hasResultsForExam(exam.id());
+		levelOfExpectationsTab.removeAll();
+		levelOfExpectationsTab.setLabel("EH");
+		if (correctionMode) {
+			levelOfExpectationsTab.add(levelOfExpectationsLockIcon());
+		}
+		levelOfExpectationsTab.getElement().setAttribute("aria-label",
+				correctionMode ? "EH, Korrekturmodus: Ergebnisse vorhanden." : "EH");
+	}
+
+	private Icon levelOfExpectationsLockIcon() {
+		final Icon lock = VaadinIcon.LOCK.create();
+		lock.getElement().setAttribute("aria-label", "Korrekturmodus: Ergebnisse vorhanden.");
+		lock.getStyle().set("color", "var(--lumo-secondary-text-color)");
+		lock.getStyle().set("height", "var(--lumo-icon-size-xs)");
+		lock.getStyle().set("margin-left", "var(--lumo-space-xs)");
+		lock.getStyle().set("width", "var(--lumo-icon-size-xs)");
+		lock.setTooltipText("Korrekturmodus: Ergebnisse vorhanden.");
+		return lock;
 	}
 
 	private void updateEditorEnabled() {

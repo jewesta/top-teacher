@@ -125,6 +125,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 	private List<LoeRequirement> requirements = List.of();
 	private LoePointBadge examPointsBadge;
 	private List<LoePartSection> partSections = List.of();
+	private boolean correctionMode;
 
 	public LevelOfExpectationsEditor(final LevelOfExpectationsRepository levelOfExpectationsRepository) {
 		super("tt-eh-editor");
@@ -150,12 +151,14 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 		partSections = List.of();
 		resetDesigner();
 		if (exam == null) {
+			correctionMode = false;
 			showDesignerMessage(new Span("Bitte wählen Sie eine Klausur aus."));
 			return;
 		}
 
+		correctionMode = levelOfExpectationsRepository.hasResultsForExam(exam.id());
 		loadItems();
-		if (ensureRequiredChildren()) {
+		if (!correctionMode && ensureRequiredChildren()) {
 			loadItems();
 		}
 
@@ -212,6 +215,9 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 			refresh();
 		});
 		addPart.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+		if (correctionMode) {
+			components.lockCorrectionModeAction(addPart);
+		}
 
 		examPointsBadge = components.pointBadge("Gesamt", this::pointsForExam);
 		toolbar().add(save, addPart, collapseState.toggleButton(allDetailKeys()), fullscreenButton);
@@ -222,7 +228,8 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 		final List<LoeCategorySection> categorySections = categoriesFor(part).stream().map(this::createCategorySection)
 				.toList();
 		final LoePartSection section = new LoePartSection(part, parts, categorySections, components, collapseState,
-				partHandler, () -> percentageForPart(part), () -> pointsForPart(part), partDescendantDetailKeys(part));
+				partHandler, () -> percentageForPart(part), () -> pointsForPart(part), partDescendantDetailKeys(part),
+				correctionMode);
 		collapseState.configure(section.getContent(), detailKey("part", part.id()));
 		return section;
 	}
@@ -231,7 +238,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 		final List<LoeTaskSection> taskSections = tasksFor(category).stream().map(this::createTaskSection).toList();
 		final LoeCategorySection section = new LoeCategorySection(category, categoriesFor(partFor(category)),
 				taskSections, components, collapseState, categoryHandler, () -> pointsForCategory(category),
-				categoryDescendantDetailKeys(category));
+				categoryDescendantDetailKeys(category), correctionMode);
 		collapseState.configure(section.getContent(), detailKey("category", category.id()));
 		return section;
 	}
@@ -241,7 +248,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 				.map(this::createRequirementSection).toList();
 		final LoeTaskSection section = new LoeTaskSection(task, tasksFor(categoryFor(task)), requirementSections,
 				components, collapseState, taskHandler, () -> pointsForTask(task),
-				List.of(detailKey("task", task.id())));
+				List.of(detailKey("task", task.id())), correctionMode);
 		collapseState.configure(section.getContent(), detailKey("task", task.id()));
 		return section;
 	}
@@ -249,7 +256,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 	private LoeRequirementSection createRequirementSection(final LoeRequirement requirement) {
 		final List<LoeRequirement> siblings = requirementsFor(taskFor(requirement));
 		return new LoeRequirementSection(requirement, siblings, components, requirementHandler,
-				requirementNumber(siblings, requirement));
+				requirementNumber(siblings, requirement), correctionMode);
 	}
 
 	private void addDefaultCategory(final LoePart part) {
@@ -518,10 +525,15 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 	}
 
 	private void saveDirtySections() {
-		for (final LoePartSection partSection : partSections) {
-			if (!partSection.save()) {
-				return;
+		try {
+			for (final LoePartSection partSection : partSections) {
+				if (!partSection.save()) {
+					return;
+				}
 			}
+		} catch (final IllegalStateException exception) {
+			Notification.show(exception.getMessage());
+			return;
 		}
 		refreshBadges();
 	}

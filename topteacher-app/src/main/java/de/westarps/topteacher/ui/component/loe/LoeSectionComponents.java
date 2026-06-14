@@ -26,6 +26,7 @@ final class LoeSectionComponents {
 
 	static final MarkdownTag CRITERION_TAG = MarkdownTag.nextNumber(LoeCriterionParser.TAG_NAMESPACE,
 			"Kriterium markieren");
+	static final String CORRECTION_MODE_TOOLTIP = "Korrekturmodus: Ergebnisse vorhanden. Struktur, Punkte und Kriteriennummern sind gesperrt.";
 
 	private final LoeSaveController saveController;
 
@@ -159,6 +160,13 @@ final class LoeSectionComponents {
 		return button;
 	}
 
+	<T> Button moveButton(final String label, final int offset, final List<T> siblings, final T item,
+			final ComponentEventListener<ClickEvent<Button>> listener, final boolean correctionMode) {
+		final Button button = moveButton(label, offset, siblings, item, listener);
+		applyCorrectionModeLock(button, correctionMode);
+		return button;
+	}
+
 	Button deleteButton(final ComponentEventListener<ClickEvent<Button>> listener) {
 		final Button button = iconButton("Löschen", VaadinIcon.TRASH, listener);
 		button.addThemeVariants(ButtonVariant.LUMO_ERROR);
@@ -192,12 +200,32 @@ final class LoeSectionComponents {
 	<T> List<Component> actionComponentsWithMoveButtons(final List<T> siblings, final T item,
 			final LoeSectionHandler<T> handler, final Collection<? extends Component> leadingActions,
 			final Collection<? extends Component> trailingActions) {
+		return actionComponentsWithMoveButtons(siblings, item, handler, leadingActions, trailingActions, false);
+	}
+
+	<T> List<Component> actionComponentsWithMoveButtons(final List<T> siblings, final T item,
+			final LoeSectionHandler<T> handler, final Collection<? extends Component> leadingActions,
+			final Collection<? extends Component> trailingActions, final boolean correctionMode) {
 		final List<Component> actionComponents = new ArrayList<>();
 		actionComponents.addAll(leadingActions);
-		actionComponents.add(moveButton("Nach oben", -1, siblings, item, event -> handler.move(item, -1)));
-		actionComponents.add(moveButton("Nach unten", 1, siblings, item, event -> handler.move(item, 1)));
+		actionComponents
+				.add(moveButton("Nach oben", -1, siblings, item, event -> handler.move(item, -1), correctionMode));
+		actionComponents
+				.add(moveButton("Nach unten", 1, siblings, item, event -> handler.move(item, 1), correctionMode));
 		actionComponents.addAll(trailingActions);
 		return actionComponents;
+	}
+
+	void lockCorrectionModeAction(final Component component) {
+		applyCorrectionModeLock(component, true);
+	}
+
+	private void applyCorrectionModeLock(final Component component, final boolean correctionMode) {
+		if (!correctionMode || !(component instanceof Button button)) {
+			return;
+		}
+		button.setEnabled(false);
+		button.setTooltipText(CORRECTION_MODE_TOOLTIP);
 	}
 
 	void trackDirty(final HasValue<?, ?> field) {
