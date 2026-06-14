@@ -13,5 +13,6 @@
 - Prefer Vaadin Binder for form validation instead of manual if/else validation in form editors.
 - Keep `db/schema.sql`, `db/base-data.sql`, and `db/demo-data.sql` in sync when persistence changes.
 - For issue branches, maintain a concise summary in `issues/Issue_<nr>.md`; derive the issue number from the branch name when possible.
+- Do not run smoke tests by default. Use them only when the issue warrants it, for example when investigating or verifying a UI-specific problem.
 - Run `mvn -pl topteacher-app -am test` and `git diff --check` before handing off code changes.
 - Do not revert user changes or clean unrelated worktree changes.
