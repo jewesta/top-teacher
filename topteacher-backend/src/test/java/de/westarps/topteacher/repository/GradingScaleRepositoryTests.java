@@ -68,6 +68,19 @@ class GradingScaleRepositoryTests {
 	}
 
 	@Test
+	void savesSameNameWithDifferentMaximumPoints() {
+		final GradingScale first = gradingScaleRepository
+				.save(new GradingScale(null, "Repository Duplicate Name", 150, Lifecycle.ACTIVE));
+		final GradingScale second = gradingScaleRepository
+				.save(new GradingScale(null, "Repository Duplicate Name", 160, Lifecycle.ACTIVE));
+
+		assertThat(first.id()).isNotEqualTo(second.id());
+		assertThat(gradingScaleRepository.findAll()).contains(first, second);
+		assertThat(first.getDisplayName()).isEqualTo("Repository Duplicate Name (150 Punkte)");
+		assertThat(second.getDisplayName()).isEqualTo("Repository Duplicate Name (160 Punkte)");
+	}
+
+	@Test
 	void rejectsIncompleteOrGappedGradingScaleRanges() {
 		assertThatThrownBy(() -> gradingScaleRepository.saveWithRanges(
 				new GradingScale(null, "Repository Incomplete Scale 100", 100, Lifecycle.ACTIVE),

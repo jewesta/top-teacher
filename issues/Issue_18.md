@@ -11,6 +11,8 @@
   the UI readable.
 - Removed fabricated demo correction results so the supplied LOE stay
   source-faithful.
+- Added the 160-point Qualifikationsphase grading scale and changed grading
+  scale uniqueness to use name plus maximum points.
 
 ## Verification
 

@@ -109,8 +109,10 @@ class DatabaseInitializationServiceTests {
 				    on subject.id = c.subject_id
 				join grading_scale gs
 				    on gs.id = c.grading_scale_id
-				where (c.school_class = 'CLS_Q2' and subject.name = 'Englisch' and gs.name = 'Qualifikationsphase')
-				   or (c.school_class = 'CLS_Q1' and subject.name = 'Spanisch' and gs.name = 'Qualifikationsphase')
+				where (c.school_class = 'CLS_Q2' and subject.name = 'Englisch' and gs.name = 'Qualifikationsphase'
+				        and gs.max_points = 150)
+				   or (c.school_class = 'CLS_Q1' and subject.name = 'Spanisch' and gs.name = 'Qualifikationsphase'
+				        and gs.max_points = 150)
 				""")).isEqualTo(2);
 		assertThat(count("""
 				select count(*)
@@ -159,19 +161,21 @@ class DatabaseInitializationServiceTests {
 	}
 
 	private void assertBaseGradingScales() {
-		assertThat(countRows("grading_scale")).isEqualTo(2);
-		assertThat(countRows("grading_scale_range")).isEqualTo(32);
+		assertThat(countRows("grading_scale")).isEqualTo(3);
+		assertThat(countRows("grading_scale_range")).isEqualTo(48);
 		assertThat(count("""
 				select count(*)
 				from grading_scale
-				where name in ('Einführungsphase', 'Qualifikationsphase')
-				""")).isEqualTo(2);
+				where (name = 'Einführungsphase' and max_points = 100)
+				   or (name = 'Qualifikationsphase' and max_points in (150, 160))
+				""")).isEqualTo(3);
 		assertThat(count("""
 				select count(*)
 				from grading_scale gs
 				join grading_scale_range gsr
 				    on gsr.grading_scale_id = gs.id
 				where gs.name = 'Qualifikationsphase'
+				  and gs.max_points = 150
 				  and (
 				      (gsr.grade_points = 15 and gsr.min_points = 144 and gsr.max_points = 150)
 				   or (gsr.grade_points = 14 and gsr.min_points = 137 and gsr.max_points = 143)
@@ -189,6 +193,32 @@ class DatabaseInitializationServiceTests {
 				   or (gsr.grade_points = 2 and gsr.min_points = 45 and gsr.max_points = 55)
 				   or (gsr.grade_points = 1 and gsr.min_points = 34 and gsr.max_points = 44)
 				   or (gsr.grade_points = 0 and gsr.min_points = 0 and gsr.max_points = 33)
+				  )
+				""")).isEqualTo(16);
+		assertThat(count("""
+				select count(*)
+				from grading_scale gs
+				join grading_scale_range gsr
+				    on gsr.grading_scale_id = gs.id
+				where gs.name = 'Qualifikationsphase'
+				  and gs.max_points = 160
+				  and (
+				      (gsr.grade_points = 15 and gsr.min_points = 152 and gsr.max_points = 160)
+				   or (gsr.grade_points = 14 and gsr.min_points = 144 and gsr.max_points = 151)
+				   or (gsr.grade_points = 13 and gsr.min_points = 136 and gsr.max_points = 143)
+				   or (gsr.grade_points = 12 and gsr.min_points = 128 and gsr.max_points = 135)
+				   or (gsr.grade_points = 11 and gsr.min_points = 120 and gsr.max_points = 127)
+				   or (gsr.grade_points = 10 and gsr.min_points = 112 and gsr.max_points = 119)
+				   or (gsr.grade_points = 9 and gsr.min_points = 104 and gsr.max_points = 111)
+				   or (gsr.grade_points = 8 and gsr.min_points = 96 and gsr.max_points = 103)
+				   or (gsr.grade_points = 7 and gsr.min_points = 88 and gsr.max_points = 95)
+				   or (gsr.grade_points = 6 and gsr.min_points = 80 and gsr.max_points = 87)
+				   or (gsr.grade_points = 5 and gsr.min_points = 72 and gsr.max_points = 79)
+				   or (gsr.grade_points = 4 and gsr.min_points = 64 and gsr.max_points = 71)
+				   or (gsr.grade_points = 3 and gsr.min_points = 53 and gsr.max_points = 63)
+				   or (gsr.grade_points = 2 and gsr.min_points = 44 and gsr.max_points = 52)
+				   or (gsr.grade_points = 1 and gsr.min_points = 32 and gsr.max_points = 43)
+				   or (gsr.grade_points = 0 and gsr.min_points = 0 and gsr.max_points = 31)
 				  )
 				""")).isEqualTo(16);
 	}
