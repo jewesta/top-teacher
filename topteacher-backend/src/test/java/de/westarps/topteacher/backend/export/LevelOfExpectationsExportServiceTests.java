@@ -54,7 +54,7 @@ class LevelOfExpectationsExportServiceTests {
 		final String html = exportService.renderPupilHtml(demo.exam().id(), demo.pupil().id());
 
 		assertThat(html).contains("10a_Erdkunde");
-		assertThat(html).contains("Klausur Windenergie und Klimawandel");
+		assertThat(html).contains("Klausur Nr. 1");
 		assertThat(html).contains("Mia Weber");
 		assertThat(html).contains("Klausur: Windenergie, Klimawandel und Energiewende");
 		assertThat(html).contains("Aufgabe 3: Transformation des Energiesektors beurteilen");

@@ -136,7 +136,7 @@ public class ExamEvaluationExcelExportService {
 		final List<LoeCategory> categories = levelOfExpectationsRepository.findCategoriesByExamId(examId);
 		final List<LoeTask> tasks = levelOfExpectationsRepository.findTasksByExamId(examId);
 		final List<LoeRequirement> requirements = levelOfExpectationsRepository.findRequirementsByExamId(examId);
-		final List<Pupil> pupils = courseRepository.findPupils(exam.courseId());
+		final List<Pupil> pupils = examRepository.findPupils(exam.id());
 		final Map<Integer, Map<Integer, Integer>> achievedPointsByPupilId = pupils.stream()
 				.collect(Collectors.toMap(Pupil::id, pupil -> achievedPointsByRequirementId(exam, pupil)));
 

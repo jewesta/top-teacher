@@ -18,6 +18,7 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.data.provider.Query;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
+import de.westarps.topteacher.backend.repo.ExamRepository;
 import de.westarps.topteacher.backend.repo.GradingScaleRepository;
 import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.model.Course;
@@ -63,7 +64,7 @@ class ExamEvaluationViewerTests {
 	void collapsesAggregationColumnsThatDuplicateTotal() {
 		final CourseRepository courseRepository = mock(CourseRepository.class);
 		when(courseRepository.findById(EXAM.courseId())).thenReturn(Optional.of(COURSE));
-		when(courseRepository.findPupils(EXAM.courseId())).thenReturn(List.of(PUPIL, SECOND_PUPIL));
+		final ExamRepository examRepository = examRepository(List.of(PUPIL, SECOND_PUPIL));
 
 		final LevelOfExpectationsRepository levelOfExpectationsRepository = mock(LevelOfExpectationsRepository.class);
 		when(levelOfExpectationsRepository.findPartsByExamId(EXAM.id())).thenReturn(List.of(PART));
@@ -83,8 +84,8 @@ class ExamEvaluationViewerTests {
 				.thenReturn(List.of(new GradingScaleRange(1, GRADING_SCALE.id(), GradeLevel.SEHR_GUT_PLUS, 5, 5),
 						new GradingScaleRange(2, GRADING_SCALE.id(), GradeLevel.AUSREICHEND, 0, 4)));
 
-		final ExamEvaluationViewer viewer = new ExamEvaluationViewer(courseRepository, levelOfExpectationsRepository,
-				gradingScaleRepository);
+		final ExamEvaluationViewer viewer = new ExamEvaluationViewer(courseRepository, examRepository,
+				levelOfExpectationsRepository, gradingScaleRepository);
 
 		viewer.setExam(EXAM);
 
@@ -105,7 +106,7 @@ class ExamEvaluationViewerTests {
 	void updatesFullscreenButtonState() {
 		final CourseRepository courseRepository = mock(CourseRepository.class);
 		when(courseRepository.findById(EXAM.courseId())).thenReturn(Optional.of(COURSE));
-		when(courseRepository.findPupils(EXAM.courseId())).thenReturn(List.of(PUPIL));
+		final ExamRepository examRepository = examRepository(List.of(PUPIL));
 
 		final LevelOfExpectationsRepository levelOfExpectationsRepository = mock(LevelOfExpectationsRepository.class);
 		when(levelOfExpectationsRepository.findPartsByExamId(EXAM.id())).thenReturn(List.of(PART));
@@ -119,8 +120,8 @@ class ExamEvaluationViewerTests {
 		when(gradingScaleRepository.findById(COURSE.gradingScaleId())).thenReturn(Optional.of(GRADING_SCALE));
 		when(gradingScaleRepository.findRangesByGradingScaleId(GRADING_SCALE.id())).thenReturn(List.of());
 
-		final ExamEvaluationViewer viewer = new ExamEvaluationViewer(courseRepository, levelOfExpectationsRepository,
-				gradingScaleRepository);
+		final ExamEvaluationViewer viewer = new ExamEvaluationViewer(courseRepository, examRepository,
+				levelOfExpectationsRepository, gradingScaleRepository);
 		viewer.setExam(EXAM);
 
 		final FullscreenButton fullscreenButton = components(viewer, FullscreenButton.class).stream()
@@ -140,7 +141,7 @@ class ExamEvaluationViewerTests {
 	void keepsUpperAggregationNodeWhenSingleChildBranchesCollapse() {
 		final CourseRepository courseRepository = mock(CourseRepository.class);
 		when(courseRepository.findById(EXAM.courseId())).thenReturn(Optional.of(COURSE));
-		when(courseRepository.findPupils(EXAM.courseId())).thenReturn(List.of(PUPIL));
+		final ExamRepository examRepository = examRepository(List.of(PUPIL));
 
 		final LevelOfExpectationsRepository levelOfExpectationsRepository = mock(LevelOfExpectationsRepository.class);
 		when(levelOfExpectationsRepository.findPartsByExamId(EXAM.id())).thenReturn(List.of(PART, SECOND_PART));
@@ -157,8 +158,8 @@ class ExamEvaluationViewerTests {
 		when(gradingScaleRepository.findById(COURSE.gradingScaleId())).thenReturn(Optional.of(GRADING_SCALE));
 		when(gradingScaleRepository.findRangesByGradingScaleId(GRADING_SCALE.id())).thenReturn(List.of());
 
-		final ExamEvaluationViewer viewer = new ExamEvaluationViewer(courseRepository, levelOfExpectationsRepository,
-				gradingScaleRepository);
+		final ExamEvaluationViewer viewer = new ExamEvaluationViewer(courseRepository, examRepository,
+				levelOfExpectationsRepository, gradingScaleRepository);
 
 		viewer.setExam(EXAM);
 
@@ -172,6 +173,12 @@ class ExamEvaluationViewerTests {
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private static long itemCount(final Grid<?> grid) {
 		return grid.getDataProvider().fetch(new Query()).count();
+	}
+
+	private static ExamRepository examRepository(final List<Pupil> pupils) {
+		final ExamRepository repository = mock(ExamRepository.class);
+		when(repository.findPupils(EXAM.id())).thenReturn(pupils);
+		return repository;
 	}
 
 	private static <T extends Component> List<T> components(final Component root, final Class<T> type) {

@@ -2,7 +2,11 @@ package de.westarps.topteacher.model;
 
 import java.time.LocalDate;
 
-public record Exam(Integer id, Integer courseId, String title, LocalDate date) {
+public record Exam(Integer id, Integer courseId, String title, LocalDate date, Integer originalExamId) {
+
+	public Exam(final Integer id, final Integer courseId, final String title, final LocalDate date) {
+		this(id, courseId, title, date, null);
+	}
 
 	public Exam {
 		if (courseId == null) {
@@ -14,6 +18,12 @@ public record Exam(Integer id, Integer courseId, String title, LocalDate date) {
 		if (date == null) {
 			throw new IllegalArgumentException("date must not be null");
 		}
+		if (id != null && id.equals(originalExamId)) {
+			throw new IllegalArgumentException("originalExamId must not reference the same exam");
+		}
 	}
 
+	public boolean isMakeupExam() {
+		return originalExamId != null;
+	}
 }

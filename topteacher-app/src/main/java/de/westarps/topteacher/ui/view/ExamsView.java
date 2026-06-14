@@ -2,13 +2,18 @@ package de.westarps.topteacher.ui.view;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.datepicker.DatePicker.DatePickerI18n;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -27,11 +32,14 @@ import de.westarps.topteacher.backend.repo.GradingScaleRepository;
 import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.Exam;
+import de.westarps.topteacher.model.ExamNumber;
+import de.westarps.topteacher.model.Pupil;
 import de.westarps.topteacher.ui.MainLayout;
 import de.westarps.topteacher.ui.component.AbstractFormEditor;
 import de.westarps.topteacher.ui.component.FormBinders;
 import de.westarps.topteacher.ui.component.GradingScaleViewer;
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
+import de.westarps.topteacher.ui.component.PupilAssignmentGrid;
 import de.westarps.topteacher.ui.component.loe.ExamEvaluationViewer;
 import de.westarps.topteacher.ui.component.loe.ExamNotesEditor;
 import de.westarps.topteacher.ui.component.loe.ExamResultsEditor;
@@ -53,6 +61,8 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 	private final ComboBox<Course> courseFilter = new ComboBox<>("Kurs");
 	private final TextField title = new TextField("Titel");
 	private final DatePicker date = new DatePicker("Datum");
+	private final ComboBox<Exam> originalExam = new ComboBox<>("Nachschreibeklausur zu");
+	private final MultiSelectComboBox<Pupil> creationPupils = new MultiSelectComboBox<>("Teilnehmende Schüler:innen");
 	private final Binder<ExamFormData> examBinder = new Binder<>();
 	private final Button saveButton = new Button();
 	private final Button duplicateButton = new Button("Duplizieren...");
@@ -62,9 +72,13 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 	private final ComboBox<Course> duplicateCourse = new ComboBox<>("Kurs");
 	private final Binder<DuplicateExamFormData> duplicateExamBinder = new Binder<>();
 	private final Span multiSelectionSummary = new Span();
+	private final PupilAssignmentGrid pupilAssignmentGrid = new PupilAssignmentGrid("Schüler:innen suchen");
 
 	private Course selectedCourse;
 	private Exam selectedExam;
+	private Map<Integer, ExamNumber> examNumbersByExamId = Map.of();
+	private List<Exam> originalExamCandidates = List.of();
+	private Tab pupilsTab;
 	private Tab levelOfExpectationsTab;
 	private Tab notesTab;
 	private Tab resultsTab;
@@ -80,14 +94,15 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		this.levelOfExpectationsRepository = levelOfExpectationsRepository;
 		this.levelOfExpectationsEditor = new LevelOfExpectationsEditor(levelOfExpectationsRepository);
 		this.examNotesEditor = new ExamNotesEditor(levelOfExpectationsRepository);
-		this.examResultsEditor = new ExamResultsEditor(courseRepository, levelOfExpectationsRepository,
+		this.examResultsEditor = new ExamResultsEditor(courseRepository, examRepository, levelOfExpectationsRepository,
 				gradingScaleRepository);
-		this.examEvaluationViewer = new ExamEvaluationViewer(courseRepository, levelOfExpectationsRepository,
-				gradingScaleRepository);
+		this.examEvaluationViewer = new ExamEvaluationViewer(courseRepository, examRepository,
+				levelOfExpectationsRepository, gradingScaleRepository);
 		this.gradingScaleViewer = new GradingScaleViewer(gradingScaleRepository);
 
 		configureCourseFilter();
 		configureEditors();
+		configurePupilAssignments();
 		initializeView();
 		refreshCourseFilter();
 		clearSingleEditor();
@@ -95,13 +110,14 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 
 	@Override
 	protected void configureGrid(final MultiSelectionGrid<Exam> grid) {
+		grid.addColumn(this::examNumberLabel).setHeader("Nr.").setWidth("6rem").setFlexGrow(0);
 		grid.addColumn(Exam::title).setHeader("Titel").setAutoWidth(true);
 		grid.addColumn(exam -> DATE_FORMATTER.format(exam.date())).setHeader("Datum").setAutoWidth(true);
 	}
 
 	@Override
 	protected Component createSingleSelectEditor() {
-		return AbstractFormEditor.responsive("tt-exam-editor", List.of(title, date),
+		return AbstractFormEditor.responsive("tt-exam-editor", List.of(title, date, originalExam, creationPupils),
 				List.of(saveButton, duplicateButton));
 	}
 
@@ -113,8 +129,8 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 
 	@Override
 	protected String getSearchText(final Exam exam) {
-		return String.join(" ", String.valueOf(exam.id()), exam.title(), DATE_FORMATTER.format(exam.date()),
-				exam.date().toString());
+		return String.join(" ", String.valueOf(exam.id()), examNumberLabel(exam), exam.title(),
+				DATE_FORMATTER.format(exam.date()), exam.date().toString());
 	}
 
 	@Override
@@ -152,6 +168,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 
 	private void configureCourseFilter() {
 		courseFilter.addClassName("tt-toolbar-filter");
+		courseFilter.setWidth("16rem");
 		courseFilter.setItemLabelGenerator(Course::getDisplayName);
 		courseFilter.setRequiredIndicatorVisible(true);
 		courseFilter.addValueChangeListener(event -> {
@@ -168,6 +185,20 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		date.setLocale(Locale.GERMANY);
 		date.setI18n(germanDatePickerI18n());
 		date.setRequiredIndicatorVisible(true);
+		date.addValueChangeListener(event -> examBinder.validate());
+
+		originalExam.setClearButtonVisible(true);
+		originalExam.setItemLabelGenerator(this::originalExamLabel);
+		originalExam.addValueChangeListener(event -> {
+			examBinder.validate();
+			if (selectedExam == null) {
+				refreshCreationPupilOptions();
+			}
+		});
+
+		creationPupils.setItemLabelGenerator(this::pupilLabel);
+		creationPupils.setClearButtonVisible(true);
+		creationPupils.setWidthFull();
 
 		bindSingleEditor();
 
@@ -177,6 +208,11 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		duplicateButton.addClickListener(event -> openDuplicateDialog());
 
 		configureDuplicateDialog();
+	}
+
+	private void configurePupilAssignments() {
+		pupilAssignmentGrid.setAssignAction(this::assignPupilToExam);
+		pupilAssignmentGrid.setRemoveAction(this::removePupilFromExam);
 	}
 
 	private void refreshCourseFilter() {
@@ -204,7 +240,8 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 			return;
 		}
 
-		readSingleEditor(new ExamFormData(exam.title(), exam.date()));
+		refreshOriginalExamItems();
+		readSingleEditor(new ExamFormData(exam.title(), exam.date(), originalExam(exam)));
 		updateEditorEnabled();
 	}
 
@@ -222,7 +259,18 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 
 		final Integer id = selectedExam == null ? null : selectedExam.id();
 		final Integer courseId = selectedExam == null ? selectedCourse.id() : selectedExam.courseId();
-		examRepository.save(new Exam(id, courseId, formData.getTitle(), formData.getDate()));
+		final Integer originalExamId = formData.getOriginalExam() == null ? null : formData.getOriginalExam().id();
+		try {
+			final Exam exam = new Exam(id, courseId, formData.getTitle(), formData.getDate(), originalExamId);
+			if (selectedExam == null) {
+				examRepository.save(exam, selectedCreationPupilIds());
+			} else {
+				examRepository.save(exam);
+			}
+		} catch (final IllegalArgumentException exception) {
+			Notification.show(exception.getMessage());
+			return;
+		}
 
 		refreshGrid();
 		clearSelection();
@@ -309,16 +357,24 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 
 	private void refreshGrid() {
 		if (selectedCourse == null) {
+			examNumbersByExamId = Map.of();
+			originalExamCandidates = List.of();
+			originalExam.setItems(originalExamCandidates);
 			setGridItems(List.of());
 			return;
 		}
 
-		setGridItems(examRepository.findByCourseId(selectedCourse.id()));
+		final List<Exam> exams = examRepository.findByCourseId(selectedCourse.id());
+		examNumbersByExamId = examRepository.findNumbersByCourseId(selectedCourse.id());
+		setGridItems(exams);
+		refreshOriginalExamItems();
 	}
 
 	private void clearSingleEditor() {
 		selectedExam = null;
-		readSingleEditor(new ExamFormData("", null));
+		refreshOriginalExamItems();
+		readSingleEditor(new ExamFormData("", null, null));
+		refreshCreationPupilOptions();
 		updateEditorEnabled();
 	}
 
@@ -329,6 +385,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		}
 
 		if (levelOfExpectationsTab == null) {
+			pupilsTab = getContextTabs().add("Schüler:innen", pupilAssignmentGrid);
 			levelOfExpectationsTab = getContextTabs().add("EH", levelOfExpectationsEditor);
 			notesTab = getContextTabs().add("Notizen", examNotesEditor);
 			resultsTab = getContextTabs().add("Ergebnisse", examResultsEditor);
@@ -336,6 +393,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 			gradingScaleTab = getContextTabs().add("Notenschlüssel", gradingScaleViewer);
 		}
 
+		refreshPupilAssignments();
 		levelOfExpectationsEditor.setExam(exam);
 		examNotesEditor.setExam(exam);
 		examResultsEditor.setExam(exam);
@@ -344,7 +402,8 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 	}
 
 	private void removeExamContextTabs() {
-		if (levelOfExpectationsTab == null) {
+		if (pupilsTab == null) {
+			pupilAssignmentGrid.setRows(List.of(), List.of());
 			levelOfExpectationsEditor.setExam(null);
 			examNotesEditor.setExam(null);
 			examResultsEditor.setExam(null);
@@ -353,21 +412,26 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 			return;
 		}
 
-		if (getContextTabs().getSelectedTab() == levelOfExpectationsTab || getContextTabs().getSelectedTab() == notesTab
-				|| getContextTabs().getSelectedTab() == resultsTab || getContextTabs().getSelectedTab() == evaluationTab
+		if (getContextTabs().getSelectedTab() == pupilsTab
+				|| getContextTabs().getSelectedTab() == levelOfExpectationsTab
+				|| getContextTabs().getSelectedTab() == notesTab || getContextTabs().getSelectedTab() == resultsTab
+				|| getContextTabs().getSelectedTab() == evaluationTab
 				|| getContextTabs().getSelectedTab() == gradingScaleTab) {
 			getContextTabs().setSelectedIndex(0);
 		}
+		getContextTabs().remove(pupilsTab);
 		getContextTabs().remove(levelOfExpectationsTab);
 		getContextTabs().remove(notesTab);
 		getContextTabs().remove(resultsTab);
 		getContextTabs().remove(evaluationTab);
 		getContextTabs().remove(gradingScaleTab);
+		pupilsTab = null;
 		levelOfExpectationsTab = null;
 		notesTab = null;
 		resultsTab = null;
 		evaluationTab = null;
 		gradingScaleTab = null;
+		pupilAssignmentGrid.setRows(List.of(), List.of());
 		levelOfExpectationsEditor.setExam(null);
 		examNotesEditor.setExam(null);
 		examResultsEditor.setExam(null);
@@ -379,6 +443,9 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		final boolean enabled = selectedCourse != null;
 		title.setEnabled(enabled);
 		date.setEnabled(enabled);
+		originalExam.setEnabled(enabled);
+		creationPupils.setEnabled(enabled && selectedExam == null);
+		creationPupils.setVisible(selectedExam == null);
 		saveButton.setEnabled(enabled);
 		saveButton.setText(selectedExam == null ? "Anlegen" : "Speichern");
 		duplicateButton.setEnabled(enabled && selectedExam != null);
@@ -402,11 +469,128 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 				.bind(ExamFormData::getTitle, ExamFormData::setTitle);
 		examBinder.forField(date).asRequired("Datum ist erforderlich.").bind(ExamFormData::getDate,
 				ExamFormData::setDate);
+		examBinder.forField(originalExam)
+				.withValidator(this::hasValidMakeupExamDate,
+						"Eine Nachschreibeklausur darf nicht vor der ursprünglichen Klausur liegen.")
+				.bind(ExamFormData::getOriginalExam, ExamFormData::setOriginalExam);
 	}
 
 	private void readSingleEditor(final ExamFormData formData) {
 		examBinder.readBean(formData);
 		FormBinders.clearValidation(examBinder);
+	}
+
+	private void refreshCreationPupilOptions() {
+		if (selectedCourse == null || selectedExam != null) {
+			creationPupils.setItems(List.of());
+			creationPupils.clear();
+			return;
+		}
+
+		final List<Pupil> coursePupils = courseRepository.findPupils(selectedCourse.id());
+		creationPupils.setItems(coursePupils);
+		creationPupils.setValue(defaultCreationPupilSelection(coursePupils));
+	}
+
+	private Set<Pupil> defaultCreationPupilSelection(final List<Pupil> coursePupils) {
+		final Exam selectedOriginalExam = originalExam.getValue();
+		if (selectedOriginalExam == null) {
+			return new LinkedHashSet<>(coursePupils);
+		}
+
+		final Set<Integer> originalPupilIds = examRepository.findPupils(selectedOriginalExam.id()).stream()
+				.map(Pupil::id).collect(Collectors.toSet());
+		return coursePupils.stream().filter(pupil -> !originalPupilIds.contains(pupil.id()))
+				.collect(Collectors.toCollection(LinkedHashSet::new));
+	}
+
+	private Set<Integer> selectedCreationPupilIds() {
+		return creationPupils.getValue().stream().map(Pupil::id).collect(Collectors.toCollection(LinkedHashSet::new));
+	}
+
+	private void refreshPupilAssignments() {
+		if (selectedExam == null) {
+			pupilAssignmentGrid.setRows(List.of(), List.of());
+			return;
+		}
+
+		pupilAssignmentGrid.setRows(examRepository.findPupils(selectedExam.id()),
+				examRepository.findAssignablePupils(selectedExam.id()),
+				examRepository.findPupilRemovalLocks(selectedExam.id()));
+	}
+
+	private void assignPupilToExam(final Pupil pupil) {
+		if (selectedExam == null) {
+			return;
+		}
+
+		try {
+			examRepository.assignPupil(selectedExam.id(), pupil.id());
+		} catch (final IllegalArgumentException exception) {
+			Notification.show(exception.getMessage());
+		}
+		refreshPupilAssignments();
+		refreshParticipantConsumers();
+	}
+
+	private void removePupilFromExam(final Pupil pupil) {
+		if (selectedExam == null) {
+			return;
+		}
+
+		try {
+			examRepository.removePupil(selectedExam.id(), pupil.id());
+		} catch (final IllegalArgumentException exception) {
+			Notification.show(exception.getMessage());
+		}
+		refreshPupilAssignments();
+		refreshParticipantConsumers();
+	}
+
+	private void refreshParticipantConsumers() {
+		if (selectedExam == null) {
+			return;
+		}
+
+		examResultsEditor.setExam(selectedExam);
+		examEvaluationViewer.setExam(selectedExam);
+	}
+
+	private void refreshOriginalExamItems() {
+		if (selectedCourse == null) {
+			originalExamCandidates = List.of();
+		} else {
+			final Integer selectedExamId = selectedExam == null ? null : selectedExam.id();
+			originalExamCandidates = examRepository.findMainExamsByCourseId(selectedCourse.id()).stream()
+					.filter(candidate -> selectedExamId == null || !selectedExamId.equals(candidate.id())).toList();
+		}
+		originalExam.setItems(originalExamCandidates);
+	}
+
+	private Exam originalExam(final Exam exam) {
+		if (exam.originalExamId() == null) {
+			return null;
+		}
+		return originalExamCandidates.stream().filter(candidate -> exam.originalExamId().equals(candidate.id()))
+				.findFirst().orElse(null);
+	}
+
+	private String examNumberLabel(final Exam exam) {
+		final ExamNumber examNumber = examNumbersByExamId.get(exam.id());
+		return examNumber == null ? "" : examNumber.getDisplayName();
+	}
+
+	private String originalExamLabel(final Exam exam) {
+		return String.join(" ", examNumberLabel(exam), DATE_FORMATTER.format(exam.date()), "-", exam.title()).trim();
+	}
+
+	private String pupilLabel(final Pupil pupil) {
+		return pupil.surname() + ", " + pupil.name();
+	}
+
+	private boolean hasValidMakeupExamDate(final Exam originalExam) {
+		final LocalDate selectedDate = date.getValue();
+		return originalExam == null || selectedDate == null || !selectedDate.isBefore(originalExam.date());
 	}
 
 	private void bindDuplicateDialog() {
@@ -432,13 +616,15 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 
 		private String title = "";
 		private LocalDate date;
+		private Exam originalExam;
 
 		private ExamFormData() {
 		}
 
-		private ExamFormData(final String title, final LocalDate date) {
+		private ExamFormData(final String title, final LocalDate date, final Exam originalExam) {
 			this.title = title;
 			this.date = date;
+			this.originalExam = originalExam;
 		}
 
 		public String getTitle() {
@@ -455,6 +641,14 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 
 		public void setDate(final LocalDate date) {
 			this.date = date;
+		}
+
+		public Exam getOriginalExam() {
+			return originalExam;
+		}
+
+		public void setOriginalExam(final Exam originalExam) {
+			this.originalExam = originalExam;
 		}
 	}
 

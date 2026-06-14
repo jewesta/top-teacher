@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import de.westarps.topteacher.backend.export.Sanitizer.MarkdownView;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.Exam;
+import de.westarps.topteacher.model.ExamNumber;
 import de.westarps.topteacher.model.GradingScale;
 import de.westarps.topteacher.model.GradingScaleRange;
 import de.westarps.topteacher.model.Pupil;
@@ -95,8 +96,9 @@ public class LevelOfExpectationsExportModelFactory {
 						.toList()
 				: List.of();
 
-		return new LevelOfExpectationsExportModel(data.course(), data.exam(), data.pupil(), data.gradingScale(),
-				data.gradingScaleRanges(), PointSummary.sum(parts, Part::points), parts, notes, showWatermark);
+		return new LevelOfExpectationsExportModel(data.course(), data.exam(), data.examNumber(), data.pupil(),
+				data.gradingScale(), data.gradingScaleRanges(), PointSummary.sum(parts, Part::points), parts, notes,
+				showWatermark);
 	}
 
 	private Part createPart(final LoePart part, final Map<Integer, List<LoeCategory>> categoriesByPartId,
@@ -184,24 +186,25 @@ public class LevelOfExpectationsExportModelFactory {
 		return itemsById;
 	}
 
-	public record LevelOfExpectationsExportData(Course course, Exam exam, Pupil pupil, GradingScale gradingScale,
-			List<GradingScaleRange> gradingScaleRanges, List<LoePart> parts, List<LoeCategory> categories,
-			List<LoeTask> tasks, List<LoeRequirement> requirements, List<LoeRequirementResult> requirementResults,
-			List<LoeCriterion> criteria, List<LoeCriterionResult> criterionResults,
-			List<ExamNoteSection> noteSections) {
+	public record LevelOfExpectationsExportData(Course course, Exam exam, ExamNumber examNumber, Pupil pupil,
+			GradingScale gradingScale, List<GradingScaleRange> gradingScaleRanges, List<LoePart> parts,
+			List<LoeCategory> categories, List<LoeTask> tasks, List<LoeRequirement> requirements,
+			List<LoeRequirementResult> requirementResults, List<LoeCriterion> criteria,
+			List<LoeCriterionResult> criterionResults, List<ExamNoteSection> noteSections) {
 
-		public LevelOfExpectationsExportData(final Course course, final Exam exam, final Pupil pupil,
-				final GradingScale gradingScale, final List<GradingScaleRange> gradingScaleRanges,
+		public LevelOfExpectationsExportData(final Course course, final Exam exam, final ExamNumber examNumber,
+				final Pupil pupil, final GradingScale gradingScale, final List<GradingScaleRange> gradingScaleRanges,
 				final List<LoePart> parts, final List<LoeCategory> categories, final List<LoeTask> tasks,
 				final List<LoeRequirement> requirements, final List<LoeRequirementResult> requirementResults,
 				final List<ExamNoteSection> noteSections) {
-			this(course, exam, pupil, gradingScale, gradingScaleRanges, parts, categories, tasks, requirements,
-					requirementResults, List.of(), List.of(), noteSections);
+			this(course, exam, examNumber, pupil, gradingScale, gradingScaleRanges, parts, categories, tasks,
+					requirements, requirementResults, List.of(), List.of(), noteSections);
 		}
 
 		public LevelOfExpectationsExportData {
 			course = Objects.requireNonNull(course, "course must not be null");
 			exam = Objects.requireNonNull(exam, "exam must not be null");
+			examNumber = Objects.requireNonNull(examNumber, "examNumber must not be null");
 			pupil = Objects.requireNonNull(pupil, "pupil must not be null");
 			gradingScale = Objects.requireNonNull(gradingScale, "gradingScale must not be null");
 			gradingScaleRanges = copy(gradingScaleRanges);
@@ -216,13 +219,14 @@ public class LevelOfExpectationsExportModelFactory {
 		}
 	}
 
-	public record LevelOfExpectationsExportModel(Course course, Exam exam, Pupil pupil, GradingScale gradingScale,
-			List<GradingScaleRange> gradingScaleRanges, PointSummary points, List<Part> parts,
-			List<NoteSection> noteSections, boolean showWatermark) {
+	public record LevelOfExpectationsExportModel(Course course, Exam exam, ExamNumber examNumber, Pupil pupil,
+			GradingScale gradingScale, List<GradingScaleRange> gradingScaleRanges, PointSummary points,
+			List<Part> parts, List<NoteSection> noteSections, boolean showWatermark) {
 
 		public LevelOfExpectationsExportModel {
 			course = Objects.requireNonNull(course, "course must not be null");
 			exam = Objects.requireNonNull(exam, "exam must not be null");
+			examNumber = Objects.requireNonNull(examNumber, "examNumber must not be null");
 			pupil = Objects.requireNonNull(pupil, "pupil must not be null");
 			gradingScale = Objects.requireNonNull(gradingScale, "gradingScale must not be null");
 			gradingScaleRanges = copy(gradingScaleRanges);
@@ -237,6 +241,10 @@ public class LevelOfExpectationsExportModelFactory {
 
 		public String examDateDisplayName() {
 			return DATE_FORMAT.format(exam.date());
+		}
+
+		public String examNumberDisplayName() {
+			return examNumber.getHeaderDisplayName();
 		}
 
 		public String pupilDisplayName() {
