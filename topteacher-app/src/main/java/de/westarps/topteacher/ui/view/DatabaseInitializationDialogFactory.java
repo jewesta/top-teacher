@@ -16,6 +16,7 @@ import de.westarps.topteacher.ApplicationVersion;
 import de.westarps.topteacher.backend.database.DatabaseInitializationMode;
 import de.westarps.topteacher.backend.database.DatabaseInitializationService;
 import de.westarps.topteacher.model.HasDisplayName;
+import de.westarps.topteacher.ui.component.Buttons;
 import de.westarps.topteacher.ui.component.TopTeacherDialogs;
 
 @UIScope
@@ -56,7 +57,7 @@ public class DatabaseInitializationDialogFactory {
 	Dialog createResetDialog() {
 		final ComboBox<DatabaseInitializationMode> mode = modeSelect();
 		final Button cancelButton = new Button("Abbrechen");
-		final Button resetButton = TopTeacherDialogs.dangerButton("Zurücksetzen");
+		final Button resetButton = Buttons.resetConfirmationOpener();
 		final Dialog dialog = TopTeacherDialogs.create("Datenbank zurücksetzen", resetContent(mode),
 				TopTeacherDialogs.buttonBar(cancelButton, resetButton));
 		cancelButton.addClickListener(event -> dialog.close());
@@ -73,7 +74,7 @@ public class DatabaseInitializationDialogFactory {
 
 	Dialog createResetConfirmationDialog(final DatabaseInitializationMode mode) {
 		final Button cancelButton = new Button("Abbrechen");
-		final Button resetButton = TopTeacherDialogs.dangerButton("Zurücksetzen");
+		final Button resetButton = Buttons.reset();
 		final Dialog dialog = TopTeacherDialogs.create("Datenbank endgültig zurücksetzen", confirmationContent(mode),
 				TopTeacherDialogs.buttonBar(cancelButton, resetButton));
 		cancelButton.addClickListener(event -> dialog.close());
@@ -129,7 +130,7 @@ public class DatabaseInitializationDialogFactory {
 		final ComboBox<DatabaseInitializationMode> mode = new ComboBox<>("Startdaten");
 		mode.setItems(DatabaseInitializationMode.values());
 		mode.setItemLabelGenerator(HasDisplayName::getDisplayName);
-		mode.setValue(DatabaseInitializationMode.EMPTY);
+		mode.setValue(DatabaseInitializationMode.DEMO);
 		mode.setRequiredIndicatorVisible(true);
 		mode.setWidthFull();
 		return mode;

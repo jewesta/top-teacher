@@ -13,12 +13,10 @@ import org.springframework.util.StringUtils;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -34,6 +32,7 @@ import de.westarps.topteacher.ApplicationVersion;
 import de.westarps.topteacher.backend.backup.DatabaseBackupScheduler;
 import de.westarps.topteacher.backend.backup.DatabaseBackupService;
 import de.westarps.topteacher.backend.settings.AppSettings;
+import de.westarps.topteacher.ui.component.Buttons;
 import de.westarps.topteacher.ui.component.ClipboardCopyButton;
 import de.westarps.topteacher.ui.component.FormBinders;
 import it.burning.cron.CronExpressionDescriptor;
@@ -63,8 +62,8 @@ public class DatabaseBackupSettingsTab extends VerticalLayout implements Setting
 	private final Span backupFileNameDescription = new Span(
 			"Dateiname: topteacher-db-JJJJMMTT-HHMMSS.zip; bei Namensgleichheit wird -1, -2, ... ergänzt.");
 	private final Span cronDescription = new Span();
-	private final Button saveButton = new Button("Speichern", VaadinIcon.CHECK.create());
-	private final Button backupNowButton = new Button("Jetzt sichern", new Icon("vaadin", "lifebuoy"));
+	private final Button saveButton = Buttons.save();
+	private final Button backupNowButton = Buttons.command("Jetzt sichern", VaadinIcon.LIFEBUOY);
 	private final String currentDatabaseFilePath;
 	private BackupSettingsFormData loadedBackupSettings;
 
@@ -116,7 +115,6 @@ public class DatabaseBackupSettingsTab extends VerticalLayout implements Setting
 		backupFileNameDescription.addClassName("tt-settings-description");
 		cronDescription.addClassName("tt-settings-cron-description");
 
-		saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 		saveButton.addClickListener(event -> saveSettings(true));
 
 		backupNowButton.addClickListener(event -> backUpNow());

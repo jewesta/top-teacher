@@ -36,7 +36,7 @@ final class LoeTaskSection extends AbstractLoeSection<LoeTask> {
 		components.trackDirty(title);
 		final Button addRequirement = components.commandButton("Anforderung hinzufügen", VaadinIcon.PLUS,
 				event -> handler.addRequirement(task));
-		final Button delete = components.deleteButton(event -> handler.delete(task));
+		final Button delete = components.deleteButton("Teilaufgabe löschen?", () -> handler.delete(task));
 		if (correctionMode) {
 			components.lockCorrectionModeAction(addRequirement);
 			components.lockCorrectionModeAction(delete);

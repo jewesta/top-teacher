@@ -2,6 +2,7 @@ package de.westarps.topteacher.ui.view;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -12,9 +13,11 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.TextField;
@@ -55,7 +58,13 @@ class SubjectSettingsTabTests {
 		try {
 			select(grid(tab), subject);
 
-			button(tab, "Archivieren").click();
+			button(tab, "Archivieren...").click();
+
+			verify(subjectRepository, never()).archive(subject.id());
+			final ConfirmDialog confirmation = components(ui, ConfirmDialog.class).getFirst();
+			assertThat(confirmation.isOpened()).isTrue();
+
+			ComponentUtil.fireEvent(confirmation, new ConfirmDialog.ConfirmEvent(confirmation, false));
 		} finally {
 			UI.setCurrent(null);
 		}

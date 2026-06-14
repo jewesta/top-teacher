@@ -6,7 +6,6 @@ import java.util.List;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
@@ -224,7 +223,6 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 			refresh();
 			notifyChanged();
 		});
-		addPart.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 		if (correctionMode) {
 			components.lockCorrectionModeAction(addPart);
 		}

@@ -80,6 +80,41 @@ class SplitListDetailViewTests {
 	}
 
 	@Test
+	void disablesManagedNewButtonOnlyInCreateMode() {
+		final TestSplitListDetailView view = new TestSplitListDetailView(true);
+		view.setGridItemsForTest(List.of("Ada", "Grace"));
+
+		assertThat(view.managedNewButton().isEnabled()).isFalse();
+
+		view.grid().select("Ada");
+
+		assertThat(view.managedNewButton().isEnabled()).isTrue();
+
+		view.grid().select("Grace");
+
+		assertThat(view.managedNewButton().isEnabled()).isTrue();
+
+		view.grid().deselectAll();
+
+		assertThat(view.managedNewButton().isEnabled()).isFalse();
+	}
+
+	@Test
+	void managedNewButtonRespectsViewAvailabilityHook() {
+		final TestSplitListDetailView view = new TestSplitListDetailView(true);
+		view.setGridItemsForTest(List.of("Ada"));
+		view.setNewButtonAvailable(false);
+
+		view.grid().select("Ada");
+
+		assertThat(view.managedNewButton().isEnabled()).isFalse();
+
+		view.setNewButtonAvailable(true);
+
+		assertThat(view.managedNewButton().isEnabled()).isTrue();
+	}
+
+	@Test
 	void updatesEditorTabStatusIconForCreateEditAndMultiSelectModes() {
 		final TestSplitListDetailView view = new TestSplitListDetailView();
 		view.grid().setItems(List.of("Ada", "Grace"));
@@ -112,12 +147,22 @@ class SplitListDetailViewTests {
 	private static class TestSplitListDetailView extends SplitListDetailView<String> {
 
 		private final List<Component> toolbarComponents;
+		private final Button managedNewButton;
+		private boolean newButtonAvailable = true;
 		private EditorMode editorMode;
 		private List<String> selectedItems = List.of();
 
 		TestSplitListDetailView(final Component... toolbarComponents) {
 			super("Test", "tt-test-view", new MultiSelectionGrid<>());
 			this.toolbarComponents = List.of(toolbarComponents);
+			this.managedNewButton = null;
+			initializeView();
+		}
+
+		TestSplitListDetailView(final boolean managedNewButton) {
+			super("Test", "tt-test-view", new MultiSelectionGrid<>());
+			this.managedNewButton = managedNewButton ? createNewButton() : null;
+			this.toolbarComponents = this.managedNewButton == null ? List.of() : List.of(this.managedNewButton);
 			initializeView();
 		}
 
@@ -138,6 +183,11 @@ class SplitListDetailViewTests {
 		@Override
 		protected List<Component> createListToolbarComponents() {
 			return toolbarComponents;
+		}
+
+		@Override
+		protected boolean isNewButtonAvailable() {
+			return newButtonAvailable;
 		}
 
 		@Override
@@ -175,6 +225,15 @@ class SplitListDetailViewTests {
 
 		private void search(final String value) {
 			getSearchField().setValue(value);
+		}
+
+		private Button managedNewButton() {
+			return managedNewButton;
+		}
+
+		private void setNewButtonAvailable(final boolean newButtonAvailable) {
+			this.newButtonAvailable = newButtonAvailable;
+			updateNewButtonState();
 		}
 
 		private EditorMode editorMode() {

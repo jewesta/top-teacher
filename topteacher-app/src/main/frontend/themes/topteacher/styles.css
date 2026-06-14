@@ -387,9 +387,10 @@ vaadin-app-layout::part(navbar) {
 	gap: var(--lumo-space-xs);
 }
 
-.tt-pdf-menu-label vaadin-icon {
-	height: var(--lumo-icon-size-s);
-	width: var(--lumo-icon-size-s);
+.tt-pdf-menu-icon {
+	flex: 0 0 auto;
+	height: 1em;
+	width: 1em;
 }
 
 .tt-spreadsheet-grid::part(header-cell) {

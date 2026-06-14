@@ -19,8 +19,10 @@ import de.westarps.topteacher.backend.repo.SubjectRepository;
 import de.westarps.topteacher.model.Lifecycle;
 import de.westarps.topteacher.model.Subject;
 import de.westarps.topteacher.ui.component.AbstractFormEditor;
+import de.westarps.topteacher.ui.component.Buttons;
 import de.westarps.topteacher.ui.component.FormBinders;
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
+import de.westarps.topteacher.ui.component.TopTeacherDialogs;
 
 @Order(5)
 @UIScope
@@ -31,9 +33,9 @@ public class SubjectSettingsTab extends SplitListDetailView<Subject> implements 
 	private final TextField name = new TextField("Fach");
 	private final ComboBox<Lifecycle> lifecycle = new ComboBox<>("Status");
 	private final Binder<SubjectFormData> binder = new Binder<>();
-	private final Button newButton = new Button("Neu");
-	private final Button saveButton = new Button();
-	private final Button archiveButton = new Button("Archivieren");
+	private final Button newButton = createNewButton();
+	private final Button saveButton = Buttons.createOrSave();
+	private final Button archiveButton = Buttons.archive();
 	private final ComboBox<Lifecycle> bulkLifecycle = new ComboBox<>("Status");
 	private final Button applyLifecycleButton = new Button("Anwenden");
 
@@ -136,11 +138,12 @@ public class SubjectSettingsTab extends SplitListDetailView<Subject> implements 
 			clearSingleEditor();
 		});
 
-		saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 		saveButton.addClickListener(event -> saveSubject());
 
-		archiveButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
-		archiveButton.addClickListener(event -> archiveSelectedSubject());
+		archiveButton.addClickListener(event -> TopTeacherDialogs.openArchiveConfirmation("Fach archivieren?",
+				"Das Fach wird archiviert. Das bedeutet, dass das Fach standardmäßig nicht mehr angezeigt wird und nicht neu zugeordnet werden kann.",
+				"Bestehende Kurse und Klausuren bleiben erhalten. Sie können die Archivierung wieder rückgängig machen.",
+				this::archiveSelectedSubject));
 
 		bulkLifecycle.setItems(Lifecycle.values());
 		bulkLifecycle.setItemLabelGenerator(Lifecycle::getDisplayName);
@@ -221,7 +224,7 @@ public class SubjectSettingsTab extends SplitListDetailView<Subject> implements 
 
 	private void updateEditorModeControls() {
 		final boolean editMode = selectedSubject != null;
-		saveButton.setText(editMode ? "Speichern" : "Anlegen");
+		Buttons.setCreateOrSaveMode(saveButton, editMode);
 		lifecycle.setVisible(editMode);
 		archiveButton.setVisible(editMode && selectedSubject.lifecycle() == Lifecycle.ACTIVE);
 	}

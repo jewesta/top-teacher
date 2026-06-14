@@ -9,6 +9,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
@@ -23,6 +24,7 @@ import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.router.HasDynamicTitle;
 
+import de.westarps.topteacher.ui.component.Buttons;
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
 import de.westarps.topteacher.ui.component.QuickFilterField;
 import de.westarps.topteacher.ui.component.SplitEditorTabContent;
@@ -35,6 +37,7 @@ public class SplitListDetailView<T> extends VerticalLayout implements HasDynamic
 	private final QuickFilterField searchField = new QuickFilterField();
 	private final SplitEditorTabContent editorTabContent = new SplitEditorTabContent();
 	private final TabSheet contextTabs = new TabSheet();
+	private final List<Button> newButtons = new ArrayList<>();
 	private Tab editorTab;
 
 	private ListDataProvider<T> dataProvider;
@@ -125,6 +128,22 @@ public class SplitListDetailView<T> extends VerticalLayout implements HasDynamic
 
 	protected final void clearSelection() {
 		grid.deselectAll();
+	}
+
+	protected final Button createNewButton() {
+		final Button button = Buttons.newItem();
+		button.setEnabled(false);
+		newButtons.add(button);
+		return button;
+	}
+
+	protected boolean isNewButtonAvailable() {
+		return true;
+	}
+
+	protected final void updateNewButtonState() {
+		final boolean enabled = !isCreateEditorMode() && isNewButtonAvailable();
+		newButtons.forEach(button -> button.setEnabled(enabled));
 	}
 
 	protected double getSplitterPosition() {
@@ -257,6 +276,7 @@ public class SplitListDetailView<T> extends VerticalLayout implements HasDynamic
 		}
 		updateEditorTabStatus(nextEditorMode, selectedItems);
 		onEditorModeChanged(editorMode, selectedItems);
+		updateNewButtonState();
 	}
 
 	private void updateEditorTabStatus(final EditorMode editorMode, final List<T> selectedItems) {
@@ -275,6 +295,10 @@ public class SplitListDetailView<T> extends VerticalLayout implements HasDynamic
 			return getCreateEditorStatus();
 		}
 		return getSingleEditorStatus(selectedItems.getFirst());
+	}
+
+	private boolean isCreateEditorMode() {
+		return editorMode == EditorMode.SINGLE_SELECT && selectedItems.isEmpty();
 	}
 
 	private List<Component> editorStatusComponents(final EditorMode editorMode, final List<T> selectedItems) {

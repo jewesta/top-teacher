@@ -19,8 +19,10 @@ import de.westarps.topteacher.model.Pupil;
 import de.westarps.topteacher.model.SchoolClass;
 import de.westarps.topteacher.ui.MainLayout;
 import de.westarps.topteacher.ui.component.AbstractFormEditor;
+import de.westarps.topteacher.ui.component.Buttons;
 import de.westarps.topteacher.ui.component.FormBinders;
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
+import de.westarps.topteacher.ui.component.TopTeacherDialogs;
 
 @Route(value = "", layout = MainLayout.class)
 @RouteAlias(value = "pupils", layout = MainLayout.class)
@@ -32,9 +34,9 @@ public class PupilsView extends SplitListDetailView<Pupil> {
 	private final TextField currentSchoolClass = new TextField("Klasse");
 	private final ComboBox<Lifecycle> lifecycle = new ComboBox<>("Status");
 	private final Binder<PupilFormData> pupilBinder = new Binder<>();
-	private final Button newButton = new Button("Neu");
-	private final Button saveButton = new Button();
-	private final Button archiveButton = new Button("Archivieren");
+	private final Button newButton = createNewButton();
+	private final Button saveButton = Buttons.createOrSave();
+	private final Button archiveButton = Buttons.archive();
 	private final ComboBox<Lifecycle> bulkLifecycle = new ComboBox<>("Status");
 	private final Button applyLifecycleButton = new Button("Anwenden");
 
@@ -133,11 +135,12 @@ public class PupilsView extends SplitListDetailView<Pupil> {
 			clearSingleEditor();
 		});
 
-		saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 		saveButton.addClickListener(event -> savePupil());
 
-		archiveButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
-		archiveButton.addClickListener(event -> archiveSelectedPupil());
+		archiveButton.addClickListener(event -> TopTeacherDialogs.openArchiveConfirmation("Schüler:in archivieren?",
+				"Diese Schüler:in wird archiviert. Das bedeutet, dass diese Schüler:in standardmäßig nicht mehr angezeigt wird und nicht neu zugeordnet werden kann.",
+				"Bestehende Kurse, Klausuren und Ergebnisse bleiben erhalten. Sie können die Archivierung wieder rückgängig machen.",
+				this::archiveSelectedPupil));
 
 		bulkLifecycle.setItems(Lifecycle.values());
 		bulkLifecycle.setItemLabelGenerator(Lifecycle::getDisplayName);
@@ -220,7 +223,7 @@ public class PupilsView extends SplitListDetailView<Pupil> {
 
 	private void updateEditorModeControls() {
 		final boolean editMode = selectedPupil != null;
-		saveButton.setText(editMode ? "Speichern" : "Anlegen");
+		Buttons.setCreateOrSaveMode(saveButton, editMode);
 		currentSchoolClass.setVisible(editMode);
 		lifecycle.setVisible(editMode);
 		archiveButton.setVisible(editMode && selectedPupil.lifecycle() == Lifecycle.ACTIVE);

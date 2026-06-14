@@ -30,9 +30,11 @@ import de.westarps.topteacher.model.SchoolYear;
 import de.westarps.topteacher.model.Subject;
 import de.westarps.topteacher.ui.MainLayout;
 import de.westarps.topteacher.ui.component.AbstractFormEditor;
+import de.westarps.topteacher.ui.component.Buttons;
 import de.westarps.topteacher.ui.component.FormBinders;
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
 import de.westarps.topteacher.ui.component.PupilAssignmentGrid;
+import de.westarps.topteacher.ui.component.TopTeacherDialogs;
 
 @Route(value = "courses", layout = MainLayout.class)
 public class CoursesView extends SplitListDetailView<Course> {
@@ -47,9 +49,9 @@ public class CoursesView extends SplitListDetailView<Course> {
 	private final ComboBox<GradingScale> gradingScale = new ComboBox<>("Notenschlüssel");
 	private final ComboBox<Lifecycle> lifecycle = new ComboBox<>("Status");
 	private final Binder<CourseFormData> courseBinder = new Binder<>();
-	private final Button newButton = new Button("Neu");
-	private final Button saveButton = new Button();
-	private final Button archiveButton = new Button("Archivieren");
+	private final Button newButton = createNewButton();
+	private final Button saveButton = Buttons.createOrSave();
+	private final Button archiveButton = Buttons.archive();
 	private final ComboBox<Lifecycle> bulkLifecycle = new ComboBox<>("Status");
 	private final Button applyLifecycleButton = new Button("Anwenden");
 	private final Button copyAssignmentsButton = new Button("Aus Kurs...");
@@ -183,11 +185,12 @@ public class CoursesView extends SplitListDetailView<Course> {
 			removeAssignmentsTab();
 		});
 
-		saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 		saveButton.addClickListener(event -> saveCourse());
 
-		archiveButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
-		archiveButton.addClickListener(event -> archiveSelectedCourse());
+		archiveButton.addClickListener(event -> TopTeacherDialogs.openArchiveConfirmation("Kurs archivieren?",
+				"Der Kurs wird archiviert. Das bedeutet, dass der Kurs standardmäßig nicht mehr angezeigt wird und nicht neu zugeordnet werden kann.",
+				"Zugeordnete Schüler:innen, Klausuren und Ergebnisse bleiben erhalten. Sie können die Archivierung wieder rückgängig machen.",
+				this::archiveSelectedCourse));
 
 		bulkLifecycle.setItems(Lifecycle.values());
 		bulkLifecycle.setItemLabelGenerator(Lifecycle::getDisplayName);
@@ -436,7 +439,7 @@ public class CoursesView extends SplitListDetailView<Course> {
 
 	private void updateEditorModeControls() {
 		final boolean editMode = selectedCourse != null;
-		saveButton.setText(editMode ? "Speichern" : "Anlegen");
+		Buttons.setCreateOrSaveMode(saveButton, editMode);
 		lifecycle.setVisible(editMode);
 		archiveButton.setVisible(editMode && selectedCourse.lifecycle() == Lifecycle.ACTIVE);
 	}

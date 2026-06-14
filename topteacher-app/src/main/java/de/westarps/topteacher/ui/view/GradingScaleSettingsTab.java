@@ -9,7 +9,6 @@ import org.springframework.core.annotation.Order;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.ColumnTextAlign;
@@ -30,9 +29,11 @@ import de.westarps.topteacher.model.GradingScale;
 import de.westarps.topteacher.model.GradingScaleRange;
 import de.westarps.topteacher.model.Lifecycle;
 import de.westarps.topteacher.ui.component.AbstractFormEditor;
+import de.westarps.topteacher.ui.component.Buttons;
 import de.westarps.topteacher.ui.component.FormBinders;
 import de.westarps.topteacher.ui.component.GradingScaleRangeGridGroup;
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
+import de.westarps.topteacher.ui.component.TopTeacherDialogs;
 
 @Order(7)
 @UIScope
@@ -50,9 +51,9 @@ public class GradingScaleSettingsTab extends SplitListDetailView<GradingScale> i
 			RangeFormData.class, RangeFormData::getGradeLevel, RangeFormData::getMinPoints, this::maxPointsDisplayName,
 			() -> valueOrZero(maxPoints.getValue()), this::isRangeReadOnly, this::setMinPoints);
 	private final Binder<GradingScaleFormData> binder = new Binder<>();
-	private final Button newButton = new Button("Neu");
-	private final Button saveButton = new Button();
-	private final Button archiveButton = new Button("Archivieren");
+	private final Button newButton = createNewButton();
+	private final Button saveButton = Buttons.createOrSave();
+	private final Button archiveButton = Buttons.archive();
 	private final Span lockMessage = new Span(
 			"Dieser Notenschlüssel wird bereits von Klausuren verwendet und kann nicht mehr geändert werden.");
 
@@ -209,11 +210,12 @@ public class GradingScaleSettingsTab extends SplitListDetailView<GradingScale> i
 		lifecycle.setItemLabelGenerator(Lifecycle::getDisplayName);
 		lifecycle.setRequiredIndicatorVisible(true);
 
-		saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 		saveButton.addClickListener(event -> saveGradingScale());
 
-		archiveButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
-		archiveButton.addClickListener(event -> archiveSelectedGradingScale());
+		archiveButton.addClickListener(event -> TopTeacherDialogs.openArchiveConfirmation("Notenschlüssel archivieren?",
+				"Der Notenschlüssel wird archiviert. Das bedeutet, dass der Notenschlüssel standardmäßig nicht mehr angezeigt wird und nicht neu zugeordnet werden kann.",
+				"Bestehende Klausuren behalten ihn weiterhin. Sie können die Archivierung wieder rückgängig machen.",
+				this::archiveSelectedGradingScale));
 
 		newButton.addClickListener(event -> {
 			clearSelection();
@@ -312,7 +314,7 @@ public class GradingScaleSettingsTab extends SplitListDetailView<GradingScale> i
 	private void updateEditorState() {
 		final boolean editMode = selectedGradingScale != null;
 		selectedLocked = editMode && gradingScaleRepository.isUsedByExam(selectedGradingScale.id());
-		saveButton.setText(editMode ? "Speichern" : "Anlegen");
+		Buttons.setCreateOrSaveMode(saveButton, editMode);
 		saveButton.setEnabled(!selectedLocked);
 		archiveButton.setVisible(editMode && selectedGradingScale.lifecycle() == Lifecycle.ACTIVE && !selectedLocked);
 		name.setReadOnly(selectedLocked);

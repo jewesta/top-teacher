@@ -17,8 +17,11 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -188,6 +191,51 @@ class LevelOfExpectationsEditorTests {
 		saveButtons(editor).getFirst().click();
 
 		verify(repository).savePart(new LoePart(PART.id(), PART.examId(), "Klausurteil Alpha", PART.sortOrder()));
+	}
+
+	@Test
+	void structureAddButtonsUseSecondaryStyle() {
+		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repositoryWithHierarchy());
+
+		editor.setExam(EXAM);
+
+		assertThat(button(editor, "Klausurteil hinzufügen").getThemeNames())
+				.doesNotContain(ButtonVariant.LUMO_PRIMARY.getVariantName());
+		assertThat(button(editor, "Leistungskategorie hinzufügen").getThemeNames())
+				.doesNotContain(ButtonVariant.LUMO_PRIMARY.getVariantName());
+		assertThat(button(editor, "Teilaufgabe hinzufügen").getThemeNames())
+				.doesNotContain(ButtonVariant.LUMO_PRIMARY.getVariantName());
+		assertThat(button(editor, "Anforderung hinzufügen").getThemeNames())
+				.doesNotContain(ButtonVariant.LUMO_PRIMARY.getVariantName());
+	}
+
+	@Test
+	void structureDeleteButtonsAskForConfirmationAndUseNeutralIconStyle() {
+		final LevelOfExpectationsRepository repository = repositoryWithHierarchy();
+		final UI ui = new UI();
+		UI.setCurrent(ui);
+		try {
+			final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repository);
+			ui.add(editor);
+			editor.setExam(EXAM);
+			clearInvocations(repository);
+			final Button deleteButton = buttonsByAriaLabel(editor, "Löschen").getFirst();
+
+			assertThat(deleteButton.getThemeNames()).doesNotContain(ButtonVariant.LUMO_ERROR.getVariantName());
+
+			deleteButton.click();
+
+			verify(repository, never()).deletePart(PART.id());
+			final ConfirmDialog confirmation = components(ui, ConfirmDialog.class).getFirst();
+			assertThat(confirmation.isOpened()).isTrue();
+			assertThat(confirmation.getElement().getProperty("header")).isEqualTo("Klausurteil löschen?");
+
+			ComponentUtil.fireEvent(confirmation, new ConfirmDialog.ConfirmEvent(confirmation, false));
+
+			verify(repository).deletePart(PART.id());
+		} finally {
+			UI.setCurrent(null);
+		}
 	}
 
 	@Test

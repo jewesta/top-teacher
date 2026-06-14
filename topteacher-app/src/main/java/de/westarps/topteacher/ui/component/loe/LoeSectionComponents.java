@@ -19,6 +19,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
 
 import de.westarps.topteacher.model.loe.LoeCriterionParser;
+import de.westarps.topteacher.ui.component.Buttons;
 import de.westarps.vaadin.markdown.MarkdownEditor;
 import de.westarps.vaadin.markdown.MarkdownTag;
 
@@ -131,19 +132,20 @@ final class LoeSectionComponents {
 	}
 
 	Button saveButton() {
-		final Button button = commandButton("Speichern", VaadinIcon.CHECK, event -> saveController.save());
-		button.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+		final Button button = Buttons.save(event -> saveController.save());
+		button.addThemeVariants(ButtonVariant.LUMO_SMALL);
 		return saveController.register(button);
 	}
 
 	Button discardButton() {
-		final Button button = commandButton("Verwerfen", VaadinIcon.ROTATE_LEFT, event -> saveController.discard());
+		final Button button = Buttons.reset("Verwerfen", event -> saveController.discard());
+		button.addThemeVariants(ButtonVariant.LUMO_SMALL);
 		return saveController.register(button);
 	}
 
 	Button commandButton(final String text, final VaadinIcon icon,
 			final ComponentEventListener<ClickEvent<Button>> listener) {
-		final Button button = new Button(text, icon.create(), listener);
+		final Button button = Buttons.command(text, icon, listener);
 		button.addThemeVariants(ButtonVariant.LUMO_SMALL);
 		return button;
 	}
@@ -172,9 +174,9 @@ final class LoeSectionComponents {
 		return button;
 	}
 
-	Button deleteButton(final ComponentEventListener<ClickEvent<Button>> listener) {
-		final Button button = iconButton("Löschen", VaadinIcon.TRASH, listener);
-		button.addThemeVariants(ButtonVariant.LUMO_ERROR);
+	Button deleteButton(final String confirmationHeader, final Runnable deleteAction) {
+		final Button button = Buttons.deleteIcon("Löschen", confirmationHeader, deleteAction);
+		button.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY_INLINE);
 		return button;
 	}
 

@@ -9,6 +9,8 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
 
+import de.westarps.topteacher.ui.component.Buttons;
+
 @Order(100)
 @UIScope
 @SpringComponent
@@ -40,8 +42,7 @@ public class ResetSettingsTab extends VerticalLayout implements SettingsTab {
 		final Span description = new Span("Setzt die Datenbank zurück. Dabei werden alle vorhandenen Daten gelöscht.");
 		description.addClassName("tt-settings-description");
 
-		final Button initializeButton = new Button("Datenbank zurücksetzen...");
-		initializeButton.addClickListener(event -> dialogFactory.openResetDialog());
+		final Button initializeButton = Buttons.resetOpener(event -> dialogFactory.openResetDialog());
 
 		add(description, initializeButton);
 	}

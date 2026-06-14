@@ -22,13 +22,14 @@ import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.loe.ExamNoteSection;
 import de.westarps.topteacher.ui.component.AbstractDesigner;
+import de.westarps.topteacher.ui.component.Buttons;
 import de.westarps.vaadin.markdown.MarkdownEditor;
 
 public class ExamNotesEditor extends AbstractDesigner {
 
 	private final LevelOfExpectationsRepository levelOfExpectationsRepository;
 	private final Set<String> collapsedDetails = new HashSet<>();
-	private final Button saveButton = new Button("Speichern", VaadinIcon.CHECK.create());
+	private final Button saveButton = Buttons.save();
 
 	private Exam exam;
 	private List<ExamNoteSection> noteSections = List.of();
@@ -38,7 +39,7 @@ public class ExamNotesEditor extends AbstractDesigner {
 		super("tt-exam-notes-editor");
 		this.levelOfExpectationsRepository = levelOfExpectationsRepository;
 
-		saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
+		saveButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
 		saveButton.addClickListener(event -> saveDirtySections());
 		saveButton.setEnabled(false);
 	}
@@ -114,7 +115,7 @@ public class ExamNotesEditor extends AbstractDesigner {
 		markdownBlock.setWidthFull();
 
 		final HorizontalLayout actions = new HorizontalLayout(moveButton("Nach oben", -1, noteSection),
-				moveButton("Nach unten", 1, noteSection), deleteButton(event -> {
+				moveButton("Nach unten", 1, noteSection), deleteButton(() -> {
 					levelOfExpectationsRepository.deleteNoteSection(noteSection.id());
 					refresh();
 				}));
@@ -154,15 +155,15 @@ public class ExamNotesEditor extends AbstractDesigner {
 		return button;
 	}
 
-	private Button deleteButton(final ComponentEventListener<ClickEvent<Button>> listener) {
-		final Button button = iconButton("Löschen", VaadinIcon.TRASH, listener);
-		button.addThemeVariants(ButtonVariant.LUMO_ERROR);
+	private Button deleteButton(final Runnable deleteAction) {
+		final Button button = Buttons.deleteIcon("Löschen", "Notiz löschen?", deleteAction);
+		button.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY_INLINE);
 		return button;
 	}
 
 	private Button commandButton(final String text, final VaadinIcon icon,
 			final ComponentEventListener<ClickEvent<Button>> listener) {
-		final Button button = new Button(text, icon.create(), listener);
+		final Button button = Buttons.command(text, icon, listener);
 		button.addThemeVariants(ButtonVariant.LUMO_SMALL);
 		return button;
 	}

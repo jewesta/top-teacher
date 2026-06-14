@@ -12,7 +12,6 @@ import java.util.stream.Collectors;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
@@ -40,6 +39,7 @@ import de.westarps.topteacher.model.GradingScale;
 import de.westarps.topteacher.model.Pupil;
 import de.westarps.topteacher.ui.MainLayout;
 import de.westarps.topteacher.ui.component.AbstractFormEditor;
+import de.westarps.topteacher.ui.component.Buttons;
 import de.westarps.topteacher.ui.component.FormBinders;
 import de.westarps.topteacher.ui.component.GradingScaleViewer;
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
@@ -81,9 +81,9 @@ public class ExamsView extends SplitListDetailView<Exam> {
 	private final ComboBox<GradingScale> gradingScale = new ComboBox<>("Notenschlüssel");
 	private final MultiSelectComboBox<Pupil> creationPupils = new MultiSelectComboBox<>("Teilnehmende Schüler:innen");
 	private final Binder<ExamFormData> examBinder = new Binder<>();
-	private final Button newButton = new Button("Neu");
-	private final Button saveButton = new Button();
-	private final Button duplicateButton = new Button("Duplizieren...");
+	private final Button newButton = createNewButton();
+	private final Button saveButton = Buttons.createOrSave();
+	private final Button duplicateButton = Buttons.duplicateOpener();
 	private final Dialog duplicateDialog = new Dialog();
 	private final TextField duplicateTitle = new TextField("Titel");
 	private final DatePicker duplicateDate = new DatePicker("Datum");
@@ -188,6 +188,11 @@ public class ExamsView extends SplitListDetailView<Exam> {
 	}
 
 	@Override
+	protected boolean isNewButtonAvailable() {
+		return selectedCourse != null;
+	}
+
+	@Override
 	protected void onEditorModeChanged(final EditorMode editorMode, final List<Exam> selectedItems) {
 		if (editorMode == EditorMode.MULTI_SELECT) {
 			removeExamContextTabs();
@@ -246,7 +251,6 @@ public class ExamsView extends SplitListDetailView<Exam> {
 			removeExamContextTabs();
 		});
 
-		saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 		saveButton.addClickListener(event -> saveExam());
 
 		duplicateButton.addClickListener(event -> openDuplicateDialog());
@@ -374,8 +378,7 @@ public class ExamsView extends SplitListDetailView<Exam> {
 		bindDuplicateDialog();
 
 		final Button cancelButton = new Button("Abbrechen", event -> duplicateDialog.close());
-		final Button applyButton = new Button("Duplizieren", event -> duplicateExam());
-		applyButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+		final Button applyButton = Buttons.duplicate(event -> duplicateExam());
 		final HorizontalLayout actions = new HorizontalLayout(cancelButton, applyButton);
 		actions.setPadding(false);
 		actions.setSpacing(true);
@@ -572,9 +575,9 @@ public class ExamsView extends SplitListDetailView<Exam> {
 		gradingScale.setVisible(selectedExam == null);
 		creationPupils.setEnabled(enabled && selectedExam == null);
 		creationPupils.setVisible(selectedExam == null);
-		newButton.setEnabled(enabled);
+		updateNewButtonState();
 		saveButton.setEnabled(enabled);
-		saveButton.setText(selectedExam == null ? "Anlegen" : "Speichern");
+		Buttons.setCreateOrSaveMode(saveButton, selectedExam != null);
 		duplicateButton.setEnabled(enabled && selectedExam != null);
 		duplicateButton.setVisible(selectedExam != null);
 	}

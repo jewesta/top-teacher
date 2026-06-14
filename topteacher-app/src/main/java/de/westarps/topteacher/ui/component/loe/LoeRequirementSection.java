@@ -71,7 +71,7 @@ final class LoeRequirementSection extends Composite<VerticalLayout> implements L
 			updateBonusButton();
 			components.updateDirty();
 		});
-		final Button delete = components.deleteButton(event -> handler.delete(requirement));
+		final Button delete = components.deleteButton("Anforderung löschen?", () -> handler.delete(requirement));
 		if (correctionMode) {
 			components.lockCorrectionModeAction(delete);
 		}
