@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.TabSheet;
+import com.vaadin.flow.component.tabs.TabSheetVariant;
 import com.vaadin.flow.router.HasDynamicTitle;
 import com.vaadin.flow.router.Route;
 
@@ -30,12 +31,17 @@ public class SettingsView extends VerticalLayout implements HasDynamicTitle {
 		setPadding(false);
 		setSpacing(false);
 		setSizeFull();
-		add(createContent());
+		setAlignItems(Alignment.STRETCH);
+
+		final TabSheet tabs = createContent();
+		add(tabs);
+		expand(tabs);
 	}
 
 	private TabSheet createContent() {
 		final TabSheet tabs = new TabSheet();
 		tabs.addClassName("tt-settings-tabs");
+		tabs.addThemeVariants(TabSheetVariant.LUMO_NO_PADDING);
 		tabs.setSizeFull();
 		settingsTabs.forEach(settingsTab -> addTab(tabs, settingsTab));
 		return tabs;

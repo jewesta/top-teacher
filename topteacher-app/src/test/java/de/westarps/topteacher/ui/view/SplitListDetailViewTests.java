@@ -11,7 +11,10 @@ import org.junit.jupiter.api.Test;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.tabs.Tab;
+import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.TextField;
 
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
@@ -77,6 +80,26 @@ class SplitListDetailViewTests {
 	}
 
 	@Test
+	void updatesEditorTabStatusIconForCreateEditAndMultiSelectModes() {
+		final TestSplitListDetailView view = new TestSplitListDetailView();
+		view.grid().setItems(List.of("Ada", "Grace"));
+
+		assertThat(editorStatusIconNames(view)).containsExactly("vaadin:star");
+		assertThat(editorTab(view).getElement().getAttribute("aria-label")).isEqualTo("Test, Neue Test-Zeile");
+
+		view.grid().select("Ada");
+
+		assertThat(editorStatusIconNames(view)).containsExactly("vaadin:pencil");
+		assertThat(editorTab(view).getElement().getAttribute("aria-label")).isEqualTo("Test, Ada bearbeiten");
+
+		view.grid().select("Grace");
+
+		assertThat(editorStatusIconNames(view)).containsExactly("vaadin:pencil");
+		assertThat(editorStatusCount(view)).isEqualTo("2");
+		assertThat(editorTab(view).getElement().getAttribute("aria-label")).isEqualTo("Test, 2 Test-Zeilen ausgewählt");
+	}
+
+	@Test
 	void initializesWithDefaultHooks() {
 		final SplitListDetailView<String> view = new SplitListDetailView<>("Test", "tt-test-view",
 				new MultiSelectionGrid<>());
@@ -115,6 +138,21 @@ class SplitListDetailViewTests {
 		@Override
 		protected List<Component> createListToolbarComponents() {
 			return toolbarComponents;
+		}
+
+		@Override
+		protected String getCreateEditorStatus() {
+			return "Neue Test-Zeile";
+		}
+
+		@Override
+		protected String getSingleEditorStatus(final String selectedItem) {
+			return selectedItem + " bearbeiten";
+		}
+
+		@Override
+		protected String getMultiEditorStatus(final List<String> selectedItems) {
+			return selectedItems.size() + " Test-Zeilen ausgewählt";
 		}
 
 		@Override
@@ -157,8 +195,32 @@ class SplitListDetailViewTests {
 				.filter(layout -> layout.hasClassName("tt-master-toolbar")).findFirst().orElseThrow();
 	}
 
+	private static Tab editorTab(final TestSplitListDetailView view) {
+		return view.getContextTabs().getTabAt(0);
+	}
+
+	private static List<String> editorStatusIconNames(final TestSplitListDetailView view) {
+		return editorTab(view).getChildren().filter(Icon.class::isInstance).map(Icon.class::cast)
+				.peek(icon -> assertThat(icon.getClassNames()).contains("tt-tab-status-icon"))
+				.map(icon -> icon.getElement().getAttribute("icon")).toList();
+	}
+
+	private static String editorStatusCount(final TestSplitListDetailView view) {
+		return editorTab(view).getChildren().filter(Span.class::isInstance).map(Span.class::cast)
+				.filter(span -> span.hasClassName("tt-tab-status-count")).findFirst().map(Span::getText).orElseThrow();
+	}
+
 	private static <T extends Component> List<T> components(final Component root, final Class<T> type) {
-		return Stream.concat(Stream.of(root), root.getChildren().flatMap(child -> components(child, type).stream()))
+		return Stream.concat(Stream.of(root), children(root).flatMap(child -> components(child, type).stream()))
 				.filter(type::isInstance).map(type::cast).toList();
+	}
+
+	private static Stream<Component> children(final Component root) {
+		final Stream<Component> ordinaryChildren = root.getChildren();
+		if (!(root instanceof TabSheet tabSheet)) {
+			return ordinaryChildren;
+		}
+		return Stream.concat(ordinaryChildren, java.util.stream.IntStream.range(0, tabSheet.getTabCount())
+				.mapToObj(index -> tabSheet.getComponent(tabSheet.getTabAt(index))));
 	}
 }

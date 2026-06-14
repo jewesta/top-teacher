@@ -7,7 +7,6 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
@@ -36,7 +35,6 @@ public class PupilsView extends SplitListDetailView<Pupil> {
 	private final Button newButton = new Button("Neu");
 	private final Button saveButton = new Button();
 	private final Button archiveButton = new Button("Archivieren");
-	private final Span multiSelectionSummary = new Span();
 	private final ComboBox<Lifecycle> bulkLifecycle = new ComboBox<>("Status");
 	private final Button applyLifecycleButton = new Button("Anwenden");
 
@@ -70,9 +68,8 @@ public class PupilsView extends SplitListDetailView<Pupil> {
 
 	@Override
 	protected Component createMultiSelectEditor() {
-		multiSelectionSummary.addClassName("tt-selection-summary");
-		return AbstractFormEditor.singleColumn("tt-pupil-bulk-editor", List.of(multiSelectionSummary),
-				List.of(bulkLifecycle), List.of(applyLifecycleButton));
+		return AbstractFormEditor.singleColumn("tt-pupil-bulk-editor", List.of(), List.of(bulkLifecycle),
+				List.of(applyLifecycleButton));
 	}
 
 	@Override
@@ -83,6 +80,21 @@ public class PupilsView extends SplitListDetailView<Pupil> {
 	@Override
 	protected String getEditorTabLabel() {
 		return "Schüler:in";
+	}
+
+	@Override
+	protected String getCreateEditorStatus() {
+		return "Neue:r Schüler:in";
+	}
+
+	@Override
+	protected String getSingleEditorStatus(final Pupil selectedItem) {
+		return "Schüler:in bearbeiten";
+	}
+
+	@Override
+	protected String getMultiEditorStatus(final List<Pupil> selectedItems) {
+		return selectedItems.size() + " Schüler:innen ausgewählt";
 	}
 
 	@Override
@@ -153,7 +165,6 @@ public class PupilsView extends SplitListDetailView<Pupil> {
 	private void showMultiSelectEditor(final List<Pupil> pupils) {
 		selectedPupil = null;
 		selectedPupils = List.copyOf(pupils);
-		multiSelectionSummary.setText(selectedPupils.size() + " Schüler:innen ausgewählt");
 		setBulkLifecycleValue(commonLifecycle(selectedPupils));
 		updateBulkApplyButton();
 	}

@@ -89,7 +89,6 @@ public class ExamsView extends SplitListDetailView<Exam> {
 	private final DatePicker duplicateDate = new DatePicker("Datum");
 	private final ComboBox<Course> duplicateCourse = new ComboBox<>("Kurs");
 	private final Binder<DuplicateExamFormData> duplicateExamBinder = new Binder<>();
-	private final Span multiSelectionSummary = new Span();
 	private final PupilAssignmentGrid pupilAssignmentGrid = new PupilAssignmentGrid("Schüler:innen suchen");
 
 	private Course selectedCourse;
@@ -144,8 +143,7 @@ public class ExamsView extends SplitListDetailView<Exam> {
 
 	@Override
 	protected Component createMultiSelectEditor() {
-		multiSelectionSummary.addClassName("tt-selection-summary");
-		return AbstractFormEditor.contentOnly("tt-exam-bulk-editor", List.of(multiSelectionSummary));
+		return AbstractFormEditor.contentOnly("tt-exam-bulk-editor", List.of());
 	}
 
 	@Override
@@ -162,6 +160,21 @@ public class ExamsView extends SplitListDetailView<Exam> {
 	@Override
 	protected String getEditorTabLabel() {
 		return "Klausur";
+	}
+
+	@Override
+	protected String getCreateEditorStatus() {
+		return "Neue Klausur";
+	}
+
+	@Override
+	protected String getSingleEditorStatus(final Exam selectedItem) {
+		return "Klausur bearbeiten";
+	}
+
+	@Override
+	protected String getMultiEditorStatus(final List<Exam> selectedItems) {
+		return selectedItems.size() + " Klausuren ausgewählt";
 	}
 
 	@Override
@@ -311,7 +324,6 @@ public class ExamsView extends SplitListDetailView<Exam> {
 
 	private void showMultiSelectEditor(final List<Exam> exams) {
 		selectedExam = null;
-		multiSelectionSummary.setText(exams.size() + " Klausuren ausgewählt");
 		updateEditorEnabled();
 	}
 

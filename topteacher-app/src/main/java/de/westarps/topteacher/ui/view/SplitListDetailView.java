@@ -10,9 +10,13 @@ import java.util.Set;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
+import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.provider.DataProvider;
@@ -21,6 +25,7 @@ import com.vaadin.flow.router.HasDynamicTitle;
 
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
 import de.westarps.topteacher.ui.component.QuickFilterField;
+import de.westarps.topteacher.ui.component.SplitEditorTabContent;
 
 public class SplitListDetailView<T> extends VerticalLayout implements HasDynamicTitle {
 
@@ -28,8 +33,9 @@ public class SplitListDetailView<T> extends VerticalLayout implements HasDynamic
 	private final String viewClassName;
 	private final MultiSelectionGrid<T> grid;
 	private final QuickFilterField searchField = new QuickFilterField();
-	private final Div editorHost = new Div();
+	private final SplitEditorTabContent editorTabContent = new SplitEditorTabContent();
 	private final TabSheet contextTabs = new TabSheet();
+	private Tab editorTab;
 
 	private ListDataProvider<T> dataProvider;
 	private boolean initialized;
@@ -145,6 +151,18 @@ public class SplitListDetailView<T> extends VerticalLayout implements HasDynamic
 		return pageTitle;
 	}
 
+	protected String getCreateEditorStatus() {
+		return "Neu";
+	}
+
+	protected String getSingleEditorStatus(final T selectedItem) {
+		return getEditorTabLabel() + " bearbeiten";
+	}
+
+	protected String getMultiEditorStatus(final List<T> selectedItems) {
+		return selectedItems.size() + " ausgewählt";
+	}
+
 	private void configureSearchField() {
 		searchField.addValueChangeListener(event -> applySearchFilter());
 	}
@@ -184,12 +202,9 @@ public class SplitListDetailView<T> extends VerticalLayout implements HasDynamic
 	}
 
 	private Component createContextArea() {
-		editorHost.addClassName("tt-editor-host");
-		editorHost.setSizeFull();
-
 		contextTabs.addClassName("tt-context-tabs");
 		contextTabs.setSizeFull();
-		contextTabs.add(getEditorTabLabel(), editorHost);
+		editorTab = contextTabs.add(getEditorTabLabel(), editorTabContent);
 
 		final VerticalLayout contextArea = new VerticalLayout(contextTabs);
 		contextArea.addClassName("tt-context-area");
@@ -235,11 +250,58 @@ public class SplitListDetailView<T> extends VerticalLayout implements HasDynamic
 	private void updateEditorMode(final Set<T> selection) {
 		selectedItems = List.copyOf(selection);
 		final EditorMode nextEditorMode = selectedItems.size() > 1 ? EditorMode.MULTI_SELECT : EditorMode.SINGLE_SELECT;
-		if (nextEditorMode != editorMode || editorHost.getChildren().findAny().isEmpty()) {
-			editorHost.removeAll();
-			editorHost.add(nextEditorMode == EditorMode.MULTI_SELECT ? multiSelectEditor : singleSelectEditor);
+		if (nextEditorMode != editorMode || !editorTabContent.hasEditor()) {
+			editorTabContent
+					.setEditor(nextEditorMode == EditorMode.MULTI_SELECT ? multiSelectEditor : singleSelectEditor);
 			editorMode = nextEditorMode;
 		}
+		updateEditorTabStatus(nextEditorMode, selectedItems);
 		onEditorModeChanged(editorMode, selectedItems);
+	}
+
+	private void updateEditorTabStatus(final EditorMode editorMode, final List<T> selectedItems) {
+		final String status = editorStatus(editorMode, selectedItems);
+		editorTab.removeAll();
+		editorTab.setLabel(getEditorTabLabel());
+		editorStatusComponents(editorMode, selectedItems).forEach(editorTab::add);
+		editorTab.getElement().setAttribute("aria-label", getEditorTabLabel() + ", " + status);
+	}
+
+	private String editorStatus(final EditorMode editorMode, final List<T> selectedItems) {
+		if (editorMode == EditorMode.MULTI_SELECT) {
+			return getMultiEditorStatus(selectedItems);
+		}
+		if (selectedItems.isEmpty()) {
+			return getCreateEditorStatus();
+		}
+		return getSingleEditorStatus(selectedItems.getFirst());
+	}
+
+	private List<Component> editorStatusComponents(final EditorMode editorMode, final List<T> selectedItems) {
+		final String status = editorStatus(editorMode, selectedItems);
+		if (editorMode == EditorMode.MULTI_SELECT) {
+			return List.of(editorStatusIcon(VaadinIcon.PENCIL, status),
+					editorStatusCount(selectedItems.size(), status));
+		}
+		if (selectedItems.isEmpty()) {
+			return List.of(editorStatusIcon(VaadinIcon.STAR, status));
+		}
+		return List.of(editorStatusIcon(VaadinIcon.PENCIL, status));
+	}
+
+	private Icon editorStatusIcon(final VaadinIcon iconType, final String status) {
+		final Icon icon = iconType.create();
+		icon.addClassName("tt-tab-status-icon");
+		icon.getElement().setAttribute("aria-label", status);
+		icon.setTooltipText(status);
+		return icon;
+	}
+
+	private Span editorStatusCount(final int count, final String status) {
+		final Span countLabel = new Span(String.valueOf(count));
+		countLabel.addClassName("tt-tab-status-count");
+		countLabel.getElement().setAttribute("aria-label", status);
+		countLabel.getElement().setAttribute("title", status);
+		return countLabel;
 	}
 }

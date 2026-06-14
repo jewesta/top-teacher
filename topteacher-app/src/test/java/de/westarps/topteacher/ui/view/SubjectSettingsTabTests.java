@@ -91,6 +91,17 @@ class SubjectSettingsTabTests {
 		assertThat(lifecycle.isVisible()).isTrue();
 	}
 
+	@Test
+	void usesPlainSplitViewSizingInsideSettings() {
+		final SubjectRepository subjectRepository = mock(SubjectRepository.class);
+		when(subjectRepository.findAll()).thenReturn(List.of());
+
+		final SubjectSettingsTab tab = new SubjectSettingsTab(subjectRepository);
+
+		assertThat(tab.getClassNames()).contains("tt-master-data-view", "tt-subject-settings-tab")
+				.doesNotContain("tt-settings-content", "tt-settings-master-data-content");
+	}
+
 	private static void select(final Grid<Subject> grid, final Subject subject) {
 		grid.select(subject);
 	}

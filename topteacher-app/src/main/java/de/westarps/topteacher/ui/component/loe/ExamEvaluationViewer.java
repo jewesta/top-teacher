@@ -195,7 +195,7 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 		}
 		return gradingScaleRanges.stream()
 				.filter(range -> range.minPoints() <= effectivePoints && effectivePoints <= range.maxPoints())
-				.findFirst().map(range -> range.gradeLevel().getDisplayName()).orElse("");
+				.findFirst().map(range -> range.gradeLevel().getShortName()).orElse("");
 	}
 
 	private static Span emptyState(final String text) {

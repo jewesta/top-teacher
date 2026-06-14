@@ -50,7 +50,6 @@ public class CoursesView extends SplitListDetailView<Course> {
 	private final Button newButton = new Button("Neu");
 	private final Button saveButton = new Button();
 	private final Button archiveButton = new Button("Archivieren");
-	private final Span multiSelectionSummary = new Span();
 	private final ComboBox<Lifecycle> bulkLifecycle = new ComboBox<>("Status");
 	private final Button applyLifecycleButton = new Button("Anwenden");
 	private final Button copyAssignmentsButton = new Button("Aus Kurs...");
@@ -98,9 +97,8 @@ public class CoursesView extends SplitListDetailView<Course> {
 
 	@Override
 	protected Component createMultiSelectEditor() {
-		multiSelectionSummary.addClassName("tt-selection-summary");
-		return AbstractFormEditor.singleColumn("tt-course-bulk-editor", List.of(multiSelectionSummary),
-				List.of(bulkLifecycle), List.of(applyLifecycleButton));
+		return AbstractFormEditor.singleColumn("tt-course-bulk-editor", List.of(), List.of(bulkLifecycle),
+				List.of(applyLifecycleButton));
 	}
 
 	@Override
@@ -111,6 +109,21 @@ public class CoursesView extends SplitListDetailView<Course> {
 	@Override
 	protected String getEditorTabLabel() {
 		return "Kurs";
+	}
+
+	@Override
+	protected String getCreateEditorStatus() {
+		return "Neuer Kurs";
+	}
+
+	@Override
+	protected String getSingleEditorStatus(final Course selectedItem) {
+		return "Kurs bearbeiten";
+	}
+
+	@Override
+	protected String getMultiEditorStatus(final List<Course> selectedItems) {
+		return selectedItems.size() + " Kurse ausgewählt";
 	}
 
 	@Override
@@ -235,7 +248,6 @@ public class CoursesView extends SplitListDetailView<Course> {
 	private void showMultiSelectEditor(final List<Course> courses) {
 		selectedCourse = null;
 		selectedCourses = List.copyOf(courses);
-		multiSelectionSummary.setText(selectedCourses.size() + " Kurse ausgewählt");
 		setBulkLifecycleValue(commonLifecycle(selectedCourses));
 		updateBulkApplyButton();
 	}

@@ -8,7 +8,6 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
@@ -35,8 +34,6 @@ public class SubjectSettingsTab extends SplitListDetailView<Subject> implements 
 	private final Button newButton = new Button("Neu");
 	private final Button saveButton = new Button();
 	private final Button archiveButton = new Button("Archivieren");
-	private final Span selectionSummary = new Span();
-	private final Span multiSelectionSummary = new Span();
 	private final ComboBox<Lifecycle> bulkLifecycle = new ComboBox<>("Status");
 	private final Button applyLifecycleButton = new Button("Anwenden");
 
@@ -72,16 +69,14 @@ public class SubjectSettingsTab extends SplitListDetailView<Subject> implements 
 
 	@Override
 	protected Component createSingleSelectEditor() {
-		selectionSummary.addClassName("tt-selection-summary");
-		return AbstractFormEditor.singleColumn("tt-subject-settings-editor", List.of(selectionSummary),
-				List.of(name, lifecycle), List.of(saveButton, archiveButton));
+		return AbstractFormEditor.singleColumn("tt-subject-settings-editor", List.of(), List.of(name, lifecycle),
+				List.of(saveButton, archiveButton));
 	}
 
 	@Override
 	protected Component createMultiSelectEditor() {
-		multiSelectionSummary.addClassName("tt-selection-summary");
-		return AbstractFormEditor.singleColumn("tt-subject-settings-bulk-editor", List.of(multiSelectionSummary),
-				List.of(bulkLifecycle), List.of(applyLifecycleButton));
+		return AbstractFormEditor.singleColumn("tt-subject-settings-bulk-editor", List.of(), List.of(bulkLifecycle),
+				List.of(applyLifecycleButton));
 	}
 
 	@Override
@@ -92,6 +87,21 @@ public class SubjectSettingsTab extends SplitListDetailView<Subject> implements 
 	@Override
 	protected String getEditorTabLabel() {
 		return "Fach";
+	}
+
+	@Override
+	protected String getCreateEditorStatus() {
+		return "Neues Fach";
+	}
+
+	@Override
+	protected String getSingleEditorStatus(final Subject selectedItem) {
+		return "Fach bearbeiten";
+	}
+
+	@Override
+	protected String getMultiEditorStatus(final List<Subject> selectedItems) {
+		return selectedItems.size() + " Fächer ausgewählt";
 	}
 
 	@Override
@@ -157,7 +167,6 @@ public class SubjectSettingsTab extends SplitListDetailView<Subject> implements 
 	private void showMultiSelectEditor(final List<Subject> subjects) {
 		selectedSubject = null;
 		selectedSubjects = List.copyOf(subjects);
-		multiSelectionSummary.setText(selectedSubjects.size() + " Fächer ausgewählt");
 		setBulkLifecycleValue(commonLifecycle(selectedSubjects));
 		updateBulkApplyButton();
 	}
@@ -212,7 +221,6 @@ public class SubjectSettingsTab extends SplitListDetailView<Subject> implements 
 
 	private void updateEditorModeControls() {
 		final boolean editMode = selectedSubject != null;
-		selectionSummary.setText(editMode ? "Fach bearbeiten" : "Neues Fach");
 		saveButton.setText(editMode ? "Speichern" : "Anlegen");
 		lifecycle.setVisible(editMode);
 		archiveButton.setVisible(editMode && selectedSubject.lifecycle() == Lifecycle.ACTIVE);
