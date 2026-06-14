@@ -8,7 +8,6 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
@@ -20,8 +19,10 @@ import de.westarps.topteacher.backend.repo.SubjectRepository;
 import de.westarps.topteacher.model.Lifecycle;
 import de.westarps.topteacher.model.Subject;
 import de.westarps.topteacher.ui.component.AbstractFormEditor;
+import de.westarps.topteacher.ui.component.Buttons;
 import de.westarps.topteacher.ui.component.FormBinders;
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
+import de.westarps.topteacher.ui.component.TopTeacherDialogs;
 
 @Order(5)
 @UIScope
@@ -29,16 +30,15 @@ import de.westarps.topteacher.ui.component.MultiSelectionGrid;
 public class SubjectSettingsTab extends SplitListDetailView<Subject> implements SettingsTab {
 
 	private final SubjectRepository subjectRepository;
-	private final TextField name = new TextField("Fach");
+	private final TextField name = new TextField("Name");
 	private final ComboBox<Lifecycle> lifecycle = new ComboBox<>("Status");
 	private final Binder<SubjectFormData> binder = new Binder<>();
-	private final Button newButton = new Button("Neu");
-	private final Button saveButton = new Button();
-	private final Button archiveButton = new Button("Archivieren");
-	private final Span selectionSummary = new Span();
-	private final Span multiSelectionSummary = new Span();
+	private final Button newButton = createNewButton();
+	private final Button saveButton = Buttons.createOrSave();
+	private final Button archiveButton = Buttons.archive();
 	private final ComboBox<Lifecycle> bulkLifecycle = new ComboBox<>("Status");
 	private final Button applyLifecycleButton = new Button("Anwenden");
+	private FormBinders.DirtySaveButton dirtySaveButton;
 
 	private Subject selectedSubject;
 	private List<Subject> selectedSubjects = List.of();
@@ -66,22 +66,20 @@ public class SubjectSettingsTab extends SplitListDetailView<Subject> implements 
 
 	@Override
 	protected void configureGrid(final MultiSelectionGrid<Subject> grid) {
-		grid.addColumn(Subject::name).setHeader("Fach").setAutoWidth(true);
+		grid.addColumn(Subject::name).setHeader("Name").setAutoWidth(true);
 		grid.addColumn(subject -> subject.lifecycle().getDisplayName()).setHeader("Status").setAutoWidth(true);
 	}
 
 	@Override
 	protected Component createSingleSelectEditor() {
-		selectionSummary.addClassName("tt-selection-summary");
-		return AbstractFormEditor.singleColumn("tt-subject-settings-editor", List.of(selectionSummary),
-				List.of(name, lifecycle), List.of(saveButton, archiveButton));
+		return AbstractFormEditor.singleColumn("tt-subject-settings-editor", List.of(), List.of(name, lifecycle),
+				List.of(saveButton, archiveButton));
 	}
 
 	@Override
 	protected Component createMultiSelectEditor() {
-		multiSelectionSummary.addClassName("tt-selection-summary");
-		return AbstractFormEditor.singleColumn("tt-subject-settings-bulk-editor", List.of(multiSelectionSummary),
-				List.of(bulkLifecycle), List.of(applyLifecycleButton));
+		return AbstractFormEditor.singleColumn("tt-subject-settings-bulk-editor", List.of(), List.of(bulkLifecycle),
+				List.of(applyLifecycleButton));
 	}
 
 	@Override
@@ -92,6 +90,21 @@ public class SubjectSettingsTab extends SplitListDetailView<Subject> implements 
 	@Override
 	protected String getEditorTabLabel() {
 		return "Fach";
+	}
+
+	@Override
+	protected String getCreateEditorStatus() {
+		return "Neues Fach";
+	}
+
+	@Override
+	protected String getSingleEditorStatus(final Subject selectedItem) {
+		return "Fach bearbeiten";
+	}
+
+	@Override
+	protected String getMultiEditorStatus(final List<Subject> selectedItems) {
+		return selectedItems.size() + " Fächer ausgewählt";
 	}
 
 	@Override
@@ -120,21 +133,23 @@ public class SubjectSettingsTab extends SplitListDetailView<Subject> implements 
 		lifecycle.setRequiredIndicatorVisible(true);
 
 		bindSingleEditor();
+		dirtySaveButton = FormBinders.bindDirtySaveButton(binder, saveButton);
 
 		newButton.addClickListener(event -> {
 			clearSelection();
 			clearSingleEditor();
 		});
 
-		saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 		saveButton.addClickListener(event -> saveSubject());
 
-		archiveButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
-		archiveButton.addClickListener(event -> archiveSelectedSubject());
+		archiveButton.addClickListener(event -> TopTeacherDialogs.openArchiveConfirmation("Fach archivieren?",
+				"Das Fach wird archiviert. Das bedeutet, dass das Fach standardmäßig nicht mehr angezeigt wird und nicht neu zugeordnet werden kann.",
+				"Bestehende Kurse und Klausuren bleiben erhalten. Du kannst die Archivierung wieder rückgängig machen.",
+				this::archiveSelectedSubject));
 
 		bulkLifecycle.setItems(Lifecycle.values());
 		bulkLifecycle.setItemLabelGenerator(Lifecycle::getDisplayName);
-		bulkLifecycle.setClearButtonVisible(true);
+		bulkLifecycle.setRequiredIndicatorVisible(true);
 		bulkLifecycle.addValueChangeListener(event -> updateBulkApplyButton());
 
 		applyLifecycleButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -157,7 +172,6 @@ public class SubjectSettingsTab extends SplitListDetailView<Subject> implements 
 	private void showMultiSelectEditor(final List<Subject> subjects) {
 		selectedSubject = null;
 		selectedSubjects = List.copyOf(subjects);
-		multiSelectionSummary.setText(selectedSubjects.size() + " Fächer ausgewählt");
 		setBulkLifecycleValue(commonLifecycle(selectedSubjects));
 		updateBulkApplyButton();
 	}
@@ -212,8 +226,7 @@ public class SubjectSettingsTab extends SplitListDetailView<Subject> implements 
 
 	private void updateEditorModeControls() {
 		final boolean editMode = selectedSubject != null;
-		selectionSummary.setText(editMode ? "Fach bearbeiten" : "Neues Fach");
-		saveButton.setText(editMode ? "Speichern" : "Anlegen");
+		Buttons.setCreateOrSaveMode(saveButton, editMode);
 		lifecycle.setVisible(editMode);
 		archiveButton.setVisible(editMode && selectedSubject.lifecycle() == Lifecycle.ACTIVE);
 	}
@@ -229,6 +242,7 @@ public class SubjectSettingsTab extends SplitListDetailView<Subject> implements 
 	private void readSingleEditor(final SubjectFormData formData) {
 		binder.readBean(formData);
 		FormBinders.clearValidation(binder);
+		dirtySaveButton.reset();
 	}
 
 	private Lifecycle commonLifecycle(final List<Subject> subjects) {

@@ -29,7 +29,7 @@ import de.westarps.topteacher.model.Pupil;
 public class ExamRepository {
 
 	private static final String RESULTS_EXIST_MESSAGE = """
-			Für diese:n Schüler:in sind bereits Ergebnisse erfasst. Bitte löschen Sie zuerst die Ergebnisse.
+			Für diese:n Schüler:in sind bereits Ergebnisse erfasst. Bitte lösche zuerst die Ergebnisse.
 			""".trim();
 
 	private final NamedParameterJdbcTemplate jdbc;

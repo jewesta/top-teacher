@@ -19,7 +19,9 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.tabs.TabSheet;
+import com.vaadin.flow.component.tabs.TabSheetVariant;
 import com.vaadin.flow.component.textfield.TextField;
 
 import de.westarps.topteacher.backend.backup.DatabaseBackupScheduler;
@@ -47,6 +49,20 @@ class SettingsViewTests {
 		assertThat(form.getResponsiveSteps().getFirst().toJson().get("columns").asInt()).isEqualTo(1);
 		assertThat(button(backupContent, "Speichern").isEnabled()).isFalse();
 		assertThat(button(backupContent, "Jetzt sichern").isEnabled()).isFalse();
+	}
+
+	@Test
+	void stretchesSettingsTabsToAvailableContentArea() {
+		final SettingsView view = new SettingsView(List.of(new StaticSettingsTab("Test", new Div())));
+
+		final TabSheet tabSheet = components(view, TabSheet.class).getFirst();
+
+		assertThat(view.getAlignItems()).isEqualTo(FlexComponent.Alignment.STRETCH);
+		assertThat(view.isPadding()).isFalse();
+		assertThat(view.isSpacing()).isFalse();
+		assertThat(view.getFlexGrow(tabSheet)).isEqualTo(1);
+		assertThat(tabSheet.getClassNames()).contains("tt-settings-tabs");
+		assertThat(tabSheet.getThemeNames()).contains(TabSheetVariant.LUMO_NO_PADDING.getVariantName());
 	}
 
 	@Test

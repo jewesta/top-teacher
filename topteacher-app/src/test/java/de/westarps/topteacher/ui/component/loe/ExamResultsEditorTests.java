@@ -20,6 +20,7 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.html.Span;
@@ -89,6 +90,7 @@ class ExamResultsEditorTests {
 		final IntegerField points = components(editor, IntegerField.class).getFirst();
 		assertThat(saveButton.isEnabled()).isFalse();
 		assertThat(pdfMenu.isEnabled()).isTrue();
+		assertThat(pdfMenuIcon(editor).getClassNames()).contains("tt-pdf-menu-icon");
 		assertThat(points.getLabel()).isNull();
 		assertThat(pointsText(editor)).containsExactly("1 von 5 Punkten");
 		assertThat(points.getValue()).isEqualTo(1);
@@ -258,6 +260,7 @@ class ExamResultsEditorTests {
 			final IntegerField points = components(editor, IntegerField.class).getFirst();
 			final TextArea comment = components(editor, TextArea.class).getFirst();
 			assertThat(deleteButton.isEnabled()).isTrue();
+			assertThat(deleteButton.getThemeNames()).doesNotContain(ButtonVariant.LUMO_ERROR.getVariantName());
 			assertThat(points.getValue()).isEqualTo(1);
 
 			deleteButton.click();
@@ -377,6 +380,11 @@ class ExamResultsEditorTests {
 
 	private static MenuBar pdfMenu(final Component root) {
 		return components(root, MenuBar.class).stream().filter(menu -> menu.getClassNames().contains("tt-pdf-menu"))
+				.findFirst().orElseThrow();
+	}
+
+	private static Icon pdfMenuIcon(final Component root) {
+		return components(root, Icon.class).stream().filter(icon -> icon.getClassNames().contains("tt-pdf-menu-icon"))
 				.findFirst().orElseThrow();
 	}
 

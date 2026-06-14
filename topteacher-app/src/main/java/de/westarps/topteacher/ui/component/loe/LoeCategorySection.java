@@ -45,7 +45,7 @@ final class LoeCategorySection extends AbstractLoeSection<LoeCategory> {
 		components.trackDirty(description);
 		final Button addTask = components.commandButton("Teilaufgabe hinzufügen", VaadinIcon.PLUS,
 				event -> handler.addTask(category));
-		final Button delete = components.deleteButton(event -> handler.delete(category));
+		final Button delete = components.deleteButton("Leistungskategorie löschen?", () -> handler.delete(category));
 		if (correctionMode) {
 			components.lockCorrectionModeAction(addTask);
 			components.lockCorrectionModeAction(delete);

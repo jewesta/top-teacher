@@ -43,8 +43,10 @@ import de.westarps.topteacher.model.loe.LoeRequirementResult;
 import de.westarps.topteacher.model.loe.LoeTask;
 import de.westarps.topteacher.ui.UiUrls;
 import de.westarps.topteacher.ui.component.AbstractDesigner;
+import de.westarps.topteacher.ui.component.Buttons;
 import de.westarps.topteacher.ui.component.FullscreenButton;
 import de.westarps.topteacher.ui.component.StepperComboBox;
+import de.westarps.topteacher.ui.component.TopTeacherDialogs;
 import de.westarps.vaadin.markdown.MarkdownTagRenderMode;
 import de.westarps.vaadin.markdown.MarkdownViewer;
 
@@ -55,8 +57,9 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private final LevelOfExpectationsRepository levelOfExpectationsRepository;
 	private final GradingScaleRepository gradingScaleRepository;
 	private final StepperComboBox<Pupil> pupilSelector = new StepperComboBox<>();
-	private final Button saveButton = new Button("Speichern", VaadinIcon.CHECK.create());
-	private final Button deleteButton = new Button(VaadinIcon.TRASH.create());
+	private final Button saveButton = Buttons.save();
+	private final Button deleteButton = Buttons.icon("Ergebnisse löschen", VaadinIcon.TRASH,
+			event -> openDeleteConfirmation());
 	private final MenuBar pdfMenu = new MenuBar();
 	private final ConfirmDialog deleteConfirmation = new ConfirmDialog();
 	private final FullscreenButton fullscreenButton;
@@ -135,7 +138,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 				return;
 			}
 			if (isDirty()) {
-				Notification.show("Bitte speichern Sie die Ergebnisse zuerst.");
+				Notification.show("Bitte speichere die Ergebnisse zuerst.");
 				refreshing = true;
 				pupilSelector.setValue(event.getOldValue());
 				refreshing = false;
@@ -147,7 +150,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 	}
 
 	private void configureSaveButton() {
-		saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
+		saveButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
 		saveButton.addClickListener(event -> saveController.save());
 		saveController.setDirtySupplier(this::isDirty);
 		saveController.setSaveAction(this::saveResults);
@@ -155,18 +158,9 @@ public class ExamResultsEditor extends AbstractDesigner {
 	}
 
 	private void configureDeleteButton() {
-		deleteButton.setAriaLabel("Ergebnisse löschen");
-		deleteButton.setTooltipText("Ergebnisse löschen");
-		deleteButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY_INLINE,
-				ButtonVariant.LUMO_ERROR);
-		deleteButton.addClickListener(event -> openDeleteConfirmation());
-
-		deleteConfirmation.setHeader("Ergebnisse löschen?");
-		deleteConfirmation.setCancelable(true);
-		deleteConfirmation.setCancelText("Abbrechen");
-		deleteConfirmation.setConfirmText("Löschen");
-		deleteConfirmation.setConfirmButtonTheme("error primary");
-		deleteConfirmation.addConfirmListener(event -> deleteSelectedPupilResults());
+		deleteButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY_INLINE);
+		TopTeacherDialogs.configureDeleteConfirmation(deleteConfirmation, "Ergebnisse löschen?",
+				this::deleteSelectedPupilResults);
 		updateDeleteButton();
 	}
 
@@ -182,7 +176,9 @@ public class ExamResultsEditor extends AbstractDesigner {
 	}
 
 	private static HorizontalLayout pdfMenuLabel() {
-		final HorizontalLayout label = new HorizontalLayout(VaadinIcon.DOWNLOAD.create(), new Span("PDF"));
+		final Icon downloadIcon = VaadinIcon.DOWNLOAD.create();
+		downloadIcon.addClassName("tt-pdf-menu-icon");
+		final HorizontalLayout label = new HorizontalLayout(downloadIcon, new Span("PDF"));
 		label.addClassName("tt-pdf-menu-label");
 		label.setAlignItems(Alignment.CENTER);
 		label.setPadding(false);
@@ -199,7 +195,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 			clearResultState();
 			pointRules = null;
 			updateActionButtons();
-			showDesignerMessage(emptyState("Bitte wählen Sie eine Klausur aus."));
+			showDesignerMessage(emptyState("Bitte wähle eine Klausur aus."));
 			return;
 		}
 

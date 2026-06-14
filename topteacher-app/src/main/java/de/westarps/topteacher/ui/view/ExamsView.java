@@ -12,7 +12,6 @@ import java.util.stream.Collectors;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
@@ -40,6 +39,7 @@ import de.westarps.topteacher.model.GradingScale;
 import de.westarps.topteacher.model.Pupil;
 import de.westarps.topteacher.ui.MainLayout;
 import de.westarps.topteacher.ui.component.AbstractFormEditor;
+import de.westarps.topteacher.ui.component.Buttons;
 import de.westarps.topteacher.ui.component.FormBinders;
 import de.westarps.topteacher.ui.component.GradingScaleViewer;
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
@@ -81,15 +81,14 @@ public class ExamsView extends SplitListDetailView<Exam> {
 	private final ComboBox<GradingScale> gradingScale = new ComboBox<>("Notenschlüssel");
 	private final MultiSelectComboBox<Pupil> creationPupils = new MultiSelectComboBox<>("Teilnehmende Schüler:innen");
 	private final Binder<ExamFormData> examBinder = new Binder<>();
-	private final Button newButton = new Button("Neu");
-	private final Button saveButton = new Button();
-	private final Button duplicateButton = new Button("Duplizieren...");
+	private final Button newButton = createNewButton();
+	private final Button saveButton = Buttons.createOrSave();
+	private final Button duplicateButton = Buttons.duplicateOpener();
 	private final Dialog duplicateDialog = new Dialog();
 	private final TextField duplicateTitle = new TextField("Titel");
 	private final DatePicker duplicateDate = new DatePicker("Datum");
 	private final ComboBox<Course> duplicateCourse = new ComboBox<>("Kurs");
 	private final Binder<DuplicateExamFormData> duplicateExamBinder = new Binder<>();
-	private final Span multiSelectionSummary = new Span();
 	private final PupilAssignmentGrid pupilAssignmentGrid = new PupilAssignmentGrid("Schüler:innen suchen");
 
 	private Course selectedCourse;
@@ -97,6 +96,8 @@ public class ExamsView extends SplitListDetailView<Exam> {
 	private Map<Integer, ExamNumber> examNumbersByExamId = Map.of();
 	private List<Exam> originalExamCandidates = List.of();
 	private List<GradingScale> gradingScales = List.of();
+	private List<Object> originalEditorValues = List.of();
+	private Set<Integer> originalCreationPupilIds = Set.of();
 	private Tab pupilsTab;
 	private Tab levelOfExpectationsTab;
 	private Tab notesTab;
@@ -144,8 +145,7 @@ public class ExamsView extends SplitListDetailView<Exam> {
 
 	@Override
 	protected Component createMultiSelectEditor() {
-		multiSelectionSummary.addClassName("tt-selection-summary");
-		return AbstractFormEditor.contentOnly("tt-exam-bulk-editor", List.of(multiSelectionSummary));
+		return AbstractFormEditor.contentOnly("tt-exam-bulk-editor", List.of());
 	}
 
 	@Override
@@ -165,6 +165,21 @@ public class ExamsView extends SplitListDetailView<Exam> {
 	}
 
 	@Override
+	protected String getCreateEditorStatus() {
+		return "Neue Klausur";
+	}
+
+	@Override
+	protected String getSingleEditorStatus(final Exam selectedItem) {
+		return "Klausur bearbeiten";
+	}
+
+	@Override
+	protected String getMultiEditorStatus(final List<Exam> selectedItems) {
+		return selectedItems.size() + " Klausuren ausgewählt";
+	}
+
+	@Override
 	protected double getSplitterPosition() {
 		return 30;
 	}
@@ -172,6 +187,11 @@ public class ExamsView extends SplitListDetailView<Exam> {
 	@Override
 	protected String getContextAreaMinWidth() {
 		return "34rem";
+	}
+
+	@Override
+	protected boolean isNewButtonAvailable() {
+		return selectedCourse != null;
 	}
 
 	@Override
@@ -224,8 +244,11 @@ public class ExamsView extends SplitListDetailView<Exam> {
 		creationPupils.setItemLabelGenerator(this::pupilLabel);
 		creationPupils.setClearButtonVisible(true);
 		creationPupils.setWidthFull();
+		creationPupils.addValueChangeListener(event -> updateSaveButtonState());
 
 		bindSingleEditor();
+		examBinder.setChangeDetectionEnabled(true);
+		examBinder.addValueChangeListener(event -> updateSaveButtonState());
 
 		newButton.addClickListener(event -> {
 			clearSelection();
@@ -233,7 +256,6 @@ public class ExamsView extends SplitListDetailView<Exam> {
 			removeExamContextTabs();
 		});
 
-		saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 		saveButton.addClickListener(event -> saveExam());
 
 		duplicateButton.addClickListener(event -> openDuplicateDialog());
@@ -306,12 +328,13 @@ public class ExamsView extends SplitListDetailView<Exam> {
 		refreshOriginalExamItems();
 		refreshGradingScaleOptions();
 		readSingleEditor(new ExamFormData(exam.title(), exam.date(), originalExam(exam), gradingScaleFor(exam)));
+		resetEditorBaseline();
+		originalCreationPupilIds = Set.of();
 		updateEditorEnabled();
 	}
 
 	private void showMultiSelectEditor(final List<Exam> exams) {
 		selectedExam = null;
-		multiSelectionSummary.setText(exams.size() + " Klausuren ausgewählt");
 		updateEditorEnabled();
 	}
 
@@ -362,8 +385,7 @@ public class ExamsView extends SplitListDetailView<Exam> {
 		bindDuplicateDialog();
 
 		final Button cancelButton = new Button("Abbrechen", event -> duplicateDialog.close());
-		final Button applyButton = new Button("Duplizieren", event -> duplicateExam());
-		applyButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+		final Button applyButton = Buttons.duplicate(event -> duplicateExam());
 		final HorizontalLayout actions = new HorizontalLayout(cancelButton, applyButton);
 		actions.setPadding(false);
 		actions.setSpacing(true);
@@ -442,7 +464,8 @@ public class ExamsView extends SplitListDetailView<Exam> {
 		refreshOriginalExamItems();
 		refreshGradingScaleOptions();
 		readSingleEditor(new ExamFormData("", null, null, defaultGradingScale()));
-		refreshCreationPupilOptions();
+		resetEditorBaseline();
+		resetCreationPupilOptions();
 		updateEditorEnabled();
 	}
 
@@ -560,11 +583,31 @@ public class ExamsView extends SplitListDetailView<Exam> {
 		gradingScale.setVisible(selectedExam == null);
 		creationPupils.setEnabled(enabled && selectedExam == null);
 		creationPupils.setVisible(selectedExam == null);
-		newButton.setEnabled(enabled);
-		saveButton.setEnabled(enabled);
-		saveButton.setText(selectedExam == null ? "Anlegen" : "Speichern");
+		updateNewButtonState();
+		Buttons.setCreateOrSaveMode(saveButton, selectedExam != null);
+		updateSaveButtonState();
 		duplicateButton.setEnabled(enabled && selectedExam != null);
 		duplicateButton.setVisible(selectedExam != null);
+	}
+
+	private void updateSaveButtonState() {
+		saveButton.setEnabled(selectedCourse != null && (editorFieldsHaveChanges() || creationPupilsHaveChanges()));
+	}
+
+	private void resetEditorBaseline() {
+		originalEditorValues = currentEditorValues();
+	}
+
+	private boolean editorFieldsHaveChanges() {
+		return !currentEditorValues().equals(originalEditorValues);
+	}
+
+	private List<Object> currentEditorValues() {
+		return examBinder.getFields().map(field -> (Object) field.getValue()).toList();
+	}
+
+	private boolean creationPupilsHaveChanges() {
+		return selectedExam == null && !selectedCreationPupilIds().equals(originalCreationPupilIds);
 	}
 
 	private DatePickerI18n germanDatePickerI18n() {
@@ -574,7 +617,7 @@ public class ExamsView extends SplitListDetailView<Exam> {
 				.setWeekdays(List.of("Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"))
 				.setWeekdaysShort(List.of("So", "Mo", "Di", "Mi", "Do", "Fr", "Sa")).setFirstDayOfWeek(1)
 				.setDateFormat("dd.MM.yyyy").setToday("Heute").setCancel("Abbrechen")
-				.setBadInputErrorMessage("Bitte geben Sie ein gültiges Datum ein.")
+				.setBadInputErrorMessage("Bitte gib ein gültiges Datum ein.")
 				.setRequiredErrorMessage("Datum ist erforderlich.");
 	}
 
@@ -608,6 +651,12 @@ public class ExamsView extends SplitListDetailView<Exam> {
 		final List<Pupil> coursePupils = courseRepository.findPupils(selectedCourse.id());
 		creationPupils.setItems(coursePupils);
 		creationPupils.setValue(defaultCreationPupilSelection(coursePupils));
+	}
+
+	private void resetCreationPupilOptions() {
+		refreshCreationPupilOptions();
+		originalCreationPupilIds = selectedCreationPupilIds();
+		updateSaveButtonState();
 	}
 
 	private Set<Pupil> defaultCreationPupilSelection(final List<Pupil> coursePupils) {

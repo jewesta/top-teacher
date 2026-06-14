@@ -7,7 +7,6 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
@@ -20,8 +19,10 @@ import de.westarps.topteacher.model.Pupil;
 import de.westarps.topteacher.model.SchoolClass;
 import de.westarps.topteacher.ui.MainLayout;
 import de.westarps.topteacher.ui.component.AbstractFormEditor;
+import de.westarps.topteacher.ui.component.Buttons;
 import de.westarps.topteacher.ui.component.FormBinders;
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
+import de.westarps.topteacher.ui.component.TopTeacherDialogs;
 
 @Route(value = "", layout = MainLayout.class)
 @RouteAlias(value = "pupils", layout = MainLayout.class)
@@ -33,12 +34,12 @@ public class PupilsView extends SplitListDetailView<Pupil> {
 	private final TextField currentSchoolClass = new TextField("Klasse");
 	private final ComboBox<Lifecycle> lifecycle = new ComboBox<>("Status");
 	private final Binder<PupilFormData> pupilBinder = new Binder<>();
-	private final Button newButton = new Button("Neu");
-	private final Button saveButton = new Button();
-	private final Button archiveButton = new Button("Archivieren");
-	private final Span multiSelectionSummary = new Span();
+	private final Button newButton = createNewButton();
+	private final Button saveButton = Buttons.createOrSave();
+	private final Button archiveButton = Buttons.archive();
 	private final ComboBox<Lifecycle> bulkLifecycle = new ComboBox<>("Status");
 	private final Button applyLifecycleButton = new Button("Anwenden");
+	private FormBinders.DirtySaveButton dirtySaveButton;
 
 	private Pupil selectedPupil;
 	private List<Pupil> selectedPupils = List.of();
@@ -70,9 +71,8 @@ public class PupilsView extends SplitListDetailView<Pupil> {
 
 	@Override
 	protected Component createMultiSelectEditor() {
-		multiSelectionSummary.addClassName("tt-selection-summary");
-		return AbstractFormEditor.singleColumn("tt-pupil-bulk-editor", List.of(multiSelectionSummary),
-				List.of(bulkLifecycle), List.of(applyLifecycleButton));
+		return AbstractFormEditor.singleColumn("tt-pupil-bulk-editor", List.of(), List.of(bulkLifecycle),
+				List.of(applyLifecycleButton));
 	}
 
 	@Override
@@ -83,6 +83,21 @@ public class PupilsView extends SplitListDetailView<Pupil> {
 	@Override
 	protected String getEditorTabLabel() {
 		return "Schüler:in";
+	}
+
+	@Override
+	protected String getCreateEditorStatus() {
+		return "Neue:r Schüler:in";
+	}
+
+	@Override
+	protected String getSingleEditorStatus(final Pupil selectedItem) {
+		return "Schüler:in bearbeiten";
+	}
+
+	@Override
+	protected String getMultiEditorStatus(final List<Pupil> selectedItems) {
+		return selectedItems.size() + " Schüler:innen ausgewählt";
 	}
 
 	@Override
@@ -115,21 +130,23 @@ public class PupilsView extends SplitListDetailView<Pupil> {
 		lifecycle.setItemLabelGenerator(Lifecycle::getDisplayName);
 
 		bindSingleEditor();
+		dirtySaveButton = FormBinders.bindDirtySaveButton(pupilBinder, saveButton);
 
 		newButton.addClickListener(event -> {
 			clearSelection();
 			clearSingleEditor();
 		});
 
-		saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 		saveButton.addClickListener(event -> savePupil());
 
-		archiveButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
-		archiveButton.addClickListener(event -> archiveSelectedPupil());
+		archiveButton.addClickListener(event -> TopTeacherDialogs.openArchiveConfirmation("Schüler:in archivieren?",
+				"Diese Schüler:in wird archiviert. Das bedeutet, dass diese Schüler:in standardmäßig nicht mehr angezeigt wird und nicht neu zugeordnet werden kann.",
+				"Bestehende Kurse, Klausuren und Ergebnisse bleiben erhalten. Du kannst die Archivierung wieder rückgängig machen.",
+				this::archiveSelectedPupil));
 
 		bulkLifecycle.setItems(Lifecycle.values());
 		bulkLifecycle.setItemLabelGenerator(Lifecycle::getDisplayName);
-		bulkLifecycle.setClearButtonVisible(true);
+		bulkLifecycle.setRequiredIndicatorVisible(true);
 		bulkLifecycle.addValueChangeListener(event -> updateBulkApplyButton());
 
 		applyLifecycleButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -153,7 +170,6 @@ public class PupilsView extends SplitListDetailView<Pupil> {
 	private void showMultiSelectEditor(final List<Pupil> pupils) {
 		selectedPupil = null;
 		selectedPupils = List.copyOf(pupils);
-		multiSelectionSummary.setText(selectedPupils.size() + " Schüler:innen ausgewählt");
 		setBulkLifecycleValue(commonLifecycle(selectedPupils));
 		updateBulkApplyButton();
 	}
@@ -209,7 +225,7 @@ public class PupilsView extends SplitListDetailView<Pupil> {
 
 	private void updateEditorModeControls() {
 		final boolean editMode = selectedPupil != null;
-		saveButton.setText(editMode ? "Speichern" : "Anlegen");
+		Buttons.setCreateOrSaveMode(saveButton, editMode);
 		currentSchoolClass.setVisible(editMode);
 		lifecycle.setVisible(editMode);
 		archiveButton.setVisible(editMode && selectedPupil.lifecycle() == Lifecycle.ACTIVE);
@@ -234,6 +250,7 @@ public class PupilsView extends SplitListDetailView<Pupil> {
 	private void readSingleEditor(final PupilFormData formData) {
 		pupilBinder.readBean(formData);
 		FormBinders.clearValidation(pupilBinder);
+		dirtySaveButton.reset();
 	}
 
 	private static String trim(final String value) {

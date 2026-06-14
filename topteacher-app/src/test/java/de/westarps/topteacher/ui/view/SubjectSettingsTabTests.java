@@ -2,6 +2,7 @@ package de.westarps.topteacher.ui.view;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -12,9 +13,11 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.TextField;
@@ -34,7 +37,7 @@ class SubjectSettingsTabTests {
 		final UI ui = new UI();
 		UI.setCurrent(ui);
 		try {
-			textField(tab, "Fach").setValue(" Physik ");
+			textField(tab, "Name").setValue(" Physik ");
 
 			button(tab, "Anlegen").click();
 		} finally {
@@ -55,12 +58,48 @@ class SubjectSettingsTabTests {
 		try {
 			select(grid(tab), subject);
 
-			button(tab, "Archivieren").click();
+			button(tab, "Archivieren...").click();
+
+			verify(subjectRepository, never()).archive(subject.id());
+			final ConfirmDialog confirmation = components(ui, ConfirmDialog.class).getFirst();
+			assertThat(confirmation.isOpened()).isTrue();
+
+			ComponentUtil.fireEvent(confirmation, new ConfirmDialog.ConfirmEvent(confirmation, false));
 		} finally {
 			UI.setCurrent(null);
 		}
 
 		verify(subjectRepository).archive(subject.id());
+	}
+
+	@Test
+	void enablesCreateOrSaveButtonOnlyWhenSingleEditorChanges() {
+		final Subject subject = new Subject(1, "Erdkunde", Lifecycle.ACTIVE);
+		final SubjectRepository subjectRepository = mock(SubjectRepository.class);
+		when(subjectRepository.findAll()).thenReturn(List.of(subject));
+		final SubjectSettingsTab tab = new SubjectSettingsTab(subjectRepository);
+
+		final TextField name = textField(tab, "Name");
+		final Button createButton = button(tab, "Anlegen");
+
+		assertThat(createButton.isEnabled()).isFalse();
+
+		name.setValue("Physik");
+
+		assertThat(createButton.isEnabled()).isTrue();
+
+		name.clear();
+
+		assertThat(createButton.isEnabled()).isFalse();
+
+		select(grid(tab), subject);
+		final Button saveButton = button(tab, "Speichern");
+
+		assertThat(saveButton.isEnabled()).isFalse();
+
+		name.setValue("Geografie");
+
+		assertThat(saveButton.isEnabled()).isTrue();
 	}
 
 	@Test
@@ -89,6 +128,33 @@ class SubjectSettingsTabTests {
 		select(grid(tab), subject);
 
 		assertThat(lifecycle.isVisible()).isTrue();
+	}
+
+	@Test
+	void bulkStatusFieldIsMandatoryLikeSingleEditorStatusField() {
+		final Subject activeSubject = new Subject(1, "Erdkunde", Lifecycle.ACTIVE);
+		final Subject archivedSubject = new Subject(2, "Biologie", Lifecycle.INACTIVE);
+		final SubjectRepository subjectRepository = mock(SubjectRepository.class);
+		when(subjectRepository.findAll()).thenReturn(List.of(activeSubject, archivedSubject));
+		final SubjectSettingsTab tab = new SubjectSettingsTab(subjectRepository);
+
+		select(grid(tab), activeSubject);
+		select(grid(tab), archivedSubject);
+
+		final ComboBox<Lifecycle> lifecycle = comboBox(tab, "Status");
+		assertThat(lifecycle.isRequiredIndicatorVisible()).isTrue();
+		assertThat(lifecycle.isClearButtonVisible()).isFalse();
+	}
+
+	@Test
+	void usesPlainSplitViewSizingInsideSettings() {
+		final SubjectRepository subjectRepository = mock(SubjectRepository.class);
+		when(subjectRepository.findAll()).thenReturn(List.of());
+
+		final SubjectSettingsTab tab = new SubjectSettingsTab(subjectRepository);
+
+		assertThat(tab.getClassNames()).contains("tt-master-data-view", "tt-subject-settings-tab")
+				.doesNotContain("tt-settings-content", "tt-settings-master-data-content");
 	}
 
 	private static void select(final Grid<Subject> grid, final Subject subject) {

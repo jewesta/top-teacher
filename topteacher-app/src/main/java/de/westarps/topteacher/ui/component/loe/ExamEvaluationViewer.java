@@ -83,7 +83,7 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 		grid.setItems(List.of());
 
 		if (exam == null) {
-			showDesignerMessage(emptyState("Bitte wählen Sie eine Klausur aus."));
+			showDesignerMessage(emptyState("Bitte wähle eine Klausur aus."));
 			return;
 		}
 
@@ -195,7 +195,7 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 		}
 		return gradingScaleRanges.stream()
 				.filter(range -> range.minPoints() <= effectivePoints && effectivePoints <= range.maxPoints())
-				.findFirst().map(range -> range.gradeLevel().getDisplayName()).orElse("");
+				.findFirst().map(range -> range.gradeLevel().getShortName()).orElse("");
 	}
 
 	private static Span emptyState(final String text) {

@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 
@@ -53,10 +54,17 @@ class DatabaseInitializationDialogFactoryTests {
 		assertThat(dialog.isCloseOnOutsideClick()).isFalse();
 		assertThat(buttons(dialog).stream().map(Button::getText)).containsExactly("Starten");
 
-		modeSelect(dialog).setValue(DatabaseInitializationMode.DEMO);
+		assertThat(modeSelect(dialog).getValue()).isEqualTo(DatabaseInitializationMode.DEMO);
 		button(dialog, "Starten").click();
 
 		verify(initializationService).initialize(DatabaseInitializationMode.DEMO);
+	}
+
+	@Test
+	void defaultsStartDataToDemoInFirstStartAndResetDialogs() {
+		assertThat(modeSelect(dialogFactory.createFirstStartDialog()).getValue())
+				.isEqualTo(DatabaseInitializationMode.DEMO);
+		assertThat(modeSelect(dialogFactory.createResetDialog()).getValue()).isEqualTo(DatabaseInitializationMode.DEMO);
 	}
 
 	@Test
@@ -72,12 +80,19 @@ class DatabaseInitializationDialogFactoryTests {
 	void resetFlowRequiresSecondConfirmationBeforeInitializing() {
 		final Dialog selectionDialog = dialogFactory.createResetDialog();
 		modeSelect(selectionDialog).setValue(DatabaseInitializationMode.EMPTY);
-		button(selectionDialog, "Zurücksetzen").click();
+		final Button selectionResetButton = button(selectionDialog, "Zurücksetzen...");
+
+		assertThat(icon(selectionResetButton)).isEqualTo("vaadin:rotate-left");
+		assertThat(selectionResetButton.getThemeNames()).contains(ButtonVariant.LUMO_ERROR.getVariantName());
+
+		selectionResetButton.click();
 
 		verify(initializationService, never()).initialize(DatabaseInitializationMode.EMPTY);
 
 		final Dialog confirmationDialog = dialogFactory.createResetConfirmationDialog(DatabaseInitializationMode.EMPTY);
 		assertThat(buttons(confirmationDialog).stream().map(Button::getText)).contains("Abbrechen", "Zurücksetzen");
+		assertThat(buttons(confirmationDialog).stream().map(Button::getText)).doesNotContain("Zurücksetzen...");
+		assertThat(icon(button(confirmationDialog, "Zurücksetzen"))).isEqualTo("vaadin:rotate-left");
 
 		button(confirmationDialog, "Zurücksetzen").click();
 
@@ -94,6 +109,10 @@ class DatabaseInitializationDialogFactoryTests {
 
 	private static List<Button> buttons(final Component root) {
 		return components(root, Button.class);
+	}
+
+	private static String icon(final Button button) {
+		return button.getIcon().getElement().getAttribute("icon");
 	}
 
 	private static <T extends Component> List<T> components(final Component root, final Class<T> type) {

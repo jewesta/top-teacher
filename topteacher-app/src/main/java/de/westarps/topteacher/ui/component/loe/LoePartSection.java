@@ -39,7 +39,7 @@ final class LoePartSection extends AbstractLoeSection<LoePart> {
 		components.trackDirty(title);
 		final Button addCategory = components.commandButton("Leistungskategorie hinzufügen", VaadinIcon.PLUS,
 				event -> handler.addCategory(part));
-		final Button delete = components.deleteButton(event -> handler.delete(part));
+		final Button delete = components.deleteButton("Klausurteil löschen?", () -> handler.delete(part));
 		if (correctionMode) {
 			components.lockCorrectionModeAction(addCategory);
 			components.lockCorrectionModeAction(delete);

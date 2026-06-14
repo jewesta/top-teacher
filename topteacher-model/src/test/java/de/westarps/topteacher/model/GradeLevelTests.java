@@ -12,5 +12,8 @@ class GradeLevelTests {
 		assertThat(GradeLevel.fromPoints(0)).isEqualTo(GradeLevel.UNGENUEGEND);
 		assertThat(GradeLevel.SEHR_GUT_PLUS.getDisplayName()).isEqualTo("sehr gut plus");
 		assertThat(GradeLevel.UNGENUEGEND.getDisplayName()).isEqualTo("ungenügend");
+		assertThat(GradeLevel.SEHR_GUT_PLUS.getShortName()).isEqualTo("1+");
+		assertThat(GradeLevel.BEFRIEDIGEND_MINUS.getShortName()).isEqualTo("3-");
+		assertThat(GradeLevel.UNGENUEGEND.getShortName()).isEqualTo("6");
 	}
 }

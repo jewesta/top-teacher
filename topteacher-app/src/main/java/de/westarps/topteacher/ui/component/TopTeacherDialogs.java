@@ -1,9 +1,13 @@
 package de.westarps.topteacher.ui.component;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
@@ -58,5 +62,97 @@ public final class TopTeacherDialogs {
 		final Button button = primaryButton(text);
 		button.addThemeVariants(ButtonVariant.LUMO_ERROR);
 		return button;
+	}
+
+	public static ConfirmDialog deleteConfirmation(final String header, final Runnable confirmAction) {
+		final ConfirmDialog dialog = new ConfirmDialog();
+		configureDeleteConfirmation(dialog, header, confirmAction);
+		return dialog;
+	}
+
+	public static ConfirmDialog archiveConfirmation(final String header, final String text,
+			final Runnable confirmAction) {
+		final ConfirmDialog dialog = new ConfirmDialog();
+		configureArchiveConfirmation(dialog, header, text, confirmAction);
+		return dialog;
+	}
+
+	public static ConfirmDialog archiveConfirmation(final String header, final String firstParagraph,
+			final String secondParagraph, final Runnable confirmAction) {
+		final ConfirmDialog dialog = new ConfirmDialog();
+		configureArchiveConfirmation(dialog, header, firstParagraph, secondParagraph, confirmAction);
+		return dialog;
+	}
+
+	public static void configureDeleteConfirmation(final ConfirmDialog dialog, final String header,
+			final Runnable confirmAction) {
+		dialog.setHeader(header);
+		dialog.setText("Diese Aktion kann nicht rückgängig gemacht werden.");
+		dialog.setCancelable(true);
+		dialog.setCancelText("Abbrechen");
+		dialog.setConfirmText("Löschen");
+		dialog.setConfirmButtonTheme("error primary");
+		dialog.addConfirmListener(event -> confirmAction.run());
+	}
+
+	public static void configureArchiveConfirmation(final ConfirmDialog dialog, final String header, final String text,
+			final Runnable confirmAction) {
+		dialog.setHeader(header);
+		dialog.removeAll();
+		dialog.setText(text);
+		configureArchiveConfirmationActions(dialog, confirmAction);
+	}
+
+	public static void configureArchiveConfirmation(final ConfirmDialog dialog, final String header,
+			final String firstParagraph, final String secondParagraph, final Runnable confirmAction) {
+		dialog.setHeader(header);
+		dialog.removeAll();
+		dialog.setText(paragraphs(firstParagraph, secondParagraph));
+		configureArchiveConfirmationActions(dialog, confirmAction);
+	}
+
+	private static void configureArchiveConfirmationActions(final ConfirmDialog dialog, final Runnable confirmAction) {
+		dialog.setCancelable(true);
+		dialog.setCancelText("Abbrechen");
+		dialog.setConfirmText("Archivieren");
+		dialog.setConfirmButtonTheme("primary");
+		dialog.addConfirmListener(event -> confirmAction.run());
+	}
+
+	private static Component paragraphs(final String firstParagraph, final String secondParagraph) {
+		final Paragraph first = new Paragraph(firstParagraph);
+		first.getStyle().set("margin", "0 0 var(--lumo-space-m) 0");
+		final Paragraph second = new Paragraph(secondParagraph);
+		second.getStyle().set("margin", "0");
+		final Div text = new Div(first, second);
+		return text;
+	}
+
+	public static void openDeleteConfirmation(final String header, final Runnable confirmAction) {
+		final ConfirmDialog dialog = deleteConfirmation(header, confirmAction);
+		final UI ui = UI.getCurrent();
+		if (ui != null) {
+			ui.add(dialog);
+		}
+		dialog.open();
+	}
+
+	public static void openArchiveConfirmation(final String header, final String text, final Runnable confirmAction) {
+		final ConfirmDialog dialog = archiveConfirmation(header, text, confirmAction);
+		final UI ui = UI.getCurrent();
+		if (ui != null) {
+			ui.add(dialog);
+		}
+		dialog.open();
+	}
+
+	public static void openArchiveConfirmation(final String header, final String firstParagraph,
+			final String secondParagraph, final Runnable confirmAction) {
+		final ConfirmDialog dialog = archiveConfirmation(header, firstParagraph, secondParagraph, confirmAction);
+		final UI ui = UI.getCurrent();
+		if (ui != null) {
+			ui.add(dialog);
+		}
+		dialog.open();
 	}
 }

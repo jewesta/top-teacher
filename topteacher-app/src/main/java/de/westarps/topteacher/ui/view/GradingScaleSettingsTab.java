@@ -9,11 +9,9 @@ import org.springframework.core.annotation.Order;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.ColumnTextAlign;
-import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -31,8 +29,11 @@ import de.westarps.topteacher.model.GradingScale;
 import de.westarps.topteacher.model.GradingScaleRange;
 import de.westarps.topteacher.model.Lifecycle;
 import de.westarps.topteacher.ui.component.AbstractFormEditor;
+import de.westarps.topteacher.ui.component.Buttons;
 import de.westarps.topteacher.ui.component.FormBinders;
+import de.westarps.topteacher.ui.component.GradingScaleRangeGridGroup;
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
+import de.westarps.topteacher.ui.component.TopTeacherDialogs;
 
 @Order(7)
 @UIScope
@@ -46,18 +47,20 @@ public class GradingScaleSettingsTab extends SplitListDetailView<GradingScale> i
 	private final TextField name = new TextField("Name");
 	private final IntegerField maxPoints = new IntegerField("Maximalpunktzahl");
 	private final ComboBox<Lifecycle> lifecycle = new ComboBox<>("Status");
-	private final Grid<RangeFormData> rangeGrid = new Grid<>(RangeFormData.class, false);
+	private final GradingScaleRangeGridGroup<RangeFormData> rangeGrids = GradingScaleRangeGridGroup.editable(
+			RangeFormData.class, RangeFormData::getGradeLevel, RangeFormData::getMinPoints, this::maxPointsDisplayName,
+			() -> valueOrZero(maxPoints.getValue()), this::isRangeReadOnly, this::setMinPoints);
 	private final Binder<GradingScaleFormData> binder = new Binder<>();
-	private final Button newButton = new Button("Neu");
-	private final Button saveButton = new Button();
-	private final Button archiveButton = new Button("Archivieren");
-	private final Span selectionSummary = new Span();
-	private final Span multiSelectionSummary = new Span();
+	private final Button newButton = createNewButton();
+	private final Button saveButton = Buttons.createOrSave();
+	private final Button archiveButton = Buttons.archive();
 	private final Span lockMessage = new Span(
 			"Dieser Notenschlüssel wird bereits von Klausuren verwendet und kann nicht mehr geändert werden.");
 
 	private GradingScale selectedGradingScale;
 	private List<RangeFormData> rangeRows = List.of();
+	private List<Integer> originalRangeMinPoints = List.of();
+	private List<Object> originalEditorValues = List.of();
 	private boolean selectedLocked;
 
 	public GradingScaleSettingsTab(final GradingScaleRepository gradingScaleRepository) {
@@ -65,8 +68,6 @@ public class GradingScaleSettingsTab extends SplitListDetailView<GradingScale> i
 				new MultiSelectionGrid<>(GradingScale.class, false));
 		this.gradingScaleRepository = gradingScaleRepository;
 
-		addClassNames("tt-settings-content", "tt-settings-master-data-content");
-		configureRangeGrid();
 		configureEditor();
 		initializeView();
 		refreshGrid();
@@ -95,8 +96,8 @@ public class GradingScaleSettingsTab extends SplitListDetailView<GradingScale> i
 
 	@Override
 	protected Component createSingleSelectEditor() {
-		final VerticalLayout rangeContent = new VerticalLayout(createEditorForm(), rangeGrid);
-		rangeContent.addClassName("tt-designer-content");
+		final VerticalLayout rangeContent = new VerticalLayout(createEditorForm(), rangeGrids);
+		rangeContent.addClassName("tt-grading-scale-settings-range-content");
 		rangeContent.setPadding(false);
 		rangeContent.setSpacing(false);
 		rangeContent.setSizeFull();
@@ -112,8 +113,7 @@ public class GradingScaleSettingsTab extends SplitListDetailView<GradingScale> i
 
 	@Override
 	protected Component createMultiSelectEditor() {
-		multiSelectionSummary.addClassName("tt-selection-summary");
-		return AbstractFormEditor.contentOnly("tt-grading-scale-settings-bulk-editor", List.of(multiSelectionSummary));
+		return AbstractFormEditor.contentOnly("tt-grading-scale-settings-bulk-editor", List.of());
 	}
 
 	@Override
@@ -124,6 +124,21 @@ public class GradingScaleSettingsTab extends SplitListDetailView<GradingScale> i
 	@Override
 	protected String getEditorTabLabel() {
 		return "Notenschlüssel";
+	}
+
+	@Override
+	protected String getCreateEditorStatus() {
+		return "Neuer Notenschlüssel";
+	}
+
+	@Override
+	protected String getSingleEditorStatus(final GradingScale selectedItem) {
+		return "Notenschlüssel bearbeiten";
+	}
+
+	@Override
+	protected String getMultiEditorStatus(final List<GradingScale> selectedItems) {
+		return selectedItems.size() + " Notenschlüssel ausgewählt";
 	}
 
 	@Override
@@ -158,13 +173,7 @@ public class GradingScaleSettingsTab extends SplitListDetailView<GradingScale> i
 	}
 
 	private Component createEditorToolbar() {
-		selectionSummary.addClassName("tt-selection-summary");
 		lockMessage.addClassName("tt-settings-description");
-
-		final VerticalLayout state = new VerticalLayout(selectionSummary, lockMessage);
-		state.addClassName("tt-grading-scale-settings-editor-state");
-		state.setPadding(false);
-		state.setSpacing(false);
 
 		final HorizontalLayout actions = new HorizontalLayout(saveButton, archiveButton);
 		actions.addClassNames("tt-editor-actions", "tt-grading-scale-settings-actions");
@@ -172,14 +181,12 @@ public class GradingScaleSettingsTab extends SplitListDetailView<GradingScale> i
 		actions.setPadding(false);
 		actions.setSpacing(true);
 
-		final HorizontalLayout toolbar = new HorizontalLayout(state, actions);
-		toolbar.addClassNames("tt-designer-toolbar", "tt-grading-scale-settings-detail-toolbar");
+		final VerticalLayout toolbar = new VerticalLayout(lockMessage, actions);
+		toolbar.addClassName("tt-grading-scale-settings-detail-toolbar");
 		toolbar.setAlignItems(Alignment.START);
 		toolbar.setPadding(false);
 		toolbar.setSpacing(false);
 		toolbar.setWidthFull();
-		toolbar.setFlexGrow(1, state);
-		toolbar.setFlexGrow(0, actions);
 		return toolbar;
 	}
 
@@ -191,20 +198,6 @@ public class GradingScaleSettingsTab extends SplitListDetailView<GradingScale> i
 		return form;
 	}
 
-	private void configureRangeGrid() {
-		rangeGrid.addColumn(row -> row.getGradeLevel().getPoints()).setHeader("Notenpunkte")
-				.setTextAlign(ColumnTextAlign.END).setWidth("8rem").setFlexGrow(0);
-		rangeGrid.addColumn(row -> row.getGradeLevel().getDisplayName()).setHeader("Note").setWidth("12rem")
-				.setFlexGrow(0);
-		rangeGrid.addComponentColumn(this::minPointsField).setHeader("ab Punkte").setTextAlign(ColumnTextAlign.CENTER)
-				.setWidth("8rem").setFlexGrow(0);
-		rangeGrid.addColumn(this::maxPointsDisplayName).setHeader("bis Punkte").setTextAlign(ColumnTextAlign.END)
-				.setWidth("8rem").setFlexGrow(0);
-		rangeGrid.setSelectionMode(Grid.SelectionMode.NONE);
-		rangeGrid.setAllRowsVisible(true);
-		rangeGrid.setWidthFull();
-	}
-
 	private void configureEditor() {
 		name.setClearButtonVisible(true);
 		name.setValueChangeMode(ValueChangeMode.EAGER);
@@ -213,17 +206,21 @@ public class GradingScaleSettingsTab extends SplitListDetailView<GradingScale> i
 		maxPoints.setMin(0);
 		maxPoints.setStepButtonsVisible(true);
 		maxPoints.setRequiredIndicatorVisible(true);
-		maxPoints.addValueChangeListener(event -> refreshRangeGrid());
+		maxPoints.addValueChangeListener(event -> {
+			refreshRangeGrids();
+			updateSaveButtonState();
+		});
 
 		lifecycle.setItems(Lifecycle.values());
 		lifecycle.setItemLabelGenerator(Lifecycle::getDisplayName);
 		lifecycle.setRequiredIndicatorVisible(true);
 
-		saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 		saveButton.addClickListener(event -> saveGradingScale());
 
-		archiveButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
-		archiveButton.addClickListener(event -> archiveSelectedGradingScale());
+		archiveButton.addClickListener(event -> TopTeacherDialogs.openArchiveConfirmation("Notenschlüssel archivieren?",
+				"Der Notenschlüssel wird archiviert. Das bedeutet, dass der Notenschlüssel standardmäßig nicht mehr angezeigt wird und nicht neu zugeordnet werden kann.",
+				"Bestehende Klausuren behalten ihn weiterhin. Du kannst die Archivierung wieder rückgängig machen.",
+				this::archiveSelectedGradingScale));
 
 		newButton.addClickListener(event -> {
 			clearSelection();
@@ -238,6 +235,8 @@ public class GradingScaleSettingsTab extends SplitListDetailView<GradingScale> i
 				.bind(GradingScaleFormData::getMaxPoints, GradingScaleFormData::setMaxPoints);
 		binder.forField(lifecycle).asRequired("Status ist erforderlich.").bind(GradingScaleFormData::getLifecycle,
 				GradingScaleFormData::setLifecycle);
+		binder.setChangeDetectionEnabled(true);
+		binder.addValueChangeListener(event -> updateSaveButtonState());
 	}
 
 	private void showGradingScale(final GradingScale gradingScale) {
@@ -248,15 +247,16 @@ public class GradingScaleSettingsTab extends SplitListDetailView<GradingScale> i
 		}
 
 		rangeRows = rowsFor(gradingScale);
-		rangeGrid.setItems(rangeRows);
+		originalRangeMinPoints = currentRangeMinPoints();
+		setRangeGridItems();
 		readEditor(new GradingScaleFormData(gradingScale.name(), gradingScale.maxPoints(), gradingScale.lifecycle()));
+		resetEditorBaseline();
 		updateEditorState();
 	}
 
 	private void showMultiSelectEditor(final List<GradingScale> gradingScales) {
 		selectedGradingScale = null;
 		selectedLocked = false;
-		multiSelectionSummary.setText(gradingScales.size() + " Notenschlüssel ausgewählt");
 	}
 
 	private void saveGradingScale() {
@@ -310,8 +310,10 @@ public class GradingScaleSettingsTab extends SplitListDetailView<GradingScale> i
 		selectedGradingScale = null;
 		selectedLocked = false;
 		rangeRows = defaultRows();
-		rangeGrid.setItems(rangeRows);
+		originalRangeMinPoints = currentRangeMinPoints();
+		setRangeGridItems();
 		readEditor(new GradingScaleFormData("", DEFAULT_MAX_POINTS, Lifecycle.ACTIVE));
+		resetEditorBaseline();
 		updateEditorState();
 	}
 
@@ -323,32 +325,49 @@ public class GradingScaleSettingsTab extends SplitListDetailView<GradingScale> i
 	private void updateEditorState() {
 		final boolean editMode = selectedGradingScale != null;
 		selectedLocked = editMode && gradingScaleRepository.isUsedByExam(selectedGradingScale.id());
-		selectionSummary.setText(editMode ? "Notenschlüssel bearbeiten" : "Neuer Notenschlüssel");
-		saveButton.setText(editMode ? "Speichern" : "Anlegen");
-		saveButton.setEnabled(!selectedLocked);
+		Buttons.setCreateOrSaveMode(saveButton, editMode);
 		archiveButton.setVisible(editMode && selectedGradingScale.lifecycle() == Lifecycle.ACTIVE && !selectedLocked);
 		name.setReadOnly(selectedLocked);
 		maxPoints.setReadOnly(selectedLocked);
 		lifecycle.setVisible(editMode);
 		lifecycle.setReadOnly(selectedLocked);
 		lockMessage.setVisible(selectedLocked);
-		refreshRangeGrid();
+		refreshRangeGrids();
+		updateSaveButtonState();
 	}
 
-	private Component minPointsField(final RangeFormData row) {
-		final IntegerField field = new IntegerField();
-		field.setAriaLabel("Mindestpunktzahl für " + row.getGradeLevel().getDisplayName());
-		field.setMin(0);
-		field.setMax(valueOrZero(maxPoints.getValue()));
-		field.setStepButtonsVisible(true);
-		field.setReadOnly(selectedLocked || row.getGradeLevel() == GradeLevel.UNGENUEGEND);
-		field.setValue(row.getMinPoints());
-		field.addValueChangeListener(event -> {
-			row.setMinPoints(valueOrZero(event.getValue()));
-			refreshRangeGrid();
-		});
-		field.setWidth("7rem");
-		return field;
+	private void setMinPoints(final RangeFormData row, final Integer minPoints) {
+		row.setMinPoints(valueOrZero(minPoints));
+		refreshRangeGrids();
+		updateSaveButtonState();
+	}
+
+	private void updateSaveButtonState() {
+		saveButton.setEnabled(!selectedLocked && (editorFieldsHaveChanges() || rangeRowsHaveChanges()));
+	}
+
+	private void resetEditorBaseline() {
+		originalEditorValues = currentEditorValues();
+	}
+
+	private boolean editorFieldsHaveChanges() {
+		return !currentEditorValues().equals(originalEditorValues);
+	}
+
+	private List<Object> currentEditorValues() {
+		return binder.getFields().map(field -> (Object) field.getValue()).toList();
+	}
+
+	private boolean rangeRowsHaveChanges() {
+		return !currentRangeMinPoints().equals(originalRangeMinPoints);
+	}
+
+	private List<Integer> currentRangeMinPoints() {
+		return rangeRows.stream().map(RangeFormData::getMinPoints).toList();
+	}
+
+	private boolean isRangeReadOnly(final RangeFormData row) {
+		return selectedLocked;
 	}
 
 	private String maxPointsDisplayName(final RangeFormData row) {
@@ -405,8 +424,12 @@ public class GradingScaleSettingsTab extends SplitListDetailView<GradingScale> i
 		return rows;
 	}
 
-	private void refreshRangeGrid() {
-		rangeGrid.getDataProvider().refreshAll();
+	private void setRangeGridItems() {
+		rangeGrids.setItems(rangeRows);
+	}
+
+	private void refreshRangeGrids() {
+		rangeGrids.refreshAll();
 	}
 
 	private String usedLabel(final GradingScale gradingScale) {

@@ -27,6 +27,13 @@ public class DatabaseInitializationService {
 	private static final String BASE_DATA_SCRIPT = "classpath:db/base-data.sql";
 	private static final String DEMO_DATA_SCRIPT = "classpath:db/demo-data.sql";
 	private static final String PROMPT_ON_FIRST_START_PROPERTY = "tt.database.initialization.prompt-on-first-start";
+	private static final String BASE_GRADING_SCALE_VALUES = """
+			values
+			    ('Einführungsphase', 100),
+			    ('Qualifikationsphase ab ''25', 150),
+			    ('Qualifikationsphase ab ''25', 160),
+			    ('Qualifikationsphase ab ''25', 200)
+			""";
 	private static final String CORE_SUBJECT_VALUES = """
 			values
 			    ('Deutsch'),
@@ -109,18 +116,30 @@ public class DatabaseInitializationService {
 		}
 		if (count("""
 				select count(*)
-				from grading_scale
-				where name not in ('Einführungsphase', 'Qualifikationsphase')
+				from grading_scale gs
+				where not exists (
+				    select 1
+				    from (
+				""" + BASE_GRADING_SCALE_VALUES + """
+				    ) base_grading_scale(name, max_points)
+				    where base_grading_scale.name = gs.name
+				      and base_grading_scale.max_points = gs.max_points
+				)
 				""") > 0) {
 			return Optional.of("custom grading scales");
 		}
 		if (count("""
 				select count(*)
-				from grading_scale_range
-				where grading_scale_id not in (
-				    select id
-				    from grading_scale
-				    where name in ('Einführungsphase', 'Qualifikationsphase')
+				from grading_scale_range gsr
+				where not exists (
+				    select 1
+				    from grading_scale gs
+				    join (
+				""" + BASE_GRADING_SCALE_VALUES + """
+				    ) base_grading_scale(name, max_points)
+				        on base_grading_scale.name = gs.name
+				       and base_grading_scale.max_points = gs.max_points
+				    where gs.id = gsr.grading_scale_id
 				)
 				""") > 0) {
 			return Optional.of("custom grading scale ranges");
