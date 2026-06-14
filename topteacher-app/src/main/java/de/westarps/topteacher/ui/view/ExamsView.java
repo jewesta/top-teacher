@@ -18,6 +18,8 @@ import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.datepicker.DatePicker.DatePickerI18n;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -40,6 +42,7 @@ import de.westarps.topteacher.ui.component.FormBinders;
 import de.westarps.topteacher.ui.component.GradingScaleViewer;
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
 import de.westarps.topteacher.ui.component.PupilAssignmentGrid;
+import de.westarps.topteacher.ui.component.RefreshRegistry;
 import de.westarps.topteacher.ui.component.loe.ExamEvaluationViewer;
 import de.westarps.topteacher.ui.component.loe.ExamNotesEditor;
 import de.westarps.topteacher.ui.component.loe.ExamResultsEditor;
@@ -50,6 +53,14 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 
 	private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
+	private enum ExamContextChange {
+		PUPILS, LEVEL_OF_EXPECTATIONS, RESULTS
+	}
+
+	private enum ExamContextTarget {
+		PUPILS, LEVEL_OF_EXPECTATIONS_TAB_LABEL, LEVEL_OF_EXPECTATIONS, RESULTS, EVALUATION
+	}
+
 	private final CourseRepository courseRepository;
 	private final ExamRepository examRepository;
 	private final LevelOfExpectationsRepository levelOfExpectationsRepository;
@@ -58,6 +69,8 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 	private final ExamResultsEditor examResultsEditor;
 	private final ExamEvaluationViewer examEvaluationViewer;
 	private final GradingScaleViewer gradingScaleViewer;
+	private final RefreshRegistry<ExamContextChange, ExamContextTarget> refreshRegistry = new RefreshRegistry<>(
+			ExamContextChange.class, ExamContextTarget.class, this::selectedExamContextTarget);
 	private final ComboBox<Course> courseFilter = new ComboBox<>("Kurs");
 	private final TextField title = new TextField("Titel");
 	private final DatePicker date = new DatePicker("Datum");
@@ -103,6 +116,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		configureCourseFilter();
 		configureEditors();
 		configurePupilAssignments();
+		configureRefreshRegistry();
 		initializeView();
 		refreshCourseFilter();
 		clearSingleEditor();
@@ -213,6 +227,38 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 	private void configurePupilAssignments() {
 		pupilAssignmentGrid.setAssignAction(this::assignPupilToExam);
 		pupilAssignmentGrid.setRemoveAction(this::removePupilFromExam);
+	}
+
+	private void configureRefreshRegistry() {
+		refreshRegistry.registerTarget(ExamContextTarget.PUPILS, this::refreshPupilAssignments);
+		refreshRegistry.registerEagerTarget(ExamContextTarget.LEVEL_OF_EXPECTATIONS_TAB_LABEL,
+				() -> updateLevelOfExpectationsTabLabel(selectedExam));
+		refreshRegistry.registerTarget(ExamContextTarget.LEVEL_OF_EXPECTATIONS,
+				() -> levelOfExpectationsEditor.setExam(selectedExam));
+		refreshRegistry.registerTarget(ExamContextTarget.RESULTS, () -> examResultsEditor.setExam(selectedExam));
+		refreshRegistry.registerTarget(ExamContextTarget.EVALUATION, () -> examEvaluationViewer.setExam(selectedExam));
+
+		refreshRegistry.registerDependency(ExamContextChange.PUPILS, ExamContextTarget.RESULTS);
+		refreshRegistry.registerDependency(ExamContextChange.PUPILS, ExamContextTarget.EVALUATION);
+		refreshRegistry.registerDependency(ExamContextChange.LEVEL_OF_EXPECTATIONS,
+				ExamContextTarget.LEVEL_OF_EXPECTATIONS_TAB_LABEL);
+		refreshRegistry.registerDependency(ExamContextChange.LEVEL_OF_EXPECTATIONS, ExamContextTarget.RESULTS);
+		refreshRegistry.registerDependency(ExamContextChange.LEVEL_OF_EXPECTATIONS, ExamContextTarget.EVALUATION);
+		refreshRegistry.registerDependency(ExamContextChange.RESULTS,
+				ExamContextTarget.LEVEL_OF_EXPECTATIONS_TAB_LABEL);
+		refreshRegistry.registerDependency(ExamContextChange.RESULTS, ExamContextTarget.PUPILS);
+		refreshRegistry.registerDependency(ExamContextChange.RESULTS, ExamContextTarget.LEVEL_OF_EXPECTATIONS);
+		refreshRegistry.registerDependency(ExamContextChange.RESULTS, ExamContextTarget.EVALUATION);
+
+		levelOfExpectationsEditor
+				.setChangeHandler(() -> refreshRegistry.publish(ExamContextChange.LEVEL_OF_EXPECTATIONS));
+		examResultsEditor.setChangeHandler(() -> refreshRegistry.publish(ExamContextChange.RESULTS));
+		getContextTabs().addSelectedChangeListener(event -> {
+			final ExamContextTarget selectedTarget = selectedExamContextTarget();
+			if (selectedTarget != null) {
+				refreshRegistry.refreshIfStale(selectedTarget);
+			}
+		});
 	}
 
 	private void refreshCourseFilter() {
@@ -386,7 +432,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 
 		if (levelOfExpectationsTab == null) {
 			pupilsTab = getContextTabs().add("Schüler:innen", pupilAssignmentGrid);
-			levelOfExpectationsTab = getContextTabs().add("EH", levelOfExpectationsEditor);
+			levelOfExpectationsTab = getContextTabs().add(new Span("EH"), levelOfExpectationsEditor);
 			notesTab = getContextTabs().add("Notizen", examNotesEditor);
 			resultsTab = getContextTabs().add("Ergebnisse", examResultsEditor);
 			evaluationTab = getContextTabs().add("Auswertung", examEvaluationViewer);
@@ -394,11 +440,13 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		}
 
 		refreshPupilAssignments();
+		updateLevelOfExpectationsTabLabel(exam);
 		levelOfExpectationsEditor.setExam(exam);
 		examNotesEditor.setExam(exam);
 		examResultsEditor.setExam(exam);
 		examEvaluationViewer.setExam(exam);
 		gradingScaleViewer.setCourse(selectedCourse);
+		refreshRegistry.clear();
 	}
 
 	private void removeExamContextTabs() {
@@ -409,6 +457,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 			examResultsEditor.setExam(null);
 			examEvaluationViewer.setExam(null);
 			gradingScaleViewer.setCourse(null);
+			refreshRegistry.clear();
 			return;
 		}
 
@@ -437,6 +486,47 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		examResultsEditor.setExam(null);
 		examEvaluationViewer.setExam(null);
 		gradingScaleViewer.setCourse(null);
+		refreshRegistry.clear();
+	}
+
+	private ExamContextTarget selectedExamContextTarget() {
+		final Tab selectedTab = getContextTabs().getSelectedTab();
+		if (selectedTab == pupilsTab) {
+			return ExamContextTarget.PUPILS;
+		}
+		if (selectedTab == levelOfExpectationsTab) {
+			return ExamContextTarget.LEVEL_OF_EXPECTATIONS;
+		}
+		if (selectedTab == resultsTab) {
+			return ExamContextTarget.RESULTS;
+		}
+		if (selectedTab == evaluationTab) {
+			return ExamContextTarget.EVALUATION;
+		}
+		return null;
+	}
+
+	private void updateLevelOfExpectationsTabLabel(final Exam exam) {
+		if (levelOfExpectationsTab == null) {
+			return;
+		}
+
+		final boolean correctionMode = exam != null && levelOfExpectationsRepository.hasResultsForExam(exam.id());
+		levelOfExpectationsTab.removeAll();
+		levelOfExpectationsTab.setLabel("EH");
+		if (correctionMode) {
+			levelOfExpectationsTab.add(levelOfExpectationsLockIcon());
+		}
+		levelOfExpectationsTab.getElement().setAttribute("aria-label",
+				correctionMode ? "EH, Korrekturmodus: Ergebnisse vorhanden." : "EH");
+	}
+
+	private Icon levelOfExpectationsLockIcon() {
+		final Icon lock = VaadinIcon.LOCK.create();
+		lock.addClassName("tt-tab-status-icon");
+		lock.getElement().setAttribute("aria-label", "Korrekturmodus: Ergebnisse vorhanden.");
+		lock.setTooltipText("Korrekturmodus: Ergebnisse vorhanden.");
+		return lock;
 	}
 
 	private void updateEditorEnabled() {
@@ -524,13 +614,17 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 			return;
 		}
 
+		boolean changed = false;
 		try {
 			examRepository.assignPupil(selectedExam.id(), pupil.id());
+			changed = true;
 		} catch (final IllegalArgumentException exception) {
 			Notification.show(exception.getMessage());
 		}
 		refreshPupilAssignments();
-		refreshParticipantConsumers();
+		if (changed) {
+			refreshRegistry.publish(ExamContextChange.PUPILS);
+		}
 	}
 
 	private void removePupilFromExam(final Pupil pupil) {
@@ -538,22 +632,17 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 			return;
 		}
 
+		boolean changed = false;
 		try {
 			examRepository.removePupil(selectedExam.id(), pupil.id());
+			changed = true;
 		} catch (final IllegalArgumentException exception) {
 			Notification.show(exception.getMessage());
 		}
 		refreshPupilAssignments();
-		refreshParticipantConsumers();
-	}
-
-	private void refreshParticipantConsumers() {
-		if (selectedExam == null) {
-			return;
+		if (changed) {
+			refreshRegistry.publish(ExamContextChange.PUPILS);
 		}
-
-		examResultsEditor.setExam(selectedExam);
-		examEvaluationViewer.setExam(selectedExam);
 	}
 
 	private void refreshOriginalExamItems() {

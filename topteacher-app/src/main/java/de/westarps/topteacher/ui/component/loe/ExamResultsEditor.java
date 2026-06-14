@@ -91,6 +91,8 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private Map<Integer, Boolean> persistedCriterionResults = Map.of();
 	private Map<Integer, Integer> persistedRequirementResults = Map.of();
 	private Map<Integer, String> persistedRequirementComments = Map.of();
+	private Runnable changeHandler = () -> {
+	};
 
 	public ExamResultsEditor(final CourseRepository courseRepository, final ExamRepository examRepository,
 			final LevelOfExpectationsRepository levelOfExpectationsRepository,
@@ -115,6 +117,11 @@ public class ExamResultsEditor extends AbstractDesigner {
 		}
 		this.exam = exam;
 		refresh();
+	}
+
+	public void setChangeHandler(final Runnable changeHandler) {
+		this.changeHandler = changeHandler == null ? () -> {
+		} : changeHandler;
 	}
 
 	private void configurePupilSelector() {
@@ -349,6 +356,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 		applyResultState();
 		deleteConfirmation.close();
 		Notification.show("Ergebnisse gelöscht.");
+		notifyChanged();
 	}
 
 	private Component partBlock(final LoePart part) {
@@ -768,6 +776,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 		persistedRequirementComments = requirements.stream()
 				.collect(Collectors.toMap(LoeRequirement::id, this::currentRequirementComment));
 		updateActionButtons();
+		notifyChanged();
 	}
 
 	private void updateActionButtons() {
@@ -832,6 +841,10 @@ public class ExamResultsEditor extends AbstractDesigner {
 		}
 		pointRules.cappedAchievedTotal(requirements, this::currentRequirementPoints);
 		return true;
+	}
+
+	private void notifyChanged() {
+		changeHandler.run();
 	}
 
 	private static int valueOrZero(final Integer value) {

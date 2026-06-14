@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.textfield.TextField;
@@ -21,17 +22,18 @@ final class LoeCategorySection extends AbstractLoeSection<LoeCategory> {
 
 	LoeCategorySection(final LoeCategory category, final List<LoeCategory> siblings, final List<LoeTaskSection> tasks,
 			final LoeSectionComponents components, final LoeCollapseState collapseState, final Handler handler,
-			final Supplier<LoePoints> pointsSupplier, final List<String> descendantKeys) {
+			final Supplier<LoePoints> pointsSupplier, final List<String> descendantKeys, final boolean correctionMode) {
 		this(category, siblings, tasks, components, collapseState, handler, descendantKeys,
 				components.summaryTitleField(category.title()),
 				components.categoryCommentEditor(category.descriptionMarkdown(), "Beschreibung"),
-				components.pointBadge("Summe", pointsSupplier));
+				components.pointBadge("Summe", pointsSupplier), correctionMode);
 	}
 
 	private LoeCategorySection(final LoeCategory category, final List<LoeCategory> siblings,
 			final List<LoeTaskSection> tasks, final LoeSectionComponents components,
 			final LoeCollapseState collapseState, final Handler handler, final List<String> descendantKeys,
-			final TextField title, final MarkdownEditor description, final LoePointBadge pointBadge) {
+			final TextField title, final MarkdownEditor description, final LoePointBadge pointBadge,
+			final boolean correctionMode) {
 		super(category, "tt-eh-category", components.summary("Leistungskategorie", title, pointBadge), pointBadge,
 				tasks);
 		this.title = title;
@@ -41,12 +43,16 @@ final class LoeCategorySection extends AbstractLoeSection<LoeCategory> {
 		this.savedDescriptionMarkdown = normalized(category.descriptionMarkdown());
 		components.trackDirty(title);
 		components.trackDirty(description);
+		final Button addTask = components.commandButton("Teilaufgabe hinzufügen", VaadinIcon.PLUS,
+				event -> handler.addTask(category));
+		final Button delete = components.deleteButton(event -> handler.delete(category));
+		if (correctionMode) {
+			components.lockCorrectionModeAction(addTask);
+			components.lockCorrectionModeAction(delete);
+		}
 		addToBody(components.markdownBlock("Beschreibung", description),
-				editorBlockWithMoveButtons(components, siblings, handler,
-						List.of(components.commandButton("Teilaufgabe hinzufügen", VaadinIcon.PLUS,
-								event -> handler.addTask(category))),
-						List.of(collapseState.toggleButton(descendantKeys),
-								components.deleteButton(event -> handler.delete(category)))));
+				editorBlockWithMoveButtons(components, siblings, handler, List.of(addTask),
+						List.of(collapseState.toggleButton(descendantKeys), delete), correctionMode));
 		addToBody(tasks);
 	}
 

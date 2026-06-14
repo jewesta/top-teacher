@@ -26,6 +26,7 @@ final class LoeSectionComponents {
 
 	static final MarkdownTag CRITERION_TAG = MarkdownTag.nextNumber(LoeCriterionParser.TAG_NAMESPACE,
 			"Kriterium markieren");
+	static final String CORRECTION_MODE_TOOLTIP = "Korrekturmodus: Ergebnisse vorhanden. Struktur, Punkte und Kriteriennummern sind gesperrt.";
 
 	private final LoeSaveController saveController;
 
@@ -135,6 +136,11 @@ final class LoeSectionComponents {
 		return saveController.register(button);
 	}
 
+	Button discardButton() {
+		final Button button = commandButton("Verwerfen", VaadinIcon.ROTATE_LEFT, event -> saveController.discard());
+		return saveController.register(button);
+	}
+
 	Button commandButton(final String text, final VaadinIcon icon,
 			final ComponentEventListener<ClickEvent<Button>> listener) {
 		final Button button = new Button(text, icon.create(), listener);
@@ -156,6 +162,13 @@ final class LoeSectionComponents {
 		final Button button = iconButton(label, offset < 0 ? VaadinIcon.ARROW_UP : VaadinIcon.ARROW_DOWN, listener);
 		final int index = siblings.indexOf(item);
 		button.setEnabled(index >= 0 && index + offset >= 0 && index + offset < siblings.size());
+		return button;
+	}
+
+	<T> Button moveButton(final String label, final int offset, final List<T> siblings, final T item,
+			final ComponentEventListener<ClickEvent<Button>> listener, final boolean correctionMode) {
+		final Button button = moveButton(label, offset, siblings, item, listener);
+		applyCorrectionModeLock(button, correctionMode);
 		return button;
 	}
 
@@ -192,12 +205,32 @@ final class LoeSectionComponents {
 	<T> List<Component> actionComponentsWithMoveButtons(final List<T> siblings, final T item,
 			final LoeSectionHandler<T> handler, final Collection<? extends Component> leadingActions,
 			final Collection<? extends Component> trailingActions) {
+		return actionComponentsWithMoveButtons(siblings, item, handler, leadingActions, trailingActions, false);
+	}
+
+	<T> List<Component> actionComponentsWithMoveButtons(final List<T> siblings, final T item,
+			final LoeSectionHandler<T> handler, final Collection<? extends Component> leadingActions,
+			final Collection<? extends Component> trailingActions, final boolean correctionMode) {
 		final List<Component> actionComponents = new ArrayList<>();
 		actionComponents.addAll(leadingActions);
-		actionComponents.add(moveButton("Nach oben", -1, siblings, item, event -> handler.move(item, -1)));
-		actionComponents.add(moveButton("Nach unten", 1, siblings, item, event -> handler.move(item, 1)));
+		actionComponents
+				.add(moveButton("Nach oben", -1, siblings, item, event -> handler.move(item, -1), correctionMode));
+		actionComponents
+				.add(moveButton("Nach unten", 1, siblings, item, event -> handler.move(item, 1), correctionMode));
 		actionComponents.addAll(trailingActions);
 		return actionComponents;
+	}
+
+	void lockCorrectionModeAction(final Component component) {
+		applyCorrectionModeLock(component, true);
+	}
+
+	private void applyCorrectionModeLock(final Component component, final boolean correctionMode) {
+		if (!correctionMode || !(component instanceof Button button)) {
+			return;
+		}
+		button.setEnabled(false);
+		button.setTooltipText(CORRECTION_MODE_TOOLTIP);
 	}
 
 	void trackDirty(final HasValue<?, ?> field) {

@@ -1,6 +1,7 @@
 package de.westarps.topteacher.ui.component.loe;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
@@ -10,11 +11,13 @@ import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.html.Span;
@@ -31,6 +34,7 @@ import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeTask;
 import de.westarps.topteacher.ui.component.FullscreenButton;
+import de.westarps.vaadin.markdown.MarkdownEditor;
 
 class LevelOfExpectationsEditorTests {
 
@@ -118,24 +122,30 @@ class LevelOfExpectationsEditorTests {
 		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repository);
 		editor.setExam(EXAM);
 		final List<Button> saveButtons = saveButtons(editor);
+		final List<Button> discardButtons = discardButtons(editor);
 
 		assertThat(saveButtons).hasSize(1).extracting(Button::isEnabled).containsOnly(false);
+		assertThat(discardButtons).hasSize(1).extracting(Button::isEnabled).containsOnly(false);
 
 		components(editor, IntegerField.class).getFirst().setValue(7);
 
 		assertThat(saveButtons).extracting(Button::isEnabled).containsOnly(true);
+		assertThat(discardButtons).extracting(Button::isEnabled).containsOnly(true);
 
 		saveButtons.getFirst().click();
 
 		verify(repository).saveRequirement(new LoeRequirement(REQUIREMENT.id(), REQUIREMENT.taskId(),
 				REQUIREMENT.descriptionMarkdown(), 7, REQUIREMENT.bonus(), REQUIREMENT.sortOrder()));
 		assertThat(saveButtons).extracting(Button::isEnabled).containsOnly(false);
+		assertThat(discardButtons).extracting(Button::isEnabled).containsOnly(false);
 	}
 
 	@Test
 	void titleFieldsAlsoControlSaveButtonState() {
 		final LevelOfExpectationsRepository repository = repositoryWithHierarchy();
 		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repository);
+		final AtomicInteger changes = new AtomicInteger();
+		editor.setChangeHandler(changes::incrementAndGet);
 		editor.setExam(EXAM);
 		clearInvocations(repository);
 		final List<Button> saveButtons = saveButtons(editor);
@@ -152,6 +162,70 @@ class LevelOfExpectationsEditorTests {
 
 		verify(repository).savePart(new LoePart(PART.id(), PART.examId(), "Klausurteil X", PART.sortOrder()));
 		assertThat(saveButtons).extracting(Button::isEnabled).containsOnly(false);
+		assertThat(changes).hasValue(1);
+	}
+
+	@Test
+	void correctionModeLocksStructureButKeepsTextCorrectionsEditable() {
+		final LevelOfExpectationsRepository repository = repositoryWithHierarchy();
+		when(repository.hasResultsForExam(EXAM.id())).thenReturn(true);
+		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repository);
+
+		editor.setExam(EXAM);
+
+		assertThat(button(editor, "Klausurteil hinzufügen").isEnabled()).isFalse();
+		assertThat(button(editor, "Leistungskategorie hinzufügen").isEnabled()).isFalse();
+		assertThat(button(editor, "Teilaufgabe hinzufügen").isEnabled()).isFalse();
+		assertThat(button(editor, "Anforderung hinzufügen").isEnabled()).isFalse();
+		assertThat(buttonsByAriaLabel(editor, "Löschen")).extracting(Button::isEnabled).containsOnly(false);
+		assertThat(buttonsByAriaLabel(editor, "Nach oben")).extracting(Button::isEnabled).containsOnly(false);
+		assertThat(buttonsByAriaLabel(editor, "Nach unten")).extracting(Button::isEnabled).containsOnly(false);
+		assertThat(components(editor, IntegerField.class)).extracting(IntegerField::isEnabled).containsOnly(false);
+		assertThat(bonusButtons(editor)).extracting(Button::isEnabled).containsOnly(false);
+
+		final TextField partTitle = titleField(editor, PART.title());
+		partTitle.setValue("Klausurteil Alpha");
+		saveButtons(editor).getFirst().click();
+
+		verify(repository).savePart(new LoePart(PART.id(), PART.examId(), "Klausurteil Alpha", PART.sortOrder()));
+	}
+
+	@Test
+	void discardRestoresSavedLevelOfExpectationsAfterBlockedCorrectionModeEdit() {
+		final String savedDescription = "Nutzt die [korrekte Zeitform](eh:1) und [präzise Wortwahl](eh:2).";
+		final LoeRequirement taggedRequirement = new LoeRequirement(REQUIREMENT.id(), REQUIREMENT.taskId(),
+				savedDescription, REQUIREMENT.maxPoints(), REQUIREMENT.bonus(), REQUIREMENT.sortOrder());
+		final LevelOfExpectationsRepository repository = repositoryWithHierarchy(taggedRequirement);
+		when(repository.hasResultsForExam(EXAM.id())).thenReturn(true);
+		final UI ui = new UI();
+		UI.setCurrent(ui);
+		try {
+			final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repository);
+
+			editor.setExam(EXAM);
+			final MarkdownEditor requirementDescription = markdownEditor(editor, savedDescription);
+			final Button saveButton = saveButtons(editor).getFirst();
+			final Button discardButton = discardButtons(editor).getFirst();
+
+			requirementDescription.setValue("Nutzt die korrekte Zeitform und präzise Wortwahl.");
+
+			assertThat(saveButton.isEnabled()).isTrue();
+			assertThat(discardButton.isEnabled()).isTrue();
+
+			saveButton.click();
+
+			verify(repository, never()).saveRequirement(any());
+			assertThat(saveButton.isEnabled()).isTrue();
+			assertThat(discardButton.isEnabled()).isTrue();
+
+			discardButton.click();
+
+			assertThat(markdownEditor(editor, savedDescription).getValue()).isEqualTo(savedDescription);
+			assertThat(saveButtons(editor)).extracting(Button::isEnabled).containsOnly(false);
+			assertThat(discardButtons(editor)).extracting(Button::isEnabled).containsOnly(false);
+		} finally {
+			UI.setCurrent(null);
+		}
 	}
 
 	@Test
@@ -333,11 +407,15 @@ class LevelOfExpectationsEditorTests {
 	}
 
 	private static LevelOfExpectationsRepository repositoryWithHierarchy() {
+		return repositoryWithHierarchy(REQUIREMENT);
+	}
+
+	private static LevelOfExpectationsRepository repositoryWithHierarchy(final LoeRequirement requirement) {
 		final LevelOfExpectationsRepository repository = mock(LevelOfExpectationsRepository.class);
 		when(repository.findPartsByExamId(EXAM.id())).thenReturn(List.of(PART));
 		when(repository.findCategoriesByExamId(EXAM.id())).thenReturn(List.of(CATEGORY));
 		when(repository.findTasksByExamId(EXAM.id())).thenReturn(List.of(TASK));
-		when(repository.findRequirementsByExamId(EXAM.id())).thenReturn(List.of(REQUIREMENT));
+		when(repository.findRequirementsByExamId(EXAM.id())).thenReturn(List.of(requirement));
 		return repository;
 	}
 
@@ -390,6 +468,20 @@ class LevelOfExpectationsEditorTests {
 		return components(root, Button.class).stream().filter(button -> "Speichern".equals(button.getText())).toList();
 	}
 
+	private static List<Button> discardButtons(final Component root) {
+		return components(root, Button.class).stream().filter(button -> "Verwerfen".equals(button.getText())).toList();
+	}
+
+	private static Button button(final Component root, final String text) {
+		return components(root, Button.class).stream().filter(button -> text.equals(button.getText())).findFirst()
+				.orElseThrow();
+	}
+
+	private static List<Button> buttonsByAriaLabel(final Component root, final String ariaLabel) {
+		return components(root, Button.class).stream()
+				.filter(button -> ariaLabel.equals(button.getElement().getAttribute("aria-label"))).toList();
+	}
+
 	private static TextField titleField(final Component root, final String value) {
 		return components(root, TextField.class).stream().filter(field -> value.equals(field.getValue())).findFirst()
 				.orElseThrow();
@@ -403,6 +495,11 @@ class LevelOfExpectationsEditorTests {
 	private static List<Button> bonusButtons(final Component root) {
 		return components(root, Button.class).stream()
 				.filter(button -> "toggle-bonus".equals(button.getElement().getAttribute("data-action"))).toList();
+	}
+
+	private static MarkdownEditor markdownEditor(final Component root, final String value) {
+		return components(root, MarkdownEditor.class).stream().filter(editor -> value.equals(editor.getValue()))
+				.findFirst().orElseThrow();
 	}
 
 	private static String collapseIcon(final Button button) {
