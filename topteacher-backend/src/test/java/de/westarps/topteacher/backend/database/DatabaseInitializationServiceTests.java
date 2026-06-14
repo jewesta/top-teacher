@@ -105,19 +105,56 @@ class DatabaseInitializationServiceTests {
 		assertThat(count("""
 				select count(*)
 				from course c
+				join subject
+				    on subject.id = c.subject_id
 				join grading_scale gs
 				    on gs.id = c.grading_scale_id
-				where (c.school_class = 'CLS_10A' and gs.name = 'Einführungsphase')
-				   or (c.school_class = 'CLS_Q1' and gs.name = 'Qualifikationsphase')
+				where (c.school_class = 'CLS_Q2' and subject.name = 'Englisch' and gs.name = 'Qualifikationsphase')
+				   or (c.school_class = 'CLS_Q1' and subject.name = 'Spanisch' and gs.name = 'Qualifikationsphase')
 				""")).isEqualTo(2);
 		assertThat(count("""
 				select count(*)
 				from exam
 				where title in (
-				    'Klausur Windenergie und Klimawandel',
-				    'Klausur Reaktionsgeschwindigkeit und Gleichgewicht'
+				    '1. Klausur Shakespeare',
+				    'Examen No 3: Migración'
 				)
 				""")).isEqualTo(2);
+		assertThat(count("""
+				select count(*)
+				from (
+				    select subject.name, count(*) pupil_count
+				    from course_pupil cp
+				    join course c
+				        on c.id = cp.course_id
+				    join subject
+				        on subject.id = c.subject_id
+				    group by subject.name
+				    having (subject.name = 'Englisch' and count(*) = 5)
+				       or (subject.name = 'Spanisch' and count(*) = 7)
+				) course_roster
+				""")).isEqualTo(2);
+		assertThat(countRows("exam_pupil")).isEqualTo(12);
+		assertThat(count("""
+				select count(*)
+				from (
+				    select e.id
+				    from exam e
+				    join eh_part part
+				        on part.exam_id = e.id
+				    join eh_category category
+				        on category.part_id = part.id
+				    join eh_task task
+				        on task.category_id = category.id
+				    join eh_requirement requirement
+				        on requirement.task_id = task.id
+				    group by e.id
+				    having sum(case when requirement.bonus then 0 else requirement.max_points end) = 150
+				       and sum(case when requirement.bonus then requirement.max_points else 0 end) > 0
+				) demo_exam
+				""")).isEqualTo(2);
+		assertThat(countRows("eh_requirement_result")).isZero();
+		assertThat(countRows("eh_criterion_result")).isZero();
 		assertThat(appSettings.ttDatabaseInitializationCompleted()).isTrue();
 	}
 

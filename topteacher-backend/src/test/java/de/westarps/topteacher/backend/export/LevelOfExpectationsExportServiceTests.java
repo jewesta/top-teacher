@@ -48,25 +48,25 @@ class LevelOfExpectationsExportServiceTests {
 	private SettingsRepository settingsRepository;
 
 	@Test
-	void rendersReviewedDemoLevelOfExpectationsAsPupilHtml() {
-		final DemoSelection demo = findReviewedDemoSelection();
+	void rendersDemoLevelOfExpectationsAsPupilHtml() {
+		final DemoSelection demo = findDemoSelection();
 
 		final String html = exportService.renderPupilHtml(demo.exam().id(), demo.pupil().id());
 
-		assertThat(html).contains("10a_Erdkunde");
+		assertThat(html).contains("Q2_Englisch");
 		assertThat(html).contains("Klausur Nr. 1");
 		assertThat(html).contains("Mia Weber");
-		assertThat(html).contains("Klausur: Windenergie, Klimawandel und Energiewende");
-		assertThat(html).contains("Aufgabe 3: Transformation des Energiesektors beurteilen");
+		assertThat(html).contains("Klausurteil A: Schreiben mit Leseverstehen (integriert)");
+		assertThat(html).contains("Teilaufgabe 2 (Analysis)");
 		assertThat(html).contains("GESAMTPUNKTZAHL KLAUSUR");
-		assertThat(html).contains("gut plus");
+		assertThat(html).contains("ungenügend");
 		assertThat(html).doesNotContain("eh:", "tt-criterion", "tt-criterion-badge");
-		assertThat(html).doesNotContain("Hinweise / Tipps", "Klares Fazit");
+		assertThat(html).doesNotContain("Klares Fazit", "Notiz: ");
 	}
 
 	@Test
-	void rendersReviewedDemoLevelOfExpectationsAsTeacherHtml() {
-		final DemoSelection demo = findReviewedDemoSelection();
+	void rendersDemoLevelOfExpectationsAsTeacherHtml() {
+		final DemoSelection demo = findDemoSelection();
 
 		final String html = exportService.renderTeacherHtml(demo.exam().id(), demo.pupil().id());
 
@@ -74,15 +74,13 @@ class LevelOfExpectationsExportServiceTests {
 		assertThat(html).contains("tt-teacher-watermark");
 		assertThat(html).contains("tt-criterion-highlight");
 		assertThat(html).contains("tt-criterion-marker");
-		assertThat(html).contains("Hinweise / Tipps");
-		assertThat(html).contains("Beim Überarbeiten besonders auf Materialbelege");
-		assertThat(html).contains("Klares Fazit");
-		assertThat(html).doesNotContain("Notiz: ");
+		assertThat(html).contains("Robshaws Gesamtargumentation");
+		assertThat(html).doesNotContain("Klares Fazit", "Notiz: ");
 	}
 
 	@Test
 	void hidesTeacherWatermarkWhenSettingIsDisabled() {
-		final DemoSelection demo = findReviewedDemoSelection();
+		final DemoSelection demo = findDemoSelection();
 
 		settingsRepository.save(AppSettings.TT_LOE_EXPORT_SHOW_WATERMARK_KEY, "false");
 		try {
@@ -95,8 +93,8 @@ class LevelOfExpectationsExportServiceTests {
 	}
 
 	@Test
-	void rendersReviewedDemoLevelOfExpectationsAsA4LandscapePdf() throws IOException {
-		final DemoSelection demo = findReviewedDemoSelection();
+	void rendersDemoLevelOfExpectationsAsA4LandscapePdf() throws IOException {
+		final DemoSelection demo = findDemoSelection();
 
 		final byte[] pdf = exportService.renderPupilA4LandscapePdf(demo.exam().id(), demo.pupil().id());
 
@@ -111,22 +109,21 @@ class LevelOfExpectationsExportServiceTests {
 	}
 
 	@Test
-	void rendersTeacherNotesInReviewedDemoTeacherLevelOfExpectationsPdf() throws IOException {
-		final DemoSelection demo = findReviewedDemoSelection();
+	void omitsTeacherNotesWhenDemoHasNoNotesInTeacherLevelOfExpectationsPdf() throws IOException {
+		final DemoSelection demo = findDemoSelection();
 
 		final byte[] pdf = exportService.renderTeacherA4LandscapePdf(demo.exam().id(), demo.pupil().id());
 
 		try (PDDocument document = PDDocument.load(pdf)) {
 			final String text = new PDFTextStripper().getText(document);
-			assertThat(text).contains("Beim Überarbeiten besonders auf Materialbelege");
-			assertThat(text).contains("Klares Fazit");
-			assertThat(text).doesNotContain("Notiz:");
+			assertThat(text).contains("Lehrer:innen-Version");
+			assertThat(text).doesNotContain("Klares Fazit", "Notiz:");
 		}
 	}
 
 	@Test
-	void exportsReviewedDemoLevelOfExpectationsThroughDownloadController() {
-		final DemoSelection demo = findReviewedDemoSelection();
+	void exportsDemoLevelOfExpectationsThroughDownloadController() {
+		final DemoSelection demo = findDemoSelection();
 
 		final ResponseEntity<byte[]> response = exportController.exportPupilLevelOfExpectations(demo.exam().id(),
 				demo.pupil().id());
@@ -134,32 +131,31 @@ class LevelOfExpectationsExportServiceTests {
 		assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
 		assertThat(response.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_PDF);
 		assertThat(response.getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION))
-				.isEqualTo("attachment; filename=erwartungshorizont-klausur-windenergie-und-klimawandel-weber-mia.pdf");
+				.isEqualTo("attachment; filename=erwartungshorizont-1-klausur-shakespeare-weber-mia.pdf");
 		assertThat(response.getBody()).startsWith("%PDF".getBytes());
 	}
 
 	@Test
-	void exportsReviewedDemoTeacherLevelOfExpectationsThroughDownloadController() {
-		final DemoSelection demo = findReviewedDemoSelection();
+	void exportsDemoTeacherLevelOfExpectationsThroughDownloadController() {
+		final DemoSelection demo = findDemoSelection();
 
 		final ResponseEntity<byte[]> response = exportController.exportTeacherLevelOfExpectations(demo.exam().id(),
 				demo.pupil().id());
 
 		assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
 		assertThat(response.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_PDF);
-		assertThat(response.getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION)).isEqualTo(
-				"attachment; filename=lehrerversion-erwartungshorizont-klausur-windenergie-und-klimawandel-weber-mia.pdf");
+		assertThat(response.getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION))
+				.isEqualTo("attachment; filename=lehrerversion-erwartungshorizont-1-klausur-shakespeare-weber-mia.pdf");
 		assertThat(response.getBody()).startsWith("%PDF".getBytes());
 	}
 
-	private DemoSelection findReviewedDemoSelection() {
+	private DemoSelection findDemoSelection() {
 		final Course course = courseRepository.findAll().stream()
-				.filter(candidate -> candidate.schoolClass() == SchoolClass.CLS_10A)
-				.filter(candidate -> candidate.subject().name().equals("Erdkunde"))
+				.filter(candidate -> candidate.schoolClass() == SchoolClass.CLS_Q2)
+				.filter(candidate -> candidate.subject().name().equals("Englisch"))
 				.filter(candidate -> candidate.schoolYear().getCalendarYear() == 2026).findFirst().orElseThrow();
 		final Exam exam = examRepository.findByCourseId(course.id()).stream()
-				.filter(candidate -> candidate.title().equals("Klausur Windenergie und Klimawandel")).findFirst()
-				.orElseThrow();
+				.filter(candidate -> candidate.title().equals("1. Klausur Shakespeare")).findFirst().orElseThrow();
 		final Pupil pupil = pupilRepository.findAll().stream().filter(candidate -> candidate.name().equals("Mia"))
 				.filter(candidate -> candidate.surname().equals("Weber")).findFirst().orElseThrow();
 		return new DemoSelection(exam, pupil);
