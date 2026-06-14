@@ -34,8 +34,8 @@ insert into course (school_class, subject_id, calendar_year, course_period, life
 select demo.school_class, subject.id, demo.calendar_year, demo.course_period, demo.lifecycle, gs.id
 from (
     values
-        ('CLS_Q2', 'Englisch', 2026, 'FULL_YEAR', 'ACTIVE', 'Qualifikationsphase', 150),
-        ('CLS_Q1', 'Spanisch', 2026, 'FULL_YEAR', 'ACTIVE', 'Qualifikationsphase', 150)
+        ('CLS_Q2', 'Englisch', 2026, 'FULL_YEAR', 'ACTIVE', 'Qualifikationsphase ab ''25', 150),
+        ('CLS_Q1', 'Spanisch', 2026, 'FULL_YEAR', 'ACTIVE', 'Qualifikationsphase ab ''25', 150)
 ) demo(school_class, subject_name, calendar_year, course_period, lifecycle, grading_scale_name, grading_scale_max_points)
 join subject
     on subject.name = demo.subject_name

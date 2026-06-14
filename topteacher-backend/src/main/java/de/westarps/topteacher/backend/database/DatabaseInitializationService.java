@@ -30,8 +30,9 @@ public class DatabaseInitializationService {
 	private static final String BASE_GRADING_SCALE_VALUES = """
 			values
 			    ('Einführungsphase', 100),
-			    ('Qualifikationsphase', 150),
-			    ('Qualifikationsphase', 160)
+			    ('Qualifikationsphase ab ''25', 150),
+			    ('Qualifikationsphase ab ''25', 160),
+			    ('Qualifikationsphase ab ''25', 200)
 			""";
 	private static final String CORE_SUBJECT_VALUES = """
 			values

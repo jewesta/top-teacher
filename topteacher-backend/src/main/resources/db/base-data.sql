@@ -63,13 +63,39 @@ where name = '100 Punkte'
       where gs.name = 'Einführungsphase'
   );
 
+delete from grading_scale_range
+where grading_scale_id in (
+    select old_scale.id
+    from grading_scale old_scale
+    where old_scale.name = 'Qualifikationsphase'
+      and old_scale.max_points in (150, 160)
+      and not exists (
+          select 1
+          from grading_scale new_scale
+          where new_scale.name = 'Qualifikationsphase ab ''25'
+            and new_scale.max_points = old_scale.max_points
+      )
+);
+
+update grading_scale
+set name = 'Qualifikationsphase ab ''25'
+where name = 'Qualifikationsphase'
+  and max_points in (150, 160)
+  and not exists (
+      select 1
+      from grading_scale gs
+      where gs.name = 'Qualifikationsphase ab ''25'
+        and gs.max_points = grading_scale.max_points
+  );
+
 insert into grading_scale (name, max_points, lifecycle)
 select base.name, base.max_points, base.lifecycle
 from (
     values
         ('Einführungsphase', 100, 'ACTIVE'),
-        ('Qualifikationsphase', 150, 'ACTIVE'),
-        ('Qualifikationsphase', 160, 'ACTIVE')
+        ('Qualifikationsphase ab ''25', 150, 'ACTIVE'),
+        ('Qualifikationsphase ab ''25', 160, 'ACTIVE'),
+        ('Qualifikationsphase ab ''25', 200, 'ACTIVE')
 ) base(name, max_points, lifecycle)
 where not exists (
     select 1
@@ -98,38 +124,54 @@ from (
         ('Einführungsphase', 100, 2, 27, 33),
         ('Einführungsphase', 100, 1, 20, 26),
         ('Einführungsphase', 100, 0, 0, 19),
-        ('Qualifikationsphase', 150, 15, 144, 150),
-        ('Qualifikationsphase', 150, 14, 137, 143),
-        ('Qualifikationsphase', 150, 13, 130, 136),
-        ('Qualifikationsphase', 150, 12, 123, 129),
-        ('Qualifikationsphase', 150, 11, 116, 122),
-        ('Qualifikationsphase', 150, 10, 109, 115),
-        ('Qualifikationsphase', 150, 9, 102, 108),
-        ('Qualifikationsphase', 150, 8, 95, 101),
-        ('Qualifikationsphase', 150, 7, 88, 94),
-        ('Qualifikationsphase', 150, 6, 81, 87),
-        ('Qualifikationsphase', 150, 5, 74, 80),
-        ('Qualifikationsphase', 150, 4, 67, 73),
-        ('Qualifikationsphase', 150, 3, 56, 66),
-        ('Qualifikationsphase', 150, 2, 45, 55),
-        ('Qualifikationsphase', 150, 1, 34, 44),
-        ('Qualifikationsphase', 150, 0, 0, 33),
-        ('Qualifikationsphase', 160, 15, 152, 160),
-        ('Qualifikationsphase', 160, 14, 144, 151),
-        ('Qualifikationsphase', 160, 13, 136, 143),
-        ('Qualifikationsphase', 160, 12, 128, 135),
-        ('Qualifikationsphase', 160, 11, 120, 127),
-        ('Qualifikationsphase', 160, 10, 112, 119),
-        ('Qualifikationsphase', 160, 9, 104, 111),
-        ('Qualifikationsphase', 160, 8, 96, 103),
-        ('Qualifikationsphase', 160, 7, 88, 95),
-        ('Qualifikationsphase', 160, 6, 80, 87),
-        ('Qualifikationsphase', 160, 5, 72, 79),
-        ('Qualifikationsphase', 160, 4, 64, 71),
-        ('Qualifikationsphase', 160, 3, 53, 63),
-        ('Qualifikationsphase', 160, 2, 44, 52),
-        ('Qualifikationsphase', 160, 1, 32, 43),
-        ('Qualifikationsphase', 160, 0, 0, 31)
+        ('Qualifikationsphase ab ''25', 150, 15, 143, 150),
+        ('Qualifikationsphase ab ''25', 150, 14, 135, 142),
+        ('Qualifikationsphase ab ''25', 150, 13, 128, 134),
+        ('Qualifikationsphase ab ''25', 150, 12, 120, 127),
+        ('Qualifikationsphase ab ''25', 150, 11, 113, 119),
+        ('Qualifikationsphase ab ''25', 150, 10, 105, 112),
+        ('Qualifikationsphase ab ''25', 150, 9, 98, 104),
+        ('Qualifikationsphase ab ''25', 150, 8, 90, 97),
+        ('Qualifikationsphase ab ''25', 150, 7, 83, 89),
+        ('Qualifikationsphase ab ''25', 150, 6, 75, 82),
+        ('Qualifikationsphase ab ''25', 150, 5, 68, 74),
+        ('Qualifikationsphase ab ''25', 150, 4, 60, 67),
+        ('Qualifikationsphase ab ''25', 150, 3, 50, 59),
+        ('Qualifikationsphase ab ''25', 150, 2, 41, 49),
+        ('Qualifikationsphase ab ''25', 150, 1, 30, 40),
+        ('Qualifikationsphase ab ''25', 150, 0, 0, 29),
+        ('Qualifikationsphase ab ''25', 160, 15, 152, 160),
+        ('Qualifikationsphase ab ''25', 160, 14, 144, 151),
+        ('Qualifikationsphase ab ''25', 160, 13, 136, 143),
+        ('Qualifikationsphase ab ''25', 160, 12, 128, 135),
+        ('Qualifikationsphase ab ''25', 160, 11, 120, 127),
+        ('Qualifikationsphase ab ''25', 160, 10, 112, 119),
+        ('Qualifikationsphase ab ''25', 160, 9, 104, 111),
+        ('Qualifikationsphase ab ''25', 160, 8, 96, 103),
+        ('Qualifikationsphase ab ''25', 160, 7, 88, 95),
+        ('Qualifikationsphase ab ''25', 160, 6, 80, 87),
+        ('Qualifikationsphase ab ''25', 160, 5, 72, 79),
+        ('Qualifikationsphase ab ''25', 160, 4, 64, 71),
+        ('Qualifikationsphase ab ''25', 160, 3, 53, 63),
+        ('Qualifikationsphase ab ''25', 160, 2, 43, 52),
+        ('Qualifikationsphase ab ''25', 160, 1, 32, 42),
+        ('Qualifikationsphase ab ''25', 160, 0, 0, 31),
+        ('Qualifikationsphase ab ''25', 200, 15, 190, 200),
+        ('Qualifikationsphase ab ''25', 200, 14, 180, 189),
+        ('Qualifikationsphase ab ''25', 200, 13, 170, 179),
+        ('Qualifikationsphase ab ''25', 200, 12, 160, 169),
+        ('Qualifikationsphase ab ''25', 200, 11, 150, 159),
+        ('Qualifikationsphase ab ''25', 200, 10, 140, 149),
+        ('Qualifikationsphase ab ''25', 200, 9, 130, 139),
+        ('Qualifikationsphase ab ''25', 200, 8, 120, 129),
+        ('Qualifikationsphase ab ''25', 200, 7, 110, 119),
+        ('Qualifikationsphase ab ''25', 200, 6, 100, 109),
+        ('Qualifikationsphase ab ''25', 200, 5, 90, 99),
+        ('Qualifikationsphase ab ''25', 200, 4, 80, 89),
+        ('Qualifikationsphase ab ''25', 200, 3, 66, 79),
+        ('Qualifikationsphase ab ''25', 200, 2, 54, 65),
+        ('Qualifikationsphase ab ''25', 200, 1, 40, 53),
+        ('Qualifikationsphase ab ''25', 200, 0, 0, 39)
 ) base(scale_name, scale_max_points, grade_points, min_points, max_points)
 join grading_scale gs
     on gs.name = base.scale_name
