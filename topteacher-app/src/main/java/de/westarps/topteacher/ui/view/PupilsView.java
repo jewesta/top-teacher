@@ -39,6 +39,7 @@ public class PupilsView extends SplitListDetailView<Pupil> {
 	private final Button archiveButton = Buttons.archive();
 	private final ComboBox<Lifecycle> bulkLifecycle = new ComboBox<>("Status");
 	private final Button applyLifecycleButton = new Button("Anwenden");
+	private FormBinders.DirtySaveButton dirtySaveButton;
 
 	private Pupil selectedPupil;
 	private List<Pupil> selectedPupils = List.of();
@@ -129,6 +130,7 @@ public class PupilsView extends SplitListDetailView<Pupil> {
 		lifecycle.setItemLabelGenerator(Lifecycle::getDisplayName);
 
 		bindSingleEditor();
+		dirtySaveButton = FormBinders.bindDirtySaveButton(pupilBinder, saveButton);
 
 		newButton.addClickListener(event -> {
 			clearSelection();
@@ -144,7 +146,7 @@ public class PupilsView extends SplitListDetailView<Pupil> {
 
 		bulkLifecycle.setItems(Lifecycle.values());
 		bulkLifecycle.setItemLabelGenerator(Lifecycle::getDisplayName);
-		bulkLifecycle.setClearButtonVisible(true);
+		bulkLifecycle.setRequiredIndicatorVisible(true);
 		bulkLifecycle.addValueChangeListener(event -> updateBulkApplyButton());
 
 		applyLifecycleButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -248,6 +250,7 @@ public class PupilsView extends SplitListDetailView<Pupil> {
 	private void readSingleEditor(final PupilFormData formData) {
 		pupilBinder.readBean(formData);
 		FormBinders.clearValidation(pupilBinder);
+		dirtySaveButton.reset();
 	}
 
 	private static String trim(final String value) {

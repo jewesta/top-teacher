@@ -59,6 +59,8 @@ public class GradingScaleSettingsTab extends SplitListDetailView<GradingScale> i
 
 	private GradingScale selectedGradingScale;
 	private List<RangeFormData> rangeRows = List.of();
+	private List<Integer> originalRangeMinPoints = List.of();
+	private List<Object> originalEditorValues = List.of();
 	private boolean selectedLocked;
 
 	public GradingScaleSettingsTab(final GradingScaleRepository gradingScaleRepository) {
@@ -204,7 +206,10 @@ public class GradingScaleSettingsTab extends SplitListDetailView<GradingScale> i
 		maxPoints.setMin(0);
 		maxPoints.setStepButtonsVisible(true);
 		maxPoints.setRequiredIndicatorVisible(true);
-		maxPoints.addValueChangeListener(event -> refreshRangeGrids());
+		maxPoints.addValueChangeListener(event -> {
+			refreshRangeGrids();
+			updateSaveButtonState();
+		});
 
 		lifecycle.setItems(Lifecycle.values());
 		lifecycle.setItemLabelGenerator(Lifecycle::getDisplayName);
@@ -230,6 +235,8 @@ public class GradingScaleSettingsTab extends SplitListDetailView<GradingScale> i
 				.bind(GradingScaleFormData::getMaxPoints, GradingScaleFormData::setMaxPoints);
 		binder.forField(lifecycle).asRequired("Status ist erforderlich.").bind(GradingScaleFormData::getLifecycle,
 				GradingScaleFormData::setLifecycle);
+		binder.setChangeDetectionEnabled(true);
+		binder.addValueChangeListener(event -> updateSaveButtonState());
 	}
 
 	private void showGradingScale(final GradingScale gradingScale) {
@@ -240,8 +247,10 @@ public class GradingScaleSettingsTab extends SplitListDetailView<GradingScale> i
 		}
 
 		rangeRows = rowsFor(gradingScale);
+		originalRangeMinPoints = currentRangeMinPoints();
 		setRangeGridItems();
 		readEditor(new GradingScaleFormData(gradingScale.name(), gradingScale.maxPoints(), gradingScale.lifecycle()));
+		resetEditorBaseline();
 		updateEditorState();
 	}
 
@@ -301,8 +310,10 @@ public class GradingScaleSettingsTab extends SplitListDetailView<GradingScale> i
 		selectedGradingScale = null;
 		selectedLocked = false;
 		rangeRows = defaultRows();
+		originalRangeMinPoints = currentRangeMinPoints();
 		setRangeGridItems();
 		readEditor(new GradingScaleFormData("", DEFAULT_MAX_POINTS, Lifecycle.ACTIVE));
+		resetEditorBaseline();
 		updateEditorState();
 	}
 
@@ -315,7 +326,6 @@ public class GradingScaleSettingsTab extends SplitListDetailView<GradingScale> i
 		final boolean editMode = selectedGradingScale != null;
 		selectedLocked = editMode && gradingScaleRepository.isUsedByExam(selectedGradingScale.id());
 		Buttons.setCreateOrSaveMode(saveButton, editMode);
-		saveButton.setEnabled(!selectedLocked);
 		archiveButton.setVisible(editMode && selectedGradingScale.lifecycle() == Lifecycle.ACTIVE && !selectedLocked);
 		name.setReadOnly(selectedLocked);
 		maxPoints.setReadOnly(selectedLocked);
@@ -323,11 +333,37 @@ public class GradingScaleSettingsTab extends SplitListDetailView<GradingScale> i
 		lifecycle.setReadOnly(selectedLocked);
 		lockMessage.setVisible(selectedLocked);
 		refreshRangeGrids();
+		updateSaveButtonState();
 	}
 
 	private void setMinPoints(final RangeFormData row, final Integer minPoints) {
 		row.setMinPoints(valueOrZero(minPoints));
 		refreshRangeGrids();
+		updateSaveButtonState();
+	}
+
+	private void updateSaveButtonState() {
+		saveButton.setEnabled(!selectedLocked && (editorFieldsHaveChanges() || rangeRowsHaveChanges()));
+	}
+
+	private void resetEditorBaseline() {
+		originalEditorValues = currentEditorValues();
+	}
+
+	private boolean editorFieldsHaveChanges() {
+		return !currentEditorValues().equals(originalEditorValues);
+	}
+
+	private List<Object> currentEditorValues() {
+		return binder.getFields().map(field -> (Object) field.getValue()).toList();
+	}
+
+	private boolean rangeRowsHaveChanges() {
+		return !currentRangeMinPoints().equals(originalRangeMinPoints);
+	}
+
+	private List<Integer> currentRangeMinPoints() {
+		return rangeRows.stream().map(RangeFormData::getMinPoints).toList();
 	}
 
 	private boolean isRangeReadOnly(final RangeFormData row) {

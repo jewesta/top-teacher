@@ -96,6 +96,8 @@ public class ExamsView extends SplitListDetailView<Exam> {
 	private Map<Integer, ExamNumber> examNumbersByExamId = Map.of();
 	private List<Exam> originalExamCandidates = List.of();
 	private List<GradingScale> gradingScales = List.of();
+	private List<Object> originalEditorValues = List.of();
+	private Set<Integer> originalCreationPupilIds = Set.of();
 	private Tab pupilsTab;
 	private Tab levelOfExpectationsTab;
 	private Tab notesTab;
@@ -242,8 +244,11 @@ public class ExamsView extends SplitListDetailView<Exam> {
 		creationPupils.setItemLabelGenerator(this::pupilLabel);
 		creationPupils.setClearButtonVisible(true);
 		creationPupils.setWidthFull();
+		creationPupils.addValueChangeListener(event -> updateSaveButtonState());
 
 		bindSingleEditor();
+		examBinder.setChangeDetectionEnabled(true);
+		examBinder.addValueChangeListener(event -> updateSaveButtonState());
 
 		newButton.addClickListener(event -> {
 			clearSelection();
@@ -323,6 +328,8 @@ public class ExamsView extends SplitListDetailView<Exam> {
 		refreshOriginalExamItems();
 		refreshGradingScaleOptions();
 		readSingleEditor(new ExamFormData(exam.title(), exam.date(), originalExam(exam), gradingScaleFor(exam)));
+		resetEditorBaseline();
+		originalCreationPupilIds = Set.of();
 		updateEditorEnabled();
 	}
 
@@ -457,7 +464,8 @@ public class ExamsView extends SplitListDetailView<Exam> {
 		refreshOriginalExamItems();
 		refreshGradingScaleOptions();
 		readSingleEditor(new ExamFormData("", null, null, defaultGradingScale()));
-		refreshCreationPupilOptions();
+		resetEditorBaseline();
+		resetCreationPupilOptions();
 		updateEditorEnabled();
 	}
 
@@ -576,10 +584,30 @@ public class ExamsView extends SplitListDetailView<Exam> {
 		creationPupils.setEnabled(enabled && selectedExam == null);
 		creationPupils.setVisible(selectedExam == null);
 		updateNewButtonState();
-		saveButton.setEnabled(enabled);
 		Buttons.setCreateOrSaveMode(saveButton, selectedExam != null);
+		updateSaveButtonState();
 		duplicateButton.setEnabled(enabled && selectedExam != null);
 		duplicateButton.setVisible(selectedExam != null);
+	}
+
+	private void updateSaveButtonState() {
+		saveButton.setEnabled(selectedCourse != null && (editorFieldsHaveChanges() || creationPupilsHaveChanges()));
+	}
+
+	private void resetEditorBaseline() {
+		originalEditorValues = currentEditorValues();
+	}
+
+	private boolean editorFieldsHaveChanges() {
+		return !currentEditorValues().equals(originalEditorValues);
+	}
+
+	private List<Object> currentEditorValues() {
+		return examBinder.getFields().map(field -> (Object) field.getValue()).toList();
+	}
+
+	private boolean creationPupilsHaveChanges() {
+		return selectedExam == null && !selectedCreationPupilIds().equals(originalCreationPupilIds);
 	}
 
 	private DatePickerI18n germanDatePickerI18n() {
@@ -623,6 +651,12 @@ public class ExamsView extends SplitListDetailView<Exam> {
 		final List<Pupil> coursePupils = courseRepository.findPupils(selectedCourse.id());
 		creationPupils.setItems(coursePupils);
 		creationPupils.setValue(defaultCreationPupilSelection(coursePupils));
+	}
+
+	private void resetCreationPupilOptions() {
+		refreshCreationPupilOptions();
+		originalCreationPupilIds = selectedCreationPupilIds();
+		updateSaveButtonState();
 	}
 
 	private Set<Pupil> defaultCreationPupilSelection(final List<Pupil> coursePupils) {

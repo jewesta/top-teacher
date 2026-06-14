@@ -59,6 +59,7 @@ public class CoursesView extends SplitListDetailView<Course> {
 	private final ComboBox<Course> sourceCourse = new ComboBox<>("Kurs");
 	private final Binder<AssignmentCopyFormData> assignmentCopyBinder = new Binder<>();
 	private final PupilAssignmentGrid assignmentGrid = new PupilAssignmentGrid("Schüler:innen suchen");
+	private FormBinders.DirtySaveButton dirtySaveButton;
 
 	private Course selectedCourse;
 	private List<Course> selectedCourses = List.of();
@@ -178,6 +179,7 @@ public class CoursesView extends SplitListDetailView<Course> {
 		lifecycle.setRequiredIndicatorVisible(true);
 
 		bindSingleEditor();
+		dirtySaveButton = FormBinders.bindDirtySaveButton(courseBinder, saveButton);
 
 		newButton.addClickListener(event -> {
 			clearSelection();
@@ -194,7 +196,7 @@ public class CoursesView extends SplitListDetailView<Course> {
 
 		bulkLifecycle.setItems(Lifecycle.values());
 		bulkLifecycle.setItemLabelGenerator(Lifecycle::getDisplayName);
-		bulkLifecycle.setClearButtonVisible(true);
+		bulkLifecycle.setRequiredIndicatorVisible(true);
 		bulkLifecycle.addValueChangeListener(event -> updateBulkApplyButton());
 
 		applyLifecycleButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -485,6 +487,7 @@ public class CoursesView extends SplitListDetailView<Course> {
 	private void readSingleEditor(final CourseFormData formData) {
 		courseBinder.readBean(formData);
 		FormBinders.clearValidation(courseBinder);
+		dirtySaveButton.reset();
 	}
 
 	private void bindAssignmentCopyDialog() {

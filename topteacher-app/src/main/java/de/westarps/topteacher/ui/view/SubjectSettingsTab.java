@@ -30,7 +30,7 @@ import de.westarps.topteacher.ui.component.TopTeacherDialogs;
 public class SubjectSettingsTab extends SplitListDetailView<Subject> implements SettingsTab {
 
 	private final SubjectRepository subjectRepository;
-	private final TextField name = new TextField("Fach");
+	private final TextField name = new TextField("Name");
 	private final ComboBox<Lifecycle> lifecycle = new ComboBox<>("Status");
 	private final Binder<SubjectFormData> binder = new Binder<>();
 	private final Button newButton = createNewButton();
@@ -38,6 +38,7 @@ public class SubjectSettingsTab extends SplitListDetailView<Subject> implements 
 	private final Button archiveButton = Buttons.archive();
 	private final ComboBox<Lifecycle> bulkLifecycle = new ComboBox<>("Status");
 	private final Button applyLifecycleButton = new Button("Anwenden");
+	private FormBinders.DirtySaveButton dirtySaveButton;
 
 	private Subject selectedSubject;
 	private List<Subject> selectedSubjects = List.of();
@@ -65,7 +66,7 @@ public class SubjectSettingsTab extends SplitListDetailView<Subject> implements 
 
 	@Override
 	protected void configureGrid(final MultiSelectionGrid<Subject> grid) {
-		grid.addColumn(Subject::name).setHeader("Fach").setAutoWidth(true);
+		grid.addColumn(Subject::name).setHeader("Name").setAutoWidth(true);
 		grid.addColumn(subject -> subject.lifecycle().getDisplayName()).setHeader("Status").setAutoWidth(true);
 	}
 
@@ -132,6 +133,7 @@ public class SubjectSettingsTab extends SplitListDetailView<Subject> implements 
 		lifecycle.setRequiredIndicatorVisible(true);
 
 		bindSingleEditor();
+		dirtySaveButton = FormBinders.bindDirtySaveButton(binder, saveButton);
 
 		newButton.addClickListener(event -> {
 			clearSelection();
@@ -147,7 +149,7 @@ public class SubjectSettingsTab extends SplitListDetailView<Subject> implements 
 
 		bulkLifecycle.setItems(Lifecycle.values());
 		bulkLifecycle.setItemLabelGenerator(Lifecycle::getDisplayName);
-		bulkLifecycle.setClearButtonVisible(true);
+		bulkLifecycle.setRequiredIndicatorVisible(true);
 		bulkLifecycle.addValueChangeListener(event -> updateBulkApplyButton());
 
 		applyLifecycleButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -240,6 +242,7 @@ public class SubjectSettingsTab extends SplitListDetailView<Subject> implements 
 	private void readSingleEditor(final SubjectFormData formData) {
 		binder.readBean(formData);
 		FormBinders.clearValidation(binder);
+		dirtySaveButton.reset();
 	}
 
 	private Lifecycle commonLifecycle(final List<Subject> subjects) {
