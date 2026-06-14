@@ -2,6 +2,7 @@ package de.westarps.topteacher.backend.repo;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -12,6 +13,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import de.westarps.topteacher.model.GradeLevel;
 import de.westarps.topteacher.model.GradingScale;
@@ -20,6 +22,10 @@ import de.westarps.topteacher.model.Lifecycle;
 
 @Repository
 public class GradingScaleRepository {
+
+	private static final String USED_BY_EXAM_MESSAGE = """
+			Dieser Notenschlüssel wird bereits von Klausuren verwendet und kann nicht mehr geändert werden.
+			""".trim();
 
 	private final NamedParameterJdbcTemplate jdbc;
 	private final RowMapper<GradingScale> gradingScaleRowMapper = this::mapGradingScale;
@@ -63,6 +69,15 @@ public class GradingScaleRepository {
 				""", Map.of("gradingScaleId", gradingScaleId), gradingScaleRangeRowMapper);
 	}
 
+	public boolean isUsedByExam(final int gradingScaleId) {
+		final Integer count = jdbc.queryForObject("""
+				select count(*)
+				from exam
+				where grading_scale_id = :gradingScaleId
+				""", Map.of("gradingScaleId", gradingScaleId), Integer.class);
+		return count != null && count > 0;
+	}
+
 	public GradingScale save(final GradingScale gradingScale) {
 		if (gradingScale.id() == null) {
 			return insert(gradingScale);
@@ -72,7 +87,20 @@ public class GradingScaleRepository {
 		return gradingScale;
 	}
 
+	@Transactional
+	public GradingScale saveWithRanges(final GradingScale gradingScale, final List<GradingScaleRange> ranges) {
+		validateCompleteScale(gradingScale, ranges);
+		if (gradingScale.id() != null) {
+			validateScaleNotUsed(gradingScale.id());
+		}
+
+		final GradingScale saved = save(gradingScale);
+		replaceRanges(saved.id(), ranges);
+		return saved;
+	}
+
 	public GradingScaleRange saveRange(final GradingScaleRange range) {
+		validateScaleNotUsed(range.gradingScaleId());
 		if (range.id() == null) {
 			return insertRange(range);
 		}
@@ -99,6 +127,7 @@ public class GradingScaleRepository {
 	}
 
 	private void update(final GradingScale gradingScale) {
+		validateScaleNotUsed(gradingScale.id());
 		jdbc.update("""
 				update grading_scale
 				set name = :name,
@@ -106,6 +135,15 @@ public class GradingScaleRepository {
 				    lifecycle = :lifecycle
 				where id = :id
 				""", gradingScaleParameters(gradingScale).addValue("id", gradingScale.id()));
+	}
+
+	private void replaceRanges(final int gradingScaleId, final List<GradingScaleRange> ranges) {
+		jdbc.update("""
+				delete from grading_scale_range
+				where grading_scale_id = :gradingScaleId
+				""", Map.of("gradingScaleId", gradingScaleId));
+		ranges.forEach(range -> insertRange(
+				new GradingScaleRange(null, gradingScaleId, range.gradeLevel(), range.minPoints(), range.maxPoints())));
 	}
 
 	private GradingScaleRange insertRange(final GradingScaleRange range) {
@@ -157,5 +195,45 @@ public class GradingScaleRepository {
 		return new GradingScaleRange(resultSet.getInt("id"), resultSet.getInt("grading_scale_id"),
 				GradeLevel.fromPoints(resultSet.getInt("grade_points")), resultSet.getInt("min_points"),
 				resultSet.getInt("max_points"));
+	}
+
+	private void validateCompleteScale(final GradingScale gradingScale, final List<GradingScaleRange> ranges) {
+		if (ranges == null || ranges.size() != GradeLevel.values().length) {
+			throw new IllegalArgumentException("Ein Notenschlüssel muss genau 16 Notenpunkte enthalten.");
+		}
+
+		final Map<GradeLevel, GradingScaleRange> rangesByGradeLevel = new EnumMap<>(GradeLevel.class);
+		for (final GradingScaleRange range : ranges) {
+			if (rangesByGradeLevel.put(range.gradeLevel(), range) != null) {
+				throw new IllegalArgumentException("Ein Notenschlüssel darf jeden Notenpunkt nur einmal enthalten.");
+			}
+			if (range.maxPoints() > gradingScale.maxPoints()) {
+				throw new IllegalArgumentException("Die Punktebereiche müssen innerhalb der Maximalpunktzahl liegen.");
+			}
+		}
+
+		if (rangesByGradeLevel.size() != GradeLevel.values().length) {
+			throw new IllegalArgumentException("Ein Notenschlüssel muss genau 16 Notenpunkte enthalten.");
+		}
+
+		int expectedMinPoints = 0;
+		for (int gradePoints = 0; gradePoints <= 15; gradePoints++) {
+			final GradingScaleRange range = rangesByGradeLevel.get(GradeLevel.fromPoints(gradePoints));
+			if (range.minPoints() != expectedMinPoints) {
+				throw new IllegalArgumentException(
+						"Die Punktebereiche müssen lückenlos von 0 bis zur Maximalpunktzahl reichen.");
+			}
+			expectedMinPoints = range.maxPoints() + 1;
+		}
+		if (expectedMinPoints != gradingScale.maxPoints() + 1) {
+			throw new IllegalArgumentException(
+					"Die Punktebereiche müssen lückenlos von 0 bis zur Maximalpunktzahl reichen.");
+		}
+	}
+
+	private void validateScaleNotUsed(final int gradingScaleId) {
+		if (isUsedByExam(gradingScaleId)) {
+			throw new IllegalArgumentException(USED_BY_EXAM_MESSAGE);
+		}
 	}
 }

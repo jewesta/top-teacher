@@ -89,8 +89,7 @@ class DatabaseInitializationServiceTests {
 		assertThat(countRows("pupil")).isZero();
 		assertThat(countRows("course")).isZero();
 		assertThat(countRows("subject")).isEqualTo(20);
-		assertThat(countRows("grading_scale")).isEqualTo(1);
-		assertThat(countRows("grading_scale_range")).isEqualTo(16);
+		assertBaseGradingScales();
 		assertThat(appSettings.ttDatabaseInitializationCompleted()).isTrue();
 	}
 
@@ -99,9 +98,18 @@ class DatabaseInitializationServiceTests {
 		initializationService.initialize(DatabaseInitializationMode.DEMO);
 
 		assertThat(countRows("subject")).isEqualTo(20);
+		assertBaseGradingScales();
 		assertThat(countRows("pupil")).isEqualTo(20);
 		assertThat(countRows("course")).isEqualTo(2);
 		assertThat(countRows("exam")).isEqualTo(2);
+		assertThat(count("""
+				select count(*)
+				from course c
+				join grading_scale gs
+				    on gs.id = c.grading_scale_id
+				where (c.school_class = 'CLS_10A' and gs.name = 'Einführungsphase')
+				   or (c.school_class = 'CLS_Q1' and gs.name = 'Qualifikationsphase')
+				""")).isEqualTo(2);
 		assertThat(count("""
 				select count(*)
 				from exam
@@ -111,6 +119,41 @@ class DatabaseInitializationServiceTests {
 				)
 				""")).isEqualTo(2);
 		assertThat(appSettings.ttDatabaseInitializationCompleted()).isTrue();
+	}
+
+	private void assertBaseGradingScales() {
+		assertThat(countRows("grading_scale")).isEqualTo(2);
+		assertThat(countRows("grading_scale_range")).isEqualTo(32);
+		assertThat(count("""
+				select count(*)
+				from grading_scale
+				where name in ('Einführungsphase', 'Qualifikationsphase')
+				""")).isEqualTo(2);
+		assertThat(count("""
+				select count(*)
+				from grading_scale gs
+				join grading_scale_range gsr
+				    on gsr.grading_scale_id = gs.id
+				where gs.name = 'Qualifikationsphase'
+				  and (
+				      (gsr.grade_points = 15 and gsr.min_points = 144 and gsr.max_points = 150)
+				   or (gsr.grade_points = 14 and gsr.min_points = 137 and gsr.max_points = 143)
+				   or (gsr.grade_points = 13 and gsr.min_points = 130 and gsr.max_points = 136)
+				   or (gsr.grade_points = 12 and gsr.min_points = 123 and gsr.max_points = 129)
+				   or (gsr.grade_points = 11 and gsr.min_points = 116 and gsr.max_points = 122)
+				   or (gsr.grade_points = 10 and gsr.min_points = 109 and gsr.max_points = 115)
+				   or (gsr.grade_points = 9 and gsr.min_points = 102 and gsr.max_points = 108)
+				   or (gsr.grade_points = 8 and gsr.min_points = 95 and gsr.max_points = 101)
+				   or (gsr.grade_points = 7 and gsr.min_points = 88 and gsr.max_points = 94)
+				   or (gsr.grade_points = 6 and gsr.min_points = 81 and gsr.max_points = 87)
+				   or (gsr.grade_points = 5 and gsr.min_points = 74 and gsr.max_points = 80)
+				   or (gsr.grade_points = 4 and gsr.min_points = 67 and gsr.max_points = 73)
+				   or (gsr.grade_points = 3 and gsr.min_points = 56 and gsr.max_points = 66)
+				   or (gsr.grade_points = 2 and gsr.min_points = 45 and gsr.max_points = 55)
+				   or (gsr.grade_points = 1 and gsr.min_points = 34 and gsr.max_points = 44)
+				   or (gsr.grade_points = 0 and gsr.min_points = 0 and gsr.max_points = 33)
+				  )
+				""")).isEqualTo(16);
 	}
 
 	private int countRows(final String table) {

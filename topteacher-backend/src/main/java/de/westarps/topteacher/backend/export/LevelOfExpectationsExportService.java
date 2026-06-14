@@ -115,8 +115,8 @@ public class LevelOfExpectationsExportService {
 		if (!examRepository.hasPupil(examId, pupilId)) {
 			throw new IllegalArgumentException("Pupil is not assigned to exam: " + pupilId);
 		}
-		final GradingScale gradingScale = gradingScaleRepository.findById(course.gradingScaleId()).orElseThrow(
-				() -> new IllegalArgumentException("Grading scale does not exist: " + course.gradingScaleId()));
+		final GradingScale gradingScale = gradingScaleRepository.findById(exam.gradingScaleId()).orElseThrow(
+				() -> new IllegalArgumentException("Grading scale does not exist: " + exam.gradingScaleId()));
 		final var examNumber = examRepository.findNumberById(examId)
 				.orElseThrow(() -> new IllegalArgumentException("Exam number does not exist: " + examId));
 

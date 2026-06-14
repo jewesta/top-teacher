@@ -1,5 +1,6 @@
 package de.westarps.topteacher.ui.view;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -21,7 +22,7 @@ import com.vaadin.flow.router.HasDynamicTitle;
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
 import de.westarps.topteacher.ui.component.QuickFilterField;
 
-public abstract class AbstractMasterDataView<T> extends VerticalLayout implements HasDynamicTitle {
+public class SplitListDetailView<T> extends VerticalLayout implements HasDynamicTitle {
 
 	private final String pageTitle;
 	private final String viewClassName;
@@ -37,7 +38,7 @@ public abstract class AbstractMasterDataView<T> extends VerticalLayout implement
 	private Component singleSelectEditor;
 	private Component multiSelectEditor;
 
-	protected AbstractMasterDataView(final String pageTitle, final String viewClassName,
+	protected SplitListDetailView(final String pageTitle, final String viewClassName,
 			final MultiSelectionGrid<T> grid) {
 		this.pageTitle = Objects.requireNonNull(pageTitle, "Page title can not be null");
 		this.viewClassName = Objects.requireNonNull(viewClassName, "View class name can not be null");
@@ -72,11 +73,16 @@ public abstract class AbstractMasterDataView<T> extends VerticalLayout implement
 		updateEditorMode(grid.getSelectedItems());
 	}
 
-	protected abstract void configureGrid(MultiSelectionGrid<T> grid);
+	protected void configureGrid(final MultiSelectionGrid<T> grid) {
+	}
 
-	protected abstract Component createSingleSelectEditor();
+	protected Component createSingleSelectEditor() {
+		return new Div();
+	}
 
-	protected abstract Component createMultiSelectEditor();
+	protected Component createMultiSelectEditor() {
+		return new Div();
+	}
 
 	protected void onEditorModeChanged(final EditorMode editorMode, final List<T> selectedItems) {
 	}
@@ -127,8 +133,12 @@ public abstract class AbstractMasterDataView<T> extends VerticalLayout implement
 		return "20rem";
 	}
 
-	protected Component createListToolbarPrefix() {
-		return null;
+	protected List<Component> createListToolbarComponents() {
+		return List.of();
+	}
+
+	protected boolean isQuickFilterVisible() {
+		return true;
 	}
 
 	protected String getEditorTabLabel() {
@@ -157,19 +167,19 @@ public abstract class AbstractMasterDataView<T> extends VerticalLayout implement
 	}
 
 	private Component createListToolbar() {
-		final Component toolbarPrefix = createListToolbarPrefix();
-		final HorizontalLayout toolbar = toolbarPrefix == null ? new HorizontalLayout(searchField)
-				: new HorizontalLayout(toolbarPrefix, searchField);
+		final List<Component> toolbarComponents = new ArrayList<>();
+		if (isQuickFilterVisible()) {
+			toolbarComponents.add(searchField);
+		}
+		toolbarComponents.addAll(createListToolbarComponents());
+		final HorizontalLayout toolbar = new HorizontalLayout(toolbarComponents.toArray(Component[]::new));
 		toolbar.addClassName("tt-master-toolbar");
 		toolbar.setAlignItems(Alignment.END);
 		toolbar.setPadding(false);
 		toolbar.setSpacing(false);
 		toolbar.setWidthFull();
 		toolbar.getStyle().set("flex-wrap", "wrap");
-		if (toolbarPrefix != null) {
-			toolbar.setFlexGrow(0, toolbarPrefix);
-		}
-		toolbar.setFlexGrow(0, searchField);
+		toolbarComponents.forEach(component -> toolbar.setFlexGrow(0, component));
 		return toolbar;
 	}
 

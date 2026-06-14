@@ -105,7 +105,7 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 			return;
 		}
 
-		loadPointRules(course);
+		loadPointRules();
 		configureGrid(LoeAggregationColumns.from(parts, categories, tasks, requirements));
 		grid.setItems(pupils.stream().map(this::evaluationRow).toList());
 
@@ -122,13 +122,13 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 		requirements = levelOfExpectationsRepository.findRequirementsByExamId(exam.id());
 	}
 
-	private void loadPointRules(final Course course) {
-		if (course.gradingScaleId() == null) {
+	private void loadPointRules() {
+		if (exam.gradingScaleId() == null) {
 			pointRules = null;
 			gradingScaleRanges = List.of();
 			return;
 		}
-		final GradingScale gradingScale = gradingScaleRepository.findById(course.gradingScaleId()).orElse(null);
+		final GradingScale gradingScale = gradingScaleRepository.findById(exam.gradingScaleId()).orElse(null);
 		if (gradingScale == null) {
 			pointRules = null;
 			gradingScaleRanges = List.of();

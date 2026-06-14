@@ -34,13 +34,13 @@ insert into course (school_class, subject_id, calendar_year, course_period, life
 select demo.school_class, subject.id, demo.calendar_year, demo.course_period, demo.lifecycle, gs.id
 from (
     values
-        ('CLS_10A', 'Erdkunde', 2026, 'FULL_YEAR', 'ACTIVE'),
-        ('CLS_Q1', 'Chemie', 2026, 'FULL_YEAR', 'ACTIVE')
-) demo(school_class, subject_name, calendar_year, course_period, lifecycle)
+        ('CLS_10A', 'Erdkunde', 2026, 'FULL_YEAR', 'ACTIVE', 'Einführungsphase'),
+        ('CLS_Q1', 'Chemie', 2026, 'FULL_YEAR', 'ACTIVE', 'Qualifikationsphase')
+) demo(school_class, subject_name, calendar_year, course_period, lifecycle, grading_scale_name)
 join subject
     on subject.name = demo.subject_name
 join grading_scale gs
-    on gs.name = 'Standard'
+    on gs.name = demo.grading_scale_name
 where not exists (
     select 1
     from course c
@@ -50,8 +50,8 @@ where not exists (
       and c.course_period = demo.course_period
 );
 
-insert into exam (course_id, title, exam_date)
-select c.id, demo.title, demo.exam_date
+insert into exam (course_id, title, exam_date, grading_scale_id)
+select c.id, demo.title, demo.exam_date, c.grading_scale_id
 from (
     values
         ('CLS_10A', 'Erdkunde', 2026, 'FULL_YEAR', 'Klausur Windenergie und Klimawandel', date '2026-11-12'),

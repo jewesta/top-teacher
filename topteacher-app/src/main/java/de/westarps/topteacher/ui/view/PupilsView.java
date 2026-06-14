@@ -25,7 +25,7 @@ import de.westarps.topteacher.ui.component.MultiSelectionGrid;
 
 @Route(value = "", layout = MainLayout.class)
 @RouteAlias(value = "pupils", layout = MainLayout.class)
-public class PupilsView extends AbstractMasterDataView<Pupil> {
+public class PupilsView extends SplitListDetailView<Pupil> {
 
 	private final PupilRepository pupilRepository;
 	private final TextField name = new TextField("Vorname");
@@ -33,6 +33,7 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 	private final TextField currentSchoolClass = new TextField("Klasse");
 	private final ComboBox<Lifecycle> lifecycle = new ComboBox<>("Status");
 	private final Binder<PupilFormData> pupilBinder = new Binder<>();
+	private final Button newButton = new Button("Neu");
 	private final Button saveButton = new Button();
 	private final Button archiveButton = new Button("Archivieren");
 	private final Span multiSelectionSummary = new Span();
@@ -55,7 +56,6 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 
 	@Override
 	protected void configureGrid(final MultiSelectionGrid<Pupil> grid) {
-		grid.addColumn(Pupil::id).setHeader("ID").setAutoWidth(true).setFlexGrow(0);
 		grid.addColumn(Pupil::name).setHeader("Vorname").setAutoWidth(true);
 		grid.addColumn(Pupil::surname).setHeader("Nachname").setAutoWidth(true);
 		grid.addColumn(this::latestSchoolClassLabel).setHeader("Klasse").setAutoWidth(true);
@@ -76,6 +76,11 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 	}
 
 	@Override
+	protected List<Component> createListToolbarComponents() {
+		return List.of(newButton);
+	}
+
+	@Override
 	protected String getEditorTabLabel() {
 		return "Schüler:in";
 	}
@@ -85,8 +90,8 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 		final SchoolClass schoolClass = latestSchoolClassByPupilId.get(pupil.id());
 		final String schoolClassText = schoolClass == null ? ""
 				: schoolClass.getDisplayName() + " " + schoolClass.name();
-		return String.join(" ", String.valueOf(pupil.id()), pupil.name(), pupil.surname(), schoolClassText,
-				pupil.lifecycle().getDisplayName(), pupil.lifecycle().name());
+		return String.join(" ", pupil.name(), pupil.surname(), schoolClassText, pupil.lifecycle().getDisplayName(),
+				pupil.lifecycle().name());
 	}
 
 	@Override
@@ -110,6 +115,11 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 		lifecycle.setItemLabelGenerator(Lifecycle::getDisplayName);
 
 		bindSingleEditor();
+
+		newButton.addClickListener(event -> {
+			clearSelection();
+			clearSingleEditor();
+		});
 
 		saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 		saveButton.addClickListener(event -> savePupil());

@@ -42,7 +42,7 @@ public class ExamRepository {
 
 	public List<Exam> findByCourseId(final int courseId) {
 		return jdbc.query("""
-				select id, course_id, title, exam_date, original_exam_id
+				select id, course_id, title, exam_date, original_exam_id, grading_scale_id
 				from exam
 				where course_id = :courseId
 				order by exam_date, id
@@ -51,7 +51,7 @@ public class ExamRepository {
 
 	public Optional<Exam> findById(final int id) {
 		return jdbc.query("""
-				select id, course_id, title, exam_date, original_exam_id
+				select id, course_id, title, exam_date, original_exam_id, grading_scale_id
 				from exam
 				where id = :id
 				""", Map.of("id", id), rowMapper).stream().findFirst();
@@ -59,7 +59,7 @@ public class ExamRepository {
 
 	public List<Exam> findMainExamsByCourseId(final int courseId) {
 		return jdbc.query("""
-				select id, course_id, title, exam_date, original_exam_id
+				select id, course_id, title, exam_date, original_exam_id, grading_scale_id
 				from exam
 				where course_id = :courseId
 				  and original_exam_id is null
@@ -246,11 +246,12 @@ public class ExamRepository {
 
 	private Exam insert(final Exam exam) {
 		final KeyHolder keyHolder = new GeneratedKeyHolder();
-		final MapSqlParameterSource parameters = parameters(exam);
+		final Exam completeExam = exam.withGradingScaleId(resolveGradingScaleId(exam));
+		final MapSqlParameterSource parameters = parameters(completeExam);
 
 		jdbc.update("""
-				insert into exam (course_id, title, exam_date, original_exam_id)
-				values (:courseId, :title, :date, :originalExamId)
+				insert into exam (course_id, title, exam_date, original_exam_id, grading_scale_id)
+				values (:courseId, :title, :date, :originalExamId, :gradingScaleId)
 				""", parameters, keyHolder, new String[] { "id" });
 
 		final Number id = keyHolder.getKey();
@@ -260,7 +261,8 @@ public class ExamRepository {
 
 		final int examId = id.intValue();
 		initializePupilsFromCourse(examId);
-		return new Exam(examId, exam.courseId(), exam.title(), exam.date(), exam.originalExamId());
+		return new Exam(examId, completeExam.courseId(), completeExam.title(), completeExam.date(),
+				completeExam.originalExamId(), completeExam.gradingScaleId());
 	}
 
 	private void update(final Exam exam) {
@@ -268,6 +270,10 @@ public class ExamRepository {
 				.orElseThrow(() -> new IllegalArgumentException("Exam does not exist: " + exam.id()));
 		if (!existingExam.courseId().equals(exam.courseId())) {
 			throw new IllegalArgumentException("Exam course can not be changed.");
+		}
+		if (exam.gradingScaleId() != null && !existingExam.gradingScaleId().equals(exam.gradingScaleId())) {
+			throw new IllegalArgumentException(
+					"Der Notenschlüssel einer bestehenden Klausur kann nicht geändert werden.");
 		}
 
 		jdbc.update("""
@@ -281,13 +287,15 @@ public class ExamRepository {
 
 	private MapSqlParameterSource parameters(final Exam exam) {
 		return new MapSqlParameterSource().addValue("courseId", exam.courseId()).addValue("title", exam.title())
-				.addValue("date", exam.date()).addValue("originalExamId", exam.originalExamId());
+				.addValue("date", exam.date()).addValue("originalExamId", exam.originalExamId())
+				.addValue("gradingScaleId", exam.gradingScaleId());
 	}
 
 	private Exam mapExam(final ResultSet resultSet, final int rowNumber) throws SQLException {
 		return new Exam(resultSet.getInt("id"), resultSet.getInt("course_id"), resultSet.getString("title"),
 				resultSet.getObject("exam_date", LocalDate.class),
-				resultSet.getObject("original_exam_id", Integer.class));
+				resultSet.getObject("original_exam_id", Integer.class),
+				resultSet.getObject("grading_scale_id", Integer.class));
 	}
 
 	private Pupil mapPupil(final ResultSet resultSet, final int rowNumber) throws SQLException {
@@ -323,6 +331,26 @@ public class ExamRepository {
 		if (!exam.courseId().equals(originalExam.courseId())) {
 			throw new IllegalArgumentException("Eine Nachschreibeklausur muss zum selben Kurs gehören.");
 		}
+	}
+
+	private Integer resolveGradingScaleId(final Exam exam) {
+		if (exam.gradingScaleId() != null) {
+			return exam.gradingScaleId();
+		}
+
+		final Integer gradingScaleId = jdbc
+				.query("""
+						select grading_scale_id
+						from course
+						where id = :courseId
+						""", Map.of("courseId", exam.courseId()),
+						(resultSet, rowNumber) -> resultSet.getObject("grading_scale_id", Integer.class))
+				.stream().findFirst()
+				.orElseThrow(() -> new IllegalArgumentException("Course does not exist: " + exam.courseId()));
+		if (gradingScaleId == null) {
+			throw new IllegalArgumentException("Für den Kurs wurde kein Notenschlüssel gefunden.");
+		}
+		return gradingScaleId;
 	}
 
 	private boolean hasMakeupExams(final int examId) {

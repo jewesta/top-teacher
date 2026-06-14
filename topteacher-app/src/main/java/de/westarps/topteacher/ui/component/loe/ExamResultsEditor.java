@@ -301,9 +301,8 @@ public class ExamResultsEditor extends AbstractDesigner {
 	}
 
 	private void loadPointRules() {
-		pointRules = courseRepository.findById(exam.courseId())
-				.flatMap(course -> gradingScaleRepository.findById(course.gradingScaleId())).map(LoePointRules::new)
-				.orElse(null);
+		pointRules = exam.gradingScaleId() == null ? null
+				: gradingScaleRepository.findById(exam.gradingScaleId()).map(LoePointRules::new).orElse(null);
 	}
 
 	private void loadResultState() {
@@ -830,7 +829,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 			}
 		}
 		if (pointRules == null) {
-			Notification.show("Für den Kurs wurde kein Notenschlüssel gefunden.");
+			Notification.show("Für die Klausur wurde kein Notenschlüssel gefunden.");
 			return false;
 		}
 		final int regularMaxPoints = pointRules.regularMaxPoints(requirements);

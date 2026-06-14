@@ -140,12 +140,12 @@ public class ExamEvaluationExcelExportService {
 		final Map<Integer, Map<Integer, Integer>> achievedPointsByPupilId = pupils.stream()
 				.collect(Collectors.toMap(Pupil::id, pupil -> achievedPointsByRequirementId(exam, pupil)));
 
-		if (course.gradingScaleId() == null) {
+		if (exam.gradingScaleId() == null) {
 			return new EvaluationExportData(pupils, parts, categories, tasks, requirements, null, List.of(),
 					achievedPointsByPupilId);
 		}
 
-		final GradingScale gradingScale = gradingScaleRepository.findById(course.gradingScaleId()).orElse(null);
+		final GradingScale gradingScale = gradingScaleRepository.findById(exam.gradingScaleId()).orElse(null);
 		if (gradingScale == null) {
 			return new EvaluationExportData(pupils, parts, categories, tasks, requirements, null, List.of(),
 					achievedPointsByPupilId);

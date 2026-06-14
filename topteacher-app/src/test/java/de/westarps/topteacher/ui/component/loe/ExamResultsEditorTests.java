@@ -54,11 +54,12 @@ import de.westarps.vaadin.markdown.MarkdownViewer;
 
 class ExamResultsEditorTests {
 
-	private static final Exam EXAM = new Exam(1, 10, "Klausur", LocalDate.of(2026, 9, 1));
+	private static final int GRADING_SCALE_ID = 30;
+	private static final Exam EXAM = new Exam(1, 10, "Klausur", LocalDate.of(2026, 9, 1), null, GRADING_SCALE_ID);
 	private static final Subject SUBJECT = new Subject(1, "Englisch", Lifecycle.ACTIVE);
 	private static final Course COURSE = new Course(EXAM.courseId(), SchoolClass.CLS_5A, SUBJECT, new SchoolYear(2026),
-			CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, 30);
-	private static final GradingScale GRADING_SCALE = new GradingScale(COURSE.gradingScaleId(), "Standard", 5,
+			CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, 300);
+	private static final GradingScale GRADING_SCALE = new GradingScale(GRADING_SCALE_ID, "Standard", 5,
 			Lifecycle.ACTIVE);
 	private static final Pupil PUPIL = new Pupil(20, "Anna", "Ergebnis", Lifecycle.ACTIVE);
 	private static final Pupil SECOND_PUPIL = new Pupil(21, "Berta", "Ergebnis", Lifecycle.ACTIVE);
@@ -358,8 +359,8 @@ class ExamResultsEditorTests {
 
 	private static GradingScaleRepository gradingScaleRepository(final int maxPoints) {
 		final GradingScaleRepository repository = mock(GradingScaleRepository.class);
-		when(repository.findById(COURSE.gradingScaleId())).thenReturn(
-				Optional.of(new GradingScale(COURSE.gradingScaleId(), "Standard", maxPoints, Lifecycle.ACTIVE)));
+		when(repository.findById(EXAM.gradingScaleId())).thenReturn(
+				Optional.of(new GradingScale(EXAM.gradingScaleId(), "Standard", maxPoints, Lifecycle.ACTIVE)));
 		return repository;
 	}
 
