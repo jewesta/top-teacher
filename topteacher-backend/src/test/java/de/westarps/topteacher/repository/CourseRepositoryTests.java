@@ -1,17 +1,22 @@
 package de.westarps.topteacher.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import java.time.LocalDate;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
+import de.westarps.topteacher.backend.repo.ExamRepository;
 import de.westarps.topteacher.backend.repo.GradingScaleRepository;
 import de.westarps.topteacher.backend.repo.PupilRepository;
 import de.westarps.topteacher.backend.repo.SubjectRepository;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.CoursePeriod;
+import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.GradingScale;
 import de.westarps.topteacher.model.Lifecycle;
 import de.westarps.topteacher.model.Pupil;
@@ -24,6 +29,9 @@ class CourseRepositoryTests {
 
 	@Autowired
 	private CourseRepository courseRepository;
+
+	@Autowired
+	private ExamRepository examRepository;
 
 	@Autowired
 	private GradingScaleRepository gradingScaleRepository;
@@ -102,6 +110,37 @@ class CourseRepositoryTests {
 				.containsExactlyInAnyOrder(sourcePupil.id(), otherSourcePupil.id());
 		assertThat(courseRepository.findPupils(sourceCourse.id())).extracting(Pupil::id)
 				.containsExactlyInAnyOrder(sourcePupil.id(), otherSourcePupil.id());
+	}
+
+	@Test
+	void rejectsRemovingCoursePupilsAssignedToAnExam() {
+		final GradingScale gradingScale = createGradingScale("Course Locked Pupil 100");
+		final Course targetCourse = courseRepository.save(new Course(null, SchoolClass.CLS_7C, subject("Englisch"),
+				new SchoolYear(2029), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, gradingScale.id()));
+		final Course sourceCourse = courseRepository.save(new Course(null, SchoolClass.CLS_7D, subject("Spanisch"),
+				new SchoolYear(2029), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, gradingScale.id()));
+		final Pupil examPupil = pupilRepository.save(new Pupil(null, "Klausur", "Teilnahme", Lifecycle.ACTIVE));
+		final Pupil sourcePupil = pupilRepository.save(new Pupil(null, "Quelle", "Neu", Lifecycle.ACTIVE));
+		courseRepository.assignPupil(targetCourse.id(), examPupil.id());
+		courseRepository.assignPupil(sourceCourse.id(), sourcePupil.id());
+		final Exam exam = examRepository
+				.save(new Exam(null, targetCourse.id(), "1. Klausur", LocalDate.of(2029, 9, 20)));
+
+		assertThat(courseRepository.findPupilRemovalLocks(targetCourse.id())).containsEntry(examPupil.id(),
+				"Diese:r Schüler:in ist bereits einer Klausur zugeordnet und kann nicht aus dem Kurs entfernt werden.");
+		assertThatThrownBy(() -> courseRepository.removePupil(targetCourse.id(), examPupil.id()))
+				.isInstanceOf(IllegalArgumentException.class).hasMessage(
+						"Diese:r Schüler:in ist bereits einer Klausur zugeordnet und kann nicht aus dem Kurs entfernt werden.");
+		assertThatThrownBy(() -> courseRepository.replacePupilsFromCourse(targetCourse.id(), sourceCourse.id()))
+				.isInstanceOf(IllegalArgumentException.class).hasMessage(
+						"Diese:r Schüler:in ist bereits einer Klausur zugeordnet und kann nicht aus dem Kurs entfernt werden.");
+
+		courseRepository.assignPupil(sourceCourse.id(), examPupil.id());
+		courseRepository.replacePupilsFromCourse(targetCourse.id(), sourceCourse.id());
+
+		assertThat(examRepository.findPupils(exam.id())).containsExactly(examPupil);
+		assertThat(courseRepository.findPupils(targetCourse.id())).extracting(Pupil::id)
+				.containsExactlyInAnyOrder(examPupil.id(), sourcePupil.id());
 	}
 
 	@Test

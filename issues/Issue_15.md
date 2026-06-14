@@ -17,6 +17,9 @@ dependent exam context tabs.
   changes do not trap the user in an unsaveable dirty state.
 - Added an explicit refresh registry for dependent exam context tabs. LOE and
   result changes now mark dependent tabs stale and refresh visible/eager targets.
+- Included the exam `Schüler:innen` tab in the refresh registry: result changes
+  refresh pupil removal locks, and pupil assignment changes refresh result and
+  evaluation data when those tabs are opened.
 
 ## Verification
 

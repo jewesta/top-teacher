@@ -10,11 +10,11 @@ import org.junit.jupiter.api.Test;
 class RefreshRegistryTests {
 
 	private enum Change {
-		LEVEL_OF_EXPECTATIONS, RESULTS
+		PUPILS, LEVEL_OF_EXPECTATIONS, RESULTS
 	}
 
 	private enum Target {
-		STATUS, LEVEL_OF_EXPECTATIONS, RESULTS, EVALUATION
+		PUPILS, STATUS, LEVEL_OF_EXPECTATIONS, RESULTS, EVALUATION
 	}
 
 	@Test
@@ -62,5 +62,26 @@ class RefreshRegistryTests {
 
 		assertThat(resultsRefreshes).hasValue(1);
 		assertThat(registry.isStale(Target.RESULTS)).isFalse();
+	}
+
+	@Test
+	void refreshesInactivePupilTargetWhenItBecomesActive() {
+		final AtomicReference<Target> activeTarget = new AtomicReference<>(Target.RESULTS);
+		final AtomicInteger pupilRefreshes = new AtomicInteger();
+		final RefreshRegistry<Change, Target> registry = new RefreshRegistry<>(Change.class, Target.class,
+				activeTarget::get);
+		registry.registerTarget(Target.PUPILS, pupilRefreshes::incrementAndGet);
+		registry.registerDependency(Change.RESULTS, Target.PUPILS);
+
+		registry.publish(Change.RESULTS);
+
+		assertThat(pupilRefreshes).hasValue(0);
+		assertThat(registry.isStale(Target.PUPILS)).isTrue();
+
+		activeTarget.set(Target.PUPILS);
+		registry.refreshIfStale(Target.PUPILS);
+
+		assertThat(pupilRefreshes).hasValue(1);
+		assertThat(registry.isStale(Target.PUPILS)).isFalse();
 	}
 }

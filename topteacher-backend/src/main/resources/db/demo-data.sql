@@ -88,6 +88,18 @@ where subject.name in ('Erdkunde', 'Chemie')
         and cp.pupil_id = p.id
   );
 
+insert into exam_pupil (exam_id, pupil_id)
+select e.id, cp.pupil_id
+from exam e
+join course_pupil cp
+    on cp.course_id = e.course_id
+where not exists (
+    select 1
+    from exam_pupil ep
+    where ep.exam_id = e.id
+      and ep.pupil_id = cp.pupil_id
+);
+
 insert into eh_part (exam_id, title, sort_order)
 select e.id, demo.title, demo.sort_order
 from (

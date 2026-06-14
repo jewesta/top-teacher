@@ -29,6 +29,7 @@ import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
+import de.westarps.topteacher.backend.repo.ExamRepository;
 import de.westarps.topteacher.backend.repo.GradingScaleRepository;
 import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.model.Course;
@@ -75,8 +76,8 @@ class ExamResultsEditorTests {
 	void savesRequirementPointsOnlyWhenToolbarSaveIsClicked() {
 		final LevelOfExpectationsRepository levelOfExpectationsRepository = levelOfExpectationsRepository();
 		final CourseRepository courseRepository = courseRepository();
-		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, levelOfExpectationsRepository,
-				gradingScaleRepository());
+		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, examRepository(),
+				levelOfExpectationsRepository, gradingScaleRepository());
 		final AtomicInteger changes = new AtomicInteger();
 		editor.setChangeHandler(changes::incrementAndGet);
 
@@ -120,8 +121,8 @@ class ExamResultsEditorTests {
 	void syncsCriterionCheckboxListWithMarkdownViewerAndSaveState() {
 		final LevelOfExpectationsRepository levelOfExpectationsRepository = levelOfExpectationsRepository();
 		final CourseRepository courseRepository = courseRepository();
-		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, levelOfExpectationsRepository,
-				gradingScaleRepository());
+		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, examRepository(),
+				levelOfExpectationsRepository, gradingScaleRepository());
 
 		editor.setExam(EXAM);
 
@@ -152,8 +153,8 @@ class ExamResultsEditorTests {
 				List.of(REQUIREMENT, BONUS_REQUIREMENT), List.of(CRITERION),
 				List.of(new LoeRequirementResult(REQUIREMENT.id(), PUPIL.id(), 1)));
 		final CourseRepository courseRepository = courseRepository();
-		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, levelOfExpectationsRepository,
-				gradingScaleRepository());
+		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, examRepository(),
+				levelOfExpectationsRepository, gradingScaleRepository());
 
 		editor.setExam(EXAM);
 
@@ -177,8 +178,8 @@ class ExamResultsEditorTests {
 	void savesRequirementCommentWithoutRerendering() {
 		final LevelOfExpectationsRepository levelOfExpectationsRepository = levelOfExpectationsRepository();
 		final CourseRepository courseRepository = courseRepository();
-		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, levelOfExpectationsRepository,
-				gradingScaleRepository());
+		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, examRepository(),
+				levelOfExpectationsRepository, gradingScaleRepository());
 
 		editor.setExam(EXAM);
 
@@ -207,9 +208,9 @@ class ExamResultsEditorTests {
 		when(levelOfExpectationsRepository.findRequirementResultsByExamAndPupil(EXAM.id(), SECOND_PUPIL.id()))
 				.thenReturn(List
 						.of(new LoeRequirementResult(REQUIREMENT.id(), SECOND_PUPIL.id(), 4, "Guter Fortschritt.")));
-		final CourseRepository courseRepository = courseRepository(List.of(PUPIL, SECOND_PUPIL));
-		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, levelOfExpectationsRepository,
-				gradingScaleRepository());
+		final CourseRepository courseRepository = courseRepository();
+		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository,
+				examRepository(List.of(PUPIL, SECOND_PUPIL)), levelOfExpectationsRepository, gradingScaleRepository());
 
 		editor.setExam(EXAM);
 
@@ -247,8 +248,8 @@ class ExamResultsEditorTests {
 		final UI ui = new UI();
 		UI.setCurrent(ui);
 		try {
-			final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, levelOfExpectationsRepository,
-					gradingScaleRepository());
+			final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, examRepository(),
+					levelOfExpectationsRepository, gradingScaleRepository());
 			editor.setExam(EXAM);
 
 			final Button deleteButton = deleteButton(editor);
@@ -284,8 +285,8 @@ class ExamResultsEditorTests {
 		final UI ui = new UI();
 		UI.setCurrent(ui);
 		try {
-			final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, levelOfExpectationsRepository,
-					gradingScaleRepository(6));
+			final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, examRepository(),
+					levelOfExpectationsRepository, gradingScaleRepository(6));
 			editor.setExam(EXAM);
 
 			components(editor, IntegerField.class).getFirst().setValue(2);
@@ -305,8 +306,8 @@ class ExamResultsEditorTests {
 				List.of(new LoeRequirementResult(REQUIREMENT.id(), PUPIL.id(), 5),
 						new LoeRequirementResult(BONUS_REQUIREMENT.id(), PUPIL.id(), 0)));
 		final CourseRepository courseRepository = courseRepository();
-		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, levelOfExpectationsRepository,
-				gradingScaleRepository());
+		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, examRepository(),
+				levelOfExpectationsRepository, gradingScaleRepository());
 		editor.setExam(EXAM);
 
 		components(editor, IntegerField.class).get(1).setValue(2);
@@ -336,13 +337,18 @@ class ExamResultsEditorTests {
 	}
 
 	private static CourseRepository courseRepository() {
-		return courseRepository(List.of(PUPIL));
+		final CourseRepository repository = mock(CourseRepository.class);
+		when(repository.findById(EXAM.courseId())).thenReturn(Optional.of(COURSE));
+		return repository;
 	}
 
-	private static CourseRepository courseRepository(final List<Pupil> pupils) {
-		final CourseRepository repository = mock(CourseRepository.class);
-		when(repository.findPupils(EXAM.courseId())).thenReturn(pupils);
-		when(repository.findById(EXAM.courseId())).thenReturn(Optional.of(COURSE));
+	private static ExamRepository examRepository() {
+		return examRepository(List.of(PUPIL));
+	}
+
+	private static ExamRepository examRepository(final List<Pupil> pupils) {
+		final ExamRepository repository = mock(ExamRepository.class);
+		when(repository.findPupils(EXAM.id())).thenReturn(pupils);
 		return repository;
 	}
 

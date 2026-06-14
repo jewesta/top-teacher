@@ -28,6 +28,7 @@ import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.data.value.ValueChangeMode;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
+import de.westarps.topteacher.backend.repo.ExamRepository;
 import de.westarps.topteacher.backend.repo.GradingScaleRepository;
 import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.model.Exam;
@@ -50,6 +51,7 @@ import de.westarps.vaadin.markdown.MarkdownViewer;
 public class ExamResultsEditor extends AbstractDesigner {
 
 	private final CourseRepository courseRepository;
+	private final ExamRepository examRepository;
 	private final LevelOfExpectationsRepository levelOfExpectationsRepository;
 	private final GradingScaleRepository gradingScaleRepository;
 	private final StepperComboBox<Pupil> pupilSelector = new StepperComboBox<>();
@@ -92,11 +94,12 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private Runnable changeHandler = () -> {
 	};
 
-	public ExamResultsEditor(final CourseRepository courseRepository,
+	public ExamResultsEditor(final CourseRepository courseRepository, final ExamRepository examRepository,
 			final LevelOfExpectationsRepository levelOfExpectationsRepository,
 			final GradingScaleRepository gradingScaleRepository) {
 		super("tt-exam-results-editor");
 		this.courseRepository = courseRepository;
+		this.examRepository = examRepository;
 		this.levelOfExpectationsRepository = levelOfExpectationsRepository;
 		this.gradingScaleRepository = gradingScaleRepository;
 		fullscreenButton = new FullscreenButton(this);
@@ -217,7 +220,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 	}
 
 	private void refreshPupils() {
-		final List<Pupil> pupils = courseRepository.findPupils(exam.courseId());
+		final List<Pupil> pupils = examRepository.findPupils(exam.id());
 		final Pupil nextSelectedPupil = selectedPupil == null ? pupils.stream().findFirst().orElse(null)
 				: pupils.stream().filter(pupil -> pupil.id().equals(selectedPupil.id())).findFirst()
 						.orElseGet(() -> pupils.stream().findFirst().orElse(null));
@@ -234,7 +237,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 		clearRenderedResults();
 
 		if (selectedPupil == null) {
-			results.add(emptyState("Diesem Kurs sind keine Schüler:innen zugeordnet."));
+			results.add(emptyState("Dieser Klausur sind keine Schüler:innen zugeordnet."));
 			return;
 		}
 
