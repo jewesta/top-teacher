@@ -26,6 +26,7 @@ class AppSettingsTests {
 		settingsRepository.save(AppSettings.TT_DATABASE_BACKUP_SCHEDULE_ENABLED_KEY, "false");
 		settingsRepository.save(AppSettings.TT_DATABASE_BACKUP_SCHEDULE_CRON_KEY, "0 0 2 * * *");
 		settingsRepository.delete(AppSettings.TT_EVENT_DATABASE_BACKUP_ERROR_KEY);
+		settingsRepository.save(AppSettings.TT_DATABASE_INITIALIZATION_COMPLETED_KEY, "false");
 	}
 
 	@Test
@@ -81,5 +82,15 @@ class AppSettingsTests {
 
 		appSettings.clearTtEventDatabaseBackupError();
 		assertThat(appSettings.ttEventDatabaseBackupError()).isEmpty();
+	}
+
+	@Test
+	void savesDatabaseInitializationCompletedFlag() {
+		settingsRepository.delete(AppSettings.TT_DATABASE_INITIALIZATION_COMPLETED_KEY);
+		assertThat(appSettings.ttDatabaseInitializationCompleted()).isFalse();
+
+		appSettings.saveTtDatabaseInitializationCompleted(true);
+
+		assertThat(appSettings.ttDatabaseInitializationCompleted()).isTrue();
 	}
 }

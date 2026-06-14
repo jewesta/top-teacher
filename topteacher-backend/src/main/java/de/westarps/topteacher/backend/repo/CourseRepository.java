@@ -35,26 +35,35 @@ public class CourseRepository {
 
 	public List<Course> findAll() {
 		return jdbc.query("""
-				select id, school_class, subject, calendar_year, course_period, lifecycle, grading_scale_id
-				from course
-				order by calendar_year desc, course_period, school_class, subject, id
+				select c.id, c.school_class, s.id as subject_id, s.name as subject_name,
+				       s.lifecycle as subject_lifecycle, c.calendar_year, c.course_period, c.lifecycle,
+				       c.grading_scale_id
+				from course c
+				join subject s on s.id = c.subject_id
+				order by c.calendar_year desc, c.course_period, c.school_class, s.name, c.id
 				""", rowMapper);
 	}
 
 	public List<Course> findActive() {
 		return jdbc.query("""
-				select id, school_class, subject, calendar_year, course_period, lifecycle, grading_scale_id
-				from course
-				where lifecycle = :lifecycle
-				order by calendar_year desc, course_period, school_class, subject, id
+				select c.id, c.school_class, s.id as subject_id, s.name as subject_name,
+				       s.lifecycle as subject_lifecycle, c.calendar_year, c.course_period, c.lifecycle,
+				       c.grading_scale_id
+				from course c
+				join subject s on s.id = c.subject_id
+				where c.lifecycle = :lifecycle
+				order by c.calendar_year desc, c.course_period, c.school_class, s.name, c.id
 				""", Map.of("lifecycle", Lifecycle.ACTIVE.name()), rowMapper);
 	}
 
 	public Optional<Course> findById(final int id) {
 		return jdbc.query("""
-				select id, school_class, subject, calendar_year, course_period, lifecycle, grading_scale_id
-				from course
-				where id = :id
+				select c.id, c.school_class, s.id as subject_id, s.name as subject_name,
+				       s.lifecycle as subject_lifecycle, c.calendar_year, c.course_period, c.lifecycle,
+				       c.grading_scale_id
+				from course c
+				join subject s on s.id = c.subject_id
+				where c.id = :id
 				""", Map.of("id", id), rowMapper).stream().findFirst();
 	}
 
@@ -146,8 +155,8 @@ public class CourseRepository {
 		final MapSqlParameterSource parameters = parameters(course);
 
 		jdbc.update("""
-				insert into course (school_class, subject, calendar_year, course_period, lifecycle, grading_scale_id)
-				values (:schoolClass, :subject, :calendarYear, :coursePeriod, :lifecycle, :gradingScaleId)
+				insert into course (school_class, subject_id, calendar_year, course_period, lifecycle, grading_scale_id)
+				values (:schoolClass, :subjectId, :calendarYear, :coursePeriod, :lifecycle, :gradingScaleId)
 				""", parameters, keyHolder, new String[] { "id" });
 
 		final Number id = keyHolder.getKey();
@@ -165,7 +174,7 @@ public class CourseRepository {
 		jdbc.update("""
 				update course
 				set school_class = :schoolClass,
-				    subject = :subject,
+				    subject_id = :subjectId,
 				    calendar_year = :calendarYear,
 				    course_period = :coursePeriod,
 				    lifecycle = :lifecycle,
@@ -176,7 +185,7 @@ public class CourseRepository {
 
 	private MapSqlParameterSource parameters(final Course course) {
 		return new MapSqlParameterSource().addValue("schoolClass", course.schoolClass().name())
-				.addValue("subject", course.subject().name())
+				.addValue("subjectId", course.subject().id())
 				.addValue("calendarYear", course.schoolYear().getCalendarYear())
 				.addValue("coursePeriod", course.coursePeriod().name()).addValue("lifecycle", course.lifecycle().name())
 				.addValue("gradingScaleId", course.gradingScaleId());
@@ -184,7 +193,9 @@ public class CourseRepository {
 
 	private Course mapCourse(final ResultSet resultSet, final int rowNumber) throws SQLException {
 		return new Course(resultSet.getInt("id"), SchoolClass.valueOf(resultSet.getString("school_class")),
-				Subject.valueOf(resultSet.getString("subject")), new SchoolYear(resultSet.getInt("calendar_year")),
+				new Subject(resultSet.getInt("subject_id"), resultSet.getString("subject_name"),
+						Lifecycle.valueOf(resultSet.getString("subject_lifecycle"))),
+				new SchoolYear(resultSet.getInt("calendar_year")),
 				CoursePeriod.valueOf(resultSet.getString("course_period")),
 				Lifecycle.valueOf(resultSet.getString("lifecycle")),
 				resultSet.getObject("grading_scale_id", Integer.class));

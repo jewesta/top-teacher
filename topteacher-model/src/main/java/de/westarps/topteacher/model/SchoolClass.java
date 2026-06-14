@@ -1,6 +1,6 @@
 package de.westarps.topteacher.model;
 
-public enum SchoolClass {
+public enum SchoolClass implements HasDisplayName {
 
 	CLS_5A("5a"), CLS_5B("5b"), CLS_5C("5c"), CLS_5D("5d"), CLS_5E("5e"), CLS_5F("5f"),
 
@@ -22,6 +22,7 @@ public enum SchoolClass {
 		this.displayName = displayName;
 	}
 
+	@Override
 	public String getDisplayName() {
 		return displayName;
 	}

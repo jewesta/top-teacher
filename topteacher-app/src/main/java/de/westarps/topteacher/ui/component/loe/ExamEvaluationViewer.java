@@ -98,7 +98,7 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 
 		final List<Pupil> pupils = courseRepository.findPupils(exam.courseId());
 		if (pupils.isEmpty()) {
-			showDesignerMessage(emptyState("Diesem Kurs sind keine Schüler zugeordnet."));
+			showDesignerMessage(emptyState("Diesem Kurs sind keine Schüler:innen zugeordnet."));
 			return;
 		}
 
@@ -136,7 +136,7 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 	}
 
 	private void configureGrid(final List<LoeAggregationColumns.Column> aggregationColumns) {
-		grid.addSpreadsheetColumn(EvaluationRow::pupilName, "Schüler").setFrozen(true).setAutoWidth(true)
+		grid.addSpreadsheetColumn(EvaluationRow::pupilName, "Schüler:in").setFrozen(true).setAutoWidth(true)
 				.setFlexGrow(0);
 		grid.addSpreadsheetColumn(row -> pointsDisplayName(row.pointsFor(requirements), hasBonus(requirements)),
 				"Gesamt").setTextAlign(ColumnTextAlign.CENTER).setFrozen(true).setWidth(RESULT_COLUMN_WIDTH)

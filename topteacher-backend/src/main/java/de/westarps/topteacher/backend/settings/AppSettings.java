@@ -19,6 +19,8 @@ public class AppSettings {
 	public static final String TT_DATABASE_BACKUP_SCHEDULE_CRON_KEY = "tt.database.backup.schedule.cron";
 	public static final String TT_DATABASE_BACKUP_SCHEDULE_CRON_DEFAULT = "0 0 2 * * *";
 	public static final String TT_EVENT_DATABASE_BACKUP_ERROR_KEY = "tt.event.database.backup.error";
+	public static final String TT_DATABASE_INITIALIZATION_COMPLETED_KEY = "tt.database.initialization.completed";
+	public static final boolean TT_DATABASE_INITIALIZATION_COMPLETED_DEFAULT = false;
 
 	private final SettingsRepository settingsRepository;
 
@@ -71,6 +73,16 @@ public class AppSettings {
 
 	public void clearTtEventDatabaseBackupError() {
 		settingsRepository.delete(TT_EVENT_DATABASE_BACKUP_ERROR_KEY);
+	}
+
+	public boolean ttDatabaseInitializationCompleted() {
+		return settingsRepository.findValue(TT_DATABASE_INITIALIZATION_COMPLETED_KEY)
+				.map(value -> parseBoolean(TT_DATABASE_INITIALIZATION_COMPLETED_KEY, value))
+				.orElse(TT_DATABASE_INITIALIZATION_COMPLETED_DEFAULT);
+	}
+
+	public void saveTtDatabaseInitializationCompleted(final boolean completed) {
+		settingsRepository.save(TT_DATABASE_INITIALIZATION_COMPLETED_KEY, Boolean.toString(completed));
 	}
 
 	private static boolean parseBoolean(final String key, final String value) {

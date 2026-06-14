@@ -7,8 +7,9 @@ import java.util.Properties;
 
 public final class ApplicationVersion {
 
+	public static final String APP_NAME = "TopTeacher";
 	public static final String COPYRIGHT = "\u00A9 2026 Jens Westarp";
-	public static final String DISPLAY_APP_NAME = "TopTeacher!";
+	public static final String DISPLAY_APP_NAME = APP_NAME + "!";
 	private static final String APP_VERSION_PROPERTY = "tt.app.version";
 	private static final String JPACKAGE_VERSION_PROPERTY = "jpackage.app-version";
 	private static final String BUILD_VERSION_RESOURCE = "/topteacher-build.properties";

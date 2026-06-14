@@ -5,12 +5,44 @@ from (
         ('tt.loe.export.show_watermark', 'true'),
         ('tt.database.backup.target_folder', ''),
         ('tt.database.backup.schedule.enabled', 'false'),
-        ('tt.database.backup.schedule.cron', '0 0 2 * * *')
+        ('tt.database.backup.schedule.cron', '0 0 2 * * *'),
+        ('tt.database.initialization.completed', 'false')
 ) base(setting_key, setting_value)
 where not exists (
     select 1
     from app_setting setting
     where setting.setting_key = base.setting_key
+);
+
+insert into subject (name, lifecycle)
+select base.name, base.lifecycle
+from (
+    values
+        ('Deutsch', 'ACTIVE'),
+        ('Mathematik', 'ACTIVE'),
+        ('Englisch', 'ACTIVE'),
+        ('Französisch', 'ACTIVE'),
+        ('Latein', 'ACTIVE'),
+        ('Spanisch', 'ACTIVE'),
+        ('Erdkunde', 'ACTIVE'),
+        ('Geschichte', 'ACTIVE'),
+        ('Politik', 'ACTIVE'),
+        ('Biologie', 'ACTIVE'),
+        ('Chemie', 'ACTIVE'),
+        ('Physik', 'ACTIVE'),
+        ('Informatik', 'ACTIVE'),
+        ('Ev. Religionslehre', 'ACTIVE'),
+        ('Kath. Religionslehre', 'ACTIVE'),
+        ('Ethik', 'ACTIVE'),
+        ('Philosophie', 'ACTIVE'),
+        ('Kunst', 'ACTIVE'),
+        ('Musik', 'ACTIVE'),
+        ('Sport', 'ACTIVE')
+) base(name, lifecycle)
+where not exists (
+    select 1
+    from subject s
+    where s.name = base.name
 );
 
 update grading_scale

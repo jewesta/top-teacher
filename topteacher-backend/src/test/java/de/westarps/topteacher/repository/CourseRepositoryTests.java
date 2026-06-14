@@ -9,6 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.GradingScaleRepository;
 import de.westarps.topteacher.backend.repo.PupilRepository;
+import de.westarps.topteacher.backend.repo.SubjectRepository;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.CoursePeriod;
 import de.westarps.topteacher.model.GradingScale;
@@ -30,17 +31,20 @@ class CourseRepositoryTests {
 	@Autowired
 	private PupilRepository pupilRepository;
 
+	@Autowired
+	private SubjectRepository subjectRepository;
+
 	@Test
 	void savesUpdatesAndArchivesCourses() {
 		final GradingScale gradingScale = createGradingScale("Course Repo 100");
 		final GradingScale updatedGradingScale = createGradingScale("Course Repo 150", 150);
-		final Course saved = courseRepository.save(new Course(null, SchoolClass.CLS_5A, Subject.ENGLISH,
+		final Course saved = courseRepository.save(new Course(null, SchoolClass.CLS_5A, subject("Englisch"),
 				new SchoolYear(2026), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, gradingScale.id()));
 
 		assertThat(saved.id()).isNotNull();
 		assertThat(courseRepository.findById(saved.id())).contains(saved);
 
-		final Course updated = new Course(saved.id(), SchoolClass.CLS_5A, Subject.SPANISH, new SchoolYear(2026),
+		final Course updated = new Course(saved.id(), SchoolClass.CLS_5A, subject("Spanisch"), new SchoolYear(2026),
 				CoursePeriod.FIRST_HALF, Lifecycle.ACTIVE, updatedGradingScale.id());
 		courseRepository.save(updated);
 
@@ -55,7 +59,7 @@ class CourseRepositoryTests {
 	@Test
 	void assignsFindsAndRemovesPupilsFromCourse() {
 		final GradingScale gradingScale = createGradingScale("Course Assignment 100");
-		final Course course = courseRepository.save(new Course(null, SchoolClass.CLS_6A, Subject.ENGLISH,
+		final Course course = courseRepository.save(new Course(null, SchoolClass.CLS_6A, subject("Englisch"),
 				new SchoolYear(2027), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, gradingScale.id()));
 		final Pupil ada = pupilRepository.save(new Pupil(null, "Ada", "Lovelace", Lifecycle.ACTIVE));
 		final Pupil grace = pupilRepository.save(new Pupil(null, "Grace", "Hopper", Lifecycle.ACTIVE));
@@ -80,9 +84,9 @@ class CourseRepositoryTests {
 	@Test
 	void replacesPupilsFromAnotherCourse() {
 		final GradingScale gradingScale = createGradingScale("Course Replace Pupils 100");
-		final Course sourceCourse = courseRepository.save(new Course(null, SchoolClass.CLS_7A, Subject.ENGLISH,
+		final Course sourceCourse = courseRepository.save(new Course(null, SchoolClass.CLS_7A, subject("Englisch"),
 				new SchoolYear(2028), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, gradingScale.id()));
-		final Course targetCourse = courseRepository.save(new Course(null, SchoolClass.CLS_7B, Subject.SPANISH,
+		final Course targetCourse = courseRepository.save(new Course(null, SchoolClass.CLS_7B, subject("Spanisch"),
 				new SchoolYear(2028), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, gradingScale.id()));
 		final Pupil sourcePupil = pupilRepository.save(new Pupil(null, "Quelle", "Eins", Lifecycle.ACTIVE));
 		final Pupil otherSourcePupil = pupilRepository.save(new Pupil(null, "Quelle", "Zwei", Lifecycle.ACTIVE));
@@ -103,9 +107,9 @@ class CourseRepositoryTests {
 	@Test
 	void findsOnlyActiveCourses() {
 		final GradingScale gradingScale = createGradingScale("Course Active 100");
-		final Course active = courseRepository.save(new Course(null, SchoolClass.CLS_9A, Subject.ENGLISH,
+		final Course active = courseRepository.save(new Course(null, SchoolClass.CLS_9A, subject("Englisch"),
 				new SchoolYear(2032), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, gradingScale.id()));
-		final Course inactive = courseRepository.save(new Course(null, SchoolClass.CLS_9A, Subject.SPANISH,
+		final Course inactive = courseRepository.save(new Course(null, SchoolClass.CLS_9A, subject("Spanisch"),
 				new SchoolYear(2032), CoursePeriod.FULL_YEAR, Lifecycle.INACTIVE, gradingScale.id()));
 
 		assertThat(courseRepository.findActive()).extracting(Course::id).contains(active.id())
@@ -118,5 +122,10 @@ class CourseRepositoryTests {
 
 	private GradingScale createGradingScale(final String name, final int maxPoints) {
 		return gradingScaleRepository.save(new GradingScale(null, name, maxPoints, Lifecycle.ACTIVE));
+	}
+
+	private Subject subject(final String name) {
+		return subjectRepository.findAll().stream().filter(candidate -> candidate.name().equals(name)).findFirst()
+				.orElseThrow();
 	}
 }

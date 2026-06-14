@@ -29,6 +29,7 @@ import com.vaadin.flow.router.Route;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.GradingScaleRepository;
+import de.westarps.topteacher.backend.repo.SubjectRepository;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.CoursePeriod;
 import de.westarps.topteacher.model.GradingScale;
@@ -53,6 +54,7 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 
 	private final CourseRepository courseRepository;
 	private final GradingScaleRepository gradingScaleRepository;
+	private final SubjectRepository subjectRepository;
 	private final ComboBox<SchoolClass> schoolClass = new ComboBox<>("Klasse");
 	private final ComboBox<Subject> subject = new ComboBox<>("Fach");
 	private final IntegerField calendarYear = new IntegerField("Startjahr");
@@ -74,14 +76,17 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 
 	private Course selectedCourse;
 	private List<Course> selectedCourses = List.of();
+	private List<Subject> subjects = List.of();
 	private List<GradingScale> gradingScales = List.of();
 	private ListDataProvider<AssignmentRow> assignmentDataProvider;
 	private Tab assignmentsTab;
 	private Component assignmentsContent;
 
-	public CoursesView(final CourseRepository courseRepository, final GradingScaleRepository gradingScaleRepository) {
+	public CoursesView(final CourseRepository courseRepository, final SubjectRepository subjectRepository,
+			final GradingScaleRepository gradingScaleRepository) {
 		super("Kurse", "tt-courses-view", new MultiSelectionGrid<>(Course.class, false));
 		this.courseRepository = courseRepository;
+		this.subjectRepository = subjectRepository;
 		this.gradingScaleRepository = gradingScaleRepository;
 
 		configureEditors();
@@ -126,7 +131,7 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 		return String.join(" ", String.valueOf(course.id()), String.valueOf(course.schoolYear().getCalendarYear()),
 				course.schoolYear().getDisplayName(), course.coursePeriod().getDisplayName(),
 				course.coursePeriod().name(), course.schoolClass().getDisplayName(), course.schoolClass().name(),
-				course.subject().getDisplayName(), course.subject().name(), gradingScaleLabel(course),
+				String.valueOf(course.subject().id()), course.subject().getDisplayName(), gradingScaleLabel(course),
 				course.lifecycle().getDisplayName(), course.lifecycle().name());
 	}
 
@@ -149,9 +154,9 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 		schoolClass.setItemLabelGenerator(SchoolClass::getDisplayName);
 		schoolClass.setRequiredIndicatorVisible(true);
 
-		subject.setItems(Subject.values());
 		subject.setItemLabelGenerator(Subject::getDisplayName);
 		subject.setRequiredIndicatorVisible(true);
+		refreshSubjectOptions();
 
 		calendarYear.setMin(1900);
 		calendarYear.setMax(9998);
@@ -189,7 +194,7 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 	}
 
 	private void configureAssignments() {
-		assignmentSearch.setPlaceholder("Schüler suchen");
+		assignmentSearch.setPlaceholder("Schüler:innen suchen");
 		assignmentSearch.addValueChangeListener(event -> applyAssignmentFilter());
 
 		copyAssignmentsButton.addClickListener(event -> openCopyAssignmentsDialog());
@@ -233,9 +238,9 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 
 	private Checkbox createAssignmentCheckbox(final AssignmentRow row) {
 		final Checkbox checkbox = new Checkbox(row.assigned());
-		checkbox.setAriaLabel(row.assigned() ? "Schüler aus Kurs entfernen" : "Schüler dem Kurs zuordnen");
+		checkbox.setAriaLabel(row.assigned() ? "Schüler:in aus Kurs entfernen" : "Schüler:in dem Kurs zuordnen");
 		checkbox.getElement().setAttribute("title",
-				row.assigned() ? "Schüler aus Kurs entfernen" : "Schüler dem Kurs zuordnen");
+				row.assigned() ? "Schüler:in aus Kurs entfernen" : "Schüler:in dem Kurs zuordnen");
 		checkbox.addValueChangeListener(event -> {
 			if (!event.isFromClient()) {
 				return;
@@ -251,7 +256,7 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 	}
 
 	private void configureCopyAssignmentsDialog() {
-		copyAssignmentsDialog.setHeaderTitle("Schüler übernehmen");
+		copyAssignmentsDialog.setHeaderTitle("Schüler:innen übernehmen");
 
 		sourceCourse.setItemLabelGenerator(Course::getDisplayName);
 		sourceCourse.setRequiredIndicatorVisible(true);
@@ -385,10 +390,11 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 		copyAssignmentsDialog.close();
 		assignmentSearch.clear();
 		refreshAssignments();
-		Notification.show("Schüler aus Kurs übernommen.");
+		Notification.show("Schüler:innen aus Kurs übernommen.");
 	}
 
 	private void refreshGrid() {
+		refreshSubjectOptions();
 		refreshGradingScaleOptions();
 		setGridItems(courseRepository.findAll());
 	}
@@ -417,7 +423,7 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 			if (assignmentsContent == null) {
 				assignmentsContent = createAssignmentsContent();
 			}
-			assignmentsTab = getContextTabs().add("Schüler", assignmentsContent);
+			assignmentsTab = getContextTabs().add("Schüler:innen", assignmentsContent);
 		}
 		refreshAssignments();
 	}
@@ -438,9 +444,19 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 
 	private void clearSingleEditor() {
 		selectedCourse = null;
-		readSingleEditor(new CourseFormData(null, null, Year.now().getValue(), CoursePeriod.FULL_YEAR,
+		readSingleEditor(new CourseFormData(null, defaultSubject(), Year.now().getValue(), CoursePeriod.FULL_YEAR,
 				defaultGradingScale(), Lifecycle.ACTIVE));
 		updateEditorModeControls();
+	}
+
+	private void refreshSubjectOptions() {
+		subjects = subjectRepository.findAll();
+		subject.setItems(subjects);
+	}
+
+	private Subject defaultSubject() {
+		return subjects.stream().filter(candidate -> candidate.lifecycle() == Lifecycle.ACTIVE).findFirst()
+				.orElseGet(() -> subjects.stream().findFirst().orElse(null));
 	}
 
 	private void refreshGradingScaleOptions() {

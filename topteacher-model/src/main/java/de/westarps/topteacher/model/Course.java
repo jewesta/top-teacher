@@ -3,7 +3,7 @@ package de.westarps.topteacher.model;
 import java.util.Objects;
 
 public record Course(Integer id, SchoolClass schoolClass, Subject subject, SchoolYear schoolYear,
-		CoursePeriod coursePeriod, Lifecycle lifecycle, Integer gradingScaleId) {
+		CoursePeriod coursePeriod, Lifecycle lifecycle, Integer gradingScaleId) implements HasDisplayName {
 
 	public Course {
 		schoolClass = Objects.requireNonNull(schoolClass, "schoolClass must not be null");
@@ -14,6 +14,7 @@ public record Course(Integer id, SchoolClass schoolClass, Subject subject, Schoo
 		gradingScaleId = Objects.requireNonNull(gradingScaleId, "gradingScaleId must not be null");
 	}
 
+	@Override
 	public String getDisplayName() {
 		final String courseLabel = subject.getDisplayName() + " " + schoolClass.getDisplayName() + ", "
 				+ schoolYear.getShortDisplayName();

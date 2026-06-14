@@ -25,7 +25,7 @@ Use `addSpreadsheetColumn(...)` instead of plain `addColumn(...)` when a column 
 ```java
 private final SpreadsheetGrid<MyRow> grid = new SpreadsheetGrid<>(MyRow.class, false);
 
-grid.addSpreadsheetColumn(MyRow::name, "Schüler")
+grid.addSpreadsheetColumn(MyRow::name, "Schüler:in")
 		.setFrozen(true)
 		.setAutoWidth(true)
 		.setFlexGrow(0);
@@ -68,7 +68,7 @@ The current CSS deliberately gives frozen cells a solid background and a higher 
 
 For the evaluation view, the useful frozen set is:
 
-- `Schüler`
+- `Schüler:in`
 - `Gesamt`
 - `Note`
 

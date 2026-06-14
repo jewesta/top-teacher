@@ -85,7 +85,8 @@ class DockLifecycleController {
 		try {
 			LocalBrowserLauncher.openWithDesktop(applicationUri);
 		} catch (final IOException | RuntimeException exception) {
-			LOGGER.warn("Could not open TopTeacher in the default browser at {}.", applicationUri, exception);
+			LOGGER.warn("Could not open {} in the default browser at {}.", ApplicationVersion.DISPLAY_APP_NAME,
+					applicationUri, exception);
 		}
 	}
 
@@ -95,7 +96,8 @@ class DockLifecycleController {
 			exitCode = SpringApplication.exit(applicationContext);
 		} catch (final RuntimeException exception) {
 			exitCode = 1;
-			LOGGER.warn("Could not close TopTeacher cleanly after a native quit request.", exception);
+			LOGGER.warn("Could not close {} cleanly after a native quit request.", ApplicationVersion.DISPLAY_APP_NAME,
+					exception);
 		} finally {
 			response.performQuit();
 			System.exit(exitCode);
@@ -116,9 +118,9 @@ class DockLifecycleController {
 			final Class<?> applicationClass = Class.forName("com.apple.eawt.Application");
 			final Object application = applicationClass.getMethod("getApplication").invoke(null);
 			applicationClass.getMethod("setDockMenu", PopupMenu.class).invoke(application, dockMenu);
-			LOGGER.info("Configured TopTeacher macOS Dock menu.");
+			LOGGER.info("Configured {} macOS Dock menu.", ApplicationVersion.DISPLAY_APP_NAME);
 		} catch (final ReflectiveOperationException | LinkageError | RuntimeException exception) {
-			LOGGER.warn("Could not configure TopTeacher macOS Dock menu.", exception);
+			LOGGER.warn("Could not configure {} macOS Dock menu.", ApplicationVersion.DISPLAY_APP_NAME, exception);
 		}
 	}
 

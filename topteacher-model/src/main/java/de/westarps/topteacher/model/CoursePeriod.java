@@ -1,6 +1,6 @@
 package de.westarps.topteacher.model;
 
-public enum CoursePeriod {
+public enum CoursePeriod implements HasDisplayName {
 
 	FIRST_HALF("1. Hj."), SECOND_HALF("2. Hj."), FULL_YEAR("Ganzjahr");
 
@@ -10,6 +10,7 @@ public enum CoursePeriod {
 		this.displayName = displayName;
 	}
 
+	@Override
 	public String getDisplayName() {
 		return displayName;
 	}

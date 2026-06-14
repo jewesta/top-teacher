@@ -18,6 +18,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.TextField;
 
@@ -41,11 +42,28 @@ class SettingsViewTests {
 
 		assertThat(view.getPageTitle()).isEqualTo("Einstellungen");
 		assertThat(tabSheet.getTabCount()).isEqualTo(1);
-		assertThat(tabSheet.getTabAt(0).getLabel()).isEqualTo("Backup");
+		assertThat(tabSheet.getTabAt(0).getLabel()).isEqualTo("Sicherung");
 		assertThat(form.getResponsiveSteps()).hasSize(1);
 		assertThat(form.getResponsiveSteps().getFirst().toJson().get("columns").asInt()).isEqualTo(1);
 		assertThat(button(backupContent, "Speichern").isEnabled()).isFalse();
-		assertThat(button(backupContent, "Backup jetzt").isEnabled()).isFalse();
+		assertThat(button(backupContent, "Jetzt sichern").isEnabled()).isFalse();
+	}
+
+	@Test
+	void reattachesSelectedUiScopedTabContentAfterRouteRecreation() {
+		final Div tabContent = new Div();
+		final SettingsTab settingsTab = new StaticSettingsTab("Fächer", tabContent);
+		final SettingsView firstView = new SettingsView(List.of(settingsTab));
+		final TabSheet firstTabSheet = components(firstView, TabSheet.class).getFirst();
+		firstTabSheet.getElement().appendChild(tabContent.getElement());
+
+		assertThat(tabContent.getElement().getParent()).isEqualTo(firstTabSheet.getElement());
+
+		final SettingsView secondView = new SettingsView(List.of(settingsTab));
+		final TabSheet secondTabSheet = components(secondView, TabSheet.class).getFirst();
+
+		assertThat(secondTabSheet.getComponent(secondTabSheet.getSelectedTab())).isSameAs(tabContent);
+		assertThat(tabContent.getElement().getParent()).isNull();
 	}
 
 	@Test
@@ -73,7 +91,7 @@ class SettingsViewTests {
 		textField(backupContent, "Zielordner").setValue(tempDir.toString());
 
 		assertThat(button(backupContent, "Speichern").isEnabled()).isTrue();
-		assertThat(button(backupContent, "Backup jetzt").isEnabled()).isFalse();
+		assertThat(button(backupContent, "Jetzt sichern").isEnabled()).isFalse();
 	}
 
 	@Test
@@ -92,9 +110,9 @@ class SettingsViewTests {
 			button(backupContent, "Speichern").click();
 
 			assertThat(button(backupContent, "Speichern").isEnabled()).isFalse();
-			assertThat(button(backupContent, "Backup jetzt").isEnabled()).isTrue();
+			assertThat(button(backupContent, "Jetzt sichern").isEnabled()).isTrue();
 
-			button(backupContent, "Backup jetzt").click();
+			button(backupContent, "Jetzt sichern").click();
 		} finally {
 			UI.setCurrent(null);
 		}
@@ -169,5 +187,8 @@ class SettingsViewTests {
 	private static <T extends Component> List<T> components(final Component root, final Class<T> type) {
 		return Stream.concat(Stream.of(root), root.getChildren().flatMap(child -> components(child, type).stream()))
 				.filter(type::isInstance).map(type::cast).toList();
+	}
+
+	private record StaticSettingsTab(String label, Component content) implements SettingsTab {
 	}
 }

@@ -115,6 +115,43 @@ vaadin-app-layout::part(navbar) {
 	line-height: var(--lumo-line-height-s);
 }
 
+.tt-dialog::part(overlay) {
+	box-sizing: border-box;
+	max-width: calc(100vw - 2rem);
+	width: 32rem;
+}
+
+.tt-dialog-header {
+	padding-bottom: var(--lumo-space-l);
+}
+
+.tt-dialog-header-text {
+	font-size: var(--lumo-font-size-xl);
+	font-weight: 600;
+}
+
+.tt-dialog-content {
+	box-sizing: border-box;
+	min-width: 18rem;
+	max-width: 100%;
+}
+
+.tt-dialog-buttonbar {
+	--tt-negative-space-l: calc(var(--lumo-space-l) * -1);
+	background-color: var(--lumo-contrast-5pct);
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	margin-bottom: var(--tt-negative-space-l);
+	margin-left: var(--tt-negative-space-l);
+	margin-right: var(--tt-negative-space-l);
+	margin-top: var(--lumo-space-l);
+	padding-bottom: var(--lumo-space-m);
+	padding-left: var(--lumo-space-l);
+	padding-right: var(--lumo-space-l);
+	padding-top: var(--lumo-space-m);
+}
+
 .tt-settings-form {
 	width: 100%;
 }

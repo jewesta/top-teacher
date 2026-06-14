@@ -24,7 +24,6 @@ import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.Pupil;
 import de.westarps.topteacher.model.SchoolClass;
-import de.westarps.topteacher.model.Subject;
 
 @SpringBootTest
 @Sql("/db/demo-data.sql")
@@ -54,16 +53,15 @@ class LevelOfExpectationsExportServiceTests {
 
 		final String html = exportService.renderPupilHtml(demo.exam().id(), demo.pupil().id());
 
-		assertThat(html).contains("EF_Englisch");
-		assertThat(html).contains("Klausur Nr. 4");
-		assertThat(html).contains("Finn Becker");
-		assertThat(html).contains("Klausurteil A: Schreiben mit Leseverstehen");
-		assertThat(html).contains("Schreiben mit Leseverstehen (integriert), 70");
-		assertThat(html).doesNotContain("(integriert) ,");
+		assertThat(html).contains("10a_Erdkunde");
+		assertThat(html).contains("Klausur Windenergie und Klimawandel");
+		assertThat(html).contains("Mia Weber");
+		assertThat(html).contains("Klausur: Windenergie, Klimawandel und Energiewende");
+		assertThat(html).contains("Aufgabe 3: Transformation des Energiesektors beurteilen");
 		assertThat(html).contains("GESAMTPUNKTZAHL KLAUSUR");
-		assertThat(html).contains("sehr gut plus");
+		assertThat(html).contains("gut plus");
 		assertThat(html).doesNotContain("eh:", "tt-criterion", "tt-criterion-badge");
-		assertThat(html).doesNotContain("Hinweise / Tipps", "Sehr klare Auswahl der Hauptgründe");
+		assertThat(html).doesNotContain("Hinweise / Tipps", "Klares Fazit");
 	}
 
 	@Test
@@ -72,13 +70,13 @@ class LevelOfExpectationsExportServiceTests {
 
 		final String html = exportService.renderTeacherHtml(demo.exam().id(), demo.pupil().id());
 
-		assertThat(html).contains("Lehrerversion");
+		assertThat(html).contains("Lehrer:innen-Version");
 		assertThat(html).contains("tt-teacher-watermark");
 		assertThat(html).contains("tt-criterion-highlight");
 		assertThat(html).contains("tt-criterion-marker");
 		assertThat(html).contains("Hinweise / Tipps");
-		assertThat(html).contains("Beim Überarbeiten besonders auf Belege");
-		assertThat(html).contains("Sehr klare Auswahl der Hauptgründe");
+		assertThat(html).contains("Beim Überarbeiten besonders auf Materialbelege");
+		assertThat(html).contains("Klares Fazit");
 		assertThat(html).doesNotContain("Notiz: ");
 	}
 
@@ -120,8 +118,8 @@ class LevelOfExpectationsExportServiceTests {
 
 		try (PDDocument document = PDDocument.load(pdf)) {
 			final String text = new PDFTextStripper().getText(document);
-			assertThat(text).contains("Beim Überarbeiten besonders auf Belege");
-			assertThat(text).contains("Sehr klare Auswahl der Hauptgründe");
+			assertThat(text).contains("Beim Überarbeiten besonders auf Materialbelege");
+			assertThat(text).contains("Klares Fazit");
 			assertThat(text).doesNotContain("Notiz:");
 		}
 	}
@@ -136,7 +134,7 @@ class LevelOfExpectationsExportServiceTests {
 		assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
 		assertThat(response.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_PDF);
 		assertThat(response.getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION))
-				.isEqualTo("attachment; filename=erwartungshorizont-klausur-nr-4-becker-finn.pdf");
+				.isEqualTo("attachment; filename=erwartungshorizont-klausur-windenergie-und-klimawandel-weber-mia.pdf");
 		assertThat(response.getBody()).startsWith("%PDF".getBytes());
 	}
 
@@ -149,20 +147,21 @@ class LevelOfExpectationsExportServiceTests {
 
 		assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
 		assertThat(response.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_PDF);
-		assertThat(response.getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION))
-				.isEqualTo("attachment; filename=lehrerversion-erwartungshorizont-klausur-nr-4-becker-finn.pdf");
+		assertThat(response.getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION)).isEqualTo(
+				"attachment; filename=lehrerversion-erwartungshorizont-klausur-windenergie-und-klimawandel-weber-mia.pdf");
 		assertThat(response.getBody()).startsWith("%PDF".getBytes());
 	}
 
 	private DemoSelection findReviewedDemoSelection() {
 		final Course course = courseRepository.findAll().stream()
-				.filter(candidate -> candidate.schoolClass() == SchoolClass.CLS_EF)
-				.filter(candidate -> candidate.subject() == Subject.ENGLISH)
+				.filter(candidate -> candidate.schoolClass() == SchoolClass.CLS_10A)
+				.filter(candidate -> candidate.subject().name().equals("Erdkunde"))
 				.filter(candidate -> candidate.schoolYear().getCalendarYear() == 2026).findFirst().orElseThrow();
 		final Exam exam = examRepository.findByCourseId(course.id()).stream()
-				.filter(candidate -> candidate.title().equals("Klausur Nr. 4")).findFirst().orElseThrow();
-		final Pupil pupil = pupilRepository.findAll().stream().filter(candidate -> candidate.name().equals("Finn"))
-				.filter(candidate -> candidate.surname().equals("Becker")).findFirst().orElseThrow();
+				.filter(candidate -> candidate.title().equals("Klausur Windenergie und Klimawandel")).findFirst()
+				.orElseThrow();
+		final Pupil pupil = pupilRepository.findAll().stream().filter(candidate -> candidate.name().equals("Mia"))
+				.filter(candidate -> candidate.surname().equals("Weber")).findFirst().orElseThrow();
 		return new DemoSelection(exam, pupil);
 	}
 

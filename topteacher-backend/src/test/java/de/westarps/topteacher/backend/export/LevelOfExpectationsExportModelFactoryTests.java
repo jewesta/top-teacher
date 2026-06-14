@@ -87,8 +87,9 @@ class LevelOfExpectationsExportModelFactoryTests {
 	}
 
 	private static LevelOfExpectationsExportData data() {
+		final Subject subject = new Subject(1, "Englisch", Lifecycle.ACTIVE);
 		return new LevelOfExpectationsExportData(
-				new Course(1, SchoolClass.CLS_5A, Subject.ENGLISH, new SchoolYear(2026), CoursePeriod.FULL_YEAR,
+				new Course(1, SchoolClass.CLS_5A, subject, new SchoolYear(2026), CoursePeriod.FULL_YEAR,
 						Lifecycle.ACTIVE, 1),
 				new Exam(1, 1, "Klausur Nr. 1", LocalDate.of(2026, 5, 21)),
 				new Pupil(1, "Anna", "Muster", Lifecycle.ACTIVE),

@@ -2,7 +2,7 @@ package de.westarps.topteacher.model;
 
 import java.util.Objects;
 
-public final class SchoolYear {
+public final class SchoolYear implements HasDisplayName {
 
 	private static final int MIN_CALENDAR_YEAR = 1900;
 	private static final int MAX_CALENDAR_YEAR = 9998;
@@ -24,6 +24,7 @@ public final class SchoolYear {
 		return calendarYear + 1;
 	}
 
+	@Override
 	public String getDisplayName() {
 		return calendarYear + "/" + getEndYear();
 	}

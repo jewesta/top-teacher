@@ -37,7 +37,13 @@ public class SettingsView extends VerticalLayout implements HasDynamicTitle {
 		final TabSheet tabs = new TabSheet();
 		tabs.addClassName("tt-settings-tabs");
 		tabs.setSizeFull();
-		settingsTabs.forEach(settingsTab -> tabs.add(settingsTab.label(), settingsTab.content()));
+		settingsTabs.forEach(settingsTab -> addTab(tabs, settingsTab));
 		return tabs;
+	}
+
+	private void addTab(final TabSheet tabs, final SettingsTab settingsTab) {
+		final var content = settingsTab.content();
+		content.getElement().removeFromParent();
+		tabs.add(settingsTab.label(), content);
 	}
 }
