@@ -2,7 +2,7 @@ package de.westarps.topteacher.model;
 
 import java.util.Arrays;
 
-public enum GradeLevel {
+public enum GradeLevel implements HasDisplayName {
 
 	SEHR_GUT_PLUS(15, "sehr gut plus"), SEHR_GUT(14, "sehr gut"), SEHR_GUT_MINUS(13, "sehr gut minus"),
 	GUT_PLUS(12, "gut plus"), GUT(11, "gut"), GUT_MINUS(10, "gut minus"), BEFRIEDIGEND_PLUS(9, "befriedigend plus"),
@@ -23,6 +23,7 @@ public enum GradeLevel {
 		return points;
 	}
 
+	@Override
 	public String getDisplayName() {
 		return displayName;
 	}

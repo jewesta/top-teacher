@@ -23,7 +23,6 @@ public class DatabaseLocationEnvironmentPostProcessor implements EnvironmentPost
 	static final String DEFAULT_DATABASE_PROPERTY_SOURCE = "topteacherDefaultDatabaseLocation";
 	private static final String DATASOURCE_URL_PROPERTY = "spring.datasource.url";
 	private static final String H2_FILE_URL_PREFIX = "jdbc:h2:file:";
-	private static final String APP_NAME = "TopTeacher";
 	private static final String DATABASE_NAME = "topteacher";
 
 	private final Supplier<Path> defaultDatabaseFile;
@@ -97,16 +96,16 @@ public class DatabaseLocationEnvironmentPostProcessor implements EnvironmentPost
 
 		final String normalizedOsName = osName == null ? "" : osName.toLowerCase(Locale.ROOT);
 		if (normalizedOsName.contains("mac")) {
-			return Path.of(userHome, "Library", "Application Support", APP_NAME, DATABASE_NAME);
+			return Path.of(userHome, "Library", "Application Support", ApplicationVersion.APP_NAME, DATABASE_NAME);
 		}
 		if (normalizedOsName.contains("win")) {
 			final Path base = StringUtils.hasText(appData) ? Path.of(appData) : Path.of(userHome, "AppData", "Roaming");
-			return base.resolve(APP_NAME).resolve(DATABASE_NAME);
+			return base.resolve(ApplicationVersion.APP_NAME).resolve(DATABASE_NAME);
 		}
 
 		final Path base = StringUtils.hasText(xdgDataHome) ? Path.of(xdgDataHome)
 				: Path.of(userHome, ".local", "share");
-		return base.resolve(APP_NAME).resolve(DATABASE_NAME);
+		return base.resolve(ApplicationVersion.APP_NAME).resolve(DATABASE_NAME);
 	}
 
 	private static void ensureDatabaseDirectory(final Path databaseFile) {

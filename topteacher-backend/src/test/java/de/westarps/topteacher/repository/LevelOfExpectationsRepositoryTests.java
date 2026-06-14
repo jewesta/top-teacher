@@ -16,6 +16,7 @@ import de.westarps.topteacher.backend.repo.ExamRepository;
 import de.westarps.topteacher.backend.repo.GradingScaleRepository;
 import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.backend.repo.PupilRepository;
+import de.westarps.topteacher.backend.repo.SubjectRepository;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.CoursePeriod;
 import de.westarps.topteacher.model.Exam;
@@ -51,6 +52,9 @@ class LevelOfExpectationsRepositoryTests {
 
 	@Autowired
 	private LevelOfExpectationsRepository levelOfExpectationsRepository;
+
+	@Autowired
+	private SubjectRepository subjectRepository;
 
 	@Test
 	void savesAndFindsLevelOfExpectationsHierarchy() {
@@ -287,8 +291,13 @@ class LevelOfExpectationsRepositoryTests {
 	private Exam createExam(final int calendarYear, final String title) {
 		final GradingScale gradingScale = gradingScaleRepository
 				.save(new GradingScale(null, "EH Repo " + calendarYear + " " + title, 100, Lifecycle.ACTIVE));
-		final Course course = courseRepository.save(new Course(null, SchoolClass.CLS_10A, Subject.ENGLISH,
+		final Course course = courseRepository.save(new Course(null, SchoolClass.CLS_10A, subject("Englisch"),
 				new SchoolYear(calendarYear), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, gradingScale.id()));
 		return examRepository.save(new Exam(null, course.id(), title, LocalDate.of(calendarYear, 9, 1)));
+	}
+
+	private Subject subject(final String name) {
+		return subjectRepository.findAll().stream().filter(candidate -> candidate.name().equals(name)).findFirst()
+				.orElseThrow();
 	}
 }

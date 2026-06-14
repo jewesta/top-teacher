@@ -44,7 +44,7 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 	private Map<Integer, SchoolClass> latestSchoolClassByPupilId = Map.of();
 
 	public PupilsView(final PupilRepository pupilRepository) {
-		super("Schüler", "tt-pupils-view", new MultiSelectionGrid<>(Pupil.class, false));
+		super("Schüler:innen", "tt-pupils-view", new MultiSelectionGrid<>(Pupil.class, false));
 		this.pupilRepository = pupilRepository;
 
 		configureEditors();
@@ -73,6 +73,11 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 		multiSelectionSummary.addClassName("tt-selection-summary");
 		return AbstractFormEditor.singleColumn("tt-pupil-bulk-editor", List.of(multiSelectionSummary),
 				List.of(bulkLifecycle), List.of(applyLifecycleButton));
+	}
+
+	@Override
+	protected String getEditorTabLabel() {
+		return "Schüler:in";
 	}
 
 	@Override
@@ -138,7 +143,7 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 	private void showMultiSelectEditor(final List<Pupil> pupils) {
 		selectedPupil = null;
 		selectedPupils = List.copyOf(pupils);
-		multiSelectionSummary.setText(selectedPupils.size() + " Schüler ausgewählt");
+		multiSelectionSummary.setText(selectedPupils.size() + " Schüler:innen ausgewählt");
 		setBulkLifecycleValue(commonLifecycle(selectedPupils));
 		updateBulkApplyButton();
 	}
@@ -176,7 +181,7 @@ public class PupilsView extends AbstractMasterDataView<Pupil> {
 
 		selectedPupils.forEach(
 				pupil -> pupilRepository.save(new Pupil(pupil.id(), pupil.name(), pupil.surname(), selectedLifecycle)));
-		Notification.show("Status für " + selectedPupils.size() + " Schüler aktualisiert.");
+		Notification.show("Status für " + selectedPupils.size() + " Schüler:innen aktualisiert.");
 		refreshGrid();
 	}
 

@@ -18,6 +18,7 @@ import com.vaadin.flow.router.RouterLink;
 import de.westarps.topteacher.ApplicationVersion;
 import de.westarps.topteacher.backend.settings.AppSettings;
 import de.westarps.topteacher.ui.view.CoursesView;
+import de.westarps.topteacher.ui.view.DatabaseInitializationDialogFactory;
 import de.westarps.topteacher.ui.view.ExamsView;
 import de.westarps.topteacher.ui.view.PupilsView;
 import de.westarps.topteacher.ui.view.SettingsView;
@@ -25,21 +26,28 @@ import de.westarps.topteacher.ui.view.SettingsView;
 public class MainLayout extends AppLayout implements AfterNavigationObserver {
 
 	private final AppSettings appSettings;
+	private final DatabaseInitializationDialogFactory databaseInitializationDialogs;
 	private final Tabs navigationTabs = new Tabs();
-	private final Tab pupilsTab = navigationTab("Schüler", VaadinIcon.ACADEMY_CAP, PupilsView.class);
+	private final Tab pupilsTab = navigationTab("Schüler:innen", VaadinIcon.ACADEMY_CAP, PupilsView.class);
 	private final Tab coursesTab = navigationTab("Kurse", VaadinIcon.BOOK, CoursesView.class);
 	private final Tab examsTab = navigationTab("Klausuren", VaadinIcon.EDIT, ExamsView.class);
 	private final Tab settingsTab = navigationTab("Einstellungen", VaadinIcon.COG, SettingsView.class);
+	private boolean firstStartDialogShown;
 	private boolean backupErrorShown;
 
-	public MainLayout(final AppSettings appSettings) {
+	public MainLayout(final AppSettings appSettings,
+			final DatabaseInitializationDialogFactory databaseInitializationDialogs) {
 		this.appSettings = appSettings;
+		this.databaseInitializationDialogs = databaseInitializationDialogs;
 		addToNavbar(createHeader());
 	}
 
 	@Override
 	protected void onAttach(final AttachEvent attachEvent) {
 		super.onAttach(attachEvent);
+		if (showFirstStartDialogIfRequired()) {
+			return;
+		}
 		showBackupErrorIfPresent();
 	}
 
@@ -89,6 +97,15 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
 		link.setRoute(view);
 		link.add(icon.create(), new Span(label));
 		return new Tab(link);
+	}
+
+	private boolean showFirstStartDialogIfRequired() {
+		if (firstStartDialogShown) {
+			return false;
+		}
+
+		firstStartDialogShown = databaseInitializationDialogs.openFirstStartDialogIfRequired();
+		return firstStartDialogShown;
 	}
 
 	private void showBackupErrorIfPresent() {

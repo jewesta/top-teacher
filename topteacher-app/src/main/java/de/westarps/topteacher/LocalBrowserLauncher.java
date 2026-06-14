@@ -48,7 +48,8 @@ class LocalBrowserLauncher {
 		try {
 			browserOpener.open(uri);
 		} catch (final IOException | RuntimeException exception) {
-			LOGGER.warn("Could not open TopTeacher in the default browser at {}.", uri, exception);
+			LOGGER.warn("Could not open {} in the default browser at {}.", ApplicationVersion.DISPLAY_APP_NAME, uri,
+					exception);
 		}
 	}
 
@@ -70,7 +71,8 @@ class LocalBrowserLauncher {
 
 	static void openWithDesktop(final URI uri) throws IOException {
 		if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-			LOGGER.info("Desktop browser integration is not available. Open TopTeacher manually at {}.", uri);
+			LOGGER.info("Desktop browser integration is not available. Open {} manually at {}.",
+					ApplicationVersion.DISPLAY_APP_NAME, uri);
 			return;
 		}
 		Desktop.getDesktop().browse(uri);

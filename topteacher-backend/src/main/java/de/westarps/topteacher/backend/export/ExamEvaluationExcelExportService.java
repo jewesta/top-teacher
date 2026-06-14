@@ -87,7 +87,7 @@ public class ExamEvaluationExcelExportService {
 		final Row header = sheet.createRow(HEADER_ROW_INDEX);
 		header.setHeightInPoints(90);
 
-		headerCell(header, 0, "Schüler", styles.header());
+		headerCell(header, 0, "Schüler:in", styles.header());
 		headerCell(header, 1, "Gesamt", styles.header());
 		headerCell(header, 2, "Note", styles.header());
 		for (int index = 0; index < aggregationColumns.size(); index++) {

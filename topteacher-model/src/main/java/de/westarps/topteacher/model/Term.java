@@ -2,7 +2,7 @@ package de.westarps.topteacher.model;
 
 import java.util.Objects;
 
-public final class Term {
+public final class Term implements HasDisplayName {
 
 	private final SchoolYear schoolYear;
 	private final Half half;
@@ -20,6 +20,7 @@ public final class Term {
 		return half;
 	}
 
+	@Override
 	public String getDisplayName() {
 		return schoolYear.getDisplayName() + ", " + half.getDisplayName();
 	}

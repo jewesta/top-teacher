@@ -38,8 +38,9 @@ import de.westarps.topteacher.model.loe.LoeTask;
 class ExamEvaluationExcelExportServiceTests {
 
 	private static final Exam EXAM = new Exam(1, 10, "Klausur Nr. 1", LocalDate.of(2026, 5, 21));
-	private static final Course COURSE = new Course(EXAM.courseId(), SchoolClass.CLS_5A, Subject.ENGLISH,
-			new SchoolYear(2026), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, 30);
+	private static final Subject SUBJECT = new Subject(1, "Englisch", Lifecycle.ACTIVE);
+	private static final Course COURSE = new Course(EXAM.courseId(), SchoolClass.CLS_5A, SUBJECT, new SchoolYear(2026),
+			CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, 30);
 	private static final GradingScale GRADING_SCALE = new GradingScale(COURSE.gradingScaleId(), "Standard", 7,
 			Lifecycle.ACTIVE);
 	private static final Pupil PUPIL = new Pupil(20, "Anna", "Ergebnis", Lifecycle.ACTIVE);
@@ -90,7 +91,7 @@ class ExamEvaluationExcelExportServiceTests {
 			assertThat(sheet.getPaneInformation().isFreezePane()).isTrue();
 
 			final var header = sheet.getRow(0);
-			assertThat(header.getCell(0).getStringCellValue()).isEqualTo("Schüler");
+			assertThat(header.getCell(0).getStringCellValue()).isEqualTo("Schüler:in");
 			assertThat(header.getCell(1).getStringCellValue()).isEqualTo("Gesamt");
 			assertThat(header.getCell(2).getStringCellValue()).isEqualTo("Note");
 			assertThat(header.getCell(3).getStringCellValue()).isEqualTo("Klausurteil A");

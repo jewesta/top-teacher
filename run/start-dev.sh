@@ -66,7 +66,6 @@ if [ -e "$H2_DB_FILE" ]; then
 fi
 
 export TT_DATABASE_FILE="$H2_FILE_ABS"
-export TT_DEMO_DATA_CREATE=${TT_DEMO_DATA_CREATE:-false}
 
 if [ -x /usr/libexec/java_home ]; then
     JAVA_21_HOME=$(/usr/libexec/java_home -v 21 2>/dev/null || true)
@@ -92,9 +91,6 @@ H2_CONSOLE_PATH=${H2_CONSOLE_PATH:-/h2-console}
 
 echo "Starting TopTeacher..."
 echo "Database:   ${TT_DATABASE_FILE}.mv.db"
-if [ "$TT_DEMO_DATA_CREATE" = "true" ]; then
-    echo "Demo data:  create if database is empty"
-fi
 echo "App:        http://localhost:${APP_PORT}${APP_CONTEXT_PATH}/"
 echo "H2 console: http://localhost:${APP_PORT}${APP_CONTEXT_PATH}${H2_CONSOLE_PATH}/"
 

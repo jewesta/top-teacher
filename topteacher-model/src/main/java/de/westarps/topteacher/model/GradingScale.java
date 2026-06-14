@@ -2,7 +2,7 @@ package de.westarps.topteacher.model;
 
 import java.util.Objects;
 
-public record GradingScale(Integer id, String name, int maxPoints, Lifecycle lifecycle) {
+public record GradingScale(Integer id, String name, int maxPoints, Lifecycle lifecycle) implements HasDisplayName {
 
 	public GradingScale {
 		name = Objects.requireNonNull(name, "name must not be null").trim();
@@ -15,6 +15,7 @@ public record GradingScale(Integer id, String name, int maxPoints, Lifecycle lif
 		lifecycle = Objects.requireNonNull(lifecycle, "lifecycle must not be null");
 	}
 
+	@Override
 	public String getDisplayName() {
 		return name + " (" + maxPoints + " Punkte)";
 	}

@@ -9,7 +9,7 @@ class LoeCriterionParserTests {
 	@Test
 	void extractsCriteriaFromTaggedMarkdownLinks() {
 		assertThat(LoeCriterionParser.parse(7,
-				"Die Schülerin nutzt die [korrekte Zeitform](eh:1) und **[präzise Wortwahl](eh:2)**."))
+				"Der/die Schüler:in nutzt die [korrekte Zeitform](eh:1) und **[präzise Wortwahl](eh:2)**."))
 				.containsExactly(new LoeCriterion(null, 7, "1", "korrekte Zeitform", 0, true),
 						new LoeCriterion(null, 7, "2", "präzise Wortwahl", 1, true));
 	}

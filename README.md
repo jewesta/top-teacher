@@ -1,6 +1,6 @@
 ## ![TopTeacher!](topteacher-app/src/main/resources/META-INF/resources/images/topteacher-logo-github.png)
 
-TopTeacher! ist eine Web-App für Lehrkräfte. Sie unterstützt bei der aufwändigen Erstellung und Verwaltung von Erwartungshorizonten und der Erfassung von Klausurergebnissen. Besonderer Kniff von TopTeacher! ist, dass die Erwartungshorizonte direkt digital pro Schüler ausgefüllt werden können. Anschließend kann eine optisch ansprechende Schüler- und Lehrer-Version davon als PDF erzeugt werden.
+TopTeacher! ist eine Web-App für Lehrkräfte. Sie unterstützt bei der aufwändigen Erstellung und Verwaltung von Erwartungshorizonten und der Erfassung von Klausurergebnissen. Besonderer Kniff von TopTeacher! ist, dass die Erwartungshorizonte direkt digital pro Schüler:in ausgefüllt werden können. Anschließend kann eine optisch ansprechende Schüler:innen-Version und Lehrer:innen-Version davon als PDF erzeugt werden.
 
 Die App ist aus persönlichen Gründen entstanden und löst ein persönliches Problem. Ich stelle sie trotzdem offen zur Verfügung in der Hoffnung, dass sie anderen auch das Leben erleichtert. Ich kann aber keine Garantie dafür übernehmen, dass sie fehlerfrei funktioniert und allgemeingültig einsetzbar ist. Das Programm ist aktuell nur Einzelplatz-Fähig; eine Benutzerverwaltung habe ich vorgedacht, gibt es aktuell aber nicht.
 
@@ -47,13 +47,7 @@ Der Pfad ist frei wählbar und muss lediglich beschreibbar sein. TopTeacher erst
 Die App ist danach unter <http://localhost:8081/top-teacher> erreichbar. Port `8081` und Kontext-Pfad `top-teacher` können über
 `server.port` und `server.servlet.context-path` in `topteacher-app/src/main/resources/application.properties` angepasst werden.
 
-Wer möchte, kann initial einen Demo-Daten-Bestand anlegen lassen. Das funktioniert aber aus Sicherheitsgründen nur, wenn unter dem Zielpfad noch keine Datenbank existiert.
-
-```shell
-./run/start-dev-demo.sh /Users/<Benutzername>/Documents/<top-teacher-demo-db>
-```
-
-Das Release-`jar` ist so gebaut, dass Vaadin im Produktiv-Modus gestartet wird. Die oben genannten Startskripte starten Vaadin im Entwicklermodus. Deshalb auch der Namenszusatz `-dev`.
+Das Release-`jar` ist so gebaut, dass Vaadin im Produktiv-Modus gestartet wird. Das oben genannte Startskript startet Vaadin im Entwicklermodus. Deshalb auch der Namenszusatz `-dev`.
 
 ## Standardpfade:
 
@@ -105,17 +99,8 @@ Wichtige Properties:
 | `spring.datasource.password` | leer | Passwort der H2-Verbindung. |
 | `spring.h2.console.enabled` | `true` | Aktiviert die H2-Konsole. Für produktiven Betrieb kann sie per `false` deaktiviert werden. |
 | `spring.h2.console.path` | `/h2-console` | Pfad der H2-Konsole relativ zum Context Path. |
-| `tt.demo-data.create` | `false` | Erstellt beim Start Demo-Daten, aber nur wenn noch keine fachlichen Daten vorhanden sind. |
 
-Demo-Daten für eine neue Demo-Datenbank erzeugen:
-
-```shell
-java -jar TopTeacher.jar \
-  --tt.database.file=/Users/<Benutzername>/topteacher/data/topteacher-demo \
-  --tt.demo-data.create=true
-```
-
-Die Anwendung erstellt dabei zuerst Schema und Basisdaten, prüft dann, ob die Datenbank noch keine Daten (jenseits leerer Tabellenstrukturen) enthält, und bespielt sie anschließend mit einem Satz Demo-Daten. Wenn bereits Schülerinnen, Kurse, Klausuren, Level-of-Expectations oder andere fachliche Daten vorhanden sind, bricht der Start bewusst ab. Nach dem Erzeugen der Demo-Daten sollte `--tt.demo-data.create=true` wieder weggelassen werden.
+Beim ersten Start führt TopTeacher durch die Datenbank-Initialisierung. Dabei kann eine leere Datenbank mit Basisdaten oder eine Datenbank mit Demodaten angelegt werden. Später kann die Datenbank in den Einstellungen im Tab `Zurücksetzen` erneut initialisiert werden.
 
 ## macOS App
 

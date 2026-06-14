@@ -53,8 +53,9 @@ import de.westarps.vaadin.markdown.MarkdownViewer;
 class ExamResultsEditorTests {
 
 	private static final Exam EXAM = new Exam(1, 10, "Klausur", LocalDate.of(2026, 9, 1));
-	private static final Course COURSE = new Course(EXAM.courseId(), SchoolClass.CLS_5A, Subject.ENGLISH,
-			new SchoolYear(2026), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, 30);
+	private static final Subject SUBJECT = new Subject(1, "Englisch", Lifecycle.ACTIVE);
+	private static final Course COURSE = new Course(EXAM.courseId(), SchoolClass.CLS_5A, SUBJECT, new SchoolYear(2026),
+			CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, 30);
 	private static final GradingScale GRADING_SCALE = new GradingScale(COURSE.gradingScaleId(), "Standard", 5,
 			Lifecycle.ACTIVE);
 	private static final Pupil PUPIL = new Pupil(20, "Anna", "Ergebnis", Lifecycle.ACTIVE);

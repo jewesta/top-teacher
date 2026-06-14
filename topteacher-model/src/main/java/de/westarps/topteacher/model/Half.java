@@ -1,6 +1,6 @@
 package de.westarps.topteacher.model;
 
-public enum Half {
+public enum Half implements HasDisplayName {
 
 	FIRST("1. Hj."), SECOND("2. Hj.");
 
@@ -10,6 +10,7 @@ public enum Half {
 		this.displayName = displayName;
 	}
 
+	@Override
 	public String getDisplayName() {
 		return displayName;
 	}

@@ -30,6 +30,7 @@ import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
 
+import de.westarps.topteacher.ApplicationVersion;
 import de.westarps.topteacher.backend.backup.DatabaseBackupScheduler;
 import de.westarps.topteacher.backend.backup.DatabaseBackupService;
 import de.westarps.topteacher.backend.settings.AppSettings;
@@ -57,8 +58,8 @@ public class DatabaseBackupSettingsTab extends VerticalLayout implements Setting
 	private final Checkbox backupEnabled = new Checkbox("Automatische Sicherung aktiv");
 	private final TextField backupTargetFolder = new TextField("Zielordner");
 	private final TextField backupCron = new TextField("Zeitplan");
-	private final Span backupDescription = new Span(
-			"TopTeacher kann die H2-Datenbank regelmäßig als ZIP-Datei sichern. Der Zielordner muss auf diesem Rechner erreichbar und beschreibbar sein.");
+	private final Span backupDescription = new Span(ApplicationVersion.DISPLAY_APP_NAME
+			+ " kann die H2-Datenbank regelmäßig als ZIP-Datei sichern. Der Zielordner muss auf diesem Rechner erreichbar und beschreibbar sein.");
 	private final Span backupFileNameDescription = new Span(
 			"Dateiname: topteacher-db-JJJJMMTT-HHMMSS.zip; bei Namensgleichheit wird -1, -2, ... ergänzt.");
 	private final Span cronDescription = new Span();
@@ -97,7 +98,7 @@ public class DatabaseBackupSettingsTab extends VerticalLayout implements Setting
 		currentDatabaseFile.setSuffixComponent(createCopyCurrentDatabaseFileButton());
 
 		backupTargetFolder.setClearButtonVisible(true);
-		backupTargetFolder.setPlaceholder("Beispiel: /Volumes/Backups/TopTeacher");
+		backupTargetFolder.setPlaceholder("Beispiel: /Volumes/Backups/" + ApplicationVersion.APP_NAME);
 		backupTargetFolder.setValueChangeMode(ValueChangeMode.EAGER);
 		backupTargetFolder.setWidthFull();
 		backupTargetFolder.addValueChangeListener(event -> updateButtonStates());

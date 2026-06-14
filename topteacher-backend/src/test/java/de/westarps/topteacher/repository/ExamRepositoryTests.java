@@ -12,6 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.ExamRepository;
 import de.westarps.topteacher.backend.repo.GradingScaleRepository;
+import de.westarps.topteacher.backend.repo.SubjectRepository;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.CoursePeriod;
 import de.westarps.topteacher.model.Exam;
@@ -33,12 +34,15 @@ class ExamRepositoryTests {
 	@Autowired
 	private GradingScaleRepository gradingScaleRepository;
 
+	@Autowired
+	private SubjectRepository subjectRepository;
+
 	@Test
 	void savesUpdatesAndFindsExamsForCourse() {
 		final GradingScale gradingScale = createGradingScale("Exam Repo 100");
-		final Course course = courseRepository.save(new Course(null, SchoolClass.CLS_7A, Subject.ENGLISH,
+		final Course course = courseRepository.save(new Course(null, SchoolClass.CLS_7A, subject("Englisch"),
 				new SchoolYear(2030), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, gradingScale.id()));
-		final Course otherCourse = courseRepository.save(new Course(null, SchoolClass.CLS_8A, Subject.SPANISH,
+		final Course otherCourse = courseRepository.save(new Course(null, SchoolClass.CLS_8A, subject("Spanisch"),
 				new SchoolYear(2030), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, gradingScale.id()));
 
 		final Exam saved = examRepository.save(new Exam(null, course.id(), "1. Klausur", LocalDate.of(2030, 9, 17)));
@@ -60,9 +64,9 @@ class ExamRepositoryTests {
 	@Test
 	void rejectsChangedCourseId() {
 		final GradingScale gradingScale = createGradingScale("Exam Course Guard 100");
-		final Course course = courseRepository.save(new Course(null, SchoolClass.CLS_7B, Subject.ENGLISH,
+		final Course course = courseRepository.save(new Course(null, SchoolClass.CLS_7B, subject("Englisch"),
 				new SchoolYear(2031), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, gradingScale.id()));
-		final Course otherCourse = courseRepository.save(new Course(null, SchoolClass.CLS_8B, Subject.ENGLISH,
+		final Course otherCourse = courseRepository.save(new Course(null, SchoolClass.CLS_8B, subject("Englisch"),
 				new SchoolYear(2031), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, gradingScale.id()));
 		final Exam saved = examRepository.save(new Exam(null, course.id(), "1. Klausur", LocalDate.of(2031, 9, 17)));
 
@@ -73,5 +77,10 @@ class ExamRepositoryTests {
 
 	private GradingScale createGradingScale(final String name) {
 		return gradingScaleRepository.save(new GradingScale(null, name, 100, Lifecycle.ACTIVE));
+	}
+
+	private Subject subject(final String name) {
+		return subjectRepository.findAll().stream().filter(candidate -> candidate.name().equals(name)).findFirst()
+				.orElseThrow();
 	}
 }

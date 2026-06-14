@@ -68,7 +68,8 @@ class DatabaseLocationEnvironmentPostProcessorTests {
 
 	@Test
 	void choosesMacOsDefaultDatabaseFile() {
-		assertThat(DatabaseLocationEnvironmentPostProcessor.defaultDatabaseFile("Mac OS X", "/Users/example", null, null))
+		assertThat(
+				DatabaseLocationEnvironmentPostProcessor.defaultDatabaseFile("Mac OS X", "/Users/example", null, null))
 				.isEqualTo(Path.of("/Users/example/Library/Application Support/TopTeacher/topteacher"));
 	}
 

@@ -1,17 +1,19 @@
 package de.westarps.topteacher.model;
 
-public enum Subject {
+import java.util.Objects;
 
-	ENGLISH("Englisch"), SPANISH("Spanisch");
+public record Subject(Integer id, String name, Lifecycle lifecycle) implements HasDisplayName {
 
-	private final String displayName;
-
-	Subject(final String displayName) {
-		this.displayName = displayName;
+	public Subject {
+		name = Objects.requireNonNull(name, "name must not be null").trim();
+		if (name.isBlank()) {
+			throw new IllegalArgumentException("name must not be blank");
+		}
+		lifecycle = Objects.requireNonNull(lifecycle, "lifecycle must not be null");
 	}
 
+	@Override
 	public String getDisplayName() {
-		return displayName;
+		return name;
 	}
-
 }

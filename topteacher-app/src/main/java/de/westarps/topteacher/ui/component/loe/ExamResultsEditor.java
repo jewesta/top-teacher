@@ -118,7 +118,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 		pupilSelector.setItemLabelGenerator(this::pupilLabel);
 		pupilSelector.setWidth("16rem");
 		pupilSelector.setMaxWidth("100%");
-		pupilSelector.setAriaLabel("Schüler");
+		pupilSelector.setAriaLabel("Schüler:in");
 		pupilSelector.addValueChangeListener(event -> {
 			if (refreshing) {
 				selectedPupil = event.getValue();
@@ -166,8 +166,8 @@ public class ExamResultsEditor extends AbstractDesigner {
 		pdfMenuItem = pdfMenu.addItem(pdfMenuLabel());
 		pdfMenuItem.setAriaLabel("PDF herunterladen");
 		pdfMenu.setTooltipText(pdfMenuItem, "PDF herunterladen");
-		pupilPdfItem = pdfMenuItem.getSubMenu().addItem("Schülerversion", event -> downloadPdf(false));
-		teacherPdfItem = pdfMenuItem.getSubMenu().addItem("Lehrerversion", event -> downloadPdf(true));
+		pupilPdfItem = pdfMenuItem.getSubMenu().addItem("Schüler:innen-Version", event -> downloadPdf(false));
+		teacherPdfItem = pdfMenuItem.getSubMenu().addItem("Lehrer:innen-Version", event -> downloadPdf(true));
 		updatePdfDownload();
 	}
 
@@ -227,7 +227,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 		clearRenderedResults();
 
 		if (selectedPupil == null) {
-			results.add(emptyState("Diesem Kurs sind keine Schüler zugeordnet."));
+			results.add(emptyState("Diesem Kurs sind keine Schüler:innen zugeordnet."));
 			return;
 		}
 

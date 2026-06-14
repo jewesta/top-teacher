@@ -9,6 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.GradingScaleRepository;
 import de.westarps.topteacher.backend.repo.PupilRepository;
+import de.westarps.topteacher.backend.repo.SubjectRepository;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.CoursePeriod;
 import de.westarps.topteacher.model.GradingScale;
@@ -29,6 +30,9 @@ class PupilRepositoryTests {
 
 	@Autowired
 	private GradingScaleRepository gradingScaleRepository;
+
+	@Autowired
+	private SubjectRepository subjectRepository;
 
 	@Test
 	void savesUpdatesAndArchivesPupils() {
@@ -53,14 +57,19 @@ class PupilRepositoryTests {
 		final GradingScale gradingScale = gradingScaleRepository
 				.save(new GradingScale(null, "Pupil Latest Class 100", 100, Lifecycle.ACTIVE));
 		final Pupil pupil = pupilRepository.save(new Pupil(null, "Doppel", "Name", Lifecycle.ACTIVE));
-		final Course oldCourse = courseRepository.save(new Course(null, SchoolClass.CLS_5A, Subject.ENGLISH,
+		final Course oldCourse = courseRepository.save(new Course(null, SchoolClass.CLS_5A, subject("Englisch"),
 				new SchoolYear(2025), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, gradingScale.id()));
-		final Course latestCourse = courseRepository.save(new Course(null, SchoolClass.CLS_6A, Subject.SPANISH,
+		final Course latestCourse = courseRepository.save(new Course(null, SchoolClass.CLS_6A, subject("Spanisch"),
 				new SchoolYear(2026), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, gradingScale.id()));
 
 		courseRepository.assignPupil(oldCourse.id(), pupil.id());
 		courseRepository.assignPupil(latestCourse.id(), pupil.id());
 
 		assertThat(pupilRepository.findLatestSchoolClassByPupilId()).containsEntry(pupil.id(), SchoolClass.CLS_6A);
+	}
+
+	private Subject subject(final String name) {
+		return subjectRepository.findAll().stream().filter(candidate -> candidate.name().equals(name)).findFirst()
+				.orElseThrow();
 	}
 }
