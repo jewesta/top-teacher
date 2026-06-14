@@ -83,7 +83,7 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 		grid.setItems(List.of());
 
 		if (exam == null) {
-			showDesignerMessage(emptyState("Bitte wählen Sie eine Klausur aus."));
+			showDesignerMessage(emptyState("Bitte wähle eine Klausur aus."));
 			return;
 		}
 

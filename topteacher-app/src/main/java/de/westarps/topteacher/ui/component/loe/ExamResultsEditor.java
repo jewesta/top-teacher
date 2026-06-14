@@ -138,7 +138,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 				return;
 			}
 			if (isDirty()) {
-				Notification.show("Bitte speichern Sie die Ergebnisse zuerst.");
+				Notification.show("Bitte speichere die Ergebnisse zuerst.");
 				refreshing = true;
 				pupilSelector.setValue(event.getOldValue());
 				refreshing = false;
@@ -195,7 +195,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 			clearResultState();
 			pointRules = null;
 			updateActionButtons();
-			showDesignerMessage(emptyState("Bitte wählen Sie eine Klausur aus."));
+			showDesignerMessage(emptyState("Bitte wähle eine Klausur aus."));
 			return;
 		}
 

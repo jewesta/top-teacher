@@ -201,7 +201,7 @@ public class DatabaseBackupSettingsTab extends VerticalLayout implements Setting
 	private void updateCronDescription() {
 		final String cron = backupCron.getValue();
 		if (cron == null || cron.isBlank()) {
-			cronDescription.setText("Bitte einen Cron-Ausdruck angeben.");
+			cronDescription.setText("Bitte gib einen Cron-Ausdruck an.");
 			backupCron.setInvalid(true);
 			backupCron.setErrorMessage("Zeitplan ist erforderlich.");
 			return;
@@ -263,7 +263,7 @@ public class DatabaseBackupSettingsTab extends VerticalLayout implements Setting
 	private static String targetFolderValidationMessage(final String value, final boolean required) {
 		final String targetFolder = trim(value);
 		if (targetFolder.isBlank()) {
-			return required ? "Bitte einen Zielordner angeben." : null;
+			return required ? "Bitte gib einen Zielordner an." : null;
 		}
 
 		try {

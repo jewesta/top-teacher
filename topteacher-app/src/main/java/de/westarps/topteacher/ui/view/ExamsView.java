@@ -589,7 +589,7 @@ public class ExamsView extends SplitListDetailView<Exam> {
 				.setWeekdays(List.of("Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"))
 				.setWeekdaysShort(List.of("So", "Mo", "Di", "Mi", "Do", "Fr", "Sa")).setFirstDayOfWeek(1)
 				.setDateFormat("dd.MM.yyyy").setToday("Heute").setCancel("Abbrechen")
-				.setBadInputErrorMessage("Bitte geben Sie ein gültiges Datum ein.")
+				.setBadInputErrorMessage("Bitte gib ein gültiges Datum ein.")
 				.setRequiredErrorMessage("Datum ist erforderlich.");
 	}
 

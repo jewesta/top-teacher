@@ -56,7 +56,7 @@ public class ExamNotesEditor extends AbstractDesigner {
 		resetDesigner();
 		noteSectionEditors = List.of();
 		if (exam == null) {
-			showDesignerMessage(new Span("Bitte wählen Sie eine Klausur aus."));
+			showDesignerMessage(new Span("Bitte wähle eine Klausur aus."));
 			return;
 		}
 

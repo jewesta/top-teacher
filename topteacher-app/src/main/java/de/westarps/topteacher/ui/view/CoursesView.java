@@ -189,7 +189,7 @@ public class CoursesView extends SplitListDetailView<Course> {
 
 		archiveButton.addClickListener(event -> TopTeacherDialogs.openArchiveConfirmation("Kurs archivieren?",
 				"Der Kurs wird archiviert. Das bedeutet, dass der Kurs standardmäßig nicht mehr angezeigt wird und nicht neu zugeordnet werden kann.",
-				"Zugeordnete Schüler:innen, Klausuren und Ergebnisse bleiben erhalten. Sie können die Archivierung wieder rückgängig machen.",
+				"Zugeordnete Schüler:innen, Klausuren und Ergebnisse bleiben erhalten. Du kannst die Archivierung wieder rückgängig machen.",
 				this::archiveSelectedCourse));
 
 		bulkLifecycle.setItems(Lifecycle.values());

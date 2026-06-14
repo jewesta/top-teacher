@@ -142,7 +142,7 @@ public class SubjectSettingsTab extends SplitListDetailView<Subject> implements 
 
 		archiveButton.addClickListener(event -> TopTeacherDialogs.openArchiveConfirmation("Fach archivieren?",
 				"Das Fach wird archiviert. Das bedeutet, dass das Fach standardmäßig nicht mehr angezeigt wird und nicht neu zugeordnet werden kann.",
-				"Bestehende Kurse und Klausuren bleiben erhalten. Sie können die Archivierung wieder rückgängig machen.",
+				"Bestehende Kurse und Klausuren bleiben erhalten. Du kannst die Archivierung wieder rückgängig machen.",
 				this::archiveSelectedSubject));
 
 		bulkLifecycle.setItems(Lifecycle.values());

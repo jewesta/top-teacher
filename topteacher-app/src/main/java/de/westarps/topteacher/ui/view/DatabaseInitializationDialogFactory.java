@@ -94,9 +94,9 @@ public class DatabaseInitializationDialogFactory {
 
 	private static VerticalLayout firstStartContent(final ComboBox<DatabaseInitializationMode> mode) {
 		final VerticalLayout content = dialogContent();
-		content.add(description("Bitte wählen Sie, wie " + ApplicationVersion.DISPLAY_APP_NAME + " starten soll."),
-				mode, description(
-						"Sie können die Datenbank später auch in den Einstellungen zurücksetzen oder mit Demodaten initialisieren lassen."));
+		content.add(description("Bitte wähle, wie " + ApplicationVersion.DISPLAY_APP_NAME + " starten soll."), mode,
+				description(
+						"Du kannst die Datenbank später auch in den Einstellungen zurücksetzen oder mit Demodaten initialisieren lassen."));
 		return content;
 	}
 

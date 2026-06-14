@@ -159,7 +159,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 		resetDesigner();
 		if (exam == null) {
 			correctionMode = false;
-			showDesignerMessage(new Span("Bitte wählen Sie eine Klausur aus."));
+			showDesignerMessage(new Span("Bitte wähle eine Klausur aus."));
 			return;
 		}
 

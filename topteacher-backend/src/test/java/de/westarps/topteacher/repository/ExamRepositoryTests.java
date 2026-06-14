@@ -254,13 +254,13 @@ class ExamRepositoryTests {
 		levelOfExpectationsRepository.saveRequirementResult(new LoeRequirementResult(requirement.id(), pupil.id(), 3));
 
 		assertThat(examRepository.findPupilRemovalLocks(exam.id())).containsEntry(pupil.id(),
-				"Für diese:n Schüler:in sind bereits Ergebnisse erfasst. Bitte löschen Sie zuerst die Ergebnisse.");
+				"Für diese:n Schüler:in sind bereits Ergebnisse erfasst. Bitte lösche zuerst die Ergebnisse.");
 		assertThatThrownBy(() -> examRepository.removePupil(exam.id(), pupil.id()))
 				.isInstanceOf(IllegalArgumentException.class).hasMessage(
-						"Für diese:n Schüler:in sind bereits Ergebnisse erfasst. Bitte löschen Sie zuerst die Ergebnisse.");
+						"Für diese:n Schüler:in sind bereits Ergebnisse erfasst. Bitte lösche zuerst die Ergebnisse.");
 		assertThatThrownBy(() -> examRepository.replacePupils(exam.id(), List.of()))
 				.isInstanceOf(IllegalArgumentException.class).hasMessage(
-						"Für diese:n Schüler:in sind bereits Ergebnisse erfasst. Bitte löschen Sie zuerst die Ergebnisse.");
+						"Für diese:n Schüler:in sind bereits Ergebnisse erfasst. Bitte lösche zuerst die Ergebnisse.");
 		assertThat(examRepository.findPupils(exam.id())).containsExactly(pupil);
 	}
 

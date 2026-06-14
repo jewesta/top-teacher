@@ -139,7 +139,7 @@ public class PupilsView extends SplitListDetailView<Pupil> {
 
 		archiveButton.addClickListener(event -> TopTeacherDialogs.openArchiveConfirmation("Schüler:in archivieren?",
 				"Diese Schüler:in wird archiviert. Das bedeutet, dass diese Schüler:in standardmäßig nicht mehr angezeigt wird und nicht neu zugeordnet werden kann.",
-				"Bestehende Kurse, Klausuren und Ergebnisse bleiben erhalten. Sie können die Archivierung wieder rückgängig machen.",
+				"Bestehende Kurse, Klausuren und Ergebnisse bleiben erhalten. Du kannst die Archivierung wieder rückgängig machen.",
 				this::archiveSelectedPupil));
 
 		bulkLifecycle.setItems(Lifecycle.values());

@@ -26,7 +26,7 @@ public class GradingScaleViewer extends AbstractDesigner {
 		resetDesigner();
 
 		if (exam == null) {
-			showDesignerMessage(emptyState("Bitte wählen Sie eine Klausur aus."));
+			showDesignerMessage(emptyState("Bitte wähle eine Klausur aus."));
 			return;
 		}
 

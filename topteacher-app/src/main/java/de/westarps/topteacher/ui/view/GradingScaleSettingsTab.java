@@ -214,7 +214,7 @@ public class GradingScaleSettingsTab extends SplitListDetailView<GradingScale> i
 
 		archiveButton.addClickListener(event -> TopTeacherDialogs.openArchiveConfirmation("Notenschlüssel archivieren?",
 				"Der Notenschlüssel wird archiviert. Das bedeutet, dass der Notenschlüssel standardmäßig nicht mehr angezeigt wird und nicht neu zugeordnet werden kann.",
-				"Bestehende Klausuren behalten ihn weiterhin. Sie können die Archivierung wieder rückgängig machen.",
+				"Bestehende Klausuren behalten ihn weiterhin. Du kannst die Archivierung wieder rückgängig machen.",
 				this::archiveSelectedGradingScale));
 
 		newButton.addClickListener(event -> {
