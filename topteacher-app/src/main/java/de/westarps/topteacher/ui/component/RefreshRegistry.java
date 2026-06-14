@@ -37,13 +37,15 @@ public final class RefreshRegistry<S extends Enum<S>, T extends Enum<T>> {
 	}
 
 	public void registerDependency(final S source, final T target) {
-		dependencies.computeIfAbsent(Objects.requireNonNull(source, "Source can not be null"),
-				key -> EnumSet.noneOf(targetType)).add(Objects.requireNonNull(target, "Target can not be null"));
+		dependencies
+				.computeIfAbsent(Objects.requireNonNull(source, "Source can not be null"),
+						key -> EnumSet.noneOf(targetType))
+				.add(Objects.requireNonNull(target, "Target can not be null"));
 	}
 
 	public void publish(final S source) {
-		final EnumSet<T> affectedTargets = dependencies.getOrDefault(Objects.requireNonNull(source,
-				"Source can not be null"), EnumSet.noneOf(targetType));
+		final EnumSet<T> affectedTargets = dependencies
+				.getOrDefault(Objects.requireNonNull(source, "Source can not be null"), EnumSet.noneOf(targetType));
 		for (final T target : affectedTargets) {
 			staleTargets.add(target);
 			if (eagerTargets.contains(target) || target == activeTargetSupplier.get()) {

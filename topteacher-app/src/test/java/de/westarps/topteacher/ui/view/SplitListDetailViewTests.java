@@ -4,19 +4,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.textfield.TextField;
 
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
 
-class AbstractMasterDataViewTests {
+class SplitListDetailViewTests {
 
 	@Test
 	void switchesEditorModeBySelectionCount() {
-		final TestMasterDataView view = new TestMasterDataView();
+		final TestSplitListDetailView view = new TestSplitListDetailView();
 		view.grid().setItems(List.of("Ada", "Grace"));
 
 		view.grid().select("Ada");
@@ -32,14 +36,14 @@ class AbstractMasterDataViewTests {
 
 	@Test
 	void rejectsDoubleInitialization() {
-		final TestMasterDataView view = new TestMasterDataView();
+		final TestSplitListDetailView view = new TestSplitListDetailView();
 
 		assertThatThrownBy(view::initializeAgain).isInstanceOf(IllegalStateException.class);
 	}
 
 	@Test
 	void filtersGridItemsBySearchText() {
-		final TestMasterDataView view = new TestMasterDataView();
+		final TestSplitListDetailView view = new TestSplitListDetailView();
 		view.setGridItemsForTest(List.of("Ada Lovelace active", "Grace Hopper inactive"));
 
 		view.search("ada active");
@@ -49,7 +53,7 @@ class AbstractMasterDataViewTests {
 
 	@Test
 	void clearsSelectionWhenSearchFiltersSelectedItemOut() {
-		final TestMasterDataView view = new TestMasterDataView();
+		final TestSplitListDetailView view = new TestSplitListDetailView();
 		view.setGridItemsForTest(List.of("Ada Lovelace active", "Grace Hopper inactive"));
 		view.grid().select("Grace Hopper inactive");
 
@@ -59,13 +63,38 @@ class AbstractMasterDataViewTests {
 		assertThat(view.selectedItems()).isEmpty();
 	}
 
-	private static class TestMasterDataView extends AbstractMasterDataView<String> {
+	@Test
+	void keepsQuickFilterFirstInListToolbar() {
+		final Button newButton = new Button("Neu");
+		final TestSplitListDetailView view = new TestSplitListDetailView(newButton);
 
+		final List<Component> toolbarChildren = toolbar(view).getChildren().toList();
+
+		assertThat(toolbarChildren).hasSize(2);
+		assertThat(toolbarChildren.getFirst()).isInstanceOf(TextField.class);
+		assertThat(((TextField) toolbarChildren.getFirst()).getLabel()).isEqualTo("Schnellfilter");
+		assertThat(toolbarChildren.get(1)).isSameAs(newButton);
+	}
+
+	@Test
+	void initializesWithDefaultHooks() {
+		final SplitListDetailView<String> view = new SplitListDetailView<>("Test", "tt-test-view",
+				new MultiSelectionGrid<>());
+
+		view.initializeView();
+
+		assertThat(view.getChildren().toList()).isNotEmpty();
+	}
+
+	private static class TestSplitListDetailView extends SplitListDetailView<String> {
+
+		private final List<Component> toolbarComponents;
 		private EditorMode editorMode;
 		private List<String> selectedItems = List.of();
 
-		TestMasterDataView() {
+		TestSplitListDetailView(final Component... toolbarComponents) {
 			super("Test", "tt-test-view", new MultiSelectionGrid<>());
+			this.toolbarComponents = List.of(toolbarComponents);
 			initializeView();
 		}
 
@@ -81,6 +110,11 @@ class AbstractMasterDataViewTests {
 		@Override
 		protected Component createMultiSelectEditor() {
 			return new Span("multi");
+		}
+
+		@Override
+		protected List<Component> createListToolbarComponents() {
+			return toolbarComponents;
 		}
 
 		@Override
@@ -116,5 +150,15 @@ class AbstractMasterDataViewTests {
 		private void initializeAgain() {
 			initializeView();
 		}
+	}
+
+	private static HorizontalLayout toolbar(final Component root) {
+		return components(root, HorizontalLayout.class).stream()
+				.filter(layout -> layout.hasClassName("tt-master-toolbar")).findFirst().orElseThrow();
+	}
+
+	private static <T extends Component> List<T> components(final Component root, final Class<T> type) {
+		return Stream.concat(Stream.of(root), root.getChildren().flatMap(child -> components(child, type).stream()))
+				.filter(type::isInstance).map(type::cast).toList();
 	}
 }

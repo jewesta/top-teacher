@@ -47,7 +47,6 @@ public class PupilAssignmentGrid extends VerticalLayout {
 		toolbar.setSpacing(true);
 		toolbar.setWidthFull();
 
-		grid.addColumn(row -> row.pupil().id()).setHeader("ID").setAutoWidth(true).setFlexGrow(0);
 		grid.addColumn(row -> row.pupil().surname()).setHeader("Nachname").setAutoWidth(true);
 		grid.addColumn(row -> row.pupil().name()).setHeader("Vorname").setAutoWidth(true);
 		grid.addComponentColumn(this::createAssignmentCheckbox).setHeader(createAssignmentHeader()).setAutoWidth(true)
@@ -155,8 +154,7 @@ public class PupilAssignmentGrid extends VerticalLayout {
 			return row.assigned();
 		}
 
-		final String pupilText = String
-				.join(" ", String.valueOf(row.pupil().id()), row.pupil().surname(), row.pupil().name()).toLowerCase();
+		final String pupilText = String.join(" ", row.pupil().surname(), row.pupil().name()).toLowerCase();
 		return pupilText.contains(searchValue);
 	}
 

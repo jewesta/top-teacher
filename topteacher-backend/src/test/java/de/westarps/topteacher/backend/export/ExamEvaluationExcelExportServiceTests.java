@@ -37,11 +37,13 @@ import de.westarps.topteacher.model.loe.LoeTask;
 
 class ExamEvaluationExcelExportServiceTests {
 
-	private static final Exam EXAM = new Exam(1, 10, "Klausur Nr. 1", LocalDate.of(2026, 5, 21));
+	private static final int GRADING_SCALE_ID = 30;
+	private static final Exam EXAM = new Exam(1, 10, "Klausur Nr. 1", LocalDate.of(2026, 5, 21), null,
+			GRADING_SCALE_ID);
 	private static final Subject SUBJECT = new Subject(1, "Englisch", Lifecycle.ACTIVE);
 	private static final Course COURSE = new Course(EXAM.courseId(), SchoolClass.CLS_5A, SUBJECT, new SchoolYear(2026),
-			CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, 30);
-	private static final GradingScale GRADING_SCALE = new GradingScale(COURSE.gradingScaleId(), "Standard", 7,
+			CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, GRADING_SCALE_ID);
+	private static final GradingScale GRADING_SCALE = new GradingScale(GRADING_SCALE_ID, "Standard", 7,
 			Lifecycle.ACTIVE);
 	private static final Pupil PUPIL = new Pupil(20, "Anna", "Ergebnis", Lifecycle.ACTIVE);
 	private static final LoePart PART = new LoePart(1, EXAM.id(), "Klausurteil A", 0);
@@ -64,7 +66,7 @@ class ExamEvaluationExcelExportServiceTests {
 		when(examRepository.findPupils(EXAM.id())).thenReturn(List.of(PUPIL));
 
 		final GradingScaleRepository gradingScaleRepository = mock(GradingScaleRepository.class);
-		when(gradingScaleRepository.findById(COURSE.gradingScaleId())).thenReturn(Optional.of(GRADING_SCALE));
+		when(gradingScaleRepository.findById(EXAM.gradingScaleId())).thenReturn(Optional.of(GRADING_SCALE));
 		when(gradingScaleRepository.findRangesByGradingScaleId(GRADING_SCALE.id()))
 				.thenReturn(List.of(new GradingScaleRange(1, GRADING_SCALE.id(), GradeLevel.SEHR_GUT_PLUS, 7, 7),
 						new GradingScaleRange(2, GRADING_SCALE.id(), GradeLevel.UNGENUEGEND, 0, 6)));

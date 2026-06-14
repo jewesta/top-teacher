@@ -9,7 +9,7 @@ import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 
 import de.westarps.topteacher.backend.repo.GradingScaleRepository;
-import de.westarps.topteacher.model.Course;
+import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.GradingScale;
 import de.westarps.topteacher.model.GradingScaleRange;
 
@@ -25,17 +25,22 @@ public class GradingScaleViewer extends AbstractDesigner {
 		configureGrid();
 	}
 
-	public void setCourse(final Course course) {
+	public void setExam(final Exam exam) {
 		resetDesigner();
 
-		if (course == null) {
-			showDesignerMessage(emptyState("Bitte wählen Sie einen Kurs aus."));
+		if (exam == null) {
+			showDesignerMessage(emptyState("Bitte wählen Sie eine Klausur aus."));
 			return;
 		}
 
-		final GradingScale gradingScale = gradingScaleRepository.findById(course.gradingScaleId()).orElse(null);
+		if (exam.gradingScaleId() == null) {
+			showDesignerMessage(emptyState("Für diese Klausur ist kein Notenschlüssel hinterlegt."));
+			return;
+		}
+
+		final GradingScale gradingScale = gradingScaleRepository.findById(exam.gradingScaleId()).orElse(null);
 		if (gradingScale == null) {
-			showDesignerMessage(emptyState("Für diesen Kurs ist kein Notenschlüssel hinterlegt."));
+			showDesignerMessage(emptyState("Für diese Klausur ist kein Notenschlüssel hinterlegt."));
 			return;
 		}
 

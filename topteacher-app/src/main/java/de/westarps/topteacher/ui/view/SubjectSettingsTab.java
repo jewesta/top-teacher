@@ -1,7 +1,6 @@
 package de.westarps.topteacher.ui.view;
 
 import java.util.List;
-import java.util.Locale;
 
 import org.springframework.core.annotation.Order;
 
@@ -9,15 +8,10 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
-import com.vaadin.flow.data.provider.DataProvider;
-import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
@@ -27,16 +21,14 @@ import de.westarps.topteacher.model.Lifecycle;
 import de.westarps.topteacher.model.Subject;
 import de.westarps.topteacher.ui.component.AbstractFormEditor;
 import de.westarps.topteacher.ui.component.FormBinders;
-import de.westarps.topteacher.ui.component.QuickFilterField;
+import de.westarps.topteacher.ui.component.MultiSelectionGrid;
 
 @Order(5)
 @UIScope
 @SpringComponent
-public class SubjectSettingsTab extends VerticalLayout implements SettingsTab {
+public class SubjectSettingsTab extends SplitListDetailView<Subject> implements SettingsTab {
 
 	private final SubjectRepository subjectRepository;
-	private final QuickFilterField search = new QuickFilterField();
-	private final Grid<Subject> grid = new Grid<>(Subject.class, false);
 	private final TextField name = new TextField("Fach");
 	private final ComboBox<Lifecycle> lifecycle = new ComboBox<>("Status");
 	private final Binder<SubjectFormData> binder = new Binder<>();
@@ -44,18 +36,22 @@ public class SubjectSettingsTab extends VerticalLayout implements SettingsTab {
 	private final Button saveButton = new Button();
 	private final Button archiveButton = new Button("Archivieren");
 	private final Span selectionSummary = new Span();
+	private final Span multiSelectionSummary = new Span();
+	private final ComboBox<Lifecycle> bulkLifecycle = new ComboBox<>("Status");
+	private final Button applyLifecycleButton = new Button("Anwenden");
 
-	private ListDataProvider<Subject> dataProvider;
 	private Subject selectedSubject;
+	private List<Subject> selectedSubjects = List.of();
 
 	public SubjectSettingsTab(final SubjectRepository subjectRepository) {
+		super("Fächer", "tt-subject-settings-tab", new MultiSelectionGrid<>(Subject.class, false));
 		this.subjectRepository = subjectRepository;
 
-		configureContent();
-		configureGrid();
-		configureEditor();
+		getSearchField().setPlaceholder("Fach suchen");
+		configureEditors();
+		initializeView();
 		refreshGrid();
-		clearEditor();
+		clearSingleEditor();
 	}
 
 	@Override
@@ -68,46 +64,53 @@ public class SubjectSettingsTab extends VerticalLayout implements SettingsTab {
 		return this;
 	}
 
-	private void configureContent() {
-		addClassName("tt-settings-content");
-		setPadding(false);
-		setSpacing(true);
-		setSizeFull();
-
-		search.setPlaceholder("Fach suchen");
-		search.addValueChangeListener(event -> applyFilter());
-
-		final HorizontalLayout toolbar = new HorizontalLayout(search, newButton);
-		toolbar.addClassName("tt-subject-settings-toolbar");
-		toolbar.setAlignItems(Alignment.END);
-		toolbar.setPadding(false);
-		toolbar.setSpacing(true);
-		toolbar.setWidthFull();
-
-		newButton.addClickListener(event -> {
-			grid.deselectAll();
-			clearEditor();
-		});
-
-		add(toolbar, grid, createEditor());
-		expand(grid);
-	}
-
-	private void configureGrid() {
-		grid.addColumn(Subject::id).setHeader("ID").setAutoWidth(true).setFlexGrow(0);
+	@Override
+	protected void configureGrid(final MultiSelectionGrid<Subject> grid) {
 		grid.addColumn(Subject::name).setHeader("Fach").setAutoWidth(true);
 		grid.addColumn(subject -> subject.lifecycle().getDisplayName()).setHeader("Status").setAutoWidth(true);
-		grid.setSizeFull();
-		grid.asSingleSelect().addValueChangeListener(event -> showSubject(event.getValue()));
 	}
 
-	private Component createEditor() {
+	@Override
+	protected Component createSingleSelectEditor() {
 		selectionSummary.addClassName("tt-selection-summary");
 		return AbstractFormEditor.singleColumn("tt-subject-settings-editor", List.of(selectionSummary),
 				List.of(name, lifecycle), List.of(saveButton, archiveButton));
 	}
 
-	private void configureEditor() {
+	@Override
+	protected Component createMultiSelectEditor() {
+		multiSelectionSummary.addClassName("tt-selection-summary");
+		return AbstractFormEditor.singleColumn("tt-subject-settings-bulk-editor", List.of(multiSelectionSummary),
+				List.of(bulkLifecycle), List.of(applyLifecycleButton));
+	}
+
+	@Override
+	protected List<Component> createListToolbarComponents() {
+		return List.of(newButton);
+	}
+
+	@Override
+	protected String getEditorTabLabel() {
+		return "Fach";
+	}
+
+	@Override
+	protected String getSearchText(final Subject subject) {
+		return String.join(" ", subject.name(), subject.lifecycle().getDisplayName(), subject.lifecycle().name());
+	}
+
+	@Override
+	protected void onEditorModeChanged(final EditorMode editorMode, final List<Subject> selectedItems) {
+		if (editorMode == EditorMode.MULTI_SELECT) {
+			showMultiSelectEditor(selectedItems);
+			return;
+		}
+
+		final Subject subject = selectedItems.isEmpty() ? null : selectedItems.get(0);
+		showSingleSelectEditor(subject);
+	}
+
+	private void configureEditors() {
 		name.setClearButtonVisible(true);
 		name.setValueChangeMode(ValueChangeMode.EAGER);
 		name.setRequiredIndicatorVisible(true);
@@ -116,28 +119,47 @@ public class SubjectSettingsTab extends VerticalLayout implements SettingsTab {
 		lifecycle.setItemLabelGenerator(Lifecycle::getDisplayName);
 		lifecycle.setRequiredIndicatorVisible(true);
 
+		bindSingleEditor();
+
+		newButton.addClickListener(event -> {
+			clearSelection();
+			clearSingleEditor();
+		});
+
 		saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 		saveButton.addClickListener(event -> saveSubject());
 
 		archiveButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
 		archiveButton.addClickListener(event -> archiveSelectedSubject());
 
-		binder.forField(name).asRequired("Fach ist erforderlich.")
-				.withConverter(SubjectSettingsTab::trim, value -> value)
-				.bind(SubjectFormData::getName, SubjectFormData::setName);
-		binder.forField(lifecycle).asRequired("Status ist erforderlich.").bind(SubjectFormData::getLifecycle,
-				SubjectFormData::setLifecycle);
+		bulkLifecycle.setItems(Lifecycle.values());
+		bulkLifecycle.setItemLabelGenerator(Lifecycle::getDisplayName);
+		bulkLifecycle.setClearButtonVisible(true);
+		bulkLifecycle.addValueChangeListener(event -> updateBulkApplyButton());
+
+		applyLifecycleButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+		applyLifecycleButton.addClickListener(event -> applyLifecycleToSelectedSubjects());
+		updateBulkApplyButton();
 	}
 
-	private void showSubject(final Subject subject) {
+	private void showSingleSelectEditor(final Subject subject) {
+		selectedSubjects = List.of();
 		selectedSubject = subject;
 		if (subject == null) {
-			clearEditor();
+			clearSingleEditor();
 			return;
 		}
 
-		readEditor(new SubjectFormData(subject.name(), subject.lifecycle()));
-		updateEditorState();
+		readSingleEditor(new SubjectFormData(subject.name(), subject.lifecycle()));
+		updateEditorModeControls();
+	}
+
+	private void showMultiSelectEditor(final List<Subject> subjects) {
+		selectedSubject = null;
+		selectedSubjects = List.copyOf(subjects);
+		multiSelectionSummary.setText(selectedSubjects.size() + " Fächer ausgewählt");
+		setBulkLifecycleValue(commonLifecycle(selectedSubjects));
+		updateBulkApplyButton();
 	}
 
 	private void saveSubject() {
@@ -149,7 +171,8 @@ public class SubjectSettingsTab extends VerticalLayout implements SettingsTab {
 		final Integer id = selectedSubject == null ? null : selectedSubject.id();
 		subjectRepository.save(new Subject(id, formData.getName(), formData.getLifecycle()));
 		refreshGrid();
-		clearEditor();
+		clearSelection();
+		clearSingleEditor();
 		Notification.show("Fach gespeichert.");
 	}
 
@@ -160,47 +183,73 @@ public class SubjectSettingsTab extends VerticalLayout implements SettingsTab {
 
 		subjectRepository.archive(selectedSubject.id());
 		refreshGrid();
-		clearEditor();
+		clearSelection();
+		clearSingleEditor();
 		Notification.show("Fach archiviert.");
 	}
 
-	private void refreshGrid() {
-		dataProvider = DataProvider.ofCollection(subjectRepository.findAll());
-		grid.setItems(dataProvider);
-		applyFilter();
-	}
-
-	private void applyFilter() {
-		if (dataProvider == null) {
+	private void applyLifecycleToSelectedSubjects() {
+		final Lifecycle selectedLifecycle = bulkLifecycle.getValue();
+		if (selectedSubjects.isEmpty() || selectedLifecycle == null) {
 			return;
 		}
 
-		final String filter = normalize(search.getValue());
-		dataProvider.setFilter(subject -> normalize(
-				String.join(" ", String.valueOf(subject.id()), subject.name(), subject.lifecycle().getDisplayName()))
-				.contains(filter));
+		selectedSubjects.forEach(
+				subject -> subjectRepository.save(new Subject(subject.id(), subject.name(), selectedLifecycle)));
+		Notification.show("Status für " + selectedSubjects.size() + " Fächer aktualisiert.");
+		refreshGrid();
 	}
 
-	private void clearEditor() {
+	private void refreshGrid() {
+		setGridItems(subjectRepository.findAll());
+	}
+
+	private void clearSingleEditor() {
 		selectedSubject = null;
-		readEditor(new SubjectFormData("", Lifecycle.ACTIVE));
-		updateEditorState();
+		readSingleEditor(new SubjectFormData("", Lifecycle.ACTIVE));
+		updateEditorModeControls();
 	}
 
-	private void readEditor(final SubjectFormData formData) {
+	private void updateEditorModeControls() {
+		final boolean editMode = selectedSubject != null;
+		selectionSummary.setText(editMode ? "Fach bearbeiten" : "Neues Fach");
+		saveButton.setText(editMode ? "Speichern" : "Anlegen");
+		lifecycle.setVisible(editMode);
+		archiveButton.setVisible(editMode && selectedSubject.lifecycle() == Lifecycle.ACTIVE);
+	}
+
+	private void bindSingleEditor() {
+		binder.forField(name).asRequired("Fach ist erforderlich.")
+				.withConverter(SubjectSettingsTab::trim, value -> value)
+				.bind(SubjectFormData::getName, SubjectFormData::setName);
+		binder.forField(lifecycle).asRequired("Status ist erforderlich.").bind(SubjectFormData::getLifecycle,
+				SubjectFormData::setLifecycle);
+	}
+
+	private void readSingleEditor(final SubjectFormData formData) {
 		binder.readBean(formData);
 		FormBinders.clearValidation(binder);
 	}
 
-	private void updateEditorState() {
-		final boolean editMode = selectedSubject != null;
-		selectionSummary.setText(editMode ? "Fach bearbeiten" : "Neues Fach");
-		saveButton.setText(editMode ? "Speichern" : "Anlegen");
-		archiveButton.setVisible(editMode && selectedSubject.lifecycle() == Lifecycle.ACTIVE);
+	private Lifecycle commonLifecycle(final List<Subject> subjects) {
+		if (subjects.isEmpty()) {
+			return null;
+		}
+
+		final Lifecycle firstLifecycle = subjects.get(0).lifecycle();
+		return subjects.stream().allMatch(subject -> subject.lifecycle() == firstLifecycle) ? firstLifecycle : null;
 	}
 
-	private static String normalize(final String value) {
-		return trim(value).toLowerCase(Locale.ROOT);
+	private void setBulkLifecycleValue(final Lifecycle value) {
+		if (value == null) {
+			bulkLifecycle.clear();
+			return;
+		}
+		bulkLifecycle.setValue(value);
+	}
+
+	private void updateBulkApplyButton() {
+		applyLifecycleButton.setEnabled(!selectedSubjects.isEmpty() && bulkLifecycle.getValue() != null);
 	}
 
 	private static String trim(final String value) {

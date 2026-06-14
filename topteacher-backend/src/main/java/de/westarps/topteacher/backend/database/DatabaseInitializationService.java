@@ -110,7 +110,7 @@ public class DatabaseInitializationService {
 		if (count("""
 				select count(*)
 				from grading_scale
-				where name <> 'Standard'
+				where name not in ('Einführungsphase', 'Qualifikationsphase')
 				""") > 0) {
 			return Optional.of("custom grading scales");
 		}
@@ -120,7 +120,7 @@ public class DatabaseInitializationService {
 				where grading_scale_id not in (
 				    select id
 				    from grading_scale
-				    where name = 'Standard'
+				    where name in ('Einführungsphase', 'Qualifikationsphase')
 				)
 				""") > 0) {
 			return Optional.of("custom grading scale ranges");

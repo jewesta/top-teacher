@@ -68,13 +68,44 @@ class ExamRepositoryTests {
 		assertThat(examRepository.findById(saved.id())).contains(saved);
 		assertThat(examRepository.findByCourseId(course.id())).containsExactly(saved);
 
-		final Exam updated = new Exam(saved.id(), course.id(), "1. Klassenarbeit", LocalDate.of(2030, 9, 24));
+		final Exam updated = new Exam(saved.id(), course.id(), "1. Klassenarbeit", LocalDate.of(2030, 9, 24), null,
+				saved.gradingScaleId());
 		examRepository.save(updated);
 
 		assertThat(examRepository.findById(saved.id())).contains(updated);
 		assertThat(examRepository.findByCourseId(course.id())).containsExactly(updated);
 		assertThat(examRepository.existsByCourseIdAndTitle(course.id(), updated.title())).isTrue();
 		assertThat(examRepository.existsByCourseIdAndTitle(otherCourse.id(), updated.title())).isFalse();
+	}
+
+	@Test
+	void storesCourseGradingScaleByDefaultAndAllowsCreationOverride() {
+		final GradingScale defaultGradingScale = createGradingScale("Exam Default Scale 100");
+		final GradingScale explicitGradingScale = createGradingScale("Exam Explicit Scale 100");
+		final Course course = courseRepository.save(new Course(null, SchoolClass.CLS_5A, subject("Englisch"),
+				new SchoolYear(2037), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, defaultGradingScale.id()));
+
+		final Exam defaultExam = examRepository.save(new Exam(null, course.id(), "Default", LocalDate.of(2037, 9, 17)));
+		final Exam explicitExam = examRepository.save(
+				new Exam(null, course.id(), "Explicit", LocalDate.of(2037, 9, 18), null, explicitGradingScale.id()));
+
+		assertThat(defaultExam.gradingScaleId()).isEqualTo(defaultGradingScale.id());
+		assertThat(explicitExam.gradingScaleId()).isEqualTo(explicitGradingScale.id());
+		assertThat(examRepository.findById(defaultExam.id()))
+				.hasValueSatisfying(exam -> assertThat(exam.gradingScaleId()).isEqualTo(defaultGradingScale.id()));
+	}
+
+	@Test
+	void rejectsChangedGradingScaleId() {
+		final GradingScale gradingScale = createGradingScale("Exam Scale Guard 100");
+		final GradingScale otherGradingScale = createGradingScale("Exam Scale Guard Other 100");
+		final Course course = courseRepository.save(new Course(null, SchoolClass.CLS_5B, subject("Englisch"),
+				new SchoolYear(2037), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, gradingScale.id()));
+		final Exam saved = examRepository.save(new Exam(null, course.id(), "1. Klausur", LocalDate.of(2037, 9, 17)));
+
+		assertThatThrownBy(() -> examRepository.save(new Exam(saved.id(), course.id(), saved.title(), saved.date(),
+				saved.originalExamId(), otherGradingScale.id()))).isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("Der Notenschlüssel einer bestehenden Klausur kann nicht geändert werden.");
 	}
 
 	@Test

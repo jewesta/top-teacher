@@ -35,7 +35,7 @@ import de.westarps.topteacher.ui.component.MultiSelectionGrid;
 import de.westarps.topteacher.ui.component.PupilAssignmentGrid;
 
 @Route(value = "courses", layout = MainLayout.class)
-public class CoursesView extends AbstractMasterDataView<Course> {
+public class CoursesView extends SplitListDetailView<Course> {
 
 	private final CourseRepository courseRepository;
 	private final GradingScaleRepository gradingScaleRepository;
@@ -47,6 +47,7 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 	private final ComboBox<GradingScale> gradingScale = new ComboBox<>("Notenschlüssel");
 	private final ComboBox<Lifecycle> lifecycle = new ComboBox<>("Status");
 	private final Binder<CourseFormData> courseBinder = new Binder<>();
+	private final Button newButton = new Button("Neu");
 	private final Button saveButton = new Button();
 	private final Button archiveButton = new Button("Archivieren");
 	private final Span multiSelectionSummary = new Span();
@@ -80,7 +81,6 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 
 	@Override
 	protected void configureGrid(final MultiSelectionGrid<Course> grid) {
-		grid.addColumn(Course::id).setHeader("ID").setAutoWidth(true).setFlexGrow(0);
 		grid.addColumn(course -> course.schoolYear().getDisplayName()).setHeader("Schuljahr").setAutoWidth(true);
 		grid.addColumn(course -> course.coursePeriod().getDisplayName()).setHeader("Zeitraum").setAutoWidth(true);
 		grid.addColumn(course -> course.schoolClass().getDisplayName()).setHeader("Klasse").setAutoWidth(true);
@@ -104,17 +104,22 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 	}
 
 	@Override
+	protected List<Component> createListToolbarComponents() {
+		return List.of(newButton);
+	}
+
+	@Override
 	protected String getEditorTabLabel() {
 		return "Kurs";
 	}
 
 	@Override
 	protected String getSearchText(final Course course) {
-		return String.join(" ", String.valueOf(course.id()), String.valueOf(course.schoolYear().getCalendarYear()),
+		return String.join(" ", String.valueOf(course.schoolYear().getCalendarYear()),
 				course.schoolYear().getDisplayName(), course.coursePeriod().getDisplayName(),
 				course.coursePeriod().name(), course.schoolClass().getDisplayName(), course.schoolClass().name(),
-				String.valueOf(course.subject().id()), course.subject().getDisplayName(), gradingScaleLabel(course),
-				course.lifecycle().getDisplayName(), course.lifecycle().name());
+				course.subject().getDisplayName(), gradingScaleLabel(course), course.lifecycle().getDisplayName(),
+				course.lifecycle().name());
 	}
 
 	@Override
@@ -158,6 +163,12 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 		lifecycle.setRequiredIndicatorVisible(true);
 
 		bindSingleEditor();
+
+		newButton.addClickListener(event -> {
+			clearSelection();
+			clearSingleEditor();
+			removeAssignmentsTab();
+		});
 
 		saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 		saveButton.addClickListener(event -> saveCourse());

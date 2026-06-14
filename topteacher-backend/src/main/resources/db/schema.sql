@@ -86,8 +86,10 @@ create table if not exists exam (
     title varchar(100) not null,
     exam_date date not null,
     original_exam_id integer,
+    grading_scale_id integer not null,
     constraint exam_course_fk foreign key (course_id) references course(id),
     constraint exam_original_exam_fk foreign key (original_exam_id) references exam(id),
+    constraint exam_grading_scale_fk foreign key (grading_scale_id) references grading_scale(id),
     constraint exam_original_exam_not_self_check check (original_exam_id is null or original_exam_id <> id),
     constraint exam_unique unique (course_id, title)
 );
@@ -95,6 +97,16 @@ create table if not exists exam (
 alter table exam add column if not exists original_exam_id integer;
 alter table exam add constraint if not exists exam_original_exam_fk foreign key (original_exam_id) references exam(id);
 alter table exam add constraint if not exists exam_original_exam_not_self_check check (original_exam_id is null or original_exam_id <> id);
+alter table exam add column if not exists grading_scale_id integer;
+update exam e
+set grading_scale_id = (
+    select c.grading_scale_id
+    from course c
+    where c.id = e.course_id
+)
+where grading_scale_id is null;
+alter table exam alter column grading_scale_id set not null;
+alter table exam add constraint if not exists exam_grading_scale_fk foreign key (grading_scale_id) references grading_scale(id);
 alter table exam drop constraint if exists exam_max_points_check;
 alter table exam drop column if exists max_points;
 

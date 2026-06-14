@@ -2,6 +2,7 @@ package de.westarps.topteacher.ui.view;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -35,6 +36,7 @@ import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.ExamNumber;
+import de.westarps.topteacher.model.GradingScale;
 import de.westarps.topteacher.model.Pupil;
 import de.westarps.topteacher.ui.MainLayout;
 import de.westarps.topteacher.ui.component.AbstractFormEditor;
@@ -49,7 +51,7 @@ import de.westarps.topteacher.ui.component.loe.ExamResultsEditor;
 import de.westarps.topteacher.ui.component.loe.LevelOfExpectationsEditor;
 
 @Route(value = "exams", layout = MainLayout.class)
-public class ExamsView extends AbstractMasterDataView<Exam> {
+public class ExamsView extends SplitListDetailView<Exam> {
 
 	private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
@@ -64,6 +66,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 	private final CourseRepository courseRepository;
 	private final ExamRepository examRepository;
 	private final LevelOfExpectationsRepository levelOfExpectationsRepository;
+	private final GradingScaleRepository gradingScaleRepository;
 	private final LevelOfExpectationsEditor levelOfExpectationsEditor;
 	private final ExamNotesEditor examNotesEditor;
 	private final ExamResultsEditor examResultsEditor;
@@ -75,8 +78,10 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 	private final TextField title = new TextField("Titel");
 	private final DatePicker date = new DatePicker("Datum");
 	private final ComboBox<Exam> originalExam = new ComboBox<>("Nachschreibeklausur zu");
+	private final ComboBox<GradingScale> gradingScale = new ComboBox<>("Notenschlüssel");
 	private final MultiSelectComboBox<Pupil> creationPupils = new MultiSelectComboBox<>("Teilnehmende Schüler:innen");
 	private final Binder<ExamFormData> examBinder = new Binder<>();
+	private final Button newButton = new Button("Neu");
 	private final Button saveButton = new Button();
 	private final Button duplicateButton = new Button("Duplizieren...");
 	private final Dialog duplicateDialog = new Dialog();
@@ -91,6 +96,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 	private Exam selectedExam;
 	private Map<Integer, ExamNumber> examNumbersByExamId = Map.of();
 	private List<Exam> originalExamCandidates = List.of();
+	private List<GradingScale> gradingScales = List.of();
 	private Tab pupilsTab;
 	private Tab levelOfExpectationsTab;
 	private Tab notesTab;
@@ -105,6 +111,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		this.courseRepository = courseRepository;
 		this.examRepository = examRepository;
 		this.levelOfExpectationsRepository = levelOfExpectationsRepository;
+		this.gradingScaleRepository = gradingScaleRepository;
 		this.levelOfExpectationsEditor = new LevelOfExpectationsEditor(levelOfExpectationsRepository);
 		this.examNotesEditor = new ExamNotesEditor(levelOfExpectationsRepository);
 		this.examResultsEditor = new ExamResultsEditor(courseRepository, examRepository, levelOfExpectationsRepository,
@@ -131,8 +138,8 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 
 	@Override
 	protected Component createSingleSelectEditor() {
-		return AbstractFormEditor.responsive("tt-exam-editor", List.of(title, date, originalExam, creationPupils),
-				List.of(saveButton, duplicateButton));
+		return AbstractFormEditor.responsive("tt-exam-editor",
+				List.of(title, date, originalExam, gradingScale, creationPupils), List.of(saveButton, duplicateButton));
 	}
 
 	@Override
@@ -143,13 +150,13 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 
 	@Override
 	protected String getSearchText(final Exam exam) {
-		return String.join(" ", String.valueOf(exam.id()), examNumberLabel(exam), exam.title(),
-				DATE_FORMATTER.format(exam.date()), exam.date().toString());
+		return String.join(" ", examNumberLabel(exam), exam.title(), DATE_FORMATTER.format(exam.date()),
+				exam.date().toString());
 	}
 
 	@Override
-	protected Component createListToolbarPrefix() {
-		return courseFilter;
+	protected List<Component> createListToolbarComponents() {
+		return List.of(newButton, courseFilter);
 	}
 
 	@Override
@@ -190,6 +197,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 			clearSelection();
 			clearSingleEditor();
 			removeExamContextTabs();
+			refreshGradingScaleOptions();
 			refreshGrid();
 		});
 	}
@@ -210,11 +218,20 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 			}
 		});
 
+		gradingScale.setItemLabelGenerator(GradingScale::getDisplayName);
+		gradingScale.setRequiredIndicatorVisible(true);
+
 		creationPupils.setItemLabelGenerator(this::pupilLabel);
 		creationPupils.setClearButtonVisible(true);
 		creationPupils.setWidthFull();
 
 		bindSingleEditor();
+
+		newButton.addClickListener(event -> {
+			clearSelection();
+			clearSingleEditor();
+			removeExamContextTabs();
+		});
 
 		saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 		saveButton.addClickListener(event -> saveExam());
@@ -287,7 +304,8 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		}
 
 		refreshOriginalExamItems();
-		readSingleEditor(new ExamFormData(exam.title(), exam.date(), originalExam(exam)));
+		refreshGradingScaleOptions();
+		readSingleEditor(new ExamFormData(exam.title(), exam.date(), originalExam(exam), gradingScaleFor(exam)));
 		updateEditorEnabled();
 	}
 
@@ -306,8 +324,11 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		final Integer id = selectedExam == null ? null : selectedExam.id();
 		final Integer courseId = selectedExam == null ? selectedCourse.id() : selectedExam.courseId();
 		final Integer originalExamId = formData.getOriginalExam() == null ? null : formData.getOriginalExam().id();
+		final Integer gradingScaleId = selectedExam == null ? formData.getGradingScale().id()
+				: selectedExam.gradingScaleId();
 		try {
-			final Exam exam = new Exam(id, courseId, formData.getTitle(), formData.getDate(), originalExamId);
+			final Exam exam = new Exam(id, courseId, formData.getTitle(), formData.getDate(), originalExamId,
+					gradingScaleId);
 			if (selectedExam == null) {
 				examRepository.save(exam, selectedCreationPupilIds());
 			} else {
@@ -377,8 +398,8 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		}
 
 		final String duplicateExamTitle = nextAvailableTitle(formData.getCourse().id(), formData.getTitle());
-		final Exam duplicatedExam = examRepository
-				.save(new Exam(null, formData.getCourse().id(), duplicateExamTitle, formData.getDate()));
+		final Exam duplicatedExam = examRepository.save(new Exam(null, formData.getCourse().id(), duplicateExamTitle,
+				formData.getDate(), null, selectedExam.gradingScaleId()));
 		levelOfExpectationsRepository.copyDesignAndNotes(selectedExam.id(), duplicatedExam.id());
 
 		duplicateDialog.close();
@@ -419,7 +440,8 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 	private void clearSingleEditor() {
 		selectedExam = null;
 		refreshOriginalExamItems();
-		readSingleEditor(new ExamFormData("", null, null));
+		refreshGradingScaleOptions();
+		readSingleEditor(new ExamFormData("", null, null, defaultGradingScale()));
 		refreshCreationPupilOptions();
 		updateEditorEnabled();
 	}
@@ -445,7 +467,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		examNotesEditor.setExam(exam);
 		examResultsEditor.setExam(exam);
 		examEvaluationViewer.setExam(exam);
-		gradingScaleViewer.setCourse(selectedCourse);
+		gradingScaleViewer.setExam(exam);
 		refreshRegistry.clear();
 	}
 
@@ -456,7 +478,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 			examNotesEditor.setExam(null);
 			examResultsEditor.setExam(null);
 			examEvaluationViewer.setExam(null);
-			gradingScaleViewer.setCourse(null);
+			gradingScaleViewer.setExam(null);
 			refreshRegistry.clear();
 			return;
 		}
@@ -485,7 +507,7 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		examNotesEditor.setExam(null);
 		examResultsEditor.setExam(null);
 		examEvaluationViewer.setExam(null);
-		gradingScaleViewer.setCourse(null);
+		gradingScaleViewer.setExam(null);
 		refreshRegistry.clear();
 	}
 
@@ -534,8 +556,11 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		title.setEnabled(enabled);
 		date.setEnabled(enabled);
 		originalExam.setEnabled(enabled);
+		gradingScale.setEnabled(enabled && selectedExam == null);
+		gradingScale.setVisible(selectedExam == null);
 		creationPupils.setEnabled(enabled && selectedExam == null);
 		creationPupils.setVisible(selectedExam == null);
+		newButton.setEnabled(enabled);
 		saveButton.setEnabled(enabled);
 		saveButton.setText(selectedExam == null ? "Anlegen" : "Speichern");
 		duplicateButton.setEnabled(enabled && selectedExam != null);
@@ -563,6 +588,9 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 				.withValidator(this::hasValidMakeupExamDate,
 						"Eine Nachschreibeklausur darf nicht vor der ursprünglichen Klausur liegen.")
 				.bind(ExamFormData::getOriginalExam, ExamFormData::setOriginalExam);
+		examBinder.forField(gradingScale)
+				.withValidator(value -> selectedExam != null || value != null, "Notenschlüssel ist erforderlich.")
+				.bind(ExamFormData::getGradingScale, ExamFormData::setGradingScale);
 	}
 
 	private void readSingleEditor(final ExamFormData formData) {
@@ -656,12 +684,47 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		originalExam.setItems(originalExamCandidates);
 	}
 
+	private void refreshGradingScaleOptions() {
+		final List<GradingScale> options = new ArrayList<>(gradingScaleRepository.findActive());
+		addGradingScaleOption(options, selectedCourse == null ? null : selectedCourse.gradingScaleId());
+		addGradingScaleOption(options, selectedExam == null ? null : selectedExam.gradingScaleId());
+		gradingScales = List.copyOf(options);
+		gradingScale.setItems(gradingScales);
+	}
+
+	private void addGradingScaleOption(final List<GradingScale> options, final Integer gradingScaleId) {
+		if (gradingScaleId == null || options.stream().anyMatch(candidate -> candidate.id().equals(gradingScaleId))) {
+			return;
+		}
+		gradingScaleRepository.findById(gradingScaleId).ifPresent(options::add);
+	}
+
 	private Exam originalExam(final Exam exam) {
 		if (exam.originalExamId() == null) {
 			return null;
 		}
 		return originalExamCandidates.stream().filter(candidate -> exam.originalExamId().equals(candidate.id()))
 				.findFirst().orElse(null);
+	}
+
+	private GradingScale gradingScaleFor(final Exam exam) {
+		if (exam.gradingScaleId() == null) {
+			return null;
+		}
+		return gradingScales.stream().filter(candidate -> candidate.id().equals(exam.gradingScaleId())).findFirst()
+				.orElse(null);
+	}
+
+	private GradingScale defaultGradingScale() {
+		if (selectedCourse != null) {
+			final GradingScale courseDefault = gradingScales.stream()
+					.filter(candidate -> candidate.id().equals(selectedCourse.gradingScaleId())).findFirst()
+					.orElse(null);
+			if (courseDefault != null) {
+				return courseDefault;
+			}
+		}
+		return gradingScales.stream().findFirst().orElse(null);
 	}
 
 	private String examNumberLabel(final Exam exam) {
@@ -706,14 +769,17 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 		private String title = "";
 		private LocalDate date;
 		private Exam originalExam;
+		private GradingScale gradingScale;
 
 		private ExamFormData() {
 		}
 
-		private ExamFormData(final String title, final LocalDate date, final Exam originalExam) {
+		private ExamFormData(final String title, final LocalDate date, final Exam originalExam,
+				final GradingScale gradingScale) {
 			this.title = title;
 			this.date = date;
 			this.originalExam = originalExam;
+			this.gradingScale = gradingScale;
 		}
 
 		public String getTitle() {
@@ -738,6 +804,14 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 
 		public void setOriginalExam(final Exam originalExam) {
 			this.originalExam = originalExam;
+		}
+
+		public GradingScale getGradingScale() {
+			return gradingScale;
+		}
+
+		public void setGradingScale(final GradingScale gradingScale) {
+			this.gradingScale = gradingScale;
 		}
 	}
 
