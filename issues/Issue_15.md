@@ -13,6 +13,8 @@ dependent exam context tabs.
 - Locked LOE structure changes, point changes, bonus changes, and criterion
   key/order changes after results exist.
 - Added a lock indicator to the `EH` tab while correction mode is active.
+- Added a discard action for unsaved LOE edits so blocked correction-mode
+  changes do not trap the user in an unsaveable dirty state.
 
 ## Verification
 

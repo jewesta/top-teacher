@@ -134,6 +134,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 
 		saveController.setDirtySupplier(this::isDirty);
 		saveController.setSaveAction(this::saveDirtySections);
+		saveController.setDiscardAction(this::discardDirtySections);
 	}
 
 	public void setExam(final Exam exam) {
@@ -207,6 +208,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 
 	private void configureToolbar() {
 		final Button save = components.saveButton();
+		final Button discard = components.discardButton();
 		final Button addPart = components.commandButton("Klausurteil hinzufügen", VaadinIcon.PLUS, event -> {
 			final int sortOrder = levelOfExpectationsRepository.nextPartSortOrder(exam.id());
 			final LoePart part = levelOfExpectationsRepository
@@ -220,7 +222,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 		}
 
 		examPointsBadge = components.pointBadge("Gesamt", this::pointsForExam);
-		toolbar().add(save, addPart, collapseState.toggleButton(allDetailKeys()), fullscreenButton);
+		toolbar().add(save, discard, addPart, collapseState.toggleButton(allDetailKeys()), fullscreenButton);
 		toolbarSummary().add(examPointsBadge);
 	}
 
@@ -536,6 +538,10 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 			return;
 		}
 		refreshBadges();
+	}
+
+	private void discardDirtySections() {
+		refresh();
 	}
 
 	private String partLetter(final int index) {

@@ -395,11 +395,8 @@ public class ExamsView extends AbstractMasterDataView<Exam> {
 
 	private Icon levelOfExpectationsLockIcon() {
 		final Icon lock = VaadinIcon.LOCK.create();
+		lock.addClassName("tt-tab-status-icon");
 		lock.getElement().setAttribute("aria-label", "Korrekturmodus: Ergebnisse vorhanden.");
-		lock.getStyle().set("color", "var(--lumo-secondary-text-color)");
-		lock.getStyle().set("height", "var(--lumo-icon-size-xs)");
-		lock.getStyle().set("margin-left", "var(--lumo-space-xs)");
-		lock.getStyle().set("width", "var(--lumo-icon-size-xs)");
 		lock.setTooltipText("Korrekturmodus: Ergebnisse vorhanden.");
 		return lock;
 	}

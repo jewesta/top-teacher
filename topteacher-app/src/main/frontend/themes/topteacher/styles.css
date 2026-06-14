@@ -222,6 +222,11 @@ vaadin-app-layout::part(navbar) {
 	width: 100%;
 }
 
+.tt-tab-status-icon {
+	color: var(--lumo-secondary-text-color);
+	height: var(--lumo-icon-size-xs);
+}
+
 .tt-editor-host {
 	box-sizing: border-box;
 	height: 100%;

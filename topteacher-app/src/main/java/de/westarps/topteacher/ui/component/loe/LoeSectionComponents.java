@@ -136,6 +136,11 @@ final class LoeSectionComponents {
 		return saveController.register(button);
 	}
 
+	Button discardButton() {
+		final Button button = commandButton("Verwerfen", VaadinIcon.ROTATE_LEFT, event -> saveController.discard());
+		return saveController.register(button);
+	}
+
 	Button commandButton(final String text, final VaadinIcon icon,
 			final ComponentEventListener<ClickEvent<Button>> listener) {
 		final Button button = new Button(text, icon.create(), listener);
