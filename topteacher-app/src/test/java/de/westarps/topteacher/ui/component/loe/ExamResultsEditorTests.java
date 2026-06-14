@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -76,6 +77,8 @@ class ExamResultsEditorTests {
 		final CourseRepository courseRepository = courseRepository();
 		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository, levelOfExpectationsRepository,
 				gradingScaleRepository());
+		final AtomicInteger changes = new AtomicInteger();
+		editor.setChangeHandler(changes::incrementAndGet);
 
 		editor.setExam(EXAM);
 
@@ -110,6 +113,7 @@ class ExamResultsEditorTests {
 		verify(levelOfExpectationsRepository, never()).saveCriterionResult(any(LoeCriterionResult.class));
 		assertThat(saveButton.isEnabled()).isFalse();
 		assertThat(pdfMenu.isEnabled()).isTrue();
+		assertThat(changes).hasValue(1);
 	}
 
 	@Test

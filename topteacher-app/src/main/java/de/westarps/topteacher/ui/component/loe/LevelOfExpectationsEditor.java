@@ -126,6 +126,8 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 	private LoePointBadge examPointsBadge;
 	private List<LoePartSection> partSections = List.of();
 	private boolean correctionMode;
+	private Runnable changeHandler = () -> {
+	};
 
 	public LevelOfExpectationsEditor(final LevelOfExpectationsRepository levelOfExpectationsRepository) {
 		super("tt-eh-editor");
@@ -143,6 +145,11 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 		}
 		this.exam = exam;
 		refresh();
+	}
+
+	public void setChangeHandler(final Runnable changeHandler) {
+		this.changeHandler = changeHandler == null ? () -> {
+		} : changeHandler;
 	}
 
 	private void refresh() {
@@ -215,6 +222,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 					.savePart(new LoePart(null, exam.id(), "Klausurteil " + partLetter(sortOrder), sortOrder));
 			addDefaultCategory(part);
 			refresh();
+			notifyChanged();
 		});
 		addPart.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 		if (correctionMode) {
@@ -422,11 +430,13 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 	private void addCategory(final LoePart part) {
 		addDefaultCategory(part);
 		refresh();
+		notifyChanged();
 	}
 
 	private void move(final LoePart part, final int offset) {
 		levelOfExpectationsRepository.movePart(part, offset);
 		refresh();
+		notifyChanged();
 	}
 
 	private void delete(final LoePart part) {
@@ -451,11 +461,13 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 	private void addTask(final LoeCategory category) {
 		addDefaultTask(category);
 		refresh();
+		notifyChanged();
 	}
 
 	private void move(final LoeCategory category, final int offset) {
 		levelOfExpectationsRepository.moveCategory(category, categoriesFor(partFor(category)), offset);
 		refresh();
+		notifyChanged();
 	}
 
 	private void delete(final LoeCategory category) {
@@ -471,11 +483,13 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 	private void addRequirement(final LoeTask task) {
 		addDefaultRequirement(task);
 		refresh();
+		notifyChanged();
 	}
 
 	private void move(final LoeTask task, final int offset) {
 		levelOfExpectationsRepository.moveTask(task, tasksFor(categoryFor(task)), offset);
 		refresh();
+		notifyChanged();
 	}
 
 	private void delete(final LoeTask task) {
@@ -494,6 +508,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 	private void move(final LoeRequirement requirement, final int offset) {
 		levelOfExpectationsRepository.moveRequirement(requirement, requirementsFor(taskFor(requirement)), offset);
 		refresh();
+		notifyChanged();
 	}
 
 	private void delete(final LoeRequirement requirement) {
@@ -504,6 +519,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 		try {
 			deleteAction.run();
 			refresh();
+			notifyChanged();
 		} catch (final IllegalStateException exception) {
 			Notification.show(exception.getMessage());
 		}
@@ -538,10 +554,15 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 			return;
 		}
 		refreshBadges();
+		notifyChanged();
 	}
 
 	private void discardDirtySections() {
 		refresh();
+	}
+
+	private void notifyChanged() {
+		changeHandler.run();
 	}
 
 	private String partLetter(final int index) {

@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -143,6 +144,8 @@ class LevelOfExpectationsEditorTests {
 	void titleFieldsAlsoControlSaveButtonState() {
 		final LevelOfExpectationsRepository repository = repositoryWithHierarchy();
 		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repository);
+		final AtomicInteger changes = new AtomicInteger();
+		editor.setChangeHandler(changes::incrementAndGet);
 		editor.setExam(EXAM);
 		clearInvocations(repository);
 		final List<Button> saveButtons = saveButtons(editor);
@@ -159,6 +162,7 @@ class LevelOfExpectationsEditorTests {
 
 		verify(repository).savePart(new LoePart(PART.id(), PART.examId(), "Klausurteil X", PART.sortOrder()));
 		assertThat(saveButtons).extracting(Button::isEnabled).containsOnly(false);
+		assertThat(changes).hasValue(1);
 	}
 
 	@Test

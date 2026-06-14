@@ -15,6 +15,8 @@ dependent exam context tabs.
 - Added a lock indicator to the `EH` tab while correction mode is active.
 - Added a discard action for unsaved LOE edits so blocked correction-mode
   changes do not trap the user in an unsaveable dirty state.
+- Added an explicit refresh registry for dependent exam context tabs. LOE and
+  result changes now mark dependent tabs stale and refresh visible/eager targets.
 
 ## Verification
 
