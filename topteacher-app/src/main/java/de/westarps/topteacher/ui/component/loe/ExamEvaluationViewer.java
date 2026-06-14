@@ -12,6 +12,7 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
+import de.westarps.topteacher.backend.repo.ExamRepository;
 import de.westarps.topteacher.backend.repo.GradingScaleRepository;
 import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.model.Course;
@@ -37,6 +38,7 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 	private static final String SPACER_COLUMN_WIDTH = RESULT_COLUMN_WIDTH;
 
 	private final CourseRepository courseRepository;
+	private final ExamRepository examRepository;
 	private final LevelOfExpectationsRepository levelOfExpectationsRepository;
 	private final GradingScaleRepository gradingScaleRepository;
 	private final SpreadsheetGrid<EvaluationRow> grid = new SpreadsheetGrid<>(EvaluationRow.class, false);
@@ -51,11 +53,12 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 	private List<GradingScaleRange> gradingScaleRanges = List.of();
 	private LoePointRules pointRules;
 
-	public ExamEvaluationViewer(final CourseRepository courseRepository,
+	public ExamEvaluationViewer(final CourseRepository courseRepository, final ExamRepository examRepository,
 			final LevelOfExpectationsRepository levelOfExpectationsRepository,
 			final GradingScaleRepository gradingScaleRepository) {
 		super("tt-exam-evaluation-viewer");
 		this.courseRepository = courseRepository;
+		this.examRepository = examRepository;
 		this.levelOfExpectationsRepository = levelOfExpectationsRepository;
 		this.gradingScaleRepository = gradingScaleRepository;
 
@@ -96,9 +99,9 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 			return;
 		}
 
-		final List<Pupil> pupils = courseRepository.findPupils(exam.courseId());
+		final List<Pupil> pupils = examRepository.findPupils(exam.id());
 		if (pupils.isEmpty()) {
-			showDesignerMessage(emptyState("Diesem Kurs sind keine Schüler:innen zugeordnet."));
+			showDesignerMessage(emptyState("Dieser Klausur sind keine Schüler:innen zugeordnet."));
 			return;
 		}
 

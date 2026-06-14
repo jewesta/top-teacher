@@ -2,10 +2,12 @@ package de.westarps.topteacher.backend.repo;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -24,6 +26,10 @@ import de.westarps.topteacher.model.Subject;
 
 @Repository
 public class CourseRepository {
+
+	private static final String PUPIL_ASSIGNED_TO_EXAM_MESSAGE = """
+			Diese:r Schüler:in ist bereits einer Klausur zugeordnet und kann nicht aus dem Kurs entfernt werden.
+			""".trim();
 
 	private final NamedParameterJdbcTemplate jdbc;
 	private final RowMapper<Course> rowMapper = this::mapCourse;
@@ -114,6 +120,19 @@ public class CourseRepository {
 				""", Map.of("courseId", courseId, "lifecycle", Lifecycle.ACTIVE.name()), pupilRowMapper);
 	}
 
+	public Map<Integer, String> findPupilRemovalLocks(final int courseId) {
+		final Map<Integer, String> locksByPupilId = new LinkedHashMap<>();
+		jdbc.query("""
+				select distinct ep.pupil_id
+				from exam e
+				join exam_pupil ep on ep.exam_id = e.id
+				where e.course_id = :courseId
+				order by ep.pupil_id
+				""", Map.of("courseId", courseId), (RowCallbackHandler) resultSet -> locksByPupilId
+				.put(resultSet.getInt("pupil_id"), PUPIL_ASSIGNED_TO_EXAM_MESSAGE));
+		return locksByPupilId;
+	}
+
 	public void assignPupil(final int courseId, final int pupilId) {
 		jdbc.update("""
 				merge into course_pupil (course_id, pupil_id)
@@ -123,6 +142,7 @@ public class CourseRepository {
 	}
 
 	public void removePupil(final int courseId, final int pupilId) {
+		validatePupilCanBeRemoved(courseId, pupilId);
 		jdbc.update("""
 				delete from course_pupil
 				where course_id = :courseId
@@ -138,6 +158,7 @@ public class CourseRepository {
 
 		final Map<String, Integer> parameters = Map.of("targetCourseId", targetCourseId, "sourceCourseId",
 				sourceCourseId);
+		validateReplacementKeepsExamPupils(parameters);
 		jdbc.update("""
 				delete from course_pupil
 				where course_id = :targetCourseId
@@ -204,5 +225,29 @@ public class CourseRepository {
 	private Pupil mapPupil(final ResultSet resultSet, final int rowNumber) throws SQLException {
 		return new Pupil(resultSet.getInt("id"), resultSet.getString("name"), resultSet.getString("surname"),
 				Lifecycle.valueOf(resultSet.getString("lifecycle")));
+	}
+
+	private void validatePupilCanBeRemoved(final int courseId, final int pupilId) {
+		if (findPupilRemovalLocks(courseId).containsKey(pupilId)) {
+			throw new IllegalArgumentException(PUPIL_ASSIGNED_TO_EXAM_MESSAGE);
+		}
+	}
+
+	private void validateReplacementKeepsExamPupils(final Map<String, Integer> parameters) {
+		final Integer removedExamPupilCount = jdbc.queryForObject("""
+				select count(distinct ep.pupil_id)
+				from exam e
+				join exam_pupil ep on ep.exam_id = e.id
+				where e.course_id = :targetCourseId
+				  and not exists (
+				      select 1
+				      from course_pupil source_cp
+				      where source_cp.course_id = :sourceCourseId
+				        and source_cp.pupil_id = ep.pupil_id
+				  )
+				""", parameters, Integer.class);
+		if (removedExamPupilCount != null && removedExamPupilCount > 0) {
+			throw new IllegalArgumentException(PUPIL_ASSIGNED_TO_EXAM_MESSAGE);
+		}
 	}
 }

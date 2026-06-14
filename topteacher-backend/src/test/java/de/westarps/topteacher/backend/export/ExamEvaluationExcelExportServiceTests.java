@@ -58,10 +58,10 @@ class ExamEvaluationExcelExportServiceTests {
 	void rendersEvaluationWorkbookWithFrozenSummaryColumns() throws IOException {
 		final CourseRepository courseRepository = mock(CourseRepository.class);
 		when(courseRepository.findById(EXAM.courseId())).thenReturn(Optional.of(COURSE));
-		when(courseRepository.findPupils(EXAM.courseId())).thenReturn(List.of(PUPIL));
 
 		final ExamRepository examRepository = mock(ExamRepository.class);
 		when(examRepository.findById(EXAM.id())).thenReturn(Optional.of(EXAM));
+		when(examRepository.findPupils(EXAM.id())).thenReturn(List.of(PUPIL));
 
 		final GradingScaleRepository gradingScaleRepository = mock(GradingScaleRepository.class);
 		when(gradingScaleRepository.findById(COURSE.gradingScaleId())).thenReturn(Optional.of(GRADING_SCALE));

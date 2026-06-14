@@ -12,6 +12,7 @@ import de.westarps.topteacher.backend.export.LevelOfExpectationsExportModelFacto
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.CoursePeriod;
 import de.westarps.topteacher.model.Exam;
+import de.westarps.topteacher.model.ExamNumber;
 import de.westarps.topteacher.model.GradeLevel;
 import de.westarps.topteacher.model.GradingScale;
 import de.westarps.topteacher.model.GradingScaleRange;
@@ -40,6 +41,7 @@ class LevelOfExpectationsExportModelFactoryTests {
 
 		assertThat(model.course().getDisplayName()).contains("Englisch");
 		assertThat(model.examDateDisplayName()).isEqualTo("21.05.2026");
+		assertThat(model.examNumberDisplayName()).isEqualTo("Klausur Nr. 1");
 		assertThat(model.parts()).hasSize(1);
 		assertThat(model.points().maxDisplayName()).isEqualTo("6 (+ 2)");
 		assertThat(model.points().achievedDisplayName()).isEqualTo("4 (+ 1)");
@@ -91,7 +93,7 @@ class LevelOfExpectationsExportModelFactoryTests {
 		return new LevelOfExpectationsExportData(
 				new Course(1, SchoolClass.CLS_5A, subject, new SchoolYear(2026), CoursePeriod.FULL_YEAR,
 						Lifecycle.ACTIVE, 1),
-				new Exam(1, 1, "Klausur Nr. 1", LocalDate.of(2026, 5, 21)),
+				new Exam(1, 1, "Klausur Nr. 1", LocalDate.of(2026, 5, 21)), new ExamNumber(1, false),
 				new Pupil(1, "Anna", "Muster", Lifecycle.ACTIVE),
 				new GradingScale(1, "Standard", 100, Lifecycle.ACTIVE),
 				List.of(new GradingScaleRange(1, 1, GradeLevel.SEHR_GUT_PLUS, 95, 100),

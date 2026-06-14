@@ -1,30 +1,20 @@
 package de.westarps.topteacher.ui.view;
 
 import java.time.Year;
-import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Stream;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
-import com.vaadin.flow.component.grid.ColumnTextAlign;
-import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.icon.Icon;
-import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.shared.Tooltip;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.data.binder.Binder;
-import com.vaadin.flow.data.provider.DataProvider;
-import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.router.Route;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
@@ -42,15 +32,10 @@ import de.westarps.topteacher.ui.MainLayout;
 import de.westarps.topteacher.ui.component.AbstractFormEditor;
 import de.westarps.topteacher.ui.component.FormBinders;
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
-import de.westarps.topteacher.ui.component.QuickFilterField;
+import de.westarps.topteacher.ui.component.PupilAssignmentGrid;
 
 @Route(value = "courses", layout = MainLayout.class)
 public class CoursesView extends AbstractMasterDataView<Course> {
-
-	private static final Comparator<AssignmentRow> ASSIGNMENT_ROW_ORDER = Comparator
-			.comparing((final AssignmentRow row) -> row.pupil().surname(), String.CASE_INSENSITIVE_ORDER)
-			.thenComparing(row -> row.pupil().name(), String.CASE_INSENSITIVE_ORDER)
-			.thenComparing(row -> row.pupil().id());
 
 	private final CourseRepository courseRepository;
 	private final GradingScaleRepository gradingScaleRepository;
@@ -67,20 +52,17 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 	private final Span multiSelectionSummary = new Span();
 	private final ComboBox<Lifecycle> bulkLifecycle = new ComboBox<>("Status");
 	private final Button applyLifecycleButton = new Button("Anwenden");
-	private final QuickFilterField assignmentSearch = new QuickFilterField();
 	private final Button copyAssignmentsButton = new Button("Aus Kurs...");
 	private final Dialog copyAssignmentsDialog = new Dialog();
 	private final ComboBox<Course> sourceCourse = new ComboBox<>("Kurs");
 	private final Binder<AssignmentCopyFormData> assignmentCopyBinder = new Binder<>();
-	private final Grid<AssignmentRow> assignmentGrid = new Grid<>(AssignmentRow.class, false);
+	private final PupilAssignmentGrid assignmentGrid = new PupilAssignmentGrid("Schüler:innen suchen");
 
 	private Course selectedCourse;
 	private List<Course> selectedCourses = List.of();
 	private List<Subject> subjects = List.of();
 	private List<GradingScale> gradingScales = List.of();
-	private ListDataProvider<AssignmentRow> assignmentDataProvider;
 	private Tab assignmentsTab;
-	private Component assignmentsContent;
 
 	public CoursesView(final CourseRepository courseRepository, final SubjectRepository subjectRepository,
 			final GradingScaleRepository gradingScaleRepository) {
@@ -194,65 +176,12 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 	}
 
 	private void configureAssignments() {
-		assignmentSearch.setPlaceholder("Schüler:innen suchen");
-		assignmentSearch.addValueChangeListener(event -> applyAssignmentFilter());
-
+		assignmentGrid.addToolbarComponent(copyAssignmentsButton);
+		assignmentGrid.setAssignAction(this::assignPupil);
+		assignmentGrid.setRemoveAction(this::removePupil);
 		copyAssignmentsButton.addClickListener(event -> openCopyAssignmentsDialog());
 
-		assignmentGrid.addColumn(row -> row.pupil().id()).setHeader("ID").setAutoWidth(true).setFlexGrow(0);
-		assignmentGrid.addColumn(row -> row.pupil().surname()).setHeader("Nachname").setAutoWidth(true);
-		assignmentGrid.addColumn(row -> row.pupil().name()).setHeader("Vorname").setAutoWidth(true);
-		assignmentGrid.addComponentColumn(this::createAssignmentCheckbox).setHeader(createAssignmentHeader())
-				.setAutoWidth(true).setFlexGrow(0).setFrozenToEnd(true).setTextAlign(ColumnTextAlign.CENTER);
-		assignmentGrid.addClassName("tt-assignment-grid");
-		assignmentGrid.setSelectionMode(Grid.SelectionMode.NONE);
-		assignmentGrid.setSizeFull();
-
 		configureCopyAssignmentsDialog();
-	}
-
-	private Component createAssignmentHeader() {
-		final Icon icon = VaadinIcon.INFO_CIRCLE_O.create();
-		icon.addClassName("tt-assignment-header-icon");
-		icon.getElement().setAttribute("aria-label", "Zugeordnet");
-		Tooltip.forComponent(icon).withText("Zugeordnet");
-		return icon;
-	}
-
-	private Component createAssignmentsContent() {
-		final HorizontalLayout toolbar = new HorizontalLayout(assignmentSearch, copyAssignmentsButton);
-		toolbar.addClassName("tt-course-assignment-toolbar");
-		toolbar.setAlignItems(Alignment.END);
-		toolbar.setPadding(false);
-		toolbar.setSpacing(true);
-		toolbar.setWidthFull();
-
-		final VerticalLayout layout = new VerticalLayout(toolbar, assignmentGrid);
-		layout.addClassName("tt-course-assignments");
-		layout.setPadding(false);
-		layout.setSpacing(false);
-		layout.setSizeFull();
-		layout.expand(assignmentGrid);
-		return layout;
-	}
-
-	private Checkbox createAssignmentCheckbox(final AssignmentRow row) {
-		final Checkbox checkbox = new Checkbox(row.assigned());
-		checkbox.setAriaLabel(row.assigned() ? "Schüler:in aus Kurs entfernen" : "Schüler:in dem Kurs zuordnen");
-		checkbox.getElement().setAttribute("title",
-				row.assigned() ? "Schüler:in aus Kurs entfernen" : "Schüler:in dem Kurs zuordnen");
-		checkbox.addValueChangeListener(event -> {
-			if (!event.isFromClient()) {
-				return;
-			}
-
-			if (event.getValue()) {
-				assignPupil(row.pupil());
-			} else {
-				removePupil(row.pupil());
-			}
-		});
-		return checkbox;
 	}
 
 	private void configureCopyAssignmentsDialog() {
@@ -356,7 +285,11 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 			return;
 		}
 
-		courseRepository.removePupil(selectedCourse.id(), pupil.id());
+		try {
+			courseRepository.removePupil(selectedCourse.id(), pupil.id());
+		} catch (final IllegalArgumentException exception) {
+			Notification.show(exception.getMessage());
+		}
 		refreshAssignments();
 	}
 
@@ -386,9 +319,14 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 			return;
 		}
 
-		courseRepository.replacePupilsFromCourse(selectedCourse.id(), formData.getSourceCourse().id());
+		try {
+			courseRepository.replacePupilsFromCourse(selectedCourse.id(), formData.getSourceCourse().id());
+		} catch (final IllegalArgumentException exception) {
+			Notification.show(exception.getMessage());
+			return;
+		}
 		copyAssignmentsDialog.close();
-		assignmentSearch.clear();
+		assignmentGrid.clearSearch();
 		refreshAssignments();
 		Notification.show("Schüler:innen aus Kurs übernommen.");
 	}
@@ -401,16 +339,13 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 
 	private void refreshAssignments() {
 		if (selectedCourse == null) {
-			setAssignmentRows(List.of());
+			assignmentGrid.setRows(List.of(), List.of());
 			return;
 		}
 
-		final List<AssignmentRow> assignedRows = courseRepository.findPupils(selectedCourse.id()).stream()
-				.map(pupil -> new AssignmentRow(pupil, true)).toList();
-		final List<AssignmentRow> availableRows = courseRepository.findAssignablePupils(selectedCourse.id()).stream()
-				.map(pupil -> new AssignmentRow(pupil, false)).toList();
-		setAssignmentRows(
-				Stream.concat(assignedRows.stream(), availableRows.stream()).sorted(ASSIGNMENT_ROW_ORDER).toList());
+		assignmentGrid.setRows(courseRepository.findPupils(selectedCourse.id()),
+				courseRepository.findAssignablePupils(selectedCourse.id()),
+				courseRepository.findPupilRemovalLocks(selectedCourse.id()));
 	}
 
 	private void updateAssignmentsTab(final Course course) {
@@ -420,10 +355,7 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 		}
 
 		if (assignmentsTab == null) {
-			if (assignmentsContent == null) {
-				assignmentsContent = createAssignmentsContent();
-			}
-			assignmentsTab = getContextTabs().add("Schüler:innen", assignmentsContent);
+			assignmentsTab = getContextTabs().add("Schüler:innen", assignmentGrid);
 		}
 		refreshAssignments();
 	}
@@ -505,34 +437,6 @@ public class CoursesView extends AbstractMasterDataView<Course> {
 
 	private void updateBulkApplyButton() {
 		applyLifecycleButton.setEnabled(!selectedCourses.isEmpty() && bulkLifecycle.getValue() != null);
-	}
-
-	private void setAssignmentRows(final List<AssignmentRow> rows) {
-		assignmentDataProvider = DataProvider.ofCollection(rows);
-		assignmentGrid.setItems(assignmentDataProvider);
-		applyAssignmentFilter();
-	}
-
-	private void applyAssignmentFilter() {
-		if (assignmentDataProvider == null) {
-			return;
-		}
-
-		final String searchValue = assignmentSearch.getValue().trim().toLowerCase();
-		assignmentDataProvider.setFilter(row -> matchesAssignmentFilter(row, searchValue));
-	}
-
-	private boolean matchesAssignmentFilter(final AssignmentRow row, final String searchValue) {
-		if (searchValue.isBlank()) {
-			return row.assigned();
-		}
-
-		final String pupilText = String
-				.join(" ", String.valueOf(row.pupil().id()), row.pupil().surname(), row.pupil().name()).toLowerCase();
-		return pupilText.contains(searchValue);
-	}
-
-	private record AssignmentRow(Pupil pupil, boolean assigned) {
 	}
 
 	private void bindSingleEditor() {
