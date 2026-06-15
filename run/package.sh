@@ -114,7 +114,9 @@ package_jar() {
     PACKAGED_JAR="$JAR_TARGET/TopTeacher.jar"
     mkdir -p "$JAR_TARGET"
     cp -f "$APP_JAR" "$PACKAGED_JAR"
-
+    cp ./run/linux/start-teacher.sh "$JAR_TARGET/start-teacher.sh"
+    chmod +x "$JAR_TARGET/start-teacher.sh"
+    
     echo "Created runnable jar at $PACKAGED_JAR."
 }
 
