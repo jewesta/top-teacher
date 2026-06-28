@@ -10,7 +10,7 @@ TopTeacher! ist dazu gedacht, als Server zu laufen und dann per Web-Browser aufg
 
 # TopTeacher! App
 
-Um technisch weniger Versierten die Benutzung zu erleichtern, stelle ich TopTeacher! auch als alleinstehend lauffähige macOS App zur Verfügung. Das macht auch einen unkomplizierten Test möglich. Die App läuft dann ganz normal im Dock und öffnet automatisch ein Browser-Fenster mit der Benutzeroberfläche. Die nötige Datenbank wird unter `/Users/<Benutzername>/Library/Application Support/TopTeacher/topteacher.mv.db` angelegt, falls sie noch nicht existiert. Weil ich die App nicht signiere gibt es beim ersten Start die üblichen Dinge zu beachten: Starten per Rechtsklick > Öffnen und dann ein ausdrückliches Erlauben des Programmstarts über `Systemeinstellungen` > `Datenschutz & Sicherheit`.
+Um technisch weniger Versierten die Benutzung zu erleichtern, stelle ich TopTeacher! auch als alleinstehend lauffähige macOS App zur Verfügung. Das macht auch einen unkomplizierten Test möglich. Die App läuft dann ganz normal im Dock und öffnet automatisch ein Browser-Fenster mit der Benutzeroberfläche. Die nötige Datenbank wird unter `/Users/<Benutzername>/Library/Application Support/TopTeacher/topteacher.mv.db` angelegt, falls sie noch nicht existiert. Weil ich die App nicht per Apple Developer ID signiere und notarisiere, gibt es beim ersten Start die üblichen Dinge zu beachten: Starten per Rechtsklick > Öffnen und dann ein ausdrückliches Erlauben des Programmstarts über `Systemeinstellungen` > `Datenschutz & Sicherheit`.
 
 Ich bitte um Verständnis, dass ich diese App aktuell nur für moderne Macs mit M-Prozessoren bauen lasse. Technisch versierten steht es frei, diese alleinstehende App auch für macOS x86 oder Windows erstellen zu lassen.
 
@@ -47,7 +47,13 @@ Der Pfad ist frei wählbar und muss lediglich beschreibbar sein. TopTeacher erst
 Die App ist danach unter <http://localhost:8081/top-teacher> erreichbar. Port `8081` und Kontext-Pfad `top-teacher` können über
 `server.port` und `server.servlet.context-path` in `topteacher-app/src/main/resources/application.properties` angepasst werden.
 
-Das Release-`jar` ist so gebaut, dass Vaadin im Produktiv-Modus gestartet wird. Das oben genannte Startskript startet Vaadin im Entwicklermodus. Deshalb auch der Namenszusatz `-dev`.
+Das Release-`jar` ist so gebaut, dass Vaadin im Produktiv-Modus gestartet wird. Das oben genannte Startskript startet Vaadin im Entwicklermodus. Deshalb auch der Namenszusatz `-dev`. Ein lokaler Start mit Produktions-Bundle ist ebenfalls möglich:
+
+```shell
+./run/start-prod.sh /Users/<Benutzername>/Documents/<top-teacher-db>
+```
+
+`start-prod.sh` baut zuerst das produktive Jar unter `target/start-prod/` und startet es dann ohne Devtools, LiveReload und H2-Konsole.
 
 ## Standardpfade:
 
@@ -111,7 +117,7 @@ aus dem JDK 21 gebaut werden:
 ./run/package.sh macos-app /Volumes/topteacher-builds
 ```
 
-Das Skript baut zuerst das Produktions-Jar, erzeugt danach lokal ein App-Image und kopiert ein ZIP-Archiv unter `<release-target>/v<version>/TopTeacher.app.<architecture>.zip`, zum Beispiel `/Volumes/topteacher-builds/v0.0.1-SNAPSHOT/TopTeacher.app.arm64.zip`. Beim Start öffnet die App automatisch <http://localhost:8081/top-teacher/> im Standardbrowser. Auf macOS erscheint TopTeacher! als Dock-App; ein Klick auf das Dock-Icon öffnet TopTeacher! wieder im Standardbrowser. Der native Menüpunkt zum Beenden der App beendet den lokalen Server. Das Dock-Kontextmenü enthält `About TopTeacher!`. Die H2-Konsole ist in diesem App-Modus deaktiviert; die Datenbank verwendet weiterhin den betriebssystemabhängigen Benutzerdatenpfad.
+Das Skript baut zuerst das Produktions-Jar, erzeugt danach lokal ein App-Image und kopiert ein ZIP-Archiv unter `<release-target>/v<version>/`. Release-Builds verwenden den Dateinamen `TopTeacher-<version>-<architecture>.zip`; Snapshot-Builds verwenden statt `SNAPSHOT` den kurzen Git-Commit-Hash, zum Beispiel `/Volumes/topteacher-builds/v0.0.1-SNAPSHOT/TopTeacher-0.0.1-a1b2c3d-arm64.zip`. Vor dem ZIP-Erstellen werden erweiterte Dateiattribute entfernt; danach wird das App-Bundle ad-hoc signiert und verifiziert. Das ZIP wird ohne Resource-Fork- und Quarantine-Metadaten erstellt. Das ersetzt keine Developer-ID-Notarisierung, vermeidet aber bei privaten Downloads die irreführende Gatekeeper-Meldung, die App sei beschädigt. Beim Start öffnet die App automatisch <http://localhost:8081/top-teacher/> im Standardbrowser. Auf macOS erscheint TopTeacher! als Dock-App; ein Klick auf das Dock-Icon öffnet TopTeacher! wieder im Standardbrowser. Der native Menüpunkt zum Beenden der App beendet den lokalen Server. Das Dock-Kontextmenü enthält `About TopTeacher!`. Die H2-Konsole ist in diesem App-Modus deaktiviert; die Datenbank verwendet weiterhin den betriebssystemabhängigen Benutzerdatenpfad.
 
 Auf macOS erzeugt das Skript `packaging/topteacher.icns` aus `topteacher-app/src/main/resources/META-INF/resources/images/topteacher-icon.png`.
 
