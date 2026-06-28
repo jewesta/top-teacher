@@ -118,6 +118,31 @@ package_jar() {
     echo "Created runnable jar at $PACKAGED_JAR."
 }
 
+sign_macos_app() {
+    require_command xattr "xattr is required to clean the macOS app bundle before signing but was not found on PATH."
+    require_command codesign "codesign is required to sign the macOS app bundle but was not found on PATH."
+
+    xattr -cr "$APP_BUNDLE"
+    echo "Ad-hoc signing macOS app bundle at $APP_BUNDLE."
+    codesign --force --deep --sign - "$APP_BUNDLE"
+    codesign --verify --deep --strict --verbose=2 "$APP_BUNDLE"
+}
+
+macos_app_zip_name() {
+    APP_ARCH=$(uname -m)
+    case "$APP_VERSION" in
+        *-SNAPSHOT)
+            require_command git "git is required to include the current commit hash in snapshot macOS app archives."
+            APP_BASE_VERSION=${APP_VERSION%-SNAPSHOT}
+            APP_COMMIT=$(git rev-parse --short=7 HEAD)
+            echo "$APP_NAME-$APP_BASE_VERSION-$APP_COMMIT-$APP_ARCH.zip"
+            ;;
+        *)
+            echo "$APP_NAME-$APP_VERSION-$APP_ARCH.zip"
+            ;;
+    esac
+}
+
 package_macos_app() {
     require_command jpackage "jpackage is required but was not found on PATH. Use a JDK 21 installation."
     require_command ditto "ditto is required to create the macOS app archive but was not found on PATH."
@@ -127,7 +152,7 @@ package_macos_app() {
     PACKAGE_INPUT="$PACKAGE_WORK/input"
     PACKAGE_STAGING="$PACKAGE_WORK/staging"
     APP_BUNDLE="$PACKAGE_STAGING/$APP_NAME.app"
-    APP_ZIP_NAME="$APP_NAME.app.$(uname -m).zip"
+    APP_ZIP_NAME=$(macos_app_zip_name)
     APP_ZIP="$PACKAGE_WORK/$APP_ZIP_NAME"
     PACKAGED_APP_ZIP="$PACKAGE_TARGET/$APP_ZIP_NAME"
     rm -rf "$PACKAGE_INPUT" "$PACKAGE_STAGING"
@@ -177,9 +202,9 @@ package_macos_app() {
     if [ "$(uname -s)" = "Darwin" ]; then
         plutil -replace CFBundleName -string "$DISPLAY_APP_NAME" "$APP_BUNDLE/Contents/Info.plist"
         plutil -replace CFBundleDisplayName -string "$DISPLAY_APP_NAME" "$APP_BUNDLE/Contents/Info.plist"
-        (cd "$PACKAGE_STAGING" && ditto -c -k --sequesterRsrc --keepParent "$APP_NAME.app" "$APP_ZIP")
+        sign_macos_app
+        (cd "$PACKAGE_STAGING" && ditto -c -k --norsrc --noextattr --noacl --noqtn --keepParent "$APP_NAME.app" "$APP_ZIP")
         cp -f "$APP_ZIP" "$PACKAGED_APP_ZIP"
-        open "$APP_BUNDLE"
     fi
 
     echo "Created macOS app archive at $PACKAGED_APP_ZIP."
