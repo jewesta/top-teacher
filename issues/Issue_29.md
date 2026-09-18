@@ -5,8 +5,8 @@
 Expose TopTeacher through a bounded Model Context Protocol interface so an AI
 client can inspect the teaching context, read levels of expectations and pupil
 results, create a complete level of expectations for a blank exam, create a
-course from a pupil roster, and maintain pupil names without silently merging
-people who share a name.
+course from a pupil roster, maintain pupil names without silently merging people
+who share a name, and trigger the existing database-backup service.
 
 The GitHub issue contains only the title, "MCP-Schnittstelle für KI
 implementieren". This first interface therefore stays deliberately small and
@@ -69,6 +69,10 @@ does not expose general-purpose database mutation.
   an exact active-name duplicate requires `UPDATE_ANYWAY` or `CANCEL`.
 - Subjects and grading scales remain read-only reference data. Course creation
   options expose their active IDs without adding mutation plumbing for them.
+- Manual backup creation delegates to TopTeacher's existing backup service and
+  configured target folder. The MCP operation accepts no path, changes no
+  settings, and returns a structured failure when backup is not configured or
+  cannot be written.
 - Derive sort order from the nested request order. Criteria continue to be
   derived by the existing `[label](eh:key)` Markdown convention.
 - Bound nested request sizes and Markdown lengths at the MCP boundary.
@@ -89,6 +93,7 @@ does not expose general-purpose database mutation.
 - `list_exam_pupils`
 - `get_pupil_result`
 - `create_level_of_expectations`
+- `create_database_backup`
 
 ## Progress
 
@@ -114,26 +119,30 @@ does not expose general-purpose database mutation.
   cannot change lifecycle state or implicitly reactivate a pupil.
 - [x] Added a read-only course-creation options tool; subjects and grading scales
   still have no MCP write path.
+- [x] Added manual database-backup creation through the existing configured
+  backup service, including a structured unconfigured/failure result.
 - [x] Added schema, behavior, security, context, and HTTP integration tests.
 - [x] Documented configuration and client connection details.
 - [x] Ran the canonical formatter and the required reactor test suite.
 
 ## Verification
 
-- `mvn -pl topteacher-app -am test`: 255 tests passed across the six-module
-  reactor, including 51 focused `topteacher-mcp` tests and 112 assembled
+- `mvn -pl topteacher-app -am test`: 257 tests passed across the six-module
+  reactor, including 53 focused `topteacher-mcp` tests and 112 assembled
   `topteacher-app` tests.
 - The disabled context exposes no MCP tools. The enabled context registers the
-  fourteen intended object-rooted tool schemas.
+  fifteen intended object-rooted tool schemas.
 - The HTTP integration test verifies an unauthenticated `401` response, an
   authenticated MCP initialization using protocol `2025-06-18`, the initialized
-  notification, discovery of all fourteen tools, active-by-default and explicit
+  notification, discovery of all fifteen tools, active-by-default and explicit
   archived pupil discovery, the no-elicitation `NEEDS_RESOLUTION` path without a
   write, a successful conversational retry, and both the write and idempotent
   no-op paths for existing-course assignment at `/top-teacher/mcp`. It also
   verifies authoritative course-roster readback, valid `list_exams` output when
   optional exam relationship IDs are absent, and the locked-removal fallback in
-  which `SKIP` keeps an exam pupil while removing the eligible remainder.
+  which `SKIP` keeps an exam pupil while removing the eligible remainder. It
+  also verifies that a manual backup request reports a missing backup target as
+  a structured failure.
 - Credential loading and endpoint filtering fail closed when configuration is
   missing or invalid.
 - The canonical devtools formatter was applied to all 172 tracked Java files

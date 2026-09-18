@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.provider.tool.SyncMcpToolProvider;
 
+import de.westarps.topteacher.backend.backup.DatabaseBackupService;
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.ExamRepository;
 import de.westarps.topteacher.backend.repo.GradingScaleRepository;
@@ -25,18 +26,20 @@ class TopTeacherMcpSchemaTests {
 
 	private static final List<Class<?>> TOOL_GROUPS = List.of(CourseMcpTools.class, ExamMcpTools.class,
 			CourseRosterMcpTools.class, CoursePupilAssignmentMcpTools.class, CoursePupilRemovalMcpTools.class,
-			LevelOfExpectationsMcpTools.class, PupilMcpTools.class, PupilResultMcpTools.class);
+			DatabaseBackupMcpTools.class, LevelOfExpectationsMcpTools.class, PupilMcpTools.class,
+			PupilResultMcpTools.class);
 
 	@Test
-	void exposesTheFourteenTopTeacherOperationsAcrossEightFocusedToolGroups() {
+	void exposesTheFifteenTopTeacherOperationsAcrossNineFocusedToolGroups() {
 		final List<String> tools = TOOL_GROUPS.stream().flatMap(type -> Arrays.stream(type.getDeclaredMethods()))
 				.map(method -> method.getAnnotation(McpTool.class)).filter(Objects::nonNull).map(McpTool::name).sorted()
 				.toList();
 
 		assertThat(tools).containsExactly("assign_pupils_to_course", "create_course_with_pupils",
-				"create_level_of_expectations", "create_pupils", "get_course_creation_options",
-				"get_level_of_expectations", "get_pupil_result", "list_course_pupils", "list_courses",
-				"list_exam_pupils", "list_exams", "list_pupils", "remove_pupils_from_course", "update_pupil");
+				"create_database_backup", "create_level_of_expectations", "create_pupils",
+				"get_course_creation_options", "get_level_of_expectations", "get_pupil_result", "list_course_pupils",
+				"list_courses", "list_exam_pupils", "list_exams", "list_pupils", "remove_pupils_from_course",
+				"update_pupil");
 	}
 
 	@Test
@@ -58,6 +61,11 @@ class TopTeacherMcpSchemaTests {
 		assertThat(coursePupilRemoval.annotations().readOnlyHint()).isFalse();
 		assertThat(coursePupilRemoval.annotations().destructiveHint()).isTrue();
 		assertThat(coursePupilRemoval.annotations().idempotentHint()).isTrue();
+		final McpTool databaseBackup = Arrays.stream(DatabaseBackupMcpTools.class.getDeclaredMethods())
+				.map(method -> method.getAnnotation(McpTool.class)).filter(Objects::nonNull).findFirst().orElseThrow();
+		assertThat(databaseBackup.annotations().readOnlyHint()).isFalse();
+		assertThat(databaseBackup.annotations().destructiveHint()).isFalse();
+		assertThat(databaseBackup.annotations().idempotentHint()).isFalse();
 	}
 
 	@Test
@@ -65,7 +73,7 @@ class TopTeacherMcpSchemaTests {
 		final List<SyncToolSpecification> specifications = new SyncMcpToolProvider(toolGroups())
 				.getToolSpecifications();
 
-		assertThat(specifications).hasSize(14).allSatisfy(specification -> {
+		assertThat(specifications).hasSize(15).allSatisfy(specification -> {
 			assertThat(specification.tool().inputSchema()).containsEntry("type", "object");
 			assertThat(specification.tool().outputSchema()).containsEntry("type", "object");
 		});
@@ -139,13 +147,14 @@ class TopTeacherMcpSchemaTests {
 		final PupilWriter pupilWriter = mock(PupilWriter.class);
 		final CoursePupilAssignmentWriter assignmentWriter = mock(CoursePupilAssignmentWriter.class);
 		final CoursePupilRemovalWriter removalWriter = mock(CoursePupilRemovalWriter.class);
+		final DatabaseBackupService backupService = mock(DatabaseBackupService.class);
 		final PupilRosterConflictResolver conflictResolver = mock(PupilRosterConflictResolver.class);
 		final PupilUpdateConflictResolver updateConflictResolver = mock(PupilUpdateConflictResolver.class);
 		return List.of(new CourseMcpTools(courses, subjects, gradingScales),
 				new ExamMcpTools(courses, exams, levelOfExpectations),
 				new CourseRosterMcpTools(courses, subjects, gradingScales, conflictResolver, writer),
 				new CoursePupilAssignmentMcpTools(courses, conflictResolver, assignmentWriter),
-				new CoursePupilRemovalMcpTools(courses, removalWriter),
+				new CoursePupilRemovalMcpTools(courses, removalWriter), new DatabaseBackupMcpTools(backupService),
 				new LevelOfExpectationsMcpTools(courses, exams, gradingScales, levelOfExpectations),
 				new PupilMcpTools(pupils, conflictResolver, updateConflictResolver, pupilWriter),
 				new PupilResultMcpTools(exams, gradingScales, levelOfExpectations, pupils));

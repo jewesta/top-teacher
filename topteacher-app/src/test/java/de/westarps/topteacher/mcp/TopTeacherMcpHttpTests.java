@@ -94,9 +94,10 @@ class TopTeacherMcpHttpTests {
 
 			assertThat(tools.statusCode()).isEqualTo(200);
 			assertThat(tools.body()).contains("assign_pupils_to_course", "create_course_with_pupils",
-					"create_level_of_expectations", "create_pupils", "get_course_creation_options",
-					"get_level_of_expectations", "get_pupil_result", "list_course_pupils", "list_courses",
-					"list_exam_pupils", "list_exams", "list_pupils", "remove_pupils_from_course", "update_pupil");
+					"create_database_backup", "create_level_of_expectations", "create_pupils",
+					"get_course_creation_options", "get_level_of_expectations", "get_pupil_result",
+					"list_course_pupils", "list_courses", "list_exam_pupils", "list_exams", "list_pupils",
+					"remove_pupils_from_course", "update_pupil");
 
 			final Pupil activeScopePupil = pupils.save(new Pupil(null, "McpHttpActive", "Scope", Lifecycle.ACTIVE));
 			final Pupil archivedScopePupil = pupils
@@ -187,6 +188,12 @@ class TopTeacherMcpHttpTests {
 			assertThat(skippedLockedRemoval.body()).contains("REMOVED", "McpHttpAdded", "Pupil");
 			assertThat(courses.findPupils(createdCourseId)).containsExactly(existingPupil);
 			assertThat(exams.findPupils(exam.id())).containsExactly(existingPupil);
+
+			final HttpResponse<String> unconfiguredBackup = client
+					.send(request(databaseBackupCall(13), TOKEN, sessionId), HttpResponse.BodyHandlers.ofString());
+
+			assertThat(unconfiguredBackup.statusCode()).isEqualTo(200);
+			assertThat(unconfiguredBackup.body()).contains("FAILED", "kein Backup-Zielordner konfiguriert");
 		}
 	}
 
@@ -225,6 +232,12 @@ class TopTeacherMcpHttpTests {
 		return """
 			{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"list_exams","arguments":{"courseId":%d}}}
 			""".formatted(requestId, courseId).trim();
+	}
+
+	private static String databaseBackupCall(final int requestId) {
+		return """
+			{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"create_database_backup","arguments":{}}}
+			""".formatted(requestId).trim();
 	}
 
 	private static String courseCreationCall(final int requestId, final int subjectId, final int gradingScaleId,

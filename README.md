@@ -154,6 +154,7 @@ The MCP server currently exposes these tools:
 | `create_level_of_expectations` | Create a complete level of expectations for a blank exam without overwriting anything. |
 | `list_exam_pupils` | List the pupils assigned to an exam. |
 | `get_pupil_result` | Read one pupil's result for an exam. |
+| `create_database_backup` | Create a database backup in TopTeacher's configured target folder and report when backup is unavailable. |
 
 Archived pupils are historical records throughout TopTeacher. They are hidden
 from default discovery, excluded from identity and duplicate matching, cannot
@@ -188,6 +189,11 @@ cannot be removed, even if no results have been entered. When a batch contains
 locked pupils, the user can choose `SKIP` to keep those pupils and remove the
 eligible remainder, or `CANCEL` to leave the entire batch unchanged. The MCP
 operation never removes pupil records or changes exam assignments.
+
+`create_database_backup` delegates to the same backup service as the settings
+UI. It accepts no destination path and does not change backup configuration. A
+missing target folder or a backup failure is returned as a structured `FAILED`
+result with TopTeacher's error message instead of a generic protocol error.
 
 ### LM Studio
 
