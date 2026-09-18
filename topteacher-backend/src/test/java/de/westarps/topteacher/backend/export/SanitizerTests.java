@@ -21,7 +21,7 @@ class SanitizerTests {
 	@Test
 	void rendersCriterionLinksForTeacherFacingHtml() {
 		final SafeHtml html = sanitizer.markdownToHtml("[korrekte Zeitform](eh:1) [Wortwahl](eh:2)",
-				Sanitizer.MarkdownView.TEACHER, key -> "1".equals(key));
+				Sanitizer.MarkdownView.TEACHER, "1"::equals);
 
 		assertThat(html.value()).contains("class=\"tt-criterion\"");
 		assertThat(html.value()).contains("class=\"tt-criterion-highlight\"");

@@ -797,14 +797,14 @@ public class ExamResultsEditor extends AbstractDesigner {
 			return;
 		}
 		getUI().ifPresent(ui -> ui.getPage().executeJs("""
-				const anchor = document.createElement('a');
-				anchor.href = $0;
-				anchor.download = $1;
-				anchor.style.display = 'none';
-				document.body.appendChild(anchor);
-				anchor.click();
-				anchor.remove();
-				""", pdfUrl(teacherVersion), pdfFileName(teacherVersion)));
+			const anchor = document.createElement('a');
+			anchor.href = $0;
+			anchor.download = $1;
+			anchor.style.display = 'none';
+			document.body.appendChild(anchor);
+			anchor.click();
+			anchor.remove();
+			""", pdfUrl(teacherVersion), pdfFileName(teacherVersion)));
 	}
 
 	private String pdfUrl(final boolean teacherVersion) {

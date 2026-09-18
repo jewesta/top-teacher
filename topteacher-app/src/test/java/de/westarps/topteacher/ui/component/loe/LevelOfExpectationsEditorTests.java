@@ -356,7 +356,7 @@ class LevelOfExpectationsEditorTests {
 		assertThat(badgeTexts(editor)).contains("25 %", "75 %");
 		assertThat(components(editor, Span.class).stream()
 				.filter(span -> span.getClassNames().contains("tt-eh-percentage-number")).map(Span::getText))
-				.contains("25", "75");
+						.contains("25", "75");
 	}
 
 	@Test

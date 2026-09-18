@@ -85,7 +85,7 @@ class GradingScaleRepositoryTests {
 		assertThatThrownBy(() -> gradingScaleRepository.saveWithRanges(
 				new GradingScale(null, "Repository Incomplete Scale 100", 100, Lifecycle.ACTIVE),
 				fullRanges(0).subList(0, 15))).isInstanceOf(IllegalArgumentException.class)
-				.hasMessage("Ein Notenschlüssel muss genau 16 Notenpunkte enthalten.");
+						.hasMessage("Ein Notenschlüssel muss genau 16 Notenpunkte enthalten.");
 
 		final List<GradingScaleRange> gappedRanges = fullRanges(0).stream()
 				.map(range -> range.gradeLevel() == GradeLevel.UNGENUEGEND
@@ -95,8 +95,8 @@ class GradingScaleRepositoryTests {
 
 		assertThatThrownBy(() -> gradingScaleRepository.saveWithRanges(
 				new GradingScale(null, "Repository Gapped Scale 100", 100, Lifecycle.ACTIVE), gappedRanges))
-				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessage("Die Punktebereiche müssen lückenlos von 0 bis zur Maximalpunktzahl reichen.");
+						.isInstanceOf(IllegalArgumentException.class)
+						.hasMessage("Die Punktebereiche müssen lückenlos von 0 bis zur Maximalpunktzahl reichen.");
 	}
 
 	@Test
@@ -108,13 +108,12 @@ class GradingScaleRepositoryTests {
 		examRepository.save(new Exam(null, course.id(), "1. Klausur", LocalDate.of(2038, 9, 17)));
 
 		assertThat(gradingScaleRepository.isUsedByExam(saved.id())).isTrue();
-		assertThatThrownBy(() -> gradingScaleRepository
-				.save(new GradingScale(saved.id(), "Repository Locked Scale Updated 100", 100, Lifecycle.ACTIVE)))
-				.isInstanceOf(IllegalArgumentException.class).hasMessage(
+		assertThatThrownBy(() -> gradingScaleRepository.save(new GradingScale(saved
+				.id(), "Repository Locked Scale Updated 100", 100,
+				Lifecycle.ACTIVE))).isInstanceOf(IllegalArgumentException.class).hasMessage(
 						"Dieser Notenschlüssel wird bereits von Klausuren verwendet und kann nicht mehr geändert werden.");
-		assertThatThrownBy(() -> gradingScaleRepository
-				.saveRange(new GradingScaleRange(null, saved.id(), GradeLevel.SEHR_GUT_PLUS, 94, 100)))
-				.isInstanceOf(IllegalArgumentException.class).hasMessage(
+		assertThatThrownBy(() -> gradingScaleRepository.saveRange(new GradingScaleRange(null, saved.id(),
+				GradeLevel.SEHR_GUT_PLUS, 94, 100))).isInstanceOf(IllegalArgumentException.class).hasMessage(
 						"Dieser Notenschlüssel wird bereits von Klausuren verwendet und kann nicht mehr geändert werden.");
 	}
 

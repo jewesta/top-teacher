@@ -56,11 +56,17 @@ public class ExamsView extends SplitListDetailView<Exam> {
 	private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
 	private enum ExamContextChange {
-		PUPILS, LEVEL_OF_EXPECTATIONS, RESULTS
+		PUPILS,
+		LEVEL_OF_EXPECTATIONS,
+		RESULTS
 	}
 
 	private enum ExamContextTarget {
-		PUPILS, LEVEL_OF_EXPECTATIONS_TAB_LABEL, LEVEL_OF_EXPECTATIONS, RESULTS, EVALUATION
+		PUPILS,
+		LEVEL_OF_EXPECTATIONS_TAB_LABEL,
+		LEVEL_OF_EXPECTATIONS,
+		RESULTS,
+		EVALUATION
 	}
 
 	private final CourseRepository courseRepository;

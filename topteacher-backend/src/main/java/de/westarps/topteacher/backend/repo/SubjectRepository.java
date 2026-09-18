@@ -28,27 +28,27 @@ public class SubjectRepository {
 
 	public List<Subject> findAll() {
 		return jdbc.query("""
-				select id, name, lifecycle
-				from subject
-				order by name, id
-				""", rowMapper);
+			select id, name, lifecycle
+			from subject
+			order by name, id
+			""", rowMapper);
 	}
 
 	public List<Subject> findActive() {
 		return jdbc.query("""
-				select id, name, lifecycle
-				from subject
-				where lifecycle = :lifecycle
-				order by name, id
-				""", Map.of("lifecycle", Lifecycle.ACTIVE.name()), rowMapper);
+			select id, name, lifecycle
+			from subject
+			where lifecycle = :lifecycle
+			order by name, id
+			""", Map.of("lifecycle", Lifecycle.ACTIVE.name()), rowMapper);
 	}
 
 	public Optional<Subject> findById(final int id) {
 		return jdbc.query("""
-				select id, name, lifecycle
-				from subject
-				where id = :id
-				""", Map.of("id", id), rowMapper).stream().findFirst();
+			select id, name, lifecycle
+			from subject
+			where id = :id
+			""", Map.of("id", id), rowMapper).stream().findFirst();
 	}
 
 	public Subject save(final Subject subject) {
@@ -62,10 +62,10 @@ public class SubjectRepository {
 
 	public void archive(final int id) {
 		jdbc.update("""
-				update subject
-				set lifecycle = :lifecycle
-				where id = :id
-				""", Map.of("id", id, "lifecycle", Lifecycle.INACTIVE.name()));
+			update subject
+			set lifecycle = :lifecycle
+			where id = :id
+			""", Map.of("id", id, "lifecycle", Lifecycle.INACTIVE.name()));
 	}
 
 	private Subject insert(final Subject subject) {
@@ -73,9 +73,11 @@ public class SubjectRepository {
 		final MapSqlParameterSource parameters = parameters(subject);
 
 		jdbc.update("""
-				insert into subject (name, lifecycle)
-				values (:name, :lifecycle)
-				""", parameters, keyHolder, new String[] { "id" });
+			insert into subject (name, lifecycle)
+			values (:name, :lifecycle)
+			""", parameters, keyHolder, new String[] {
+				"id"
+		});
 
 		final Number id = keyHolder.getKey();
 		if (id == null) {
@@ -87,11 +89,11 @@ public class SubjectRepository {
 
 	private void update(final Subject subject) {
 		jdbc.update("""
-				update subject
-				set name = :name,
-				    lifecycle = :lifecycle
-				where id = :id
-				""", parameters(subject).addValue("id", subject.id()));
+			update subject
+			set name = :name,
+			    lifecycle = :lifecycle
+			where id = :id
+			""", parameters(subject).addValue("id", subject.id()));
 	}
 
 	private MapSqlParameterSource parameters(final Subject subject) {

@@ -10,11 +10,17 @@ import org.junit.jupiter.api.Test;
 class RefreshRegistryTests {
 
 	private enum Change {
-		PUPILS, LEVEL_OF_EXPECTATIONS, RESULTS
+		PUPILS,
+		LEVEL_OF_EXPECTATIONS,
+		RESULTS
 	}
 
 	private enum Target {
-		PUPILS, STATUS, LEVEL_OF_EXPECTATIONS, RESULTS, EVALUATION
+		PUPILS,
+		STATUS,
+		LEVEL_OF_EXPECTATIONS,
+		RESULTS,
+		EVALUATION
 	}
 
 	@Test
