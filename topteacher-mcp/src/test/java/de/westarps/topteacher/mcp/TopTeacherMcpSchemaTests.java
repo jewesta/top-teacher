@@ -18,21 +18,23 @@ import de.westarps.topteacher.backend.repo.ExamRepository;
 import de.westarps.topteacher.backend.repo.GradingScaleRepository;
 import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.backend.repo.PupilRepository;
+import de.westarps.topteacher.backend.repo.SubjectRepository;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 
 class TopTeacherMcpSchemaTests {
 
 	private static final List<Class<?>> TOOL_GROUPS = List.of(CourseMcpTools.class, ExamMcpTools.class,
-			LevelOfExpectationsMcpTools.class, PupilResultMcpTools.class);
+			CourseRosterMcpTools.class, LevelOfExpectationsMcpTools.class, PupilResultMcpTools.class);
 
 	@Test
-	void exposesTheSixInitialTopTeacherOperationsAcrossFourFocusedToolGroups() {
+	void exposesTheEightTopTeacherOperationsAcrossFiveFocusedToolGroups() {
 		final List<String> tools = TOOL_GROUPS.stream().flatMap(type -> Arrays.stream(type.getDeclaredMethods()))
 				.map(method -> method.getAnnotation(McpTool.class)).filter(Objects::nonNull).map(McpTool::name).sorted()
 				.toList();
 
-		assertThat(tools).containsExactly("create_level_of_expectations", "get_level_of_expectations",
-				"get_pupil_result", "list_courses", "list_exam_pupils", "list_exams");
+		assertThat(tools).containsExactly("create_course_with_pupils", "create_level_of_expectations",
+				"get_course_creation_options", "get_level_of_expectations", "get_pupil_result", "list_courses",
+				"list_exam_pupils", "list_exams");
 	}
 
 	@Test
@@ -45,6 +47,10 @@ class TopTeacherMcpSchemaTests {
 		assertThat(creation.annotations().readOnlyHint()).isFalse();
 		assertThat(creation.annotations().destructiveHint()).isFalse();
 		assertThat(creation.annotations().openWorldHint()).isFalse();
+		final McpTool courseCreation = Arrays.stream(CourseRosterMcpTools.class.getDeclaredMethods())
+				.map(method -> method.getAnnotation(McpTool.class)).filter(Objects::nonNull).findFirst().orElseThrow();
+		assertThat(courseCreation.annotations().readOnlyHint()).isFalse();
+		assertThat(courseCreation.annotations().destructiveHint()).isFalse();
 	}
 
 	@Test
@@ -52,7 +58,7 @@ class TopTeacherMcpSchemaTests {
 		final List<SyncToolSpecification> specifications = new SyncMcpToolProvider(toolGroups())
 				.getToolSpecifications();
 
-		assertThat(specifications).hasSize(6).allSatisfy(specification -> {
+		assertThat(specifications).hasSize(8).allSatisfy(specification -> {
 			assertThat(specification.tool().inputSchema()).containsEntry("type", "object");
 			assertThat(specification.tool().outputSchema()).containsEntry("type", "object");
 		});
@@ -60,6 +66,10 @@ class TopTeacherMcpSchemaTests {
 		final Map<String, Object> createProperties = properties(specifications, "create_level_of_expectations");
 		assertThat(createProperties).containsKeys("examId", "parts", "noteSections");
 		assertThat(map(createProperties.get("parts"))).containsEntry("type", "array");
+
+		final Map<String, Object> createCourseProperties = properties(specifications, "create_course_with_pupils");
+		assertThat(createCourseProperties).containsKeys("course", "roster", "resolutions").doesNotContainKey("context");
+		assertThat(map(createCourseProperties.get("roster"))).containsEntry("type", "array");
 	}
 
 	private static Map<String, Object> properties(final List<SyncToolSpecification> specifications,
@@ -82,7 +92,12 @@ class TopTeacherMcpSchemaTests {
 		final GradingScaleRepository gradingScales = mock(GradingScaleRepository.class);
 		final LevelOfExpectationsRepository levelOfExpectations = mock(LevelOfExpectationsRepository.class);
 		final PupilRepository pupils = mock(PupilRepository.class);
-		return List.of(new CourseMcpTools(courses), new ExamMcpTools(courses, exams, levelOfExpectations),
+		final SubjectRepository subjects = mock(SubjectRepository.class);
+		final CourseRosterWriter writer = mock(CourseRosterWriter.class);
+		final PupilRosterConflictResolver conflictResolver = mock(PupilRosterConflictResolver.class);
+		return List.of(new CourseMcpTools(courses, subjects, gradingScales),
+				new ExamMcpTools(courses, exams, levelOfExpectations),
+				new CourseRosterMcpTools(courses, subjects, gradingScales, conflictResolver, writer),
 				new LevelOfExpectationsMcpTools(courses, exams, gradingScales, levelOfExpectations),
 				new PupilResultMcpTools(exams, gradingScales, levelOfExpectations, pupils));
 	}

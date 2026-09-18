@@ -45,6 +45,16 @@ public class PupilRepository {
 			""", Map.of("id", id), rowMapper).stream().findFirst();
 	}
 
+	public List<Pupil> findByExactName(final String name, final String surname) {
+		return jdbc.query("""
+			select id, name, surname, lifecycle
+			from pupil
+			where name = :name
+			  and surname = :surname
+			order by id
+			""", Map.of("name", name, "surname", surname), rowMapper);
+	}
+
 	public Map<Integer, SchoolClass> findLatestSchoolClassByPupilId() {
 		final Map<Integer, SchoolClass> schoolClassesByPupilId = new HashMap<>();
 		final RowCallbackHandler collectSchoolClasses = resultSet -> schoolClassesByPupilId

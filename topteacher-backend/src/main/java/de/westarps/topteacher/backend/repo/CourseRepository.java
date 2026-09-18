@@ -73,6 +73,24 @@ public class CourseRepository {
 			""", Map.of("id", id), rowMapper).stream().findFirst();
 	}
 
+	public Optional<Course> findByNaturalKey(final SchoolClass schoolClass, final int subjectId,
+			final SchoolYear schoolYear, final CoursePeriod coursePeriod) {
+		return jdbc
+				.query("""
+					select c.id, c.school_class, s.id as subject_id, s.name as subject_name,
+					       s.lifecycle as subject_lifecycle, c.calendar_year, c.course_period, c.lifecycle,
+					       c.grading_scale_id
+					from course c
+					join subject s on s.id = c.subject_id
+					where c.school_class = :schoolClass
+					  and c.subject_id = :subjectId
+					  and c.calendar_year = :calendarYear
+					  and c.course_period = :coursePeriod
+					""", Map.of("schoolClass", schoolClass.name(), "subjectId", subjectId, "calendarYear",
+						schoolYear.getCalendarYear(), "coursePeriod", coursePeriod.name()), rowMapper)
+				.stream().findFirst();
+	}
+
 	public Course save(final Course course) {
 		if (course.id() == null) {
 			return insert(course);

@@ -109,25 +109,23 @@ Wichtige Properties:
 
 Beim ersten Start führt TopTeacher durch die Datenbank-Initialisierung. Dabei kann eine leere Datenbank mit Basisdaten oder eine Datenbank mit Demodaten angelegt werden. Später kann die Datenbank in den Einstellungen im Tab `Zurücksetzen` erneut initialisiert werden.
 
-## MCP-Schnittstelle
+## MCP interface
 
-TopTeacher kann eine Model-Context-Protocol-Schnittstelle für KI-Clients über
-Streamable HTTP bereitstellen. Sie ist standardmäßig deaktiviert. Wenn sie
-aktiviert ist, liegt der Endpunkt unter
-`http://localhost:8081/top-teacher/mcp` und verlangt bei jedem Zugriff einen
-Bearer-Token.
+TopTeacher can expose a Model Context Protocol interface to AI clients through
+Streamable HTTP. It is disabled by default. When enabled, the endpoint is
+`http://localhost:8081/top-teacher/mcp` and every request requires a bearer
+token.
 
-Lege den Token außerhalb des Repositories in einer nur für Dich lesbaren Datei
-ab. Er muss aus genau einer UTF-8-Zeile mit mindestens 32 Zeichen bestehen. Zum
-Beispiel:
+Store the token outside the repository in a file readable only by its owner. It
+must contain exactly one UTF-8 line with at least 32 characters. For example:
 
 ```shell
 umask 077
 openssl rand -hex 32 > /absoluter/pfad/topteacher-mcp-token
 ```
 
-Beim Start über eines der mitgelieferten Skripte kannst Du MCP mit
-Umgebungsvariablen aktivieren:
+Enable MCP through environment variables when using one of the bundled start
+scripts:
 
 ```shell
 TT_MCP_ENABLED=true \
@@ -135,12 +133,54 @@ TT_MCP_TOKEN_FILE=/absoluter/pfad/topteacher-mcp-token \
 ./run/start-dev.sh /Users/<Benutzername>/Documents/<top-teacher-db>
 ```
 
-Der KI-Client muss die Endpunkt-URL und den HTTP-Header
-`Authorization: Bearer <Token aus der Datei>` verwenden. Die Schnittstelle kann
-Kurse, Klausuren, Erwartungshorizonte, zugeordnete Schüler:innen und einzelne
-Ergebnisse lesen. Zusätzlich kann sie einen vollständigen Erwartungshorizont für
-eine noch leere Klausur anlegen. Vorhandene Entwürfe, Notizen oder Ergebnisse
-werden dabei niemals überschrieben.
+The AI client must use the endpoint URL and the HTTP header
+`Authorization: Bearer <token from the file>`.
+
+The MCP server currently exposes these tools:
+
+| Tool | Action |
+| --- | --- |
+| `list_courses` | List active or archived courses. |
+| `get_course_creation_options` | Read the valid school classes, course periods, active subjects, and active grading scales. |
+| `create_course_with_pupils` | Atomically create an active course, create or reuse its pupils, and assign them. |
+| `list_exams` | List the exams of a course. |
+| `get_level_of_expectations` | Read a complete level of expectations. |
+| `create_level_of_expectations` | Create a complete level of expectations for a blank exam without overwriting anything. |
+| `list_exam_pupils` | List the pupils assigned to an exam. |
+| `get_pupil_result` | Read one pupil's result for an exam. |
+
+Exact pupil-name matches are never merged automatically. The course-creation
+tool requires an explicit `REUSE`, `CREATE`, or `SKIP` decision. It uses native
+MCP elicitation when the client advertises that capability. Otherwise it
+returns `NEEDS_RESOLUTION` without changing the database; the model should ask
+the user in normal chat and retry the same tool with the decisions. Once all
+conflicts are resolved, the course, new pupils, reactivated reused pupils, and
+assignments are written in one transaction.
+
+### LM Studio
+
+In LM Studio, open `Program` → `Install` → `Edit mcp.json` and add TopTeacher as
+a remote MCP server. Replace the placeholder with the token stored in the
+credential file:
+
+```json
+{
+  "mcpServers": {
+    "topteacher": {
+      "url": "http://127.0.0.1:8081/top-teacher/mcp",
+      "headers": {
+        "Authorization": "Bearer <token from the file>"
+      }
+    }
+  }
+}
+```
+
+LM Studio currently handles the conflict fallback through ordinary chat. A
+useful first prompt for a tool-capable local model is:
+
+> Lege in TopTeacher einen Englischkurs für die 8a im Schuljahr 2026/27 an.
+> Verwende den Notenschlüssel mit 100 Punkten. Hier ist die Schülerliste: …
 
 ## macOS App
 
