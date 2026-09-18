@@ -1,7 +1,6 @@
 package de.westarps.topteacher.ui.component;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -10,8 +9,6 @@ import java.util.Set;
 
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSelectionModel;
-import com.vaadin.flow.data.provider.DataProvider;
-import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.function.SerializableConsumer;
 import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.shared.Registration;
@@ -33,34 +30,9 @@ public class MultiSelectionGrid<T> extends Grid<T> {
 	private SerializableFunction<T, String> customPartNameGenerator = item -> null;
 	private T anchorItem;
 
-	public MultiSelectionGrid() {
-		super();
-		configureRowSelection();
-	}
-
-	public MultiSelectionGrid(final Class<T> beanType) {
-		super(beanType);
-		configureRowSelection();
-	}
-
 	public MultiSelectionGrid(final Class<T> beanType, final boolean autoCreateColumns) {
 		super(beanType, autoCreateColumns);
 		configureRowSelection();
-	}
-
-	public MultiSelectionGrid(final Collection<T> items) {
-		this();
-		setItems(items);
-	}
-
-	public MultiSelectionGrid(final ListDataProvider<T> dataProvider) {
-		this();
-		setItems(dataProvider);
-	}
-
-	public MultiSelectionGrid(final DataProvider<T, Void> dataProvider) {
-		this();
-		setItems(dataProvider);
 	}
 
 	private void configureRowSelection() {

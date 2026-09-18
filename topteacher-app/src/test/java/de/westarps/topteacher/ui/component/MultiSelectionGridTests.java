@@ -15,7 +15,7 @@ class MultiSelectionGridTests {
 
 	@Test
 	void managesSelectionWithoutVaadinSelectionModel() {
-		final MultiSelectionGrid<String> grid = new MultiSelectionGrid<>();
+		final MultiSelectionGrid<String> grid = new MultiSelectionGrid<>(String.class, false);
 
 		grid.select("Ada");
 
@@ -26,7 +26,7 @@ class MultiSelectionGridTests {
 
 	@Test
 	void rejectsVaadinMultiSelectionModeToAvoidCheckboxColumn() {
-		final MultiSelectionGrid<String> grid = new MultiSelectionGrid<>();
+		final MultiSelectionGrid<String> grid = new MultiSelectionGrid<>(String.class, false);
 
 		assertThatThrownBy(() -> grid.setSelectionMode(SelectionMode.MULTI))
 				.isInstanceOf(UnsupportedOperationException.class);
@@ -45,7 +45,7 @@ class MultiSelectionGridTests {
 
 	@Test
 	void notifiesListenersWhenSelectionChanges() {
-		final MultiSelectionGrid<String> grid = new MultiSelectionGrid<>();
+		final MultiSelectionGrid<String> grid = new MultiSelectionGrid<>(String.class, false);
 		final AtomicReference<Set<String>> latestSelection = new AtomicReference<>();
 
 		grid.addSelectionChangedListener(latestSelection::set);
@@ -56,7 +56,7 @@ class MultiSelectionGridTests {
 
 	@Test
 	void composesCustomPartNamesWithSelectionPartName() {
-		final MultiSelectionGrid<String> grid = new MultiSelectionGrid<>();
+		final MultiSelectionGrid<String> grid = new MultiSelectionGrid<>(String.class, false);
 
 		grid.setPartNameGenerator(item -> "custom-row");
 		grid.select("Ada");
@@ -66,6 +66,10 @@ class MultiSelectionGridTests {
 	}
 
 	private static class TestGrid extends MultiSelectionGrid<String> {
+
+		private TestGrid() {
+			super(String.class, false);
+		}
 
 		void selectRangeForTest(final String startItem, final String endItem) {
 			selectRange(startItem, endItem);

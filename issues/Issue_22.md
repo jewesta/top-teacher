@@ -25,6 +25,8 @@
 - Updated the shared export fragments to apply that policy at every aggregate
   level.
 - Added model and rendered-HTML coverage for the pupil and teacher variants.
+- Removed unused and test-only overloads discovered while reviewing the export
+  change, keeping tests on production entry points.
 
 ## Verification
 

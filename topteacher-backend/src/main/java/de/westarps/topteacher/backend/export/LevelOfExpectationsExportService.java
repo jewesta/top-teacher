@@ -48,48 +48,24 @@ public class LevelOfExpectationsExportService {
 		this.pdfRenderer = pdfRenderer;
 	}
 
-	public String renderPupilHtml(final int examId, final int pupilId) {
-		return htmlRenderer.renderModel(PUPIL_TEMPLATE, createPupilModel(examId, pupilId));
-	}
-
 	public String renderPupilHtml(final LevelOfExpectationsExportModel model) {
 		return htmlRenderer.renderModel(PUPIL_TEMPLATE, model);
-	}
-
-	public String renderTeacherHtml(final int examId, final int pupilId) {
-		return htmlRenderer.renderModel(TEACHER_TEMPLATE, createTeacherModel(examId, pupilId));
 	}
 
 	public String renderTeacherHtml(final LevelOfExpectationsExportModel model) {
 		return htmlRenderer.renderModel(TEACHER_TEMPLATE, model);
 	}
 
-	public byte[] renderPupilA5Pdf(final int examId, final int pupilId) {
-		return renderPupilA5Pdf(createPupilModel(examId, pupilId));
-	}
-
 	public byte[] renderPupilA5Pdf(final LevelOfExpectationsExportModel model) {
 		return pdfRenderer.renderA5Pdf(renderPupilHtml(model));
-	}
-
-	public byte[] renderPupilA4LandscapePdf(final int examId, final int pupilId) {
-		return renderPupilA4LandscapePdf(createPupilModel(examId, pupilId));
 	}
 
 	public byte[] renderPupilA4LandscapePdf(final LevelOfExpectationsExportModel model) {
 		return pdfRenderer.imposeA5OnA4Landscape(renderPupilA5Pdf(model));
 	}
 
-	public byte[] renderTeacherA5Pdf(final int examId, final int pupilId) {
-		return renderTeacherA5Pdf(createTeacherModel(examId, pupilId));
-	}
-
 	public byte[] renderTeacherA5Pdf(final LevelOfExpectationsExportModel model) {
 		return pdfRenderer.renderA5Pdf(renderTeacherHtml(model));
-	}
-
-	public byte[] renderTeacherA4LandscapePdf(final int examId, final int pupilId) {
-		return renderTeacherA4LandscapePdf(createTeacherModel(examId, pupilId));
 	}
 
 	public byte[] renderTeacherA4LandscapePdf(final LevelOfExpectationsExportModel model) {

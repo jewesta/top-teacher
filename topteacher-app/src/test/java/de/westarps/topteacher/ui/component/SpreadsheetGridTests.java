@@ -9,7 +9,7 @@ class SpreadsheetGridTests {
 
 	@Test
 	void addsSpreadsheetClassAndTiltedHeaderPartName() {
-		final SpreadsheetGrid<String> grid = new SpreadsheetGrid<>();
+		final SpreadsheetGrid<String> grid = new SpreadsheetGrid<>(String.class, false);
 
 		final var column = grid.addSpreadsheetColumn(item -> item, "Sehr langer Spaltenkopf");
 
@@ -19,7 +19,7 @@ class SpreadsheetGridTests {
 
 	@Test
 	void addsSpacerColumn() {
-		final SpreadsheetGrid<String> grid = new SpreadsheetGrid<>();
+		final SpreadsheetGrid<String> grid = new SpreadsheetGrid<>(String.class, false);
 
 		final var spacerColumn = grid.addSpacerColumn("5.5rem");
 
@@ -31,7 +31,7 @@ class SpreadsheetGridTests {
 
 	@Test
 	void rejectsHeaderLabelMaxLengthWithoutRoomForSuffix() {
-		final SpreadsheetGrid<String> grid = new SpreadsheetGrid<>();
+		final SpreadsheetGrid<String> grid = new SpreadsheetGrid<>(String.class, false);
 
 		assertThatThrownBy(() -> grid.setHeaderLabelMaxLength(3)).isInstanceOf(IllegalArgumentException.class);
 	}

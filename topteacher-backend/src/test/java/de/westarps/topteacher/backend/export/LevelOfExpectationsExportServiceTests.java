@@ -51,7 +51,8 @@ class LevelOfExpectationsExportServiceTests {
 	void rendersDemoLevelOfExpectationsAsPupilHtml() {
 		final DemoSelection demo = findDemoSelection();
 
-		final String html = exportService.renderPupilHtml(demo.exam().id(), demo.pupil().id());
+		final String html = exportService
+				.renderPupilHtml(exportService.createPupilModel(demo.exam().id(), demo.pupil().id()));
 
 		assertThat(html).contains("Q2_Englisch");
 		assertThat(html).contains("Klausur Nr. 1");
@@ -69,7 +70,8 @@ class LevelOfExpectationsExportServiceTests {
 	void rendersDemoLevelOfExpectationsAsTeacherHtml() {
 		final DemoSelection demo = findDemoSelection();
 
-		final String html = exportService.renderTeacherHtml(demo.exam().id(), demo.pupil().id());
+		final String html = exportService
+				.renderTeacherHtml(exportService.createTeacherModel(demo.exam().id(), demo.pupil().id()));
 
 		assertThat(html).contains("Lehrer:innen-Version");
 		assertThat(html).contains("tt-teacher-watermark");
@@ -86,7 +88,8 @@ class LevelOfExpectationsExportServiceTests {
 
 		settingsRepository.save(AppSettings.TT_LOE_EXPORT_SHOW_WATERMARK_KEY, "false");
 		try {
-			final String html = exportService.renderTeacherHtml(demo.exam().id(), demo.pupil().id());
+			final String html = exportService
+					.renderTeacherHtml(exportService.createTeacherModel(demo.exam().id(), demo.pupil().id()));
 
 			assertThat(html).doesNotContain("tt-teacher-watermark");
 		} finally {
@@ -98,7 +101,8 @@ class LevelOfExpectationsExportServiceTests {
 	void rendersDemoLevelOfExpectationsAsA4LandscapePdf() throws IOException {
 		final DemoSelection demo = findDemoSelection();
 
-		final byte[] pdf = exportService.renderPupilA4LandscapePdf(demo.exam().id(), demo.pupil().id());
+		final byte[] pdf = exportService
+				.renderPupilA4LandscapePdf(exportService.createPupilModel(demo.exam().id(), demo.pupil().id()));
 
 		assertThat(pdf).startsWith("%PDF".getBytes());
 		try (PDDocument document = PDDocument.load(pdf)) {
@@ -114,7 +118,8 @@ class LevelOfExpectationsExportServiceTests {
 	void omitsTeacherNotesWhenDemoHasNoNotesInTeacherLevelOfExpectationsPdf() throws IOException {
 		final DemoSelection demo = findDemoSelection();
 
-		final byte[] pdf = exportService.renderTeacherA4LandscapePdf(demo.exam().id(), demo.pupil().id());
+		final byte[] pdf = exportService
+				.renderTeacherA4LandscapePdf(exportService.createTeacherModel(demo.exam().id(), demo.pupil().id()));
 
 		try (PDDocument document = PDDocument.load(pdf)) {
 			final String text = new PDFTextStripper().getText(document);

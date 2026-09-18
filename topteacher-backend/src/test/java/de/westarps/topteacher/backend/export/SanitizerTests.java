@@ -10,8 +10,9 @@ class SanitizerTests {
 
 	@Test
 	void removesCriterionLinksForPupilFacingHtml() {
-		final SafeHtml html = sanitizer
-				.markdownToHtml("Der/die Schüler:in nutzt die **[korrekte Zeitform](eh:1)** und `präzise Begriffe`.");
+		final SafeHtml html = sanitizer.markdownToHtml(
+				"Der/die Schüler:in nutzt die **[korrekte Zeitform](eh:1)** und `präzise Begriffe`.",
+				Sanitizer.MarkdownView.PUPIL);
 
 		assertThat(html.value()).contains("<strong>korrekte Zeitform</strong>");
 		assertThat(html.value()).contains("<code>präzise Begriffe</code>");
@@ -34,7 +35,8 @@ class SanitizerTests {
 
 	@Test
 	void sanitizesUnsafeHtml() {
-		final SafeHtml html = sanitizer.markdownToHtml("Guter Text<script>alert('x')</script>");
+		final SafeHtml html = sanitizer.markdownToHtml("Guter Text<script>alert('x')</script>",
+				Sanitizer.MarkdownView.PUPIL);
 
 		assertThat(html.value()).contains("Guter Text");
 		assertThat(html.value()).doesNotContain("<script", "alert");
