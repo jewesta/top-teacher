@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="de" xmlns:th="http://www.thymeleaf.org">
 <body>
-<section th:fragment="levelOfExpectationsBody(parts)">
-    <section class="tt-part" th:each="part : ${parts}">
+<section th:fragment="levelOfExpectationsBody(model)">
+    <section class="tt-part" th:each="part : ${model.parts()}">
         <h2 th:text="${part.title()}">Klausurteil A</h2>
 
         <section class="tt-category" th:each="category : ${part.categories()}">
@@ -45,7 +45,7 @@
                     <tr class="tt-sum-row">
                         <td></td>
                         <td th:text="${'SUMME ' + task.title()}">SUMME Teilaufgabe</td>
-                        <td class="tt-points-column" th:text="${task.points().maxDisplayName()}">6</td>
+                        <td class="tt-points-column" th:text="${model.aggregateMaxPointsDisplayName(task.points())}">6</td>
                         <td class="tt-points-column" th:text="${task.points().achievedDisplayName()}"></td>
                     </tr>
                     </tbody>

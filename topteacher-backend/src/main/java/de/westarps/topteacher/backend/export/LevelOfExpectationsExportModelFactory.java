@@ -42,10 +42,6 @@ public class LevelOfExpectationsExportModelFactory {
 		return createModel(data, MarkdownView.PUPIL, false);
 	}
 
-	public LevelOfExpectationsExportModel createTeacherModel(final LevelOfExpectationsExportData data) {
-		return createTeacherModel(data, true);
-	}
-
 	public LevelOfExpectationsExportModel createTeacherModel(final LevelOfExpectationsExportData data,
 			final boolean showWatermark) {
 		return createModel(data, MarkdownView.TEACHER, true, showWatermark);
@@ -97,7 +93,7 @@ public class LevelOfExpectationsExportModelFactory {
 
 		return new LevelOfExpectationsExportModel(data.course(), data.exam(), data.examNumber(), data.pupil(),
 				data.gradingScale(), data.gradingScaleRanges(), PointSummary.sum(parts, Part::points), parts, notes,
-				showWatermark);
+				view == MarkdownView.TEACHER, showWatermark);
 	}
 
 	private Part createPart(final LoePart part, final Map<Integer, List<LoeCategory>> categoriesByPartId,
@@ -220,7 +216,8 @@ public class LevelOfExpectationsExportModelFactory {
 
 	public record LevelOfExpectationsExportModel(Course course, Exam exam, ExamNumber examNumber, Pupil pupil,
 			GradingScale gradingScale, List<GradingScaleRange> gradingScaleRanges, PointSummary points,
-			List<Part> parts, List<NoteSection> noteSections, boolean showWatermark) {
+			List<Part> parts, List<NoteSection> noteSections, boolean showAchievableBonusPointTotals,
+			boolean showWatermark) {
 
 		public LevelOfExpectationsExportModel {
 			course = Objects.requireNonNull(course, "course must not be null");
@@ -248,6 +245,11 @@ public class LevelOfExpectationsExportModelFactory {
 
 		public String pupilDisplayName() {
 			return pupil.name() + " " + pupil.surname();
+		}
+
+		public String aggregateMaxPointsDisplayName(final PointSummary pointSummary) {
+			final PointSummary aggregate = Objects.requireNonNull(pointSummary, "pointSummary must not be null");
+			return showAchievableBonusPointTotals ? aggregate.maxDisplayName() : String.valueOf(aggregate.maxPoints());
 		}
 
 		public String totalGradeDisplayName() {

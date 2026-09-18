@@ -59,6 +59,7 @@ class LevelOfExpectationsExportServiceTests {
 		assertThat(html).contains("Klausurteil A: Schreiben mit Leseverstehen (integriert)");
 		assertThat(html).contains("Teilaufgabe 2 (Analysis)");
 		assertThat(html).contains("GESAMTPUNKTZAHL KLAUSUR");
+		assertThat(html).doesNotContain("16 (+ 4)", "14 (+ 2)", "105 (+ 6)", "150 (+ 6)");
 		assertThat(html).contains("ungenügend");
 		assertThat(html).doesNotContain("eh:", "tt-criterion", "tt-criterion-badge");
 		assertThat(html).doesNotContain("Klares Fazit", "Notiz: ");
@@ -75,6 +76,7 @@ class LevelOfExpectationsExportServiceTests {
 		assertThat(html).contains("tt-criterion-highlight");
 		assertThat(html).contains("tt-criterion-marker");
 		assertThat(html).contains("Robshaws Gesamtargumentation");
+		assertThat(html).contains("16 (+ 4)", "14 (+ 2)", "105 (+ 6)", "150 (+ 6)");
 		assertThat(html).doesNotContain("Klares Fazit", "Notiz: ");
 	}
 
