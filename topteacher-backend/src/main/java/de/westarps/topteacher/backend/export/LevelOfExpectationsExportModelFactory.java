@@ -81,19 +81,18 @@ public class LevelOfExpectationsExportModelFactory {
 		final List<Part> parts = sorted(data.parts(),
 				Comparator.comparingInt(LoePart::sortOrder).thenComparing(LoePart::id,
 						Comparator.nullsLast(Integer::compareTo)))
-				.stream()
-				.map(part -> createPart(part, categoriesByPartId, tasksByCategoryId, requirementsByTaskId,
-						criteriaByRequirementId, resultsByRequirementId, resultsByCriterionId, view,
-						includeTeacherOnlyContent))
-				.toList();
-		final List<NoteSection> notes = includeTeacherOnlyContent
-				? sorted(data.noteSections(),
-						Comparator.comparingInt(ExamNoteSection::sortOrder).thenComparing(ExamNoteSection::id,
-								Comparator.nullsLast(Integer::compareTo)))
-						.stream()
-						.map(noteSection -> new NoteSection(noteSection.title(),
-								sanitizer.markdownToHtml(noteSection.descriptionMarkdown(), view)))
-						.toList()
+								.stream()
+								.map(part -> createPart(part, categoriesByPartId, tasksByCategoryId,
+										requirementsByTaskId, criteriaByRequirementId, resultsByRequirementId,
+										resultsByCriterionId, view, includeTeacherOnlyContent))
+								.toList();
+		final List<NoteSection> notes = includeTeacherOnlyContent ? sorted(data.noteSections(),
+				Comparator.comparingInt(ExamNoteSection::sortOrder).thenComparing(ExamNoteSection::id,
+						Comparator.nullsLast(Integer::compareTo)))
+								.stream()
+								.map(noteSection -> new NoteSection(noteSection.title(),
+										sanitizer.markdownToHtml(noteSection.descriptionMarkdown(), view)))
+								.toList()
 				: List.of();
 
 		return new LevelOfExpectationsExportModel(data.course(), data.exam(), data.examNumber(), data.pupil(),

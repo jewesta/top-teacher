@@ -4,7 +4,8 @@ import de.westarps.topteacher.model.HasDisplayName;
 
 public enum DatabaseInitializationMode implements HasDisplayName {
 
-	EMPTY("Leere Datenbank"), DEMO("Demodaten");
+	EMPTY("Leere Datenbank"),
+	DEMO("Demodaten");
 
 	private final String displayName;
 

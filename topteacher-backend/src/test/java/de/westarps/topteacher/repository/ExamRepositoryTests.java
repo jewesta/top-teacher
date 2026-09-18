@@ -105,7 +105,7 @@ class ExamRepositoryTests {
 
 		assertThatThrownBy(() -> examRepository.save(new Exam(saved.id(), course.id(), saved.title(), saved.date(),
 				saved.originalExamId(), otherGradingScale.id()))).isInstanceOf(IllegalArgumentException.class)
-				.hasMessage("Der Notenschlüssel einer bestehenden Klausur kann nicht geändert werden.");
+						.hasMessage("Der Notenschlüssel einer bestehenden Klausur kann nicht geändert werden.");
 	}
 
 	@Test
@@ -119,7 +119,7 @@ class ExamRepositoryTests {
 
 		assertThatThrownBy(
 				() -> examRepository.save(new Exam(saved.id(), otherCourse.id(), saved.title(), saved.date())))
-				.isInstanceOf(IllegalArgumentException.class).hasMessage("Exam course can not be changed.");
+						.isInstanceOf(IllegalArgumentException.class).hasMessage("Exam course can not be changed.");
 	}
 
 	@Test
@@ -160,8 +160,8 @@ class ExamRepositoryTests {
 
 		assertThatThrownBy(() -> examRepository.save(
 				new Exam(null, otherCourse.id(), "Nachschreibeklausur", LocalDate.of(2032, 9, 24), originalExam.id())))
-				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessage("Eine Nachschreibeklausur muss zum selben Kurs gehören.");
+						.isInstanceOf(IllegalArgumentException.class)
+						.hasMessage("Eine Nachschreibeklausur muss zum selben Kurs gehören.");
 	}
 
 	@Test
@@ -172,9 +172,8 @@ class ExamRepositoryTests {
 		final Exam originalExam = examRepository
 				.save(new Exam(null, course.id(), "1. Klausur", LocalDate.of(2033, 9, 17)));
 
-		assertThatThrownBy(() -> examRepository
-				.save(new Exam(null, course.id(), "Nachschreibeklausur", LocalDate.of(2033, 9, 16), originalExam.id())))
-				.isInstanceOf(IllegalArgumentException.class).hasMessage(
+		assertThatThrownBy(() -> examRepository.save(new Exam(null, course.id(), "Nachschreibeklausur",
+				LocalDate.of(2033, 9, 16), originalExam.id()))).isInstanceOf(IllegalArgumentException.class).hasMessage(
 						"Das Datum einer Nachschreibeklausur darf nicht vor dem Datum der ursprünglichen Klausur liegen.");
 	}
 
@@ -188,10 +187,9 @@ class ExamRepositoryTests {
 		examRepository
 				.save(new Exam(null, course.id(), "Nachschreibeklausur", LocalDate.of(2034, 9, 18), originalExam.id()));
 
-		assertThatThrownBy(() -> examRepository
-				.save(new Exam(originalExam.id(), course.id(), originalExam.title(), LocalDate.of(2034, 9, 19))))
-				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessage("Das Datum der ursprünglichen Klausur darf nicht nach einer Nachschreibeklausur liegen.");
+		assertThatThrownBy(() -> examRepository.save(new Exam(originalExam.id(), course.id(), originalExam.title(),
+				LocalDate.of(2034, 9, 19)))).isInstanceOf(IllegalArgumentException.class).hasMessage(
+						"Das Datum der ursprünglichen Klausur darf nicht nach einer Nachschreibeklausur liegen.");
 	}
 
 	@Test

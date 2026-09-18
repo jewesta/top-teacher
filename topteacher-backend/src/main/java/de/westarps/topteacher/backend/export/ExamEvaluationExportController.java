@@ -25,7 +25,8 @@ public class ExamEvaluationExportController {
 		this.excelExportService = excelExportService;
 	}
 
-	@GetMapping(value = "/export/exams/{examId}/evaluation.xlsx", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	@GetMapping(value = "/export/exams/{examId}/evaluation.xlsx",
+			produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 	public ResponseEntity<byte[]> exportEvaluation(@PathVariable final int examId) {
 		final Exam exam = examRepository.findById(examId)
 				.orElseThrow(() -> new IllegalArgumentException("Exam does not exist: " + examId));

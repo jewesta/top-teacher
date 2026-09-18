@@ -2,7 +2,8 @@ package de.westarps.topteacher.model;
 
 public enum Lifecycle implements HasDisplayName {
 
-	ACTIVE("Aktiv"), INACTIVE("Inaktiv");
+	ACTIVE("Aktiv"),
+	INACTIVE("Inaktiv");
 
 	private final String displayName;
 

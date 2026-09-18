@@ -18,7 +18,8 @@ public class LevelOfExpectationsExportController {
 		this.exportService = exportService;
 	}
 
-	@GetMapping(value = "/export/exams/{examId}/pupils/{pupilId}/level-of-expectations.pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+	@GetMapping(value = "/export/exams/{examId}/pupils/{pupilId}/level-of-expectations.pdf",
+			produces = MediaType.APPLICATION_PDF_VALUE)
 	public ResponseEntity<byte[]> exportPupilLevelOfExpectations(@PathVariable final int examId,
 			@PathVariable final int pupilId) {
 		final LevelOfExpectationsExportModel model = exportService.createPupilModel(examId, pupilId);
@@ -27,7 +28,8 @@ public class LevelOfExpectationsExportController {
 				.contentType(MediaType.APPLICATION_PDF).body(exportService.renderPupilA4LandscapePdf(model));
 	}
 
-	@GetMapping(value = "/export/exams/{examId}/pupils/{pupilId}/level-of-expectations-teacher.pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+	@GetMapping(value = "/export/exams/{examId}/pupils/{pupilId}/level-of-expectations-teacher.pdf",
+			produces = MediaType.APPLICATION_PDF_VALUE)
 	public ResponseEntity<byte[]> exportTeacherLevelOfExpectations(@PathVariable final int examId,
 			@PathVariable final int pupilId) {
 		final LevelOfExpectationsExportModel model = exportService.createTeacherModel(examId, pupilId);

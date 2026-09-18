@@ -19,7 +19,8 @@ import com.vaadin.flow.shared.Registration;
 /**
  * A flat grid with desktop-style row multi-selection and no checkbox column.
  *
- * @param <T> item type
+ * @param <T>
+ *            item type
  */
 public class MultiSelectionGrid<T> extends Grid<T> {
 

@@ -48,7 +48,7 @@ class LevelOfExpectationsExportModelFactoryTests {
 		assertThat(model.totalGradeDisplayName()).isEqualTo("ungenügend");
 		assertThat(model.gradingScaleTableRows().getFirst().cells().stream()
 				.map(LevelOfExpectationsExportModelFactory.GradingScaleTableCell::gradeDisplayName).toList())
-				.containsExactly("sehr gut plus", "ungenügend", "");
+						.containsExactly("sehr gut plus", "ungenügend", "");
 		assertThat(model.gradingScaleTableRows().getFirst().cells().getFirst().minPointsDisplayName()).isEqualTo("95");
 		assertThat(model.gradingScaleTableRows().getFirst().cells().getFirst().maxPointsDisplayName()).isEqualTo("100");
 
