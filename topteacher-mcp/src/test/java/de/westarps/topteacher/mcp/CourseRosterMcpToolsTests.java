@@ -29,11 +29,11 @@ import de.westarps.topteacher.backend.repo.SubjectRepository;
 import de.westarps.topteacher.mcp.CourseRosterMcpTools.CourseDraft;
 import de.westarps.topteacher.mcp.CourseRosterMcpTools.CourseRosterResult;
 import de.westarps.topteacher.mcp.CourseRosterMcpTools.CourseRosterStatus;
-import de.westarps.topteacher.mcp.CourseRosterMcpTools.PupilConflictAction;
-import de.westarps.topteacher.mcp.CourseRosterMcpTools.PupilConflictResolution;
-import de.westarps.topteacher.mcp.CourseRosterMcpTools.PupilDraft;
 import de.westarps.topteacher.mcp.CourseRosterWriter.CreatedCourseRoster;
 import de.westarps.topteacher.mcp.CourseRosterWriter.ResolvedPupil;
+import de.westarps.topteacher.mcp.PupilMcpSchema.PupilConflictAction;
+import de.westarps.topteacher.mcp.PupilMcpSchema.PupilConflictResolution;
+import de.westarps.topteacher.mcp.PupilMcpSchema.PupilDraft;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.CoursePeriod;
 import de.westarps.topteacher.model.GradingScale;
@@ -82,7 +82,7 @@ class CourseRosterMcpToolsTests {
 	@Test
 	void returnsStructuredConflictsWithoutWritingWhenClientHasNoElicitation() {
 		final Pupil existing = new Pupil(42, "Anna", "Müller", Lifecycle.ACTIVE);
-		when(pupils.findByExactName("Anna", "Müller")).thenReturn(List.of(existing));
+		when(pupils.findActiveByExactName("Anna", "Müller")).thenReturn(List.of(existing));
 		final McpSyncRequestContext context = contextWithoutElicitation();
 
 		final CourseRosterResult result = tools.createCourseWithPupils(context, COURSE,
@@ -102,7 +102,7 @@ class CourseRosterMcpToolsTests {
 	@Test
 	void conversationalRetryReusesTheSelectedPupilAndCreatesEverythingOnce() {
 		final Pupil existing = new Pupil(42, "Anna", "Müller", Lifecycle.ACTIVE);
-		when(pupils.findByExactName("Anna", "Müller")).thenReturn(List.of(existing));
+		when(pupils.findActiveByExactName("Anna", "Müller")).thenReturn(List.of(existing));
 		when(writer.create(any(), anyList())).thenAnswer(invocation -> {
 			final Course draft = invocation.getArgument(0);
 			return new CreatedCourseRoster(withId(draft, 99), List.of(existing));
@@ -123,7 +123,7 @@ class CourseRosterMcpToolsTests {
 	@Test
 	void usesNativeElicitationWhenTheClientAdvertisesIt() {
 		final Pupil existing = new Pupil(42, "Anna", "Müller", Lifecycle.ACTIVE);
-		when(pupils.findByExactName("Anna", "Müller")).thenReturn(List.of(existing));
+		when(pupils.findActiveByExactName("Anna", "Müller")).thenReturn(List.of(existing));
 		final McpSyncRequestContext context = mock(McpSyncRequestContext.class);
 		when(context.elicitEnabled()).thenReturn(true);
 		when(context.elicit(any(ElicitFormRequest.class)))
@@ -143,7 +143,7 @@ class CourseRosterMcpToolsTests {
 
 	@Test
 	void cancellingNativeElicitationLeavesTheDatabaseUntouched() {
-		when(pupils.findByExactName("Anna", "Müller"))
+		when(pupils.findActiveByExactName("Anna", "Müller"))
 				.thenReturn(List.of(new Pupil(42, "Anna", "Müller", Lifecycle.ACTIVE)));
 		final McpSyncRequestContext context = mock(McpSyncRequestContext.class);
 		when(context.elicitEnabled()).thenReturn(true);
@@ -159,17 +159,31 @@ class CourseRosterMcpToolsTests {
 
 	@Test
 	void repeatedNamesWithinTheRosterNeedAnExplicitCreateOrSkipDecision() {
-		when(pupils.findByExactName("Sam", "Taylor")).thenReturn(List.of());
+		when(pupils.findActiveByExactName("Sam", "Taylor")).thenReturn(List.of());
 
 		final CourseRosterResult result = tools.createCourseWithPupils(contextWithoutElicitation(), COURSE,
 				List.of(new PupilDraft("row-1", "Sam", "Taylor"), new PupilDraft("row-2", "Sam", "Taylor")), null);
 
 		assertThat(result.status()).isEqualTo(CourseRosterStatus.NEEDS_RESOLUTION);
 		assertThat(result.conflicts()).hasSize(2).allSatisfy(conflict -> {
-			assertThat(conflict.repeatedInRoster()).isTrue();
+			assertThat(conflict.repeatedInRequest()).isTrue();
 			assertThat(conflict.allowedActions()).containsExactly("CREATE", "SKIP");
 			assertThat(conflict.existingPupils()).isEmpty();
 		});
+		verifyNoInteractions(writer);
+	}
+
+	@Test
+	void allSkippedRosterEntriesCancelCourseCreation() {
+		when(pupils.findActiveByExactName("Anna", "Müller"))
+				.thenReturn(List.of(new Pupil(42, "Anna", "Müller", Lifecycle.ACTIVE)));
+
+		final CourseRosterResult result = tools.createCourseWithPupils(contextWithoutElicitation(), COURSE,
+				List.of(new PupilDraft("row-1", "Anna", "Müller")),
+				List.of(new PupilConflictResolution("row-1", PupilConflictAction.SKIP, null)));
+
+		assertThat(result.status()).isEqualTo(CourseRosterStatus.CANCELLED);
+		assertThat(result.skippedRosterEntryKeys()).containsExactly("row-1");
 		verifyNoInteractions(writer);
 	}
 

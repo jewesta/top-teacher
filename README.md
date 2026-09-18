@@ -143,19 +143,40 @@ The MCP server currently exposes these tools:
 | `list_courses` | List active or archived courses. |
 | `get_course_creation_options` | Read the valid school classes, course periods, active subjects, and active grading scales. |
 | `create_course_with_pupils` | Atomically create an active course, create or reuse its pupils, and assign them. |
+| `assign_pupils_to_course` | Add pupils to an existing active course without changing or removing its current roster. |
+| `list_pupils` | List active pupils by default, or explicitly inspect archived pupils. |
+| `create_pupils` | Create active pupils without assigning them to a course. |
+| `update_pupil` | Change a pupil's first name, surname, or both. |
 | `list_exams` | List the exams of a course. |
 | `get_level_of_expectations` | Read a complete level of expectations. |
 | `create_level_of_expectations` | Create a complete level of expectations for a blank exam without overwriting anything. |
 | `list_exam_pupils` | List the pupils assigned to an exam. |
 | `get_pupil_result` | Read one pupil's result for an exam. |
 
-Exact pupil-name matches are never merged automatically. The course-creation
-tool requires an explicit `REUSE`, `CREATE`, or `SKIP` decision. It uses native
-MCP elicitation when the client advertises that capability. Otherwise it
-returns `NEEDS_RESOLUTION` without changing the database; the model should ask
-the user in normal chat and retry the same tool with the decisions. Once all
-conflicts are resolved, the course, new pupils, reactivated reused pupils, and
-assignments are written in one transaction.
+Archived pupils are historical records throughout TopTeacher. They are hidden
+from default discovery, excluded from identity and duplicate matching, cannot
+be newly assigned, and are never reactivated as a side effect of another
+operation. `list_pupils` returns active pupils by default and includes lifecycle
+and latest-class information; archived pupils are visible only through an
+explicit `ARCHIVED` or `ALL` scope. The MCP interface does not expose a way to
+change lifecycle state.
+
+Exact active pupil-name matches are never merged automatically. The
+course-creation tool requires an explicit `REUSE`, `CREATE`, or `SKIP` decision;
+assigning pupils to an existing course uses the same decisions. A uniquely
+named active pupil who is already assigned satisfies the request without a
+write. Standalone pupil creation offers `CREATE` or `SKIP`. Skipping every
+proposed pupil cancels the operation instead of creating an empty course or
+performing an empty write. Renaming a pupil to the exact name of another active
+pupil requires `UPDATE_ANYWAY` or `CANCEL` confirmation.
+
+Conflict handling uses native MCP elicitation when the client advertises that
+capability. Otherwise the tool returns `NEEDS_RESOLUTION` or
+`NEEDS_CONFIRMATION` without changing the database; the model should ask the
+user in normal chat and retry the same tool with the decisions. Once all course
+roster conflicts are resolved, new pupils and assignments are written in one
+transaction. Existing-course assignment is add-only: it never removes pupils or
+changes course properties.
 
 ### LM Studio
 

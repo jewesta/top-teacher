@@ -59,6 +59,7 @@ class PupilRepositoryTests {
 		pupilRepository.save(new Pupil(null, "exact", "Duplicate", Lifecycle.ACTIVE));
 
 		assertThat(pupilRepository.findByExactName("Exact", "Duplicate")).containsExactly(first, second);
+		assertThat(pupilRepository.findActiveByExactName("Exact", "Duplicate")).containsExactly(first);
 	}
 
 	@Test

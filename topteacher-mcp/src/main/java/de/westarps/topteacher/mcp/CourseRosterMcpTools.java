@@ -16,6 +16,9 @@ import de.westarps.topteacher.backend.repo.GradingScaleRepository;
 import de.westarps.topteacher.backend.repo.SubjectRepository;
 import de.westarps.topteacher.mcp.CourseMcpTools.CourseView;
 import de.westarps.topteacher.mcp.CourseRosterWriter.CreatedCourseRoster;
+import de.westarps.topteacher.mcp.PupilMcpSchema.PupilConflictResolution;
+import de.westarps.topteacher.mcp.PupilMcpSchema.PupilConflictView;
+import de.westarps.topteacher.mcp.PupilMcpSchema.PupilDraft;
 import de.westarps.topteacher.mcp.PupilRosterConflictResolver.ResolutionOutcome;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.CoursePeriod;
@@ -35,9 +38,6 @@ import de.westarps.topteacher.model.Subject;
 public class CourseRosterMcpTools {
 
 	private static final int MAXIMUM_PUPILS = 200;
-	private static final int MAXIMUM_KEY_LENGTH = 100;
-	private static final int MAXIMUM_NAME_LENGTH = 100;
-
 	private final CourseRepository courses;
 	private final SubjectRepository subjects;
 	private final GradingScaleRepository gradingScales;
@@ -55,7 +55,7 @@ public class CourseRosterMcpTools {
 	}
 
 	@McpTool(name = "create_course_with_pupils", title = "Create a course with its pupils",
-			description = "Create one active course and its pupil roster atomically. Call get_course_creation_options first. Exact pupil-name matches and names repeated in the roster require an explicit REUSE, CREATE, or SKIP decision. If the client supports MCP elicitation, TopTeacher asks there; otherwise this tool returns NEEDS_RESOLUTION without changing the database and must be called again with resolutions.",
+			description = "Create one active course and its pupil roster atomically. Call get_course_creation_options first. Exact active pupil-name matches and names repeated in the roster require an explicit REUSE, CREATE, or SKIP decision. Archived pupils are historical: they are ignored for matching and cannot be newly assigned. If the client supports MCP elicitation, TopTeacher asks there; otherwise this tool returns NEEDS_RESOLUTION without changing the database and must be called again with resolutions.",
 			generateOutputSchema = true, annotations = @McpTool.McpAnnotations(readOnlyHint = false,
 					destructiveHint = false, idempotentHint = false, openWorldHint = false))
 	public CourseRosterResult createCourseWithPupils(final McpSyncRequestContext context, @McpToolParam(
@@ -72,6 +72,9 @@ public class CourseRosterMcpTools {
 		}
 		if (!resolution.conflicts().isEmpty()) {
 			return needsResolution(resolution.conflicts());
+		}
+		if (resolution.resolvedPupils().isEmpty()) {
+			return allSkipped(resolution.skippedEntryKeys());
 		}
 
 		final CreatedCourseRoster created = writer.create(courseToCreate, resolution.resolvedPupils());
@@ -138,10 +141,10 @@ public class CourseRosterMcpTools {
 				List.of(), conflicts, List.of());
 	}
 
-	public enum PupilConflictAction {
-		REUSE,
-		CREATE,
-		SKIP
+	private static CourseRosterResult allSkipped(final List<String> skippedEntryKeys) {
+		return new CourseRosterResult(CourseRosterStatus.CANCELLED,
+				"All roster entries were skipped. No database changes were made.", List.of(), List.of(), List.of(),
+				skippedEntryKeys);
 	}
 
 	public enum CourseRosterStatus {
@@ -156,23 +159,6 @@ public class CourseRosterMcpTools {
 		public CourseDraft {
 			Objects.requireNonNull(schoolClass, "schoolClass must not be null");
 			Objects.requireNonNull(coursePeriod, "coursePeriod must not be null");
-		}
-	}
-
-	public record PupilDraft(String entryKey, String name, String surname) {
-
-		public PupilDraft {
-			entryKey = boundedText(entryKey, "entryKey", MAXIMUM_KEY_LENGTH);
-			name = boundedText(name, "name", MAXIMUM_NAME_LENGTH);
-			surname = boundedText(surname, "surname", MAXIMUM_NAME_LENGTH);
-		}
-	}
-
-	public record PupilConflictResolution(String entryKey, PupilConflictAction action, Integer pupilId) {
-
-		public PupilConflictResolution {
-			entryKey = boundedText(entryKey, "resolution entryKey", MAXIMUM_KEY_LENGTH);
-			Objects.requireNonNull(action, "resolution action must not be null");
 		}
 	}
 
@@ -194,27 +180,4 @@ public class CourseRosterMcpTools {
 	public record RosterPupilView(int id, String name, String surname, String lifecycle) {
 	}
 
-	public record PupilConflictView(String entryKey, String name, String surname, boolean exactNameExists,
-			boolean repeatedInRoster, List<ExistingPupilView> existingPupils, List<String> allowedActions) {
-
-		public PupilConflictView {
-			existingPupils = List.copyOf(Objects.requireNonNull(existingPupils, "existingPupils"));
-			allowedActions = List.copyOf(Objects.requireNonNull(allowedActions, "allowedActions"));
-		}
-	}
-
-	public record ExistingPupilView(int id, String name, String surname, String lifecycle, String latestSchoolClass,
-			String latestSchoolClassDisplayName) {
-	}
-
-	private static String boundedText(final String value, final String name, final int maximumLength) {
-		if (value == null || value.isBlank()) {
-			throw new IllegalArgumentException(name + " must not be blank");
-		}
-		final String trimmed = value.trim();
-		if (trimmed.length() > maximumLength) {
-			throw new IllegalArgumentException(name + " must not be longer than " + maximumLength + " characters");
-		}
-		return trimmed;
-	}
 }

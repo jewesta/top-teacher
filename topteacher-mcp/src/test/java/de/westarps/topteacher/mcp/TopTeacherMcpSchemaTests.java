@@ -24,17 +24,19 @@ import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 class TopTeacherMcpSchemaTests {
 
 	private static final List<Class<?>> TOOL_GROUPS = List.of(CourseMcpTools.class, ExamMcpTools.class,
-			CourseRosterMcpTools.class, LevelOfExpectationsMcpTools.class, PupilResultMcpTools.class);
+			CourseRosterMcpTools.class, CoursePupilAssignmentMcpTools.class, LevelOfExpectationsMcpTools.class,
+			PupilMcpTools.class, PupilResultMcpTools.class);
 
 	@Test
-	void exposesTheEightTopTeacherOperationsAcrossFiveFocusedToolGroups() {
+	void exposesTheTwelveTopTeacherOperationsAcrossSevenFocusedToolGroups() {
 		final List<String> tools = TOOL_GROUPS.stream().flatMap(type -> Arrays.stream(type.getDeclaredMethods()))
 				.map(method -> method.getAnnotation(McpTool.class)).filter(Objects::nonNull).map(McpTool::name).sorted()
 				.toList();
 
-		assertThat(tools).containsExactly("create_course_with_pupils", "create_level_of_expectations",
-				"get_course_creation_options", "get_level_of_expectations", "get_pupil_result", "list_courses",
-				"list_exam_pupils", "list_exams");
+		assertThat(tools).containsExactly("assign_pupils_to_course", "create_course_with_pupils",
+				"create_level_of_expectations", "create_pupils", "get_course_creation_options",
+				"get_level_of_expectations", "get_pupil_result", "list_courses", "list_exam_pupils", "list_exams",
+				"list_pupils", "update_pupil");
 	}
 
 	@Test
@@ -58,7 +60,7 @@ class TopTeacherMcpSchemaTests {
 		final List<SyncToolSpecification> specifications = new SyncMcpToolProvider(toolGroups())
 				.getToolSpecifications();
 
-		assertThat(specifications).hasSize(8).allSatisfy(specification -> {
+		assertThat(specifications).hasSize(12).allSatisfy(specification -> {
 			assertThat(specification.tool().inputSchema()).containsEntry("type", "object");
 			assertThat(specification.tool().outputSchema()).containsEntry("type", "object");
 		});
@@ -70,6 +72,15 @@ class TopTeacherMcpSchemaTests {
 		final Map<String, Object> createCourseProperties = properties(specifications, "create_course_with_pupils");
 		assertThat(createCourseProperties).containsKeys("course", "roster", "resolutions").doesNotContainKey("context");
 		assertThat(map(createCourseProperties.get("roster"))).containsEntry("type", "array");
+
+		final Map<String, Object> assignPupilsProperties = properties(specifications, "assign_pupils_to_course");
+		assertThat(assignPupilsProperties).containsKeys("courseId", "pupilDrafts", "resolutions")
+				.doesNotContainKey("context");
+		assertThat(map(assignPupilsProperties.get("pupilDrafts"))).containsEntry("type", "array");
+
+		final Map<String, Object> updatePupilProperties = properties(specifications, "update_pupil");
+		assertThat(updatePupilProperties).containsKeys("pupilId", "name", "surname", "duplicateNameAction")
+				.doesNotContainKeys("context", "lifecycle");
 	}
 
 	private static Map<String, Object> properties(final List<SyncToolSpecification> specifications,
@@ -94,11 +105,16 @@ class TopTeacherMcpSchemaTests {
 		final PupilRepository pupils = mock(PupilRepository.class);
 		final SubjectRepository subjects = mock(SubjectRepository.class);
 		final CourseRosterWriter writer = mock(CourseRosterWriter.class);
+		final PupilWriter pupilWriter = mock(PupilWriter.class);
+		final CoursePupilAssignmentWriter assignmentWriter = mock(CoursePupilAssignmentWriter.class);
 		final PupilRosterConflictResolver conflictResolver = mock(PupilRosterConflictResolver.class);
+		final PupilUpdateConflictResolver updateConflictResolver = mock(PupilUpdateConflictResolver.class);
 		return List.of(new CourseMcpTools(courses, subjects, gradingScales),
 				new ExamMcpTools(courses, exams, levelOfExpectations),
 				new CourseRosterMcpTools(courses, subjects, gradingScales, conflictResolver, writer),
+				new CoursePupilAssignmentMcpTools(courses, conflictResolver, assignmentWriter),
 				new LevelOfExpectationsMcpTools(courses, exams, gradingScales, levelOfExpectations),
+				new PupilMcpTools(pupils, conflictResolver, updateConflictResolver, pupilWriter),
 				new PupilResultMcpTools(exams, gradingScales, levelOfExpectations, pupils));
 	}
 

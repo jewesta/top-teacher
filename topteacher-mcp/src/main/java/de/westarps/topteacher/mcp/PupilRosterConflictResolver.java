@@ -13,12 +13,12 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import de.westarps.topteacher.backend.repo.PupilRepository;
-import de.westarps.topteacher.mcp.CourseRosterMcpTools.ExistingPupilView;
-import de.westarps.topteacher.mcp.CourseRosterMcpTools.PupilConflictAction;
-import de.westarps.topteacher.mcp.CourseRosterMcpTools.PupilConflictResolution;
-import de.westarps.topteacher.mcp.CourseRosterMcpTools.PupilConflictView;
-import de.westarps.topteacher.mcp.CourseRosterMcpTools.PupilDraft;
 import de.westarps.topteacher.mcp.CourseRosterWriter.ResolvedPupil;
+import de.westarps.topteacher.mcp.PupilMcpSchema.ExistingPupilView;
+import de.westarps.topteacher.mcp.PupilMcpSchema.PupilConflictAction;
+import de.westarps.topteacher.mcp.PupilMcpSchema.PupilConflictResolution;
+import de.westarps.topteacher.mcp.PupilMcpSchema.PupilConflictView;
+import de.westarps.topteacher.mcp.PupilMcpSchema.PupilDraft;
 import de.westarps.topteacher.model.Pupil;
 import de.westarps.topteacher.model.SchoolClass;
 import io.modelcontextprotocol.spec.McpSchema.ElicitFormRequest;
@@ -40,7 +40,17 @@ public class PupilRosterConflictResolver {
 
 	public ResolutionOutcome resolve(final McpSyncRequestContext context, final List<PupilDraft> roster,
 			final List<PupilConflictResolution> resolutions) {
-		final List<ConflictPlan> conflicts = findConflicts(roster);
+		return resolve(context, roster, resolutions, true);
+	}
+
+	public ResolutionOutcome resolveWithoutReuse(final McpSyncRequestContext context, final List<PupilDraft> pupils,
+			final List<PupilConflictResolution> resolutions) {
+		return resolve(context, pupils, resolutions, false);
+	}
+
+	private ResolutionOutcome resolve(final McpSyncRequestContext context, final List<PupilDraft> roster,
+			final List<PupilConflictResolution> resolutions, final boolean reuseAllowed) {
+		final List<ConflictPlan> conflicts = findConflicts(roster, reuseAllowed);
 		final Map<String, PupilConflictResolution> resolutionsByEntryKey = resolutions(resolutions, conflicts);
 		final List<ResolvedPupil> resolvedPupils = new ArrayList<>();
 		final List<String> skippedEntryKeys = new ArrayList<>();
@@ -75,18 +85,18 @@ public class PupilRosterConflictResolver {
 		return ResolutionOutcome.resolved(resolvedPupils, skippedEntryKeys);
 	}
 
-	private List<ConflictPlan> findConflicts(final List<PupilDraft> roster) {
+	private List<ConflictPlan> findConflicts(final List<PupilDraft> roster, final boolean reuseAllowed) {
 		final Map<NameKey, Long> rosterNameCounts = roster.stream().collect(Collectors.groupingBy(
 				pupil -> new NameKey(pupil.name(), pupil.surname()), LinkedHashMap::new, Collectors.counting()));
 		final Map<Integer, SchoolClass> latestSchoolClasses = pupils.findLatestSchoolClassByPupilId();
 		final List<ConflictPlan> conflicts = new ArrayList<>();
 		for (final PupilDraft pupilDraft : roster) {
 			final NameKey name = new NameKey(pupilDraft.name(), pupilDraft.surname());
-			final List<Pupil> exactMatches = pupils.findByExactName(pupilDraft.name(), pupilDraft.surname());
+			final List<Pupil> exactMatches = pupils.findActiveByExactName(pupilDraft.name(), pupilDraft.surname());
 			final boolean repeatedInRoster = rosterNameCounts.get(name) > 1;
 			if (!exactMatches.isEmpty() || repeatedInRoster) {
 				conflicts.add(new ConflictPlan(pupilDraft, exactMatches,
-						conflictView(pupilDraft, exactMatches, repeatedInRoster, latestSchoolClasses)));
+						conflictView(pupilDraft, exactMatches, repeatedInRoster, latestSchoolClasses, reuseAllowed)));
 			}
 		}
 		return conflicts;
@@ -120,6 +130,10 @@ public class PupilRosterConflictResolver {
 	private static void applyResolution(final ConflictPlan conflict, final PupilConflictResolution resolution,
 			final List<ResolvedPupil> resolvedPupils, final List<String> skippedEntryKeys) {
 		final PupilDraft pupil = conflict.pupil();
+		if (!conflict.view().allowedActions().contains(resolution.action().name())) {
+			throw new IllegalArgumentException(
+					resolution.action() + " is not allowed for entryKey: " + resolution.entryKey());
+		}
 		switch (resolution.action()) {
 		case CREATE -> {
 			requireNoPupilId(resolution);
@@ -154,12 +168,15 @@ public class PupilRosterConflictResolver {
 		final Map<String, Object> actionSchema = new LinkedHashMap<>();
 		actionSchema.put("type", "string");
 		actionSchema.put("title", "Entscheidung");
-		actionSchema.put("description", "REUSE = vorhandene Person verwenden, CREATE = neu anlegen, SKIP = auslassen");
+		actionSchema.put("description",
+				conflict.view().allowedActions().contains(PupilConflictAction.REUSE.name())
+						? "REUSE = vorhandene Person verwenden, CREATE = neu anlegen, SKIP = auslassen"
+						: "CREATE = neu anlegen, SKIP = auslassen");
 		actionSchema.put("enum", conflict.view().allowedActions());
 
 		final Map<String, Object> properties = new LinkedHashMap<>();
 		properties.put("action", actionSchema);
-		if (!conflict.exactMatches().isEmpty()) {
+		if (conflict.view().allowedActions().contains(PupilConflictAction.REUSE.name())) {
 			properties.put("pupilId", Map.of("type", "integer", "title", "Vorhandene Schüler:innen-ID", "description",
 					"Nur bei REUSE erforderlich; wähle eine der im Hinweis genannten IDs."));
 		}
@@ -209,7 +226,7 @@ public class PupilRosterConflictResolver {
 			}
 			message.append('.');
 		}
-		if (conflict.view().repeatedInRoster()) {
+		if (conflict.view().repeatedInRequest()) {
 			message.append(" Der Name kommt außerdem mehrfach in der Importliste vor.");
 		}
 		message.append(" Wähle ").append(String.join(" / ", conflict.view().allowedActions())).append('.');
@@ -231,14 +248,15 @@ public class PupilRosterConflictResolver {
 	}
 
 	private static PupilConflictView conflictView(final PupilDraft pupil, final List<Pupil> exactMatches,
-			final boolean repeatedInRoster, final Map<Integer, SchoolClass> latestSchoolClasses) {
+			final boolean repeatedInRoster, final Map<Integer, SchoolClass> latestSchoolClasses,
+			final boolean reuseAllowed) {
 		final List<ExistingPupilView> existingPupils = exactMatches.stream().map(existing -> {
 			final SchoolClass latestSchoolClass = latestSchoolClasses.get(existing.id());
 			return new ExistingPupilView(existing.id(), existing.name(), existing.surname(),
 					existing.lifecycle().name(), latestSchoolClass == null ? "" : latestSchoolClass.name(),
 					latestSchoolClass == null ? "" : latestSchoolClass.getDisplayName());
 		}).toList();
-		final List<String> allowedActions = exactMatches.isEmpty()
+		final List<String> allowedActions = exactMatches.isEmpty() || !reuseAllowed
 				? List.of(PupilConflictAction.CREATE.name(), PupilConflictAction.SKIP.name())
 				: List.of(PupilConflictAction.REUSE.name(), PupilConflictAction.CREATE.name(),
 						PupilConflictAction.SKIP.name());

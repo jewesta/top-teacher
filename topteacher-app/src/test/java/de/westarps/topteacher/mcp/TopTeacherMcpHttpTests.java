@@ -87,14 +87,31 @@ class TopTeacherMcpHttpTests {
 					HttpResponse.BodyHandlers.ofString());
 
 			assertThat(tools.statusCode()).isEqualTo(200);
-			assertThat(tools.body()).contains("create_course_with_pupils", "create_level_of_expectations",
-					"get_course_creation_options", "get_level_of_expectations", "get_pupil_result", "list_courses",
-					"list_exam_pupils", "list_exams");
+			assertThat(tools.body()).contains("assign_pupils_to_course", "create_course_with_pupils",
+					"create_level_of_expectations", "create_pupils", "get_course_creation_options",
+					"get_level_of_expectations", "get_pupil_result", "list_courses", "list_exam_pupils", "list_exams",
+					"list_pupils", "update_pupil");
+
+			final Pupil activeScopePupil = pupils.save(new Pupil(null, "McpHttpActive", "Scope", Lifecycle.ACTIVE));
+			final Pupil archivedScopePupil = pupils
+					.save(new Pupil(null, "McpHttpArchived", "Scope", Lifecycle.INACTIVE));
+			final HttpResponse<String> activePupils = client.send(request(pupilListCall(3, null), TOKEN, sessionId),
+					HttpResponse.BodyHandlers.ofString());
+
+			assertThat(activePupils.statusCode()).isEqualTo(200);
+			assertThat(activePupils.body()).contains(activeScopePupil.name()).doesNotContain(archivedScopePupil.name());
+
+			final HttpResponse<String> archivedPupils = client.send(
+					request(pupilListCall(4, "ARCHIVED"), TOKEN, sessionId), HttpResponse.BodyHandlers.ofString());
+
+			assertThat(archivedPupils.statusCode()).isEqualTo(200);
+			assertThat(archivedPupils.body()).contains(archivedScopePupil.name())
+					.doesNotContain(activeScopePupil.name());
 
 			final Pupil existingPupil = pupils.save(new Pupil(null, "McpHttp", "Duplicate", Lifecycle.ACTIVE));
 			final Subject subject = subjects.findActive().getFirst();
 			final GradingScale gradingScale = gradingScales.findActive().getFirst();
-			final String initialCourseCall = courseCreationCall(3, subject.id(), gradingScale.id(), null);
+			final String initialCourseCall = courseCreationCall(5, subject.id(), gradingScale.id(), null);
 			final HttpResponse<String> unresolved = client.send(request(initialCourseCall, TOKEN, sessionId),
 					HttpResponse.BodyHandlers.ofString());
 
@@ -103,7 +120,7 @@ class TopTeacherMcpHttpTests {
 			assertThat(courses.findByNaturalKey(SchoolClass.CLS_10F, subject.id(), new SchoolYear(2098),
 					CoursePeriod.FULL_YEAR)).isEmpty();
 
-			final String retryCourseCall = courseCreationCall(4, subject.id(), gradingScale.id(), existingPupil.id());
+			final String retryCourseCall = courseCreationCall(6, subject.id(), gradingScale.id(), existingPupil.id());
 			final HttpResponse<String> created = client.send(request(retryCourseCall, TOKEN, sessionId),
 					HttpResponse.BodyHandlers.ofString());
 
@@ -113,7 +130,39 @@ class TopTeacherMcpHttpTests {
 					.findByNaturalKey(SchoolClass.CLS_10F, subject.id(), new SchoolYear(2098), CoursePeriod.FULL_YEAR)
 					.orElseThrow().id();
 			assertThat(courses.findPupils(createdCourseId)).containsExactly(existingPupil);
+
+			final String assignmentCall = pupilAssignmentCall(7, createdCourseId);
+			final HttpResponse<String> assigned = client.send(request(assignmentCall, TOKEN, sessionId),
+					HttpResponse.BodyHandlers.ofString());
+
+			assertThat(assigned.statusCode()).isEqualTo(200);
+			assertThat(assigned.body()).contains("UPDATED", "McpHttpAdded", "Pupil");
+			final Pupil addedPupil = pupils.findActiveByExactName("McpHttpAdded", "Pupil").getFirst();
+			assertThat(courses.findPupils(createdCourseId)).containsExactlyInAnyOrder(existingPupil, addedPupil);
+
+			final HttpResponse<String> repeatedAssignment = client.send(
+					request(pupilAssignmentCall(8, createdCourseId), TOKEN, sessionId),
+					HttpResponse.BodyHandlers.ofString());
+
+			assertThat(repeatedAssignment.statusCode()).isEqualTo(200);
+			assertThat(repeatedAssignment.body()).contains("UNCHANGED", "McpHttpAdded", "Pupil");
+			assertThat(pupils.findActiveByExactName("McpHttpAdded", "Pupil")).containsExactly(addedPupil);
 		}
+	}
+
+	private static String pupilListCall(final int requestId, final String scope) {
+		final String scopeArgument = scope == null ? "" : ",\"scope\":\"" + scope + "\"";
+		return """
+			{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"list_pupils","arguments":{"query":"McpHttp"%s}}}
+			""".formatted(
+				requestId, scopeArgument).trim();
+	}
+
+	private static String pupilAssignmentCall(final int requestId, final int courseId) {
+		return """
+			{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"assign_pupils_to_course","arguments":{"courseId":%d,"pupilDrafts":[{"entryKey":"row-added","name":"McpHttpAdded","surname":"Pupil"}]}}}
+			""".formatted(
+				requestId, courseId).trim();
 	}
 
 	private static String courseCreationCall(final int requestId, final int subjectId, final int gradingScaleId,

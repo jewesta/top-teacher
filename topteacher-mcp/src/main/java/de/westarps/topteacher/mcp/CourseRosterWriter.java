@@ -33,6 +33,7 @@ public class CourseRosterWriter {
 	public CreatedCourseRoster create(final Course course, final List<ResolvedPupil> resolvedPupils) {
 		Objects.requireNonNull(course, "course");
 		Objects.requireNonNull(resolvedPupils, "resolvedPupils");
+		final LinkedHashMap<Integer, Pupil> existingPupils = validateExistingPupils(resolvedPupils);
 		courses.findByNaturalKey(course.schoolClass(), course.subject().id(), course.schoolYear(),
 				course.coursePeriod()).ifPresent(existing -> {
 					throw new IllegalStateException(
@@ -46,28 +47,39 @@ public class CourseRosterWriter {
 					&& assignedPupils.containsKey(resolvedPupil.existingPupilId())) {
 				continue;
 			}
-			final Pupil pupil = resolvePupil(resolvedPupil);
+			final Pupil pupil = resolvePupil(resolvedPupil, existingPupils);
 			courses.assignPupil(createdCourse.id(), pupil.id());
 			assignedPupils.put(pupil.id(), pupil);
 		}
 		return new CreatedCourseRoster(createdCourse, List.copyOf(assignedPupils.values()));
 	}
 
-	private Pupil resolvePupil(final ResolvedPupil resolvedPupil) {
+	private LinkedHashMap<Integer, Pupil> validateExistingPupils(final List<ResolvedPupil> resolvedPupils) {
+		final LinkedHashMap<Integer, Pupil> existingPupils = new LinkedHashMap<>();
+		for (final ResolvedPupil resolvedPupil : resolvedPupils) {
+			if (resolvedPupil.existingPupilId() == null
+					|| existingPupils.containsKey(resolvedPupil.existingPupilId())) {
+				continue;
+			}
+			final Pupil existing = pupils.findById(resolvedPupil.existingPupilId()).orElseThrow(
+					() -> new IllegalArgumentException("Pupil does not exist: " + resolvedPupil.existingPupilId()));
+			if (!existing.name().equals(resolvedPupil.name()) || !existing.surname().equals(resolvedPupil.surname())) {
+				throw new IllegalArgumentException("Pupil " + existing.id() + " no longer has the expected exact name: "
+						+ resolvedPupil.name() + " " + resolvedPupil.surname());
+			}
+			if (existing.lifecycle() != Lifecycle.ACTIVE) {
+				throw new IllegalArgumentException("Archived pupil can not be newly assigned: " + existing.id());
+			}
+			existingPupils.put(existing.id(), existing);
+		}
+		return existingPupils;
+	}
+
+	private Pupil resolvePupil(final ResolvedPupil resolvedPupil, final LinkedHashMap<Integer, Pupil> existingPupils) {
 		if (resolvedPupil.existingPupilId() == null) {
 			return pupils.save(new Pupil(null, resolvedPupil.name(), resolvedPupil.surname(), Lifecycle.ACTIVE));
 		}
-
-		final Pupil existing = pupils.findById(resolvedPupil.existingPupilId()).orElseThrow(
-				() -> new IllegalArgumentException("Pupil does not exist: " + resolvedPupil.existingPupilId()));
-		if (!existing.name().equals(resolvedPupil.name()) || !existing.surname().equals(resolvedPupil.surname())) {
-			throw new IllegalArgumentException("Pupil " + existing.id() + " no longer has the expected exact name: "
-					+ resolvedPupil.name() + " " + resolvedPupil.surname());
-		}
-		if (existing.lifecycle() == Lifecycle.ACTIVE) {
-			return existing;
-		}
-		return pupils.save(new Pupil(existing.id(), existing.name(), existing.surname(), Lifecycle.ACTIVE));
+		return existingPupils.get(resolvedPupil.existingPupilId());
 	}
 
 	public record ResolvedPupil(Integer existingPupilId, String name, String surname) {
