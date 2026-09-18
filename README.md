@@ -145,6 +145,7 @@ The MCP server currently exposes these tools:
 | `get_course_creation_options` | Read the valid school classes, course periods, active subjects, and active grading scales. |
 | `create_course_with_pupils` | Atomically create an active course, create or reuse its pupils, and assign them. |
 | `assign_pupils_to_course` | Add pupils to an existing active course without changing or removing its current roster. |
+| `remove_pupils_from_course` | Remove pupils from an active course, subject to the same exam-assignment locks as the UI. |
 | `list_pupils` | List active pupils by default, or explicitly inspect archived pupils. |
 | `create_pupils` | Create active pupils without assigning them to a course. |
 | `update_pupil` | Change a pupil's first name, surname, or both. |
@@ -180,6 +181,13 @@ transaction. Existing-course assignment is add-only: it never removes pupils or
 changes course properties. Its response describes the requested additions, not
 the complete roster; clients should use `list_course_pupils` when the user asks
 who is currently in a course or whether the roster is complete.
+
+Course removal uses exact pupil IDs from `list_course_pupils` and delegates to
+the same integrity rule as the UI: a pupil assigned to any exam in that course
+cannot be removed, even if no results have been entered. When a batch contains
+locked pupils, the user can choose `SKIP` to keep those pupils and remove the
+eligible remainder, or `CANCEL` to leave the entire batch unchanged. The MCP
+operation never removes pupil records or changes exam assignments.
 
 ### LM Studio
 

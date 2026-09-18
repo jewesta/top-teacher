@@ -41,7 +41,7 @@ class TopTeacherMcpEnabledContextTests {
 		assertThat(toolNames).containsExactly("assign_pupils_to_course", "create_course_with_pupils",
 				"create_level_of_expectations", "create_pupils", "get_course_creation_options",
 				"get_level_of_expectations", "get_pupil_result", "list_course_pupils", "list_courses",
-				"list_exam_pupils", "list_exams", "list_pupils", "update_pupil");
+				"list_exam_pupils", "list_exams", "list_pupils", "remove_pupils_from_course", "update_pupil");
 		assertThat(mcpBearerTokenFilter.getUrlPatterns()).containsExactlyInAnyOrder("/mcp", "/mcp/*");
 	}
 

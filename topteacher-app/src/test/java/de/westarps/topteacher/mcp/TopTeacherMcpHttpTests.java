@@ -96,7 +96,7 @@ class TopTeacherMcpHttpTests {
 			assertThat(tools.body()).contains("assign_pupils_to_course", "create_course_with_pupils",
 					"create_level_of_expectations", "create_pupils", "get_course_creation_options",
 					"get_level_of_expectations", "get_pupil_result", "list_course_pupils", "list_courses",
-					"list_exam_pupils", "list_exams", "list_pupils", "update_pupil");
+					"list_exam_pupils", "list_exams", "list_pupils", "remove_pupils_from_course", "update_pupil");
 
 			final Pupil activeScopePupil = pupils.save(new Pupil(null, "McpHttpActive", "Scope", Lifecycle.ACTIVE));
 			final Pupil archivedScopePupil = pupils
@@ -137,7 +137,16 @@ class TopTeacherMcpHttpTests {
 					.orElseThrow().id();
 			assertThat(courses.findPupils(createdCourseId)).containsExactly(existingPupil);
 
-			final String assignmentCall = pupilAssignmentCall(7, createdCourseId);
+			final Exam exam = exams
+					.save(new Exam(null, createdCourseId, "Nullable MCP exam", LocalDate.of(2098, 5, 1)));
+			final HttpResponse<String> courseExams = client.send(
+					request(listExamsCall(7, createdCourseId), TOKEN, sessionId), HttpResponse.BodyHandlers.ofString());
+
+			assertThat(courseExams.statusCode()).isEqualTo(200);
+			assertThat(courseExams.body()).contains("Nullable MCP exam").doesNotContain("\"originalExamId\":null",
+					"\"gradingScaleId\":null");
+
+			final String assignmentCall = pupilAssignmentCall(8, createdCourseId);
 			final HttpResponse<String> assigned = client.send(request(assignmentCall, TOKEN, sessionId),
 					HttpResponse.BodyHandlers.ofString());
 
@@ -147,7 +156,7 @@ class TopTeacherMcpHttpTests {
 			assertThat(courses.findPupils(createdCourseId)).containsExactlyInAnyOrder(existingPupil, addedPupil);
 
 			final HttpResponse<String> repeatedAssignment = client.send(
-					request(pupilAssignmentCall(8, createdCourseId), TOKEN, sessionId),
+					request(pupilAssignmentCall(9, createdCourseId), TOKEN, sessionId),
 					HttpResponse.BodyHandlers.ofString());
 
 			assertThat(repeatedAssignment.statusCode()).isEqualTo(200);
@@ -155,20 +164,29 @@ class TopTeacherMcpHttpTests {
 			assertThat(pupils.findActiveByExactName("McpHttpAdded", "Pupil")).containsExactly(addedPupil);
 
 			final HttpResponse<String> coursePupils = client.send(
-					request(coursePupilsCall(9, createdCourseId), TOKEN, sessionId),
+					request(coursePupilsCall(10, createdCourseId), TOKEN, sessionId),
 					HttpResponse.BodyHandlers.ofString());
 
 			assertThat(coursePupils.statusCode()).isEqualTo(200);
 			assertThat(coursePupils.body()).contains("McpHttp", "Duplicate", "McpHttpAdded", "Pupil");
 
-			exams.save(new Exam(null, createdCourseId, "Nullable MCP exam", LocalDate.of(2098, 5, 1)));
-			final HttpResponse<String> courseExams = client.send(
-					request(listExamsCall(10, createdCourseId), TOKEN, sessionId),
-					HttpResponse.BodyHandlers.ofString());
+			final HttpResponse<String> unresolvedRemoval = client
+					.send(request(pupilRemovalCall(11, createdCourseId, existingPupil.id(), addedPupil.id(), null),
+							TOKEN, sessionId), HttpResponse.BodyHandlers.ofString());
 
-			assertThat(courseExams.statusCode()).isEqualTo(200);
-			assertThat(courseExams.body()).contains("Nullable MCP exam").doesNotContain("\"originalExamId\":null",
-					"\"gradingScaleId\":null");
+			assertThat(unresolvedRemoval.statusCode()).isEqualTo(200);
+			assertThat(unresolvedRemoval.body()).contains("NEEDS_RESOLUTION", existingPupil.id().toString(), "SKIP",
+					"CANCEL");
+			assertThat(courses.findPupils(createdCourseId)).containsExactlyInAnyOrder(existingPupil, addedPupil);
+
+			final HttpResponse<String> skippedLockedRemoval = client
+					.send(request(pupilRemovalCall(12, createdCourseId, existingPupil.id(), addedPupil.id(), "SKIP"),
+							TOKEN, sessionId), HttpResponse.BodyHandlers.ofString());
+
+			assertThat(skippedLockedRemoval.statusCode()).isEqualTo(200);
+			assertThat(skippedLockedRemoval.body()).contains("REMOVED", "McpHttpAdded", "Pupil");
+			assertThat(courses.findPupils(createdCourseId)).containsExactly(existingPupil);
+			assertThat(exams.findPupils(exam.id())).containsExactly(existingPupil);
 		}
 	}
 
@@ -192,6 +210,15 @@ class TopTeacherMcpHttpTests {
 			{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"list_course_pupils","arguments":{"courseId":%d}}}
 			""".formatted(
 				requestId, courseId).trim();
+	}
+
+	private static String pupilRemovalCall(final int requestId, final int courseId, final int lockedPupilId,
+			final int removablePupilId, final String action) {
+		final String actionArgument = action == null ? "" : ",\"lockedPupilAction\":\"" + action + "\"";
+		return """
+			{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"remove_pupils_from_course","arguments":{"courseId":%d,"pupilIds":[%d,%d]%s}}}
+			""".formatted(
+				requestId, courseId, lockedPupilId, removablePupilId, actionArgument).trim();
 	}
 
 	private static String listExamsCall(final int requestId, final int courseId) {
