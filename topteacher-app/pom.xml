@@ -40,6 +40,12 @@
         </dependency>
 
         <dependency>
+            <groupId>de.westarps.topteacher</groupId>
+            <artifactId>topteacher-mcp</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-dev</artifactId>
             <optional>true</optional>

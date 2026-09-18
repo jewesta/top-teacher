@@ -22,6 +22,7 @@
         <module>westarps-vaadin-markdown</module>
         <module>topteacher-model</module>
         <module>topteacher-backend</module>
+        <module>topteacher-mcp</module>
         <module>topteacher-app</module>
     </modules>
 
@@ -30,10 +31,19 @@
         <maven.compiler.release>21</maven.compiler.release>
         <vaadin.version>25.0.7</vaadin.version>
         <cron-expression-descriptor.version>1.2.6</cron-expression-descriptor.version>
+        <spring-ai.version>2.0.1</spring-ai.version>
+        <maven.compiler.parameters>true</maven.compiler.parameters>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bom</artifactId>
+                <version>${spring-ai.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <dependency>
                 <groupId>com.vaadin</groupId>
                 <artifactId>vaadin-bom</artifactId>

@@ -33,6 +33,7 @@ Das Repository ist ein Maven-Multimodul-Projekt:
 |:---|:---|
 | `topteacher-model`| Gemeinsam genutzte Domänentypen |
 | `topteacher-backend` | Persistenz- und Export-Services |
+| `topteacher-mcp` | Model-Context-Protocol-Adapter und MCP-Endpunktschutz |
 | `topteacher-app` | Spring-Boot- und Vaadin-Anwendung |
 | `westarps-vaadin-markdown` | Wiederverwendbare Vaadin-Markdown-Editor-Komponenten. |
 
@@ -107,6 +108,39 @@ Wichtige Properties:
 | `spring.h2.console.path` | `/h2-console` | Pfad der H2-Konsole relativ zum Context Path. |
 
 Beim ersten Start führt TopTeacher durch die Datenbank-Initialisierung. Dabei kann eine leere Datenbank mit Basisdaten oder eine Datenbank mit Demodaten angelegt werden. Später kann die Datenbank in den Einstellungen im Tab `Zurücksetzen` erneut initialisiert werden.
+
+## MCP-Schnittstelle
+
+TopTeacher kann eine Model-Context-Protocol-Schnittstelle für KI-Clients über
+Streamable HTTP bereitstellen. Sie ist standardmäßig deaktiviert. Wenn sie
+aktiviert ist, liegt der Endpunkt unter
+`http://localhost:8081/top-teacher/mcp` und verlangt bei jedem Zugriff einen
+Bearer-Token.
+
+Lege den Token außerhalb des Repositories in einer nur für Dich lesbaren Datei
+ab. Er muss aus genau einer UTF-8-Zeile mit mindestens 32 Zeichen bestehen. Zum
+Beispiel:
+
+```shell
+umask 077
+openssl rand -hex 32 > /absoluter/pfad/topteacher-mcp-token
+```
+
+Beim Start über eines der mitgelieferten Skripte kannst Du MCP mit
+Umgebungsvariablen aktivieren:
+
+```shell
+TT_MCP_ENABLED=true \
+TT_MCP_TOKEN_FILE=/absoluter/pfad/topteacher-mcp-token \
+./run/start-dev.sh /Users/<Benutzername>/Documents/<top-teacher-db>
+```
+
+Der KI-Client muss die Endpunkt-URL und den HTTP-Header
+`Authorization: Bearer <Token aus der Datei>` verwenden. Die Schnittstelle kann
+Kurse, Klausuren, Erwartungshorizonte, zugeordnete Schüler:innen und einzelne
+Ergebnisse lesen. Zusätzlich kann sie einen vollständigen Erwartungshorizont für
+eine noch leere Klausur anlegen. Vorhandene Entwürfe, Notizen oder Ergebnisse
+werden dabei niemals überschrieben.
 
 ## macOS App
 
