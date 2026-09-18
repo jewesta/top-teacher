@@ -4,10 +4,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.ExamRepository;
@@ -79,8 +82,9 @@ public class ExamMcpTools {
 		}
 	}
 
+	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record ExamView(int id, int courseId, String title, String date, int number, boolean makeupExam,
-			Integer originalExamId, Integer gradingScaleId, boolean hasResults) {
+			@Nullable Integer originalExamId, @Nullable Integer gradingScaleId, boolean hasResults) {
 	}
 
 	public record ExamPupilListView(int examId, List<PupilView> pupils) {

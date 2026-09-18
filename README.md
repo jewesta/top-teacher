@@ -141,6 +141,7 @@ The MCP server currently exposes these tools:
 | Tool | Action |
 | --- | --- |
 | `list_courses` | List active or archived courses. |
+| `list_course_pupils` | List the pupils currently assigned to a course; archived pupils are included only when explicitly requested. |
 | `get_course_creation_options` | Read the valid school classes, course periods, active subjects, and active grading scales. |
 | `create_course_with_pupils` | Atomically create an active course, create or reuse its pupils, and assign them. |
 | `assign_pupils_to_course` | Add pupils to an existing active course without changing or removing its current roster. |
@@ -176,7 +177,9 @@ capability. Otherwise the tool returns `NEEDS_RESOLUTION` or
 user in normal chat and retry the same tool with the decisions. Once all course
 roster conflicts are resolved, new pupils and assignments are written in one
 transaction. Existing-course assignment is add-only: it never removes pupils or
-changes course properties.
+changes course properties. Its response describes the requested additions, not
+the complete roster; clients should use `list_course_pupils` when the user asks
+who is currently in a course or whether the roster is complete.
 
 ### LM Studio
 

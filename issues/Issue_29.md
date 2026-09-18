@@ -44,6 +44,10 @@ does not expose general-purpose database mutation.
   `REUSE`/`CREATE`/`SKIP` decisions, treats an already-assigned uniquely named
   active pupil as satisfied, and never removes pupils or changes course
   properties.
+- Course membership has a dedicated authoritative read operation. It returns
+  active assigned pupils by default and includes archived historical pupils
+  only when explicitly requested; write responses are not treated as complete
+  roster snapshots.
 - Keep course-roster protocol handling, read-only pupil identity resolution,
   and transactional persistence in separate components.
 - Treat archived records as historical throughout TopTeacher: exclude them from
@@ -65,6 +69,7 @@ does not expose general-purpose database mutation.
 ## Tool surface
 
 - `list_courses`
+- `list_course_pupils`
 - `get_course_creation_options`
 - `create_course_with_pupils`
 - `assign_pupils_to_course`
@@ -91,6 +96,8 @@ does not expose general-purpose database mutation.
   and optional native elicitation.
 - [x] Added atomic, add-only pupil assignment to existing active courses with
   already-assigned requests handled as no-ops.
+- [x] Added authoritative course-roster discovery with active-by-default archive
+  handling.
 - [x] Added active-by-default pupil discovery, standalone pupil creation, and
   partial pupil renaming with portable duplicate confirmation.
 - [x] Enforced the archive policy in pupil matching and course assignment; MCP
@@ -103,17 +110,19 @@ does not expose general-purpose database mutation.
 
 ## Verification
 
-- `mvn -pl topteacher-app -am test`: 244 tests passed across the six-module
-  reactor, including 40 focused `topteacher-mcp` tests and 112 assembled
+- `mvn -pl topteacher-app -am test`: 246 tests passed across the six-module
+  reactor, including 42 focused `topteacher-mcp` tests and 112 assembled
   `topteacher-app` tests.
 - The disabled context exposes no MCP tools. The enabled context registers the
-  twelve intended object-rooted tool schemas.
+  thirteen intended object-rooted tool schemas.
 - The HTTP integration test verifies an unauthenticated `401` response, an
   authenticated MCP initialization using protocol `2025-06-18`, the initialized
-  notification, discovery of all twelve tools, active-by-default and explicit
+  notification, discovery of all thirteen tools, active-by-default and explicit
   archived pupil discovery, the no-elicitation `NEEDS_RESOLUTION` path without a
   write, a successful conversational retry, and both the write and idempotent
-  no-op paths for existing-course assignment at `/top-teacher/mcp`.
+  no-op paths for existing-course assignment at `/top-teacher/mcp`. It also
+  verifies authoritative course-roster readback and valid `list_exams` output
+  when optional exam relationship IDs are absent.
 - Credential loading and endpoint filtering fail closed when configuration is
   missing or invalid.
 - The canonical devtools formatter was applied to all 172 tracked Java files

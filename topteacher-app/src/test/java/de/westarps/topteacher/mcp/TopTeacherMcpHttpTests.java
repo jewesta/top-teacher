@@ -10,6 +10,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,10 +20,12 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
+import de.westarps.topteacher.backend.repo.ExamRepository;
 import de.westarps.topteacher.backend.repo.GradingScaleRepository;
 import de.westarps.topteacher.backend.repo.PupilRepository;
 import de.westarps.topteacher.backend.repo.SubjectRepository;
 import de.westarps.topteacher.model.CoursePeriod;
+import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.GradingScale;
 import de.westarps.topteacher.model.Lifecycle;
 import de.westarps.topteacher.model.Pupil;
@@ -46,6 +49,9 @@ class TopTeacherMcpHttpTests {
 
 	@Autowired
 	private CourseRepository courses;
+
+	@Autowired
+	private ExamRepository exams;
 
 	@Autowired
 	private PupilRepository pupils;
@@ -89,8 +95,8 @@ class TopTeacherMcpHttpTests {
 			assertThat(tools.statusCode()).isEqualTo(200);
 			assertThat(tools.body()).contains("assign_pupils_to_course", "create_course_with_pupils",
 					"create_level_of_expectations", "create_pupils", "get_course_creation_options",
-					"get_level_of_expectations", "get_pupil_result", "list_courses", "list_exam_pupils", "list_exams",
-					"list_pupils", "update_pupil");
+					"get_level_of_expectations", "get_pupil_result", "list_course_pupils", "list_courses",
+					"list_exam_pupils", "list_exams", "list_pupils", "update_pupil");
 
 			final Pupil activeScopePupil = pupils.save(new Pupil(null, "McpHttpActive", "Scope", Lifecycle.ACTIVE));
 			final Pupil archivedScopePupil = pupils
@@ -147,6 +153,22 @@ class TopTeacherMcpHttpTests {
 			assertThat(repeatedAssignment.statusCode()).isEqualTo(200);
 			assertThat(repeatedAssignment.body()).contains("UNCHANGED", "McpHttpAdded", "Pupil");
 			assertThat(pupils.findActiveByExactName("McpHttpAdded", "Pupil")).containsExactly(addedPupil);
+
+			final HttpResponse<String> coursePupils = client.send(
+					request(coursePupilsCall(9, createdCourseId), TOKEN, sessionId),
+					HttpResponse.BodyHandlers.ofString());
+
+			assertThat(coursePupils.statusCode()).isEqualTo(200);
+			assertThat(coursePupils.body()).contains("McpHttp", "Duplicate", "McpHttpAdded", "Pupil");
+
+			exams.save(new Exam(null, createdCourseId, "Nullable MCP exam", LocalDate.of(2098, 5, 1)));
+			final HttpResponse<String> courseExams = client.send(
+					request(listExamsCall(10, createdCourseId), TOKEN, sessionId),
+					HttpResponse.BodyHandlers.ofString());
+
+			assertThat(courseExams.statusCode()).isEqualTo(200);
+			assertThat(courseExams.body()).contains("Nullable MCP exam").doesNotContain("\"originalExamId\":null",
+					"\"gradingScaleId\":null");
 		}
 	}
 
@@ -163,6 +185,19 @@ class TopTeacherMcpHttpTests {
 			{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"assign_pupils_to_course","arguments":{"courseId":%d,"pupilDrafts":[{"entryKey":"row-added","name":"McpHttpAdded","surname":"Pupil"}]}}}
 			""".formatted(
 				requestId, courseId).trim();
+	}
+
+	private static String coursePupilsCall(final int requestId, final int courseId) {
+		return """
+			{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"list_course_pupils","arguments":{"courseId":%d}}}
+			""".formatted(
+				requestId, courseId).trim();
+	}
+
+	private static String listExamsCall(final int requestId, final int courseId) {
+		return """
+			{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"list_exams","arguments":{"courseId":%d}}}
+			""".formatted(requestId, courseId).trim();
 	}
 
 	private static String courseCreationCall(final int requestId, final int subjectId, final int gradingScaleId,

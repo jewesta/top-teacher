@@ -28,15 +28,15 @@ class TopTeacherMcpSchemaTests {
 			PupilMcpTools.class, PupilResultMcpTools.class);
 
 	@Test
-	void exposesTheTwelveTopTeacherOperationsAcrossSevenFocusedToolGroups() {
+	void exposesTheThirteenTopTeacherOperationsAcrossSevenFocusedToolGroups() {
 		final List<String> tools = TOOL_GROUPS.stream().flatMap(type -> Arrays.stream(type.getDeclaredMethods()))
 				.map(method -> method.getAnnotation(McpTool.class)).filter(Objects::nonNull).map(McpTool::name).sorted()
 				.toList();
 
 		assertThat(tools).containsExactly("assign_pupils_to_course", "create_course_with_pupils",
 				"create_level_of_expectations", "create_pupils", "get_course_creation_options",
-				"get_level_of_expectations", "get_pupil_result", "list_courses", "list_exam_pupils", "list_exams",
-				"list_pupils", "update_pupil");
+				"get_level_of_expectations", "get_pupil_result", "list_course_pupils", "list_courses",
+				"list_exam_pupils", "list_exams", "list_pupils", "update_pupil");
 	}
 
 	@Test
@@ -60,7 +60,7 @@ class TopTeacherMcpSchemaTests {
 		final List<SyncToolSpecification> specifications = new SyncMcpToolProvider(toolGroups())
 				.getToolSpecifications();
 
-		assertThat(specifications).hasSize(12).allSatisfy(specification -> {
+		assertThat(specifications).hasSize(13).allSatisfy(specification -> {
 			assertThat(specification.tool().inputSchema()).containsEntry("type", "object");
 			assertThat(specification.tool().outputSchema()).containsEntry("type", "object");
 		});
@@ -78,6 +78,13 @@ class TopTeacherMcpSchemaTests {
 				.doesNotContainKey("context");
 		assertThat(map(assignPupilsProperties.get("pupilDrafts"))).containsEntry("type", "array");
 
+		final Map<String, Object> listCoursePupilsProperties = properties(specifications, "list_course_pupils");
+		assertThat(listCoursePupilsProperties).containsKeys("courseId", "includeArchived");
+
+		final Map<String, Object> listExamsOutputProperties = outputProperties(specifications, "list_exams");
+		final Map<String, Object> examItems = map(map(listExamsOutputProperties.get("exams")).get("items"));
+		assertThat(list(examItems.get("required"))).doesNotContain("originalExamId", "gradingScaleId");
+
 		final Map<String, Object> updatePupilProperties = properties(specifications, "update_pupil");
 		assertThat(updatePupilProperties).containsKeys("pupilId", "name", "surname", "duplicateNameAction")
 				.doesNotContainKeys("context", "lifecycle");
@@ -91,10 +98,24 @@ class TopTeacherMcpSchemaTests {
 		return map(schema.get("properties"));
 	}
 
+	private static Map<String, Object> outputProperties(final List<SyncToolSpecification> specifications,
+			final String toolName) {
+		final Map<String, Object> schema = specifications.stream()
+				.filter(specification -> specification.tool().name().equals(toolName)).findFirst().orElseThrow().tool()
+				.outputSchema();
+		return map(schema.get("properties"));
+	}
+
 	@SuppressWarnings("unchecked")
 	private static Map<String, Object> map(final Object value) {
 		assertThat(value).isInstanceOf(Map.class);
 		return (Map<String, Object>) value;
+	}
+
+	@SuppressWarnings("unchecked")
+	private static List<String> list(final Object value) {
+		assertThat(value).isInstanceOf(List.class);
+		return (List<String>) value;
 	}
 
 	private static List<Object> toolGroups() {
