@@ -36,6 +36,7 @@ import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.ExamNumber;
 import de.westarps.topteacher.model.GradingScale;
+import de.westarps.topteacher.model.Lifecycle;
 import de.westarps.topteacher.model.Pupil;
 import de.westarps.topteacher.ui.MainLayout;
 import de.westarps.topteacher.ui.component.AbstractFormEditor;
@@ -654,7 +655,8 @@ public class ExamsView extends SplitListDetailView<Exam> {
 			return;
 		}
 
-		final List<Pupil> coursePupils = courseRepository.findPupils(selectedCourse.id());
+		final List<Pupil> coursePupils = courseRepository.findPupils(selectedCourse.id()).stream()
+				.filter(pupil -> pupil.lifecycle() == Lifecycle.ACTIVE).toList();
 		creationPupils.setItems(coursePupils);
 		creationPupils.setValue(defaultCreationPupilSelection(coursePupils));
 	}

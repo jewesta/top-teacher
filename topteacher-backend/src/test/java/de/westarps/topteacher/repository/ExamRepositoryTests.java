@@ -236,6 +236,28 @@ class ExamRepositoryTests {
 	}
 
 	@Test
+	void excludesArchivedPupilsFromNewExamAssignments() {
+		final GradingScale gradingScale = createGradingScale("Exam Archived Pupil 100");
+		final Course course = courseRepository.save(new Course(null, SchoolClass.CLS_8F, subject("Englisch"),
+				new SchoolYear(2035), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, gradingScale.id()));
+		final Pupil activePupil = pupilRepository.save(new Pupil(null, "Ada", "Active", Lifecycle.ACTIVE));
+		final Pupil archivedPupil = pupilRepository.save(new Pupil(null, "Grace", "Archived", Lifecycle.ACTIVE));
+		courseRepository.assignPupil(course.id(), activePupil.id());
+		courseRepository.assignPupil(course.id(), archivedPupil.id());
+		pupilRepository.archive(archivedPupil.id());
+		final Exam exam = examRepository.save(new Exam(null, course.id(), "1. Klausur", LocalDate.of(2035, 9, 19)));
+
+		assertThat(examRepository.findAssignablePupils(exam.id())).isEmpty();
+		assertThatThrownBy(() -> examRepository.assignPupil(exam.id(), archivedPupil.id()))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("Alle teilnehmenden Schüler:innen müssen dem Kurs zugeordnet sein.");
+		assertThatThrownBy(() -> examRepository.replacePupils(exam.id(), List.of(archivedPupil.id())))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("Alle teilnehmenden Schüler:innen müssen dem Kurs zugeordnet sein.");
+		assertThat(examRepository.findPupils(exam.id())).containsExactly(activePupil);
+	}
+
+	@Test
 	void rejectsRemovingExamPupilsWithResults() {
 		final GradingScale gradingScale = createGradingScale("Exam Locked Pupil 100");
 		final Course course = courseRepository.save(new Course(null, SchoolClass.CLS_8E, subject("Englisch"),

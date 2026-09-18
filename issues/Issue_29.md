@@ -5,8 +5,9 @@
 Expose TopTeacher through a bounded Model Context Protocol interface so an AI
 client can inspect the teaching context, read levels of expectations and pupil
 results, create a complete level of expectations for a blank exam, create a
-course from a pupil roster, maintain pupil names without silently merging people
-who share a name, and trigger the existing database-backup service.
+course from a pupil roster, create and maintain exams and their pupil rosters,
+maintain pupil names without silently merging people who share a name, and
+trigger the existing database-backup service.
 
 The GitHub issue contains only the title, "MCP-Schnittstelle für KI
 implementieren". This first interface therefore stays deliberately small and
@@ -55,6 +56,20 @@ does not expose general-purpose database mutation.
   active assigned pupils by default and includes archived historical pupils
   only when explicitly requested; write responses are not treated as complete
   roster snapshots.
+- Exam creation writes the exam and its initial roster atomically for active
+  courses. The grading scale defaults to the course scale, an optional active
+  override is allowed only at creation, and an optional original-exam ID creates
+  a makeup exam under the backend's existing course and date rules. Omitted
+  pupil IDs mirror the UI defaults; an explicit empty list creates an empty
+  exam.
+- Exam updates expose title and date only. Course, grading scale, makeup
+  relationship, pupil assignments, level of expectations, and results remain
+  unchanged.
+- Exam-pupil assignment and removal are separate operations so clients receive
+  accurate destructive metadata. Assignment accepts only existing active
+  pupils already belonging to the course and is idempotent. Removal delegates
+  to the backend's result lock and uses the same portable `SKIP`/`CANCEL`
+  handling as course removal. Both batch operations are transactional.
 - Keep course-roster protocol handling, read-only pupil identity resolution,
   and transactional persistence in separate components.
 - Treat archived records as historical throughout TopTeacher: exclude them from
@@ -89,6 +104,10 @@ does not expose general-purpose database mutation.
 - `create_pupils`
 - `update_pupil`
 - `list_exams`
+- `create_exam`
+- `update_exam`
+- `assign_pupils_to_exam`
+- `remove_pupils_from_exam`
 - `get_level_of_expectations`
 - `list_exam_pupils`
 - `get_pupil_result`
@@ -113,10 +132,16 @@ does not expose general-purpose database mutation.
   locks and portable `SKIP`/`CANCEL` resolution.
 - [x] Added authoritative course-roster discovery with active-by-default archive
   handling.
+- [x] Added atomic main- and makeup-exam creation plus title/date-only exam
+  updates.
+- [x] Added transactional, idempotent exam-pupil assignment and result-aware
+  removal with portable `SKIP`/`CANCEL` resolution.
 - [x] Added active-by-default pupil discovery, standalone pupil creation, and
   partial pupil renaming with portable duplicate confirmation.
 - [x] Enforced the archive policy in pupil matching and course assignment; MCP
   cannot change lifecycle state or implicitly reactivate a pupil.
+- [x] Closed the existing exam-assignment archive gap in the shared backend and
+  UI so archived pupils cannot receive new exam assignments.
 - [x] Added a read-only course-creation options tool; subjects and grading scales
   still have no MCP write path.
 - [x] Added manual database-backup creation through the existing configured
@@ -127,22 +152,23 @@ does not expose general-purpose database mutation.
 
 ## Verification
 
-- `mvn -pl topteacher-app -am test`: 257 tests passed across the six-module
-  reactor, including 53 focused `topteacher-mcp` tests and 112 assembled
+- `mvn -pl topteacher-app -am test`: 275 tests passed across the six-module
+  reactor, including 70 focused `topteacher-mcp` tests and 112 assembled
   `topteacher-app` tests.
 - The disabled context exposes no MCP tools. The enabled context registers the
-  fifteen intended object-rooted tool schemas.
+  nineteen intended object-rooted tool schemas.
 - The HTTP integration test verifies an unauthenticated `401` response, an
   authenticated MCP initialization using protocol `2025-06-18`, the initialized
-  notification, discovery of all fifteen tools, active-by-default and explicit
+  notification, discovery of all nineteen tools, active-by-default and explicit
   archived pupil discovery, the no-elicitation `NEEDS_RESOLUTION` path without a
   write, a successful conversational retry, and both the write and idempotent
   no-op paths for existing-course assignment at `/top-teacher/mcp`. It also
   verifies authoritative course-roster readback, valid `list_exams` output when
   optional exam relationship IDs are absent, and the locked-removal fallback in
   which `SKIP` keeps an exam pupil while removing the eligible remainder. It
-  also verifies that a manual backup request reports a missing backup target as
-  a structured failure.
+  also verifies exam creation with the default roster, title/date update,
+  exam-pupil assignment and removal, and that a manual backup request reports a
+  missing backup target as a structured failure.
 - Credential loading and endpoint filtering fail closed when configuration is
   missing or invalid.
 - The canonical devtools formatter was applied to all 172 tracked Java files

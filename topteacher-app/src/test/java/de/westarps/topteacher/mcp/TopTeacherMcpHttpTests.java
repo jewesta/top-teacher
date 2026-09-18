@@ -10,7 +10,6 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.LocalDate;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -93,11 +92,12 @@ class TopTeacherMcpHttpTests {
 					HttpResponse.BodyHandlers.ofString());
 
 			assertThat(tools.statusCode()).isEqualTo(200);
-			assertThat(tools.body()).contains("assign_pupils_to_course", "create_course_with_pupils",
-					"create_database_backup", "create_level_of_expectations", "create_pupils",
-					"get_course_creation_options", "get_level_of_expectations", "get_pupil_result",
-					"list_course_pupils", "list_courses", "list_exam_pupils", "list_exams", "list_pupils",
-					"remove_pupils_from_course", "update_pupil");
+			assertThat(tools.body()).contains("assign_pupils_to_course", "assign_pupils_to_exam",
+					"create_course_with_pupils", "create_database_backup", "create_exam",
+					"create_level_of_expectations", "create_pupils", "get_course_creation_options",
+					"get_level_of_expectations", "get_pupil_result", "list_course_pupils", "list_courses",
+					"list_exam_pupils", "list_exams", "list_pupils", "remove_pupils_from_course",
+					"remove_pupils_from_exam", "update_exam", "update_pupil");
 
 			final Pupil activeScopePupil = pupils.save(new Pupil(null, "McpHttpActive", "Scope", Lifecycle.ACTIVE));
 			final Pupil archivedScopePupil = pupils
@@ -138,16 +138,28 @@ class TopTeacherMcpHttpTests {
 					.orElseThrow().id();
 			assertThat(courses.findPupils(createdCourseId)).containsExactly(existingPupil);
 
-			final Exam exam = exams
-					.save(new Exam(null, createdCourseId, "Nullable MCP exam", LocalDate.of(2098, 5, 1)));
+			final HttpResponse<String> createdExam = client.send(
+					request(createExamCall(7, createdCourseId), TOKEN, sessionId),
+					HttpResponse.BodyHandlers.ofString());
+
+			assertThat(createdExam.statusCode()).isEqualTo(200);
+			assertThat(createdExam.body()).contains("CREATED", "MCP exam", "McpHttp", "Duplicate");
+			final Exam exam = exams.findByCourseId(createdCourseId).stream()
+					.filter(candidate -> candidate.title().equals("MCP exam")).findFirst().orElseThrow();
+
+			final HttpResponse<String> updatedExam = client.send(
+					request(updateExamCall(8, exam.id()), TOKEN, sessionId), HttpResponse.BodyHandlers.ofString());
+
+			assertThat(updatedExam.statusCode()).isEqualTo(200);
+			assertThat(updatedExam.body()).contains("UPDATED", "Updated MCP exam", "2098-05-02");
 			final HttpResponse<String> courseExams = client.send(
-					request(listExamsCall(7, createdCourseId), TOKEN, sessionId), HttpResponse.BodyHandlers.ofString());
+					request(listExamsCall(9, createdCourseId), TOKEN, sessionId), HttpResponse.BodyHandlers.ofString());
 
 			assertThat(courseExams.statusCode()).isEqualTo(200);
-			assertThat(courseExams.body()).contains("Nullable MCP exam").doesNotContain("\"originalExamId\":null",
+			assertThat(courseExams.body()).contains("Updated MCP exam").doesNotContain("\"originalExamId\":null",
 					"\"gradingScaleId\":null");
 
-			final String assignmentCall = pupilAssignmentCall(8, createdCourseId);
+			final String assignmentCall = pupilAssignmentCall(10, createdCourseId);
 			final HttpResponse<String> assigned = client.send(request(assignmentCall, TOKEN, sessionId),
 					HttpResponse.BodyHandlers.ofString());
 
@@ -157,7 +169,7 @@ class TopTeacherMcpHttpTests {
 			assertThat(courses.findPupils(createdCourseId)).containsExactlyInAnyOrder(existingPupil, addedPupil);
 
 			final HttpResponse<String> repeatedAssignment = client.send(
-					request(pupilAssignmentCall(9, createdCourseId), TOKEN, sessionId),
+					request(pupilAssignmentCall(11, createdCourseId), TOKEN, sessionId),
 					HttpResponse.BodyHandlers.ofString());
 
 			assertThat(repeatedAssignment.statusCode()).isEqualTo(200);
@@ -165,14 +177,36 @@ class TopTeacherMcpHttpTests {
 			assertThat(pupils.findActiveByExactName("McpHttpAdded", "Pupil")).containsExactly(addedPupil);
 
 			final HttpResponse<String> coursePupils = client.send(
-					request(coursePupilsCall(10, createdCourseId), TOKEN, sessionId),
+					request(coursePupilsCall(12, createdCourseId), TOKEN, sessionId),
 					HttpResponse.BodyHandlers.ofString());
 
 			assertThat(coursePupils.statusCode()).isEqualTo(200);
 			assertThat(coursePupils.body()).contains("McpHttp", "Duplicate", "McpHttpAdded", "Pupil");
 
+			final HttpResponse<String> assignedToExam = client.send(
+					request(examPupilAssignmentCall(13, exam.id(), addedPupil.id()), TOKEN, sessionId),
+					HttpResponse.BodyHandlers.ofString());
+
+			assertThat(assignedToExam.statusCode()).isEqualTo(200);
+			assertThat(assignedToExam.body()).contains("ASSIGNED", "McpHttpAdded", "Pupil");
+			assertThat(exams.findPupils(exam.id())).containsExactlyInAnyOrder(existingPupil, addedPupil);
+
+			final HttpResponse<String> examPupils = client.send(
+					request(examPupilsCall(14, exam.id()), TOKEN, sessionId), HttpResponse.BodyHandlers.ofString());
+
+			assertThat(examPupils.statusCode()).isEqualTo(200);
+			assertThat(examPupils.body()).contains("McpHttp", "Duplicate", "McpHttpAdded", "Pupil");
+
+			final HttpResponse<String> removedFromExam = client.send(
+					request(examPupilRemovalCall(15, exam.id(), addedPupil.id()), TOKEN, sessionId),
+					HttpResponse.BodyHandlers.ofString());
+
+			assertThat(removedFromExam.statusCode()).isEqualTo(200);
+			assertThat(removedFromExam.body()).contains("REMOVED", "McpHttpAdded", "Pupil");
+			assertThat(exams.findPupils(exam.id())).containsExactly(existingPupil);
+
 			final HttpResponse<String> unresolvedRemoval = client
-					.send(request(pupilRemovalCall(11, createdCourseId, existingPupil.id(), addedPupil.id(), null),
+					.send(request(pupilRemovalCall(16, createdCourseId, existingPupil.id(), addedPupil.id(), null),
 							TOKEN, sessionId), HttpResponse.BodyHandlers.ofString());
 
 			assertThat(unresolvedRemoval.statusCode()).isEqualTo(200);
@@ -181,7 +215,7 @@ class TopTeacherMcpHttpTests {
 			assertThat(courses.findPupils(createdCourseId)).containsExactlyInAnyOrder(existingPupil, addedPupil);
 
 			final HttpResponse<String> skippedLockedRemoval = client
-					.send(request(pupilRemovalCall(12, createdCourseId, existingPupil.id(), addedPupil.id(), "SKIP"),
+					.send(request(pupilRemovalCall(17, createdCourseId, existingPupil.id(), addedPupil.id(), "SKIP"),
 							TOKEN, sessionId), HttpResponse.BodyHandlers.ofString());
 
 			assertThat(skippedLockedRemoval.statusCode()).isEqualTo(200);
@@ -190,7 +224,7 @@ class TopTeacherMcpHttpTests {
 			assertThat(exams.findPupils(exam.id())).containsExactly(existingPupil);
 
 			final HttpResponse<String> unconfiguredBackup = client
-					.send(request(databaseBackupCall(13), TOKEN, sessionId), HttpResponse.BodyHandlers.ofString());
+					.send(request(databaseBackupCall(18), TOKEN, sessionId), HttpResponse.BodyHandlers.ofString());
 
 			assertThat(unconfiguredBackup.statusCode()).isEqualTo(200);
 			assertThat(unconfiguredBackup.body()).contains("FAILED", "kein Backup-Zielordner konfiguriert");
@@ -232,6 +266,41 @@ class TopTeacherMcpHttpTests {
 		return """
 			{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"list_exams","arguments":{"courseId":%d}}}
 			""".formatted(requestId, courseId).trim();
+	}
+
+	private static String createExamCall(final int requestId, final int courseId) {
+		return """
+			{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"create_exam","arguments":{"courseId":%d,"title":"MCP exam","date":"2098-05-01"}}}
+			""".formatted(
+				requestId, courseId).trim();
+	}
+
+	private static String updateExamCall(final int requestId, final int examId) {
+		return """
+			{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"update_exam","arguments":{"examId":%d,"title":"Updated MCP exam","date":"2098-05-02"}}}
+			""".formatted(
+				requestId, examId).trim();
+	}
+
+	private static String examPupilsCall(final int requestId, final int examId) {
+		return """
+			{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"list_exam_pupils","arguments":{"examId":%d}}}
+			""".formatted(
+				requestId, examId).trim();
+	}
+
+	private static String examPupilAssignmentCall(final int requestId, final int examId, final int pupilId) {
+		return """
+			{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"assign_pupils_to_exam","arguments":{"examId":%d,"pupilIds":[%d]}}}
+			""".formatted(
+				requestId, examId, pupilId).trim();
+	}
+
+	private static String examPupilRemovalCall(final int requestId, final int examId, final int pupilId) {
+		return """
+			{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"remove_pupils_from_exam","arguments":{"examId":%d,"pupilIds":[%d]}}}
+			""".formatted(
+				requestId, examId, pupilId).trim();
 	}
 
 	private static String databaseBackupCall(final int requestId) {

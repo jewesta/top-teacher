@@ -25,21 +25,22 @@ import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 class TopTeacherMcpSchemaTests {
 
 	private static final List<Class<?>> TOOL_GROUPS = List.of(CourseMcpTools.class, ExamMcpTools.class,
+			ExamWriteMcpTools.class, ExamPupilAssignmentMcpTools.class, ExamPupilRemovalMcpTools.class,
 			CourseRosterMcpTools.class, CoursePupilAssignmentMcpTools.class, CoursePupilRemovalMcpTools.class,
 			DatabaseBackupMcpTools.class, LevelOfExpectationsMcpTools.class, PupilMcpTools.class,
 			PupilResultMcpTools.class);
 
 	@Test
-	void exposesTheFifteenTopTeacherOperationsAcrossNineFocusedToolGroups() {
+	void exposesTheNineteenTopTeacherOperationsAcrossTwelveFocusedToolGroups() {
 		final List<String> tools = TOOL_GROUPS.stream().flatMap(type -> Arrays.stream(type.getDeclaredMethods()))
 				.map(method -> method.getAnnotation(McpTool.class)).filter(Objects::nonNull).map(McpTool::name).sorted()
 				.toList();
 
-		assertThat(tools).containsExactly("assign_pupils_to_course", "create_course_with_pupils",
-				"create_database_backup", "create_level_of_expectations", "create_pupils",
-				"get_course_creation_options", "get_level_of_expectations", "get_pupil_result", "list_course_pupils",
-				"list_courses", "list_exam_pupils", "list_exams", "list_pupils", "remove_pupils_from_course",
-				"update_pupil");
+		assertThat(tools).containsExactly("assign_pupils_to_course", "assign_pupils_to_exam",
+				"create_course_with_pupils", "create_database_backup", "create_exam", "create_level_of_expectations",
+				"create_pupils", "get_course_creation_options", "get_level_of_expectations", "get_pupil_result",
+				"list_course_pupils", "list_courses", "list_exam_pupils", "list_exams", "list_pupils",
+				"remove_pupils_from_course", "remove_pupils_from_exam", "update_exam", "update_pupil");
 	}
 
 	@Test
@@ -66,6 +67,21 @@ class TopTeacherMcpSchemaTests {
 		assertThat(databaseBackup.annotations().readOnlyHint()).isFalse();
 		assertThat(databaseBackup.annotations().destructiveHint()).isFalse();
 		assertThat(databaseBackup.annotations().idempotentHint()).isFalse();
+		final McpTool examCreation = tool(ExamWriteMcpTools.class, "createExam", int.class, String.class, String.class,
+				Integer.class, Integer.class, List.class);
+		assertThat(examCreation.annotations().destructiveHint()).isFalse();
+		assertThat(examCreation.annotations().idempotentHint()).isFalse();
+		final McpTool examUpdate = tool(ExamWriteMcpTools.class, "updateExam", int.class, String.class, String.class);
+		assertThat(examUpdate.annotations().destructiveHint()).isTrue();
+		assertThat(examUpdate.annotations().idempotentHint()).isTrue();
+		final McpTool examPupilAssignment = Arrays.stream(ExamPupilAssignmentMcpTools.class.getDeclaredMethods())
+				.map(method -> method.getAnnotation(McpTool.class)).filter(Objects::nonNull).findFirst().orElseThrow();
+		assertThat(examPupilAssignment.annotations().destructiveHint()).isFalse();
+		assertThat(examPupilAssignment.annotations().idempotentHint()).isTrue();
+		final McpTool examPupilRemoval = Arrays.stream(ExamPupilRemovalMcpTools.class.getDeclaredMethods())
+				.map(method -> method.getAnnotation(McpTool.class)).filter(Objects::nonNull).findFirst().orElseThrow();
+		assertThat(examPupilRemoval.annotations().destructiveHint()).isTrue();
+		assertThat(examPupilRemoval.annotations().idempotentHint()).isTrue();
 	}
 
 	@Test
@@ -73,7 +89,7 @@ class TopTeacherMcpSchemaTests {
 		final List<SyncToolSpecification> specifications = new SyncMcpToolProvider(toolGroups())
 				.getToolSpecifications();
 
-		assertThat(specifications).hasSize(15).allSatisfy(specification -> {
+		assertThat(specifications).hasSize(19).allSatisfy(specification -> {
 			assertThat(specification.tool().inputSchema()).containsEntry("type", "object");
 			assertThat(specification.tool().outputSchema()).containsEntry("type", "object");
 		});
@@ -98,6 +114,23 @@ class TopTeacherMcpSchemaTests {
 
 		final Map<String, Object> listCoursePupilsProperties = properties(specifications, "list_course_pupils");
 		assertThat(listCoursePupilsProperties).containsKeys("courseId", "includeArchived");
+
+		final Map<String, Object> createExamProperties = properties(specifications, "create_exam");
+		assertThat(createExamProperties).containsKeys("courseId", "title", "date", "gradingScaleId", "originalExamId",
+				"initialPupilIds");
+		assertThat(map(createExamProperties.get("initialPupilIds"))).containsEntry("type", "array");
+
+		final Map<String, Object> updateExamProperties = properties(specifications, "update_exam");
+		assertThat(updateExamProperties).containsKeys("examId", "title", "date").doesNotContainKeys("courseId",
+				"gradingScaleId", "originalExamId", "pupilIds");
+
+		final Map<String, Object> assignExamPupilsProperties = properties(specifications, "assign_pupils_to_exam");
+		assertThat(assignExamPupilsProperties).containsKeys("examId", "pupilIds");
+		assertThat(map(assignExamPupilsProperties.get("pupilIds"))).containsEntry("type", "array");
+
+		final Map<String, Object> removeExamPupilsProperties = properties(specifications, "remove_pupils_from_exam");
+		assertThat(removeExamPupilsProperties).containsKeys("examId", "pupilIds", "lockedPupilAction")
+				.doesNotContainKey("context");
 
 		final Map<String, Object> listExamsOutputProperties = outputProperties(specifications, "list_exams");
 		final Map<String, Object> examItems = map(map(listExamsOutputProperties.get("exams")).get("items"));
@@ -147,11 +180,15 @@ class TopTeacherMcpSchemaTests {
 		final PupilWriter pupilWriter = mock(PupilWriter.class);
 		final CoursePupilAssignmentWriter assignmentWriter = mock(CoursePupilAssignmentWriter.class);
 		final CoursePupilRemovalWriter removalWriter = mock(CoursePupilRemovalWriter.class);
+		final ExamPupilWriter examPupilWriter = mock(ExamPupilWriter.class);
 		final DatabaseBackupService backupService = mock(DatabaseBackupService.class);
 		final PupilRosterConflictResolver conflictResolver = mock(PupilRosterConflictResolver.class);
 		final PupilUpdateConflictResolver updateConflictResolver = mock(PupilUpdateConflictResolver.class);
 		return List.of(new CourseMcpTools(courses, subjects, gradingScales),
 				new ExamMcpTools(courses, exams, levelOfExpectations),
+				new ExamWriteMcpTools(courses, exams, gradingScales, levelOfExpectations),
+				new ExamPupilAssignmentMcpTools(examPupilWriter),
+				new ExamPupilRemovalMcpTools(courses, exams, examPupilWriter),
 				new CourseRosterMcpTools(courses, subjects, gradingScales, conflictResolver, writer),
 				new CoursePupilAssignmentMcpTools(courses, conflictResolver, assignmentWriter),
 				new CoursePupilRemovalMcpTools(courses, removalWriter), new DatabaseBackupMcpTools(backupService),

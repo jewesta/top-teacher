@@ -150,6 +150,10 @@ The MCP server currently exposes these tools:
 | `create_pupils` | Create active pupils without assigning them to a course. |
 | `update_pupil` | Change a pupil's first name, surname, or both. |
 | `list_exams` | List the exams of a course. |
+| `create_exam` | Create a main or makeup exam with an initial active pupil roster. |
+| `update_exam` | Change an exam's title, date, or both without changing its relationships. |
+| `assign_pupils_to_exam` | Assign existing active course pupils to an exam. |
+| `remove_pupils_from_exam` | Remove pupils from an exam unless results lock their assignments. |
 | `get_level_of_expectations` | Read a complete level of expectations. |
 | `create_level_of_expectations` | Create a complete level of expectations for a blank exam without overwriting anything. |
 | `list_exam_pupils` | List the pupils assigned to an exam. |
@@ -189,6 +193,21 @@ cannot be removed, even if no results have been entered. When a batch contains
 locked pupils, the user can choose `SKIP` to keep those pupils and remove the
 eligible remainder, or `CANCEL` to leave the entire batch unchanged. The MCP
 operation never removes pupil records or changes exam assignments.
+
+Exam creation is atomic with its initial pupil roster. Its grading scale
+defaults to the course scale but can be selected from the existing active
+scales at creation time; it cannot be changed later through MCP. When no pupil
+IDs are supplied, normal exams receive all active course pupils, while makeup
+exams receive the active course pupils who are not assigned to the original
+exam. Supplying an explicit empty list creates an empty exam. Exam updates are
+limited to title and date and retain the existing course, grading scale, makeup
+relationship, level of expectations, pupil assignments, and results.
+
+Exam-pupil assignment and removal use exact IDs from `list_course_pupils` and
+`list_exam_pupils`. Assignment is active-only and idempotent. Removal follows
+the same rule as the UI: a pupil with recorded results cannot be removed. For a
+mixed batch, `SKIP` keeps locked pupils and removes the eligible remainder;
+`CANCEL` leaves the entire batch unchanged. Both operations are transactional.
 
 `create_database_backup` delegates to the same backup service as the settings
 UI. It accepts no destination path and does not change backup configuration. A
