@@ -70,14 +70,14 @@ class DatabaseLocationEnvironmentPostProcessorTests {
 	void choosesMacOsDefaultDatabaseFile() {
 		assertThat(
 				DatabaseLocationEnvironmentPostProcessor.defaultDatabaseFile("Mac OS X", "/Users/example", null, null))
-				.isEqualTo(Path.of("/Users/example/Library/Application Support/TopTeacher/topteacher"));
+						.isEqualTo(Path.of("/Users/example/Library/Application Support/TopTeacher/topteacher"));
 	}
 
 	@Test
 	void choosesWindowsDefaultDatabaseFile() {
 		assertThat(DatabaseLocationEnvironmentPostProcessor.defaultDatabaseFile("Windows 11", "C:\\Users\\Jens",
-				"C:\\Users\\Jens\\AppData\\Roaming", null))
-				.isEqualTo(Path.of("C:\\Users\\Jens\\AppData\\Roaming").resolve("TopTeacher").resolve("topteacher"));
+				"C:\\Users\\Jens\\AppData\\Roaming", null)).isEqualTo(
+						Path.of("C:\\Users\\Jens\\AppData\\Roaming").resolve("TopTeacher").resolve("topteacher"));
 	}
 
 	@Test

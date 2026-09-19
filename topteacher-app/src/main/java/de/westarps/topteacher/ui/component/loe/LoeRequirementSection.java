@@ -185,9 +185,9 @@ final class LoeRequirementSection extends Composite<VerticalLayout> implements L
 
 	private static void stopSummaryToggle(final Component component) {
 		component.addAttachListener(event -> component.getElement().executeJs("""
-				this.addEventListener('click', event => event.stopPropagation());
-				this.addEventListener('keydown', event => event.stopPropagation());
-				"""));
+			this.addEventListener('click', event => event.stopPropagation());
+			this.addEventListener('keydown', event => event.stopPropagation());
+			"""));
 	}
 
 	private static String componentsValue(final MarkdownEditor editor) {

@@ -146,9 +146,8 @@ class LevelOfExpectationsRepositoryTests {
 		final LoeRequirement requirement = levelOfExpectationsRepository.saveRequirement(new LoeRequirement(null,
 				task.id(), "Nutzt die [korrekte Zeitform](eh:1) und [präzise Wortwahl](eh:2).", 8, false, 0));
 
-		assertThat(levelOfExpectationsRepository.findActiveCriteriaByExamId(exam.id()))
-				.extracting(LoeCriterion::criterionKey, LoeCriterion::label, LoeCriterion::sortOrder,
-						LoeCriterion::active)
+		assertThat(levelOfExpectationsRepository.findActiveCriteriaByExamId(exam.id())).extracting(
+				LoeCriterion::criterionKey, LoeCriterion::label, LoeCriterion::sortOrder, LoeCriterion::active)
 				.containsExactly(tuple("1", "korrekte Zeitform", 0, true), tuple("2", "präzise Wortwahl", 1, true));
 
 		final LoeRequirement updatedRequirement = new LoeRequirement(requirement.id(), task.id(),
@@ -233,14 +232,14 @@ class LevelOfExpectationsRepositoryTests {
 				.containsExactly(tuple("1", "richtige Zeitform"), tuple("2", "treffende Wortwahl"));
 		assertThatThrownBy(() -> levelOfExpectationsRepository.saveRequirement(new LoeRequirement(requirement.id(),
 				requirement.taskId(), "Nutzt die [richtige Zeitform](eh:1).", 8, false, 0)))
-				.isInstanceOf(IllegalStateException.class).hasMessage(CORRECTION_MODE_MESSAGE);
+						.isInstanceOf(IllegalStateException.class).hasMessage(CORRECTION_MODE_MESSAGE);
 		assertThatThrownBy(() -> levelOfExpectationsRepository.saveRequirement(new LoeRequirement(requirement.id(),
 				requirement.taskId(),
 				"Nutzt die [richtige Zeitform](eh:1), [treffende Wortwahl](eh:2) und [Satzbau](eh:3).", 8, false, 0)))
-				.isInstanceOf(IllegalStateException.class);
+						.isInstanceOf(IllegalStateException.class);
 		assertThatThrownBy(() -> levelOfExpectationsRepository.saveRequirement(new LoeRequirement(requirement.id(),
 				requirement.taskId(), requirement.descriptionMarkdown(), 10, false, 0)))
-				.isInstanceOf(IllegalStateException.class);
+						.isInstanceOf(IllegalStateException.class);
 		assertThatThrownBy(() -> levelOfExpectationsRepository.savePart(new LoePart(null, exam.id(), "Teil B", 1)))
 				.isInstanceOf(IllegalStateException.class);
 		assertThatThrownBy(() -> levelOfExpectationsRepository.movePart(part, 1))

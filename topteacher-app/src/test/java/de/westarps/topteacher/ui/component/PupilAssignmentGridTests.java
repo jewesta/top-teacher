@@ -14,7 +14,9 @@ import com.vaadin.flow.component.textfield.TextField;
 import de.westarps.topteacher.model.Lifecycle;
 import de.westarps.topteacher.model.Pupil;
 
-@SuppressWarnings({ "rawtypes", "unchecked" })
+@SuppressWarnings({
+		"rawtypes", "unchecked"
+})
 class PupilAssignmentGridTests {
 
 	@Test

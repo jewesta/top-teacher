@@ -10,7 +10,8 @@ import com.vaadin.flow.function.ValueProvider;
  * Grid optimized for spreadsheet-like result tables with narrow data columns
  * and tilted column headers.
  *
- * @param <T> item type
+ * @param <T>
+ *            item type
  */
 public class SpreadsheetGrid<T> extends Grid<T> {
 

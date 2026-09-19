@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -44,6 +45,7 @@ import de.westarps.topteacher.model.loe.LoeTask;
 import de.westarps.topteacher.ui.UiUrls;
 import de.westarps.topteacher.ui.component.AbstractDesigner;
 import de.westarps.topteacher.ui.component.Buttons;
+import de.westarps.topteacher.ui.component.DesignerViewport;
 import de.westarps.topteacher.ui.component.FullscreenButton;
 import de.westarps.topteacher.ui.component.StepperComboBox;
 import de.westarps.topteacher.ui.component.TopTeacherDialogs;
@@ -60,11 +62,13 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private final Button saveButton = Buttons.save();
 	private final Button deleteButton = Buttons.icon("Ergebnisse löschen", VaadinIcon.TRASH,
 			event -> openDeleteConfirmation());
+	private final Button reloadButton = Buttons.icon("Neu laden", VaadinIcon.REFRESH, event -> refreshFromDatabase());
 	private final MenuBar pdfMenu = new MenuBar();
 	private final ConfirmDialog deleteConfirmation = new ConfirmDialog();
 	private final FullscreenButton fullscreenButton;
 	private final VerticalLayout results;
 	private final LoeSaveController saveController = new LoeSaveController();
+	private final DesignerViewport viewport = new DesignerViewport(content());
 	private final List<LoePointBadge> pointBadges = new ArrayList<>();
 	private final Map<Integer, IntegerField> requirementPointFields = new HashMap<>();
 	private final Map<Integer, Span> requirementPointTexts = new HashMap<>();
@@ -87,6 +91,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private List<LoeRequirement> requirements = List.of();
 	private List<LoeCriterion> criteria = List.of();
 	private LoePointBadge examPointsBadge;
+	private final Span breadcrumb = new Span();
 	private MenuItem pdfMenuItem;
 	private MenuItem pupilPdfItem;
 	private MenuItem teacherPdfItem;
@@ -110,6 +115,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 
 		configurePupilSelector();
 		configureSaveButton();
+		configureReloadButton();
 		configureDeleteButton();
 		configurePdfDownload();
 	}
@@ -120,6 +126,27 @@ public class ExamResultsEditor extends AbstractDesigner {
 		}
 		this.exam = exam;
 		refresh();
+	}
+
+	public boolean selectPupil(final int pupilId) {
+		if (exam == null) {
+			return false;
+		}
+		final Pupil pupil = examRepository.findPupils(exam.id()).stream()
+				.filter(candidate -> candidate.id().equals(pupilId)).findFirst().orElse(null);
+		if (pupil == null) {
+			return false;
+		}
+		pupilSelector.setValue(pupil);
+		return true;
+	}
+
+	public boolean focusRequirement(final LoeNavigationTarget target) {
+		if (!contains(target)) {
+			return false;
+		}
+		viewport.scrollTo(target.requirementAnchor());
+		return true;
 	}
 
 	public void setChangeHandler(final Runnable changeHandler) {
@@ -145,6 +172,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 				return;
 			}
 			selectedPupil = event.getValue();
+			bindBreadcrumb();
 			loadSelectedPupilResults();
 		});
 	}
@@ -155,6 +183,11 @@ public class ExamResultsEditor extends AbstractDesigner {
 		saveController.setDirtySupplier(this::isDirty);
 		saveController.setSaveAction(this::saveResults);
 		saveController.register(saveButton);
+	}
+
+	private void configureReloadButton() {
+		reloadButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY_INLINE);
+		saveController.registerClean(reloadButton);
 	}
 
 	private void configureDeleteButton() {
@@ -211,8 +244,20 @@ public class ExamResultsEditor extends AbstractDesigner {
 
 	private void configureToolbar() {
 		examPointsBadge = new LoePointBadge("Gesamt", this::pointsForExam);
-		toolbar().add(pupilSelector, saveButton, deleteButton, pdfMenu, fullscreenButton, deleteConfirmation);
-		toolbarSummary().add(examPointsBadge);
+		breadcrumb.addClassName("tt-designer-breadcrumb");
+		toolbar().add(pupilSelector, saveButton, deleteButton, pdfMenu, fullscreenButton, deleteConfirmation,
+				reloadButton);
+		toolbarSummary().add(breadcrumb, examPointsBadge);
+		toolbarSummary().expand(breadcrumb);
+		bindBreadcrumb();
+	}
+
+	private void bindBreadcrumb() {
+		if (selectedPupil == null) {
+			viewport.bindBreadcrumb(breadcrumb, "Ergebnisse", "Ergebnisse");
+			return;
+		}
+		viewport.bindBreadcrumb(breadcrumb, pupilInitials(selectedPupil), pupilLabel(selectedPupil));
 	}
 
 	private void refreshPupils() {
@@ -356,6 +401,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 
 	private Component partBlock(final LoePart part) {
 		final VerticalLayout block = aggregationBlock("tt-results-part", part.title(), () -> pointsForPart(part));
+		DesignerViewport.mark(block, LoeNavigationTarget.anchor("part", part.id()), part.title());
 		categoriesFor(part).forEach(category -> block.add(categoryBlock(category)));
 		return block;
 	}
@@ -363,12 +409,14 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private Component categoryBlock(final LoeCategory category) {
 		final VerticalLayout block = aggregationBlock("tt-results-category", category.title(),
 				() -> pointsForCategory(category));
+		DesignerViewport.mark(block, LoeNavigationTarget.anchor("category", category.id()), category.title());
 		tasksFor(category).forEach(task -> block.add(taskBlock(task)));
 		return block;
 	}
 
 	private Component taskBlock(final LoeTask task) {
 		final VerticalLayout block = aggregationBlock("tt-results-task", task.title(), () -> pointsForTask(task));
+		DesignerViewport.mark(block, LoeNavigationTarget.anchor("task", task.id()), task.title());
 		requirementsFor(task).forEach(requirement -> block.add(requirementBlock(task, requirement)));
 		return block;
 	}
@@ -380,6 +428,8 @@ public class ExamResultsEditor extends AbstractDesigner {
 		block.setSpacing(false);
 		block.setWidthFull();
 		block.setAlignItems(Alignment.STRETCH);
+		DesignerViewport.mark(block, LoeNavigationTarget.anchor("requirement", requirement.id()),
+				requirementNumber(task, requirement));
 
 		final List<LoeCriterion> requirementCriteria = criteriaFor(requirement);
 		final Map<String, LoeCriterion> criteriaByKey = requirementCriteria.stream()
@@ -684,6 +734,17 @@ public class ExamResultsEditor extends AbstractDesigner {
 				.sorted(Comparator.comparingInt(LoeCriterion::sortOrder).thenComparing(LoeCriterion::id)).toList();
 	}
 
+	private boolean contains(final LoeNavigationTarget target) {
+		return parts.stream().anyMatch(part -> part.id().equals(target.partId()))
+				&& categories.stream()
+						.anyMatch(category -> category.id().equals(target.categoryId())
+								&& category.partId().equals(target.partId()))
+				&& tasks.stream().anyMatch(
+						task -> task.id().equals(target.taskId()) && task.categoryId().equals(target.categoryId()))
+				&& requirements.stream().anyMatch(requirement -> requirement.id().equals(target.requirementId())
+						&& requirement.taskId().equals(target.taskId()));
+	}
+
 	private LoePoints pointsForPart(final LoePart part) {
 		return sum(categoriesFor(part).stream().flatMap(category -> tasksFor(category).stream())
 				.flatMap(task -> requirementsFor(task).stream()).toList());
@@ -780,6 +841,12 @@ public class ExamResultsEditor extends AbstractDesigner {
 		updatePdfDownload();
 	}
 
+	private void refreshFromDatabase() {
+		if (!isDirty()) {
+			viewport.refreshPreservingPosition(this::refresh);
+		}
+	}
+
 	private void updateDeleteButton() {
 		deleteButton.setEnabled(selectedPupil != null && hasPersistedResults());
 	}
@@ -797,14 +864,14 @@ public class ExamResultsEditor extends AbstractDesigner {
 			return;
 		}
 		getUI().ifPresent(ui -> ui.getPage().executeJs("""
-				const anchor = document.createElement('a');
-				anchor.href = $0;
-				anchor.download = $1;
-				anchor.style.display = 'none';
-				document.body.appendChild(anchor);
-				anchor.click();
-				anchor.remove();
-				""", pdfUrl(teacherVersion), pdfFileName(teacherVersion)));
+			const anchor = document.createElement('a');
+			anchor.href = $0;
+			anchor.download = $1;
+			anchor.style.display = 'none';
+			document.body.appendChild(anchor);
+			anchor.click();
+			anchor.remove();
+			""", pdfUrl(teacherVersion), pdfFileName(teacherVersion)));
 	}
 
 	private String pdfUrl(final boolean teacherVersion) {
@@ -867,6 +934,10 @@ public class ExamResultsEditor extends AbstractDesigner {
 			return "";
 		}
 		return pupil.surname() + ", " + pupil.name();
+	}
+
+	private static String pupilInitials(final Pupil pupil) {
+		return (pupil.surname().substring(0, 1) + pupil.name().substring(0, 1)).toUpperCase(Locale.GERMAN);
 	}
 
 	private String pdfFileName(final boolean teacherVersion) {

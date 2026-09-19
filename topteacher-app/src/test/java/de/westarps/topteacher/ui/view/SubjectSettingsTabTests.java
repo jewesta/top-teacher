@@ -26,7 +26,9 @@ import de.westarps.topteacher.backend.repo.SubjectRepository;
 import de.westarps.topteacher.model.Lifecycle;
 import de.westarps.topteacher.model.Subject;
 
-@SuppressWarnings({ "rawtypes", "unchecked" })
+@SuppressWarnings({
+		"rawtypes", "unchecked"
+})
 class SubjectSettingsTabTests {
 
 	@Test

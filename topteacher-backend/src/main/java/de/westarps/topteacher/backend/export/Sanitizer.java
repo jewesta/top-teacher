@@ -94,11 +94,11 @@ public class Sanitizer {
 			return "<span class=\"tt-criterion-marker tt-criterion-marker-achieved\">&nbsp;</span>";
 		}
 		return """
-				<span class="tt-criterion-marker tt-criterion-marker-missed">\
-				<span class="tt-criterion-marker-line tt-criterion-marker-line-a">&nbsp;</span>\
-				<span class="tt-criterion-marker-line tt-criterion-marker-line-b">&nbsp;</span>\
-				</span>\
-				""";
+			<span class="tt-criterion-marker tt-criterion-marker-missed">\
+			<span class="tt-criterion-marker-line tt-criterion-marker-line-a">&nbsp;</span>\
+			<span class="tt-criterion-marker-line tt-criterion-marker-line-b">&nbsp;</span>\
+			</span>\
+			""";
 	}
 
 	private static HtmlInline html(final String literal) {
@@ -124,6 +124,7 @@ public class Sanitizer {
 	}
 
 	public enum MarkdownView {
-		PUPIL, TEACHER
+		PUPIL,
+		TEACHER
 	}
 }

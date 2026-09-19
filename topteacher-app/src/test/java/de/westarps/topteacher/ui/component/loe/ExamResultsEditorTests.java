@@ -2,6 +2,7 @@ package de.westarps.topteacher.ui.component.loe;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -10,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
@@ -26,6 +28,7 @@ import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.menubar.MenuBar;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
 
@@ -223,6 +226,9 @@ class ExamResultsEditorTests {
 		assertThat(points.getValue()).isEqualTo(1);
 		assertThat(comment.getValue()).isEmpty();
 		assertThat(criterionCheckbox.getValue()).isFalse();
+		assertThat(breadcrumb(editor).getElement().getAttribute("data-tt-breadcrumb-root-label")).isEqualTo("EA");
+		assertThat(breadcrumb(editor).getElement().getAttribute("data-tt-breadcrumb-root-title"))
+				.isEqualTo("Ergebnis, Anna");
 		assertThat(criterionIndicatorTexts(editor)).containsExactly("0 von 1 Kriterien erfüllt");
 
 		pupilSelector(editor).setValue(SECOND_PUPIL);
@@ -230,6 +236,9 @@ class ExamResultsEditorTests {
 		assertThat(points.getValue()).isEqualTo(4);
 		assertThat(comment.getValue()).isEqualTo("Guter Fortschritt.");
 		assertThat(criterionCheckbox.getValue()).isTrue();
+		assertThat(breadcrumb(editor).getElement().getAttribute("data-tt-breadcrumb-root-label")).isEqualTo("EB");
+		assertThat(breadcrumb(editor).getElement().getAttribute("data-tt-breadcrumb-root-title"))
+				.isEqualTo("Ergebnis, Berta");
 		assertThat(pointsText(editor)).containsExactly("4 von 5 Punkten");
 		assertThat(criterionIndicatorTexts(editor)).containsExactly("1 von 1 Kriterien erfüllt");
 		assertThat(components(editor, IntegerField.class).getFirst()).isSameAs(points);
@@ -242,6 +251,59 @@ class ExamResultsEditorTests {
 		verify(levelOfExpectationsRepository, times(1)).findTasksByExamId(EXAM.id());
 		verify(levelOfExpectationsRepository, times(1)).findRequirementsByExamId(EXAM.id());
 		verify(levelOfExpectationsRepository, times(1)).findActiveCriteriaByExamId(EXAM.id());
+	}
+
+	@Test
+	void selectsAnAssignedPupilProgrammaticallyForDeepLinks() {
+		final LevelOfExpectationsRepository levelOfExpectationsRepository = levelOfExpectationsRepository();
+		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository(),
+				examRepository(List.of(PUPIL, SECOND_PUPIL)), levelOfExpectationsRepository, gradingScaleRepository());
+		editor.setExam(EXAM);
+
+		assertThat(editor.selectPupil(SECOND_PUPIL.id())).isTrue();
+		assertThat(pupilSelector(editor).getValue()).isEqualTo(SECOND_PUPIL);
+		assertThat(editor.selectPupil(999)).isFalse();
+		assertThat(pupilSelector(editor).getValue()).isEqualTo(SECOND_PUPIL);
+	}
+
+	@Test
+	void reloadsFromTheDatabaseOnlyWhileResultsAreClean() {
+		final LevelOfExpectationsRepository levelOfExpectationsRepository = levelOfExpectationsRepository();
+		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository(), examRepository(),
+				levelOfExpectationsRepository, gradingScaleRepository());
+		editor.setExam(EXAM);
+		final Button reload = buttonByAriaLabel(editor, "Neu laden");
+		clearInvocations(levelOfExpectationsRepository);
+
+		assertThat(reload.isEnabled()).isTrue();
+		assertThat(toolbar(editor).getChildren().toList().getLast()).isSameAs(reload);
+		reload.click();
+
+		verify(levelOfExpectationsRepository).findPartsByExamId(EXAM.id());
+		verify(levelOfExpectationsRepository).findCategoriesByExamId(EXAM.id());
+		verify(levelOfExpectationsRepository).findTasksByExamId(EXAM.id());
+		verify(levelOfExpectationsRepository).findRequirementsByExamId(EXAM.id());
+		assertThat(pupilSelector(editor).getValue()).isEqualTo(PUPIL);
+
+		components(editor, IntegerField.class).getFirst().setValue(3);
+
+		assertThat(reload.isEnabled()).isFalse();
+	}
+
+	@Test
+	void marksAndValidatesTheHierarchyForDeepLinks() {
+		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository(), examRepository(),
+				levelOfExpectationsRepository(), gradingScaleRepository());
+		editor.setExam(EXAM);
+
+		assertThat(
+				editor.focusRequirement(new LoeNavigationTarget(PART.id(), CATEGORY.id(), TASK.id(), REQUIREMENT.id())))
+						.isTrue();
+		assertThat(anchorKeys(editor)).contains("part:1", "category:2", "task:3", "requirement:4");
+		assertThat(breadcrumbSegments(editor)).containsExactly("Klausurteil A", "Inhalt", "Teilaufgabe 1", "1");
+		assertThat(breadcrumb(editor).getElement().getAttribute("data-tt-breadcrumb-root-label")).isEqualTo("EA");
+		assertThat(editor.focusRequirement(new LoeNavigationTarget(99, CATEGORY.id(), TASK.id(), REQUIREMENT.id())))
+				.isFalse();
 	}
 
 	@Test
@@ -378,9 +440,20 @@ class ExamResultsEditorTests {
 				.findFirst().orElseThrow();
 	}
 
+	private static Button buttonByAriaLabel(final Component root, final String label) {
+		return components(root, Button.class).stream()
+				.filter(button -> label.equals(button.getElement().getAttribute("aria-label"))).findFirst()
+				.orElseThrow();
+	}
+
 	private static MenuBar pdfMenu(final Component root) {
 		return components(root, MenuBar.class).stream().filter(menu -> menu.getClassNames().contains("tt-pdf-menu"))
 				.findFirst().orElseThrow();
+	}
+
+	private static HorizontalLayout toolbar(final Component root) {
+		return components(root, HorizontalLayout.class).stream()
+				.filter(layout -> layout.getClassNames().contains("tt-designer-toolbar")).findFirst().orElseThrow();
 	}
 
 	private static Icon pdfMenuIcon(final Component root) {
@@ -417,6 +490,23 @@ class ExamResultsEditorTests {
 	private static List<Checkbox> criterionCheckboxes(final Component root) {
 		return components(root, Checkbox.class).stream()
 				.filter(checkbox -> checkbox.getClassNames().contains("tt-results-criterion-checkbox")).toList();
+	}
+
+	private static List<String> anchorKeys(final Component root) {
+		return components(root, Component.class).stream()
+				.map(component -> component.getElement().getAttribute("data-tt-anchor")).filter(Objects::nonNull)
+				.toList();
+	}
+
+	private static List<String> breadcrumbSegments(final Component root) {
+		return components(root, Component.class).stream()
+				.map(component -> component.getElement().getAttribute("data-tt-breadcrumb-segment"))
+				.filter(Objects::nonNull).distinct().toList();
+	}
+
+	private static Span breadcrumb(final Component root) {
+		return components(root, Span.class).stream()
+				.filter(span -> span.getClassNames().contains("tt-designer-breadcrumb")).findFirst().orElseThrow();
 	}
 
 	@SuppressWarnings("unchecked")

@@ -2,5 +2,6 @@ package de.westarps.topteacher.ui.view;
 
 public enum EditorMode {
 
-	SINGLE_SELECT, MULTI_SELECT
+	SINGLE_SELECT,
+	MULTI_SELECT
 }

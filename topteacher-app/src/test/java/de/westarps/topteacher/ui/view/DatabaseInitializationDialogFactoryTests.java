@@ -23,7 +23,9 @@ import com.vaadin.flow.component.dialog.Dialog;
 import de.westarps.topteacher.backend.database.DatabaseInitializationMode;
 import de.westarps.topteacher.backend.database.DatabaseInitializationService;
 
-@SuppressWarnings({ "rawtypes", "unchecked" })
+@SuppressWarnings({
+		"rawtypes", "unchecked"
+})
 class DatabaseInitializationDialogFactoryTests {
 
 	private UI ui;

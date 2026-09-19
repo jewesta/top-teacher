@@ -105,7 +105,7 @@ class ExamRepositoryTests {
 
 		assertThatThrownBy(() -> examRepository.save(new Exam(saved.id(), course.id(), saved.title(), saved.date(),
 				saved.originalExamId(), otherGradingScale.id()))).isInstanceOf(IllegalArgumentException.class)
-				.hasMessage("Der Notenschlüssel einer bestehenden Klausur kann nicht geändert werden.");
+						.hasMessage("Der Notenschlüssel einer bestehenden Klausur kann nicht geändert werden.");
 	}
 
 	@Test
@@ -119,7 +119,7 @@ class ExamRepositoryTests {
 
 		assertThatThrownBy(
 				() -> examRepository.save(new Exam(saved.id(), otherCourse.id(), saved.title(), saved.date())))
-				.isInstanceOf(IllegalArgumentException.class).hasMessage("Exam course can not be changed.");
+						.isInstanceOf(IllegalArgumentException.class).hasMessage("Exam course can not be changed.");
 	}
 
 	@Test
@@ -160,8 +160,8 @@ class ExamRepositoryTests {
 
 		assertThatThrownBy(() -> examRepository.save(
 				new Exam(null, otherCourse.id(), "Nachschreibeklausur", LocalDate.of(2032, 9, 24), originalExam.id())))
-				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessage("Eine Nachschreibeklausur muss zum selben Kurs gehören.");
+						.isInstanceOf(IllegalArgumentException.class)
+						.hasMessage("Eine Nachschreibeklausur muss zum selben Kurs gehören.");
 	}
 
 	@Test
@@ -172,9 +172,8 @@ class ExamRepositoryTests {
 		final Exam originalExam = examRepository
 				.save(new Exam(null, course.id(), "1. Klausur", LocalDate.of(2033, 9, 17)));
 
-		assertThatThrownBy(() -> examRepository
-				.save(new Exam(null, course.id(), "Nachschreibeklausur", LocalDate.of(2033, 9, 16), originalExam.id())))
-				.isInstanceOf(IllegalArgumentException.class).hasMessage(
+		assertThatThrownBy(() -> examRepository.save(new Exam(null, course.id(), "Nachschreibeklausur",
+				LocalDate.of(2033, 9, 16), originalExam.id()))).isInstanceOf(IllegalArgumentException.class).hasMessage(
 						"Das Datum einer Nachschreibeklausur darf nicht vor dem Datum der ursprünglichen Klausur liegen.");
 	}
 
@@ -188,10 +187,9 @@ class ExamRepositoryTests {
 		examRepository
 				.save(new Exam(null, course.id(), "Nachschreibeklausur", LocalDate.of(2034, 9, 18), originalExam.id()));
 
-		assertThatThrownBy(() -> examRepository
-				.save(new Exam(originalExam.id(), course.id(), originalExam.title(), LocalDate.of(2034, 9, 19))))
-				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessage("Das Datum der ursprünglichen Klausur darf nicht nach einer Nachschreibeklausur liegen.");
+		assertThatThrownBy(() -> examRepository.save(new Exam(originalExam.id(), course.id(), originalExam.title(),
+				LocalDate.of(2034, 9, 19)))).isInstanceOf(IllegalArgumentException.class).hasMessage(
+						"Das Datum der ursprünglichen Klausur darf nicht nach einer Nachschreibeklausur liegen.");
 	}
 
 	@Test
@@ -235,6 +233,28 @@ class ExamRepositoryTests {
 		assertThatThrownBy(() -> examRepository.replacePupils(exam.id(), List.of(alan.id())))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessage("Alle teilnehmenden Schüler:innen müssen dem Kurs zugeordnet sein.");
+	}
+
+	@Test
+	void excludesArchivedPupilsFromNewExamAssignments() {
+		final GradingScale gradingScale = createGradingScale("Exam Archived Pupil 100");
+		final Course course = courseRepository.save(new Course(null, SchoolClass.CLS_8F, subject("Englisch"),
+				new SchoolYear(2035), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, gradingScale.id()));
+		final Pupil activePupil = pupilRepository.save(new Pupil(null, "Ada", "Active", Lifecycle.ACTIVE));
+		final Pupil archivedPupil = pupilRepository.save(new Pupil(null, "Grace", "Archived", Lifecycle.ACTIVE));
+		courseRepository.assignPupil(course.id(), activePupil.id());
+		courseRepository.assignPupil(course.id(), archivedPupil.id());
+		pupilRepository.archive(archivedPupil.id());
+		final Exam exam = examRepository.save(new Exam(null, course.id(), "1. Klausur", LocalDate.of(2035, 9, 19)));
+
+		assertThat(examRepository.findAssignablePupils(exam.id())).isEmpty();
+		assertThatThrownBy(() -> examRepository.assignPupil(exam.id(), archivedPupil.id()))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("Alle teilnehmenden Schüler:innen müssen dem Kurs zugeordnet sein.");
+		assertThatThrownBy(() -> examRepository.replacePupils(exam.id(), List.of(archivedPupil.id())))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("Alle teilnehmenden Schüler:innen müssen dem Kurs zugeordnet sein.");
+		assertThat(examRepository.findPupils(exam.id())).containsExactly(activePupil);
 	}
 
 	@Test

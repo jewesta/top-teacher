@@ -98,7 +98,7 @@ class ExamEvaluationViewerTests {
 		assertThat(components(viewer, Button.class).stream().map(Button::getText)).contains("Excel");
 		assertThat(
 				components(viewer, Button.class).stream().map(button -> button.getElement().getAttribute("aria-label")))
-				.contains("Vollbild");
+						.contains("Vollbild");
 		verify(levelOfExpectationsRepository).findRequirementResultsByExamAndPupil(EXAM.id(), PUPIL.id());
 		verify(levelOfExpectationsRepository).findRequirementResultsByExamAndPupil(EXAM.id(), SECOND_PUPIL.id());
 	}
@@ -171,7 +171,9 @@ class ExamEvaluationViewerTests {
 		assertThat(itemCount(grid)).isEqualTo(1);
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
+	@SuppressWarnings({
+			"rawtypes", "unchecked"
+	})
 	private static long itemCount(final Grid<?> grid) {
 		return grid.getDataProvider().fetch(new Query()).count();
 	}
