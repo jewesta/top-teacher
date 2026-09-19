@@ -294,6 +294,9 @@ class ExamResultsEditorTests {
 				editor.focusRequirement(new LoeNavigationTarget(PART.id(), CATEGORY.id(), TASK.id(), REQUIREMENT.id())))
 						.isTrue();
 		assertThat(anchorKeys(editor)).contains("part:1", "category:2", "task:3", "requirement:4");
+		assertThat(breadcrumbSegments(editor)).containsExactly("Klausurteil A", "Inhalt", "Teilaufgabe 1", "1");
+		assertThat(components(editor, Span.class).stream()
+				.filter(span -> span.getClassNames().contains("tt-designer-breadcrumb"))).hasSize(1);
 		assertThat(editor.focusRequirement(new LoeNavigationTarget(99, CATEGORY.id(), TASK.id(), REQUIREMENT.id())))
 				.isFalse();
 	}
@@ -488,6 +491,12 @@ class ExamResultsEditorTests {
 		return components(root, Component.class).stream()
 				.map(component -> component.getElement().getAttribute("data-tt-anchor")).filter(Objects::nonNull)
 				.toList();
+	}
+
+	private static List<String> breadcrumbSegments(final Component root) {
+		return components(root, Component.class).stream()
+				.map(component -> component.getElement().getAttribute("data-tt-breadcrumb-segment"))
+				.filter(Objects::nonNull).distinct().toList();
 	}
 
 	@SuppressWarnings("unchecked")

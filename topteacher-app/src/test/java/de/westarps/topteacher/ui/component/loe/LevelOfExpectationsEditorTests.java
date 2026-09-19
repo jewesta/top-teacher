@@ -111,6 +111,9 @@ class LevelOfExpectationsEditorTests {
 						.isTrue();
 		assertThat(components(editor, Details.class)).extracting(Details::isOpened).containsOnly(true);
 		assertThat(anchorKeys(editor)).contains("part:1", "category:2", "task:3", "requirement:4");
+		assertThat(breadcrumbSegments(editor)).containsExactly("Klausurteil A", "Inhalt", "Teilaufgabe 1", "1");
+		assertThat(components(editor, Span.class).stream()
+				.filter(span -> span.getClassNames().contains("tt-designer-breadcrumb"))).hasSize(1);
 		assertThat(editor.focusRequirement(
 				new LoeNavigationTarget(SECOND_PART.id(), CATEGORY.id(), TASK.id(), REQUIREMENT.id()))).isFalse();
 	}
@@ -140,6 +143,25 @@ class LevelOfExpectationsEditorTests {
 					.filteredOn(invocation -> invocation.getInvocation().getExpression().contains("pendingViewers"))
 					.anySatisfy(invocation -> assertThat(invocation.getInvocation().getParameters())
 							.contains("requirement:" + NEW_REQUIREMENT.id()));
+		} finally {
+			UI.setCurrent(null);
+		}
+	}
+
+	@Test
+	void bindsTheBreadcrumbWhenTheHierarchyIsAttached() {
+		final UI ui = new UI();
+		ui.getInternals().setSession(mock(VaadinSession.class));
+		UI.setCurrent(ui);
+		try {
+			final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repositoryWithHierarchy());
+			ui.add(editor);
+			editor.setExam(EXAM);
+			ui.getInternals().getStateTree().runExecutionsBeforeClientResponse();
+
+			assertThat(ui.getInternals().dumpPendingJavaScriptInvocations())
+					.anySatisfy(invocation -> assertThat(invocation.getInvocation().getExpression())
+							.contains("data-tt-breadcrumb-bound"));
 		} finally {
 			UI.setCurrent(null);
 		}
@@ -611,6 +633,12 @@ class LevelOfExpectationsEditorTests {
 		return components(root, Component.class).stream()
 				.map(component -> component.getElement().getAttribute("data-tt-anchor")).filter(Objects::nonNull)
 				.toList();
+	}
+
+	private static List<String> breadcrumbSegments(final Component root) {
+		return components(root, Component.class).stream()
+				.map(component -> component.getElement().getAttribute("data-tt-breadcrumb-segment"))
+				.filter(Objects::nonNull).distinct().toList();
 	}
 
 	private static TextField titleField(final Component root, final String value) {

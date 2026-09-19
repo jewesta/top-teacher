@@ -379,6 +379,16 @@ vaadin-app-layout::part(navbar) {
 	margin-left: 0;
 }
 
+.tt-designer-breadcrumb {
+	color: var(--lumo-secondary-text-color);
+	font-size: var(--lumo-font-size-s);
+	font-weight: 600;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
 .tt-exam-results-editor .tt-designer-toolbar-summary .tt-eh-points {
 	width: var(--tt-results-points-column-width);
 }

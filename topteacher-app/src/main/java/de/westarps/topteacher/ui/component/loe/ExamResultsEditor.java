@@ -90,6 +90,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private List<LoeRequirement> requirements = List.of();
 	private List<LoeCriterion> criteria = List.of();
 	private LoePointBadge examPointsBadge;
+	private final Span breadcrumb = new Span();
 	private MenuItem pdfMenuItem;
 	private MenuItem pupilPdfItem;
 	private MenuItem teacherPdfItem;
@@ -241,9 +242,12 @@ public class ExamResultsEditor extends AbstractDesigner {
 
 	private void configureToolbar() {
 		examPointsBadge = new LoePointBadge("Gesamt", this::pointsForExam);
+		breadcrumb.addClassName("tt-designer-breadcrumb");
 		toolbar().add(pupilSelector, saveButton, deleteButton, pdfMenu, fullscreenButton, deleteConfirmation,
 				reloadButton);
-		toolbarSummary().add(examPointsBadge);
+		toolbarSummary().add(breadcrumb, examPointsBadge);
+		toolbarSummary().expand(breadcrumb);
+		viewport.bindBreadcrumb(breadcrumb);
 	}
 
 	private void refreshPupils() {
@@ -387,7 +391,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 
 	private Component partBlock(final LoePart part) {
 		final VerticalLayout block = aggregationBlock("tt-results-part", part.title(), () -> pointsForPart(part));
-		DesignerViewport.mark(block, LoeNavigationTarget.anchor("part", part.id()));
+		DesignerViewport.mark(block, LoeNavigationTarget.anchor("part", part.id()), part.title());
 		categoriesFor(part).forEach(category -> block.add(categoryBlock(category)));
 		return block;
 	}
@@ -395,14 +399,14 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private Component categoryBlock(final LoeCategory category) {
 		final VerticalLayout block = aggregationBlock("tt-results-category", category.title(),
 				() -> pointsForCategory(category));
-		DesignerViewport.mark(block, LoeNavigationTarget.anchor("category", category.id()));
+		DesignerViewport.mark(block, LoeNavigationTarget.anchor("category", category.id()), category.title());
 		tasksFor(category).forEach(task -> block.add(taskBlock(task)));
 		return block;
 	}
 
 	private Component taskBlock(final LoeTask task) {
 		final VerticalLayout block = aggregationBlock("tt-results-task", task.title(), () -> pointsForTask(task));
-		DesignerViewport.mark(block, LoeNavigationTarget.anchor("task", task.id()));
+		DesignerViewport.mark(block, LoeNavigationTarget.anchor("task", task.id()), task.title());
 		requirementsFor(task).forEach(requirement -> block.add(requirementBlock(task, requirement)));
 		return block;
 	}
@@ -414,7 +418,8 @@ public class ExamResultsEditor extends AbstractDesigner {
 		block.setSpacing(false);
 		block.setWidthFull();
 		block.setAlignItems(Alignment.STRETCH);
-		DesignerViewport.mark(block, LoeNavigationTarget.anchor("requirement", requirement.id()));
+		DesignerViewport.mark(block, LoeNavigationTarget.anchor("requirement", requirement.id()),
+				requirementNumber(task, requirement));
 
 		final List<LoeCriterion> requirementCriteria = criteriaFor(requirement);
 		final Map<String, LoeCriterion> criteriaByKey = requirementCriteria.stream()

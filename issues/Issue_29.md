@@ -159,6 +159,8 @@ does not expose general-purpose database mutation.
   after asynchronously rendered content has settled.
 - [x] After adding an EH part, category, task, or requirement, rerender the
   hierarchy and scroll the new element to the top of the viewport.
+- [x] Show the EH hierarchy at the viewport's top as a live breadcrumb beside
+  the total points in both the EH and results views.
 - [x] Added a read-only course-creation options tool; subjects and grading scales
   still have no MCP write path.
 - [x] Added manual database-backup creation through the existing configured

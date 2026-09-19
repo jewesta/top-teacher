@@ -13,17 +13,89 @@ public final class DesignerViewport implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	private static final String ANCHOR_ATTRIBUTE = "data-tt-anchor";
+	private static final String BREADCRUMB_ATTRIBUTE = "data-tt-breadcrumb-segment";
 
 	private final Component content;
+	private Component breadcrumb;
 	private String pendingAnchorKey;
 
 	public DesignerViewport(final Component content) {
 		this.content = Objects.requireNonNull(content, "content must not be null");
-		content.addAttachListener(event -> scrollToPendingAnchor());
+		content.addAttachListener(event -> {
+			scrollToPendingAnchor();
+			bindBreadcrumbIfAttached();
+		});
 	}
 
 	public static void mark(final Component component, final String anchorKey) {
 		component.getElement().setAttribute(ANCHOR_ATTRIBUTE, anchorKey);
+	}
+
+	public static void mark(final Component component, final String anchorKey, final String breadcrumbSegment) {
+		mark(component, anchorKey);
+		component.getElement().setAttribute(BREADCRUMB_ATTRIBUTE, breadcrumbSegment);
+	}
+
+	public void bindBreadcrumb(final Component breadcrumb) {
+		this.breadcrumb = Objects.requireNonNull(breadcrumb, "breadcrumb must not be null");
+		breadcrumb.getElement().setAttribute("hidden", true);
+		bindBreadcrumbIfAttached();
+	}
+
+	private void bindBreadcrumbIfAttached() {
+		if (breadcrumb == null || !content.isAttached()) {
+			return;
+		}
+		content.getElement().executeJs("""
+			const viewport = this;
+			let animationFrame = null;
+			const update = () => {
+			   animationFrame = null;
+			   const breadcrumb = viewport.closest('.tt-designer')
+			      ?.querySelector('.tt-designer-breadcrumb');
+			   if (!breadcrumb) {
+			      return;
+			   }
+			   const viewportTop = viewport.getBoundingClientRect().top;
+			   const probe = viewportTop + 1;
+			   const segments = Array.from(viewport.querySelectorAll('[data-tt-breadcrumb-segment]'))
+			      .filter(element => {
+			         if (element.getClientRects().length === 0) {
+			            return false;
+			         }
+			         const bounds = element.getBoundingClientRect();
+			         return bounds.top <= probe && bounds.bottom > probe;
+			      })
+			      .map(element => element.getAttribute('data-tt-breadcrumb-segment'));
+			   const text = segments.join(' > ');
+			   breadcrumb.textContent = text;
+			   breadcrumb.title = text;
+			   breadcrumb.hidden = text.length === 0;
+			};
+			const scheduleUpdate = () => {
+			   if (animationFrame === null) {
+			      animationFrame = requestAnimationFrame(update);
+			   }
+			};
+
+			if (!viewport.hasAttribute('data-tt-breadcrumb-bound')) {
+			   viewport.setAttribute('data-tt-breadcrumb-bound', '');
+			   viewport.addEventListener('scroll', scheduleUpdate, { passive: true });
+			}
+			viewport.dispatchEvent(new Event('scroll'));
+			""");
+	}
+
+	public void updateBreadcrumbSegment(final String anchorKey, final String breadcrumbSegment) {
+		content.getElement().executeJs("""
+			const anchor = Array.from(this.querySelectorAll('[data-tt-anchor]'))
+			   .find(element => element.getAttribute('data-tt-anchor') === $0);
+			if (anchor) {
+			   anchor.setAttribute('data-tt-breadcrumb-segment', $1);
+			}
+			this.dispatchEvent(new Event('scroll'));
+			""", Objects.requireNonNull(anchorKey, "anchorKey must not be null"),
+				Objects.requireNonNull(breadcrumbSegment, "breadcrumbSegment must not be null"));
 	}
 
 	public void refreshPreservingPosition(final SerializableRunnable refreshAction) {
