@@ -154,6 +154,8 @@ does not expose general-purpose database mutation.
   expectations, its Results tab, and an assigned pupil within Results.
 - [x] Added scroll-preserving reload actions to the EH and Results toolbars and
   concrete requirement deep links for both editors.
+- [x] Positioned reload at the end of both toolbars and stabilized anchored
+  result scrolling while asynchronously rendered content settles.
 - [x] Added a read-only course-creation options tool; subjects and grading scales
   still have no MCP write path.
 - [x] Added manual database-backup creation through the existing configured

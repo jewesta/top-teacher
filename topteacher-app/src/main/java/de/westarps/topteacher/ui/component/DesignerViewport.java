@@ -64,17 +64,8 @@ public final class DesignerViewport implements Serializable {
 	}
 
 	private void restore(final ViewportPosition position) {
-		content.getUI().ifPresent(ui -> ui.beforeClientResponse(content, context -> content.getElement().executeJs("""
-			const anchor = Array.from(this.querySelectorAll('[data-tt-anchor]'))
-			   .find(element => element.getAttribute('data-tt-anchor') === $0);
-			if (anchor) {
-			   const viewportTop = this.getBoundingClientRect().top;
-			   const currentOffset = anchor.getBoundingClientRect().top - viewportTop;
-			   this.scrollTop += currentOffset - $1;
-			} else {
-			   this.scrollTop = $2;
-			}
-			""", position.anchorKey(), position.anchorOffset(), position.scrollTop())));
+		content.getUI().ifPresent(ui -> ui.beforeClientResponse(content,
+				context -> stabilize(position.anchorKey(), position.anchorOffset(), position.scrollTop(), true)));
 	}
 
 	private void scrollToPendingAnchor() {
@@ -84,14 +75,72 @@ public final class DesignerViewport implements Serializable {
 
 		final String anchorKey = pendingAnchorKey;
 		pendingAnchorKey = null;
-		content.getUI().ifPresent(ui -> ui.beforeClientResponse(content, context -> content.getElement().executeJs("""
-			const anchor = Array.from(this.querySelectorAll('[data-tt-anchor]'))
-			   .find(element => element.getAttribute('data-tt-anchor') === $0);
-			if (anchor) {
-			   const viewportTop = this.getBoundingClientRect().top;
-			   this.scrollTop += anchor.getBoundingClientRect().top - viewportTop;
+		content.getUI().ifPresent(ui -> ui.beforeClientResponse(content, context -> stabilize(anchorKey, 0, 0, false)));
+	}
+
+	private void stabilize(final String anchorKey, final double anchorOffset, final double fallbackScrollTop,
+			final boolean restoreFallback) {
+		content.getElement().executeJs("""
+			if (this.__ttViewportRestore) {
+			   this.__ttViewportRestore.stop();
 			}
-			""", anchorKey)));
+
+			const viewport = this;
+			let active = true;
+			let frame = 0;
+			const timeouts = [];
+			const anchors = () => Array.from(viewport.querySelectorAll('[data-tt-anchor]'));
+			const findAnchor = () => anchors()
+			   .find(element => element.getAttribute('data-tt-anchor') === $0);
+			const correct = () => {
+			   if (!active) {
+			      return;
+			   }
+			   const anchor = findAnchor();
+			   if (anchor) {
+			      const viewportTop = viewport.getBoundingClientRect().top;
+			      const currentOffset = anchor.getBoundingClientRect().top - viewportTop;
+			      const correction = currentOffset - $1;
+			      if (Math.abs(correction) > 0.5) {
+			         viewport.scrollTop += correction;
+			      }
+			   } else if ($3) {
+			      viewport.scrollTop = $2;
+			   }
+			};
+			const schedule = () => {
+			   if (!active || frame) {
+			      return;
+			   }
+			   frame = requestAnimationFrame(() => {
+			      frame = 0;
+			      correct();
+			   });
+			};
+			const stop = () => {
+			   if (!active) {
+			      return;
+			   }
+			   active = false;
+			   observer.disconnect();
+			   if (frame) {
+			      cancelAnimationFrame(frame);
+			   }
+			   timeouts.forEach(clearTimeout);
+			   ['wheel', 'touchstart', 'pointerdown', 'keydown']
+			      .forEach(type => viewport.removeEventListener(type, stop));
+			   delete viewport.__ttViewportRestore;
+			};
+			const observer = new ResizeObserver(schedule);
+			anchors().forEach(element => observer.observe(element));
+			['wheel', 'touchstart', 'pointerdown', 'keydown']
+			   .forEach(type => viewport.addEventListener(type, stop, { once: true }));
+			viewport.__ttViewportRestore = { stop };
+
+			schedule();
+			[50, 150, 300, 600].forEach(delay => timeouts.push(setTimeout(schedule, delay)));
+			timeouts.push(setTimeout(stop, 1000));
+			""", anchorKey, anchorOffset, fallbackScrollTop, restoreFallback);
 	}
 
 	public record ViewportPosition(String anchorKey, double anchorOffset, double scrollTop) implements Serializable {

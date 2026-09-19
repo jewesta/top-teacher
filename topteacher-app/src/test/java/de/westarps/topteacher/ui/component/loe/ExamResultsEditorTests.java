@@ -28,6 +28,7 @@ import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.menubar.MenuBar;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
 
@@ -269,6 +270,7 @@ class ExamResultsEditorTests {
 		clearInvocations(levelOfExpectationsRepository);
 
 		assertThat(reload.isEnabled()).isTrue();
+		assertThat(toolbar(editor).getChildren().toList().getLast()).isSameAs(reload);
 		reload.click();
 
 		verify(levelOfExpectationsRepository).findPartsByExamId(EXAM.id());
@@ -439,6 +441,11 @@ class ExamResultsEditorTests {
 	private static MenuBar pdfMenu(final Component root) {
 		return components(root, MenuBar.class).stream().filter(menu -> menu.getClassNames().contains("tt-pdf-menu"))
 				.findFirst().orElseThrow();
+	}
+
+	private static HorizontalLayout toolbar(final Component root) {
+		return components(root, HorizontalLayout.class).stream()
+				.filter(layout -> layout.getClassNames().contains("tt-designer-toolbar")).findFirst().orElseThrow();
 	}
 
 	private static Icon pdfMenuIcon(final Component root) {

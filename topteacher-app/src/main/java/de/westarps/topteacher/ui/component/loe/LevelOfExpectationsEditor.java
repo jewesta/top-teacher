@@ -241,7 +241,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 		}
 
 		examPointsBadge = components.pointBadge("Gesamt", this::pointsForExam);
-		toolbar().add(save, discard, reload, addPart, collapseState.toggleButton(allDetailKeys()), fullscreenButton);
+		toolbar().add(save, discard, addPart, collapseState.toggleButton(allDetailKeys()), fullscreenButton, reload);
 		toolbarSummary().add(examPointsBadge);
 	}
 

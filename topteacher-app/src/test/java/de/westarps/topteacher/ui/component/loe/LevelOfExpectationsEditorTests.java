@@ -83,6 +83,7 @@ class LevelOfExpectationsEditorTests {
 		clearInvocations(repository);
 
 		assertThat(reload.isEnabled()).isTrue();
+		assertThat(toolbar(editor).getChildren().toList().getLast()).isSameAs(reload);
 		reload.click();
 
 		verify(repository).findPartsByExamId(EXAM.id());
@@ -548,6 +549,11 @@ class LevelOfExpectationsEditorTests {
 
 	private static List<String> badgeTexts(final Component root) {
 		return components(root, LoeBadge.class).stream().map(LoeBadge::getText).toList();
+	}
+
+	private static HorizontalLayout toolbar(final Component root) {
+		return components(root, HorizontalLayout.class).stream()
+				.filter(layout -> layout.getClassNames().contains("tt-designer-toolbar")).findFirst().orElseThrow();
 	}
 
 	private static List<Button> saveButtons(final Component root) {
