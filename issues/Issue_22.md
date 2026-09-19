@@ -27,6 +27,10 @@
   order and starting each pupil on a separate PDF document boundary.
 - Keep the download options text-only; use the concise label `Laden` and the
   established download icon for both menu buttons.
+- Offer an icon-only `Änderungen verwerfen` action in the results toolbar. It
+  restores the current pupil's last persisted result state without a full
+  refresh and is enabled only while unsaved changes exist. Require explicit
+  confirmation before discarding.
 
 ## Progress
 
@@ -43,6 +47,9 @@
 - Replaced the evaluation view's `Excel` action with the three-option
   `Laden` menu, naming the spreadsheet and its downloaded file by their purpose
   as `Punktetabelle`.
+- Added a dirty-state-aware discard action to the results toolbar.
+- Safeguarded discarding with a destructive confirmation dialog that names the
+  affected pupil.
 
 ## Verification
 
@@ -64,6 +71,9 @@
   - The results view uses the same `Laden` label and the explicit singular
     options `Ergebnisbogen (Schüler:innen-Version)` and `Ergebnisbogen
     (Lehrer:innen-Version)`.
+  - The icon-only discard action is disabled for clean results, becomes enabled
+    after an edit, changes nothing before confirmation, then restores points and
+    aggregate badges without persistence writes.
   - For seven assigned pupils, the combined pupil PDF has 14 pages and the
     combined teacher PDF has 21 pages. Extracted text and rendered page samples
     confirm the pupil order, clean boundaries between pupils, and the existing

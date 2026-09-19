@@ -79,11 +79,23 @@ public final class TopTeacherDialogs {
 
 	public static void configureDeleteConfirmation(final ConfirmDialog dialog, final String header,
 			final Runnable confirmAction) {
+		configureDestructiveConfirmation(dialog, header, "Diese Aktion kann nicht rückgängig gemacht werden.",
+				"Löschen", confirmAction);
+	}
+
+	public static void configureDiscardConfirmation(final ConfirmDialog dialog, final String header,
+			final Runnable confirmAction) {
+		configureDestructiveConfirmation(dialog, header, "Die nicht gespeicherten Änderungen gehen verloren.",
+				"Verwerfen", confirmAction);
+	}
+
+	private static void configureDestructiveConfirmation(final ConfirmDialog dialog, final String header,
+			final String text, final String confirmText, final Runnable confirmAction) {
 		dialog.setHeader(header);
-		dialog.setText("Diese Aktion kann nicht rückgängig gemacht werden.");
+		dialog.setText(text);
 		dialog.setCancelable(true);
 		dialog.setCancelText("Abbrechen");
-		dialog.setConfirmText("Löschen");
+		dialog.setConfirmText(confirmText);
 		dialog.setConfirmButtonTheme("error primary");
 		dialog.addConfirmListener(event -> confirmAction.run());
 	}
