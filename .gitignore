@@ -19,6 +19,9 @@ topteacher-app/src/main/frontend/index.html
 .idea/
 *.iml
 .vscode/
+.project
+.classpath
+.settings/
 
 # OS metadata
 .DS_Store

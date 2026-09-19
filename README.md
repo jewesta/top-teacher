@@ -109,6 +109,21 @@ Wichtige Properties:
 
 Beim ersten Start führt TopTeacher durch die Datenbank-Initialisierung. Dabei kann eine leere Datenbank mit Basisdaten oder eine Datenbank mit Demodaten angelegt werden. Später kann die Datenbank in den Einstellungen im Tab `Zurücksetzen` erneut initialisiert werden.
 
+### Linux helper script
+
+`run/linux/start-teacher.sh` is a repository-only convenience for launching an
+already packaged TopTeacher jar on Linux. It is not copied to the release
+directory and does not constitute a supported Linux application package.
+
+```shell
+./run/linux/start-teacher.sh /path/to/TopTeacher.jar
+```
+
+The helper requires Java 21 or newer. It opens the browser after the
+application is ready and runs with development services and the H2 console
+disabled. TopTeacher remains attached to the terminal and can be stopped with
+`Ctrl-C`.
+
 ## MCP interface
 
 TopTeacher can expose a Model Context Protocol interface to AI clients through
