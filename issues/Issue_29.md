@@ -88,6 +88,14 @@ does not expose general-purpose database mutation.
   configured target folder. The MCP operation accepts no path, changes no
   settings, and returns a structured failure when backup is not configured or
   cannot be written.
+- The EH and Results editors expose an explicit database reload action. Reload
+  remains unavailable while local edits are dirty and preserves the selected
+  pupil, EH collapse state, and the logical item at the top of the scroll
+  viewport.
+- Concrete EH and result links use stable database IDs for the complete
+  part/category/task/requirement chain. Opening a link validates that chain,
+  expands its EH ancestors, and scrolls the requirement into view. Result links
+  additionally require and select an assigned pupil.
 - Derive sort order from the nested request order. Criteria continue to be
   derived by the existing `[label](eh:key)` Markdown convention.
 - Bound nested request sizes and Markdown lengths at the MCP boundary.
@@ -144,6 +152,8 @@ does not expose general-purpose database mutation.
   UI so archived pupils cannot receive new exam assignments.
 - [x] Added stable exam-view deep links for the exam itself, its level of
   expectations, its Results tab, and an assigned pupil within Results.
+- [x] Added scroll-preserving reload actions to the EH and Results toolbars and
+  concrete requirement deep links for both editors.
 - [x] Added a read-only course-creation options tool; subjects and grading scales
   still have no MCP write path.
 - [x] Added manual database-backup creation through the existing configured
@@ -154,9 +164,15 @@ does not expose general-purpose database mutation.
 
 ## Verification
 
-- `mvn -pl topteacher-app -am test`: 275 tests passed across the six-module
-  reactor, including 70 focused `topteacher-mcp` tests and 112 assembled
+- `mvn -pl topteacher-app -am test`: 286 tests passed across the six-module
+  reactor, including 70 focused `topteacher-mcp` tests and 123 assembled
   `topteacher-app` tests.
+- Focused editor and route tests verify clean-state reload actions, stable
+  hierarchy anchors, full parent-chain validation, EH ancestor expansion, and
+  concrete EH/result route selection.
+- Live demo-data checks opened concrete EH and result requirement URLs, found
+  the requested requirement at the top of each viewport, and confirmed that
+  toolbar reloads preserved that anchored scroll position.
 - The disabled context exposes no MCP tools. The enabled context registers the
   nineteen intended object-rooted tool schemas.
 - The HTTP integration test verifies an unauthenticated `401` response, an

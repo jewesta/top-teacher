@@ -29,6 +29,7 @@ import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.RouteAlias;
 import com.vaadin.flow.router.RouteParameters;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
@@ -53,8 +54,14 @@ import de.westarps.topteacher.ui.component.loe.ExamEvaluationViewer;
 import de.westarps.topteacher.ui.component.loe.ExamNotesEditor;
 import de.westarps.topteacher.ui.component.loe.ExamResultsEditor;
 import de.westarps.topteacher.ui.component.loe.LevelOfExpectationsEditor;
+import de.westarps.topteacher.ui.component.loe.LoeNavigationTarget;
 
 @Route(value = "exams/:examId?/:section?/:pupilId?", layout = MainLayout.class)
+@RouteAlias(value = "exams/:examId/:section/part/:partId/category/:categoryId/task/:taskId/requirement/:requirementId",
+		layout = MainLayout.class)
+@RouteAlias(
+		value = "exams/:examId/:section/:pupilId/part/:partId/category/:categoryId/task/:taskId/requirement/:requirementId",
+		layout = MainLayout.class)
 public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterObserver {
 
 	public static final String ROUTE = "exams";
@@ -64,6 +71,10 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 	private static final String EXAM_ID_PARAMETER = "examId";
 	private static final String SECTION_PARAMETER = "section";
 	private static final String PUPIL_ID_PARAMETER = "pupilId";
+	private static final String PART_ID_PARAMETER = "partId";
+	private static final String CATEGORY_ID_PARAMETER = "categoryId";
+	private static final String TASK_ID_PARAMETER = "taskId";
+	private static final String REQUIREMENT_ID_PARAMETER = "requirementId";
 
 	private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
@@ -157,7 +168,7 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 
 		try {
 			openDeepLink(positiveId(parameters, EXAM_ID_PARAMETER), parameters.get(SECTION_PARAMETER).orElse(null),
-					optionalPositiveId(parameters, PUPIL_ID_PARAMETER));
+					optionalPositiveId(parameters, PUPIL_ID_PARAMETER), optionalLoeTarget(parameters));
 		} catch (final IllegalArgumentException exception) {
 			Notification.show(exception.getMessage());
 		}
@@ -255,13 +266,20 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 		});
 	}
 
-	private void openDeepLink(final int examId, final String section, final Integer pupilId) {
+	private void openDeepLink(final int examId, final String section, final Integer pupilId,
+			final LoeNavigationTarget target) {
 		if (pupilId != null && !RESULTS_SECTION.equals(section)) {
 			throw new IllegalArgumentException(
 					"Eine Schüler:innen-ID kann nur mit dem Bereich Ergebnisse geöffnet werden.");
 		}
 		if (section != null && !LEVEL_OF_EXPECTATIONS_SECTION.equals(section) && !RESULTS_SECTION.equals(section)) {
 			throw new IllegalArgumentException("Unbekannter Klausurbereich: " + section);
+		}
+		if (target != null && !LEVEL_OF_EXPECTATIONS_SECTION.equals(section) && !RESULTS_SECTION.equals(section)) {
+			throw new IllegalArgumentException("Ein EH-Pfad benötigt den Bereich EH oder Ergebnisse.");
+		}
+		if (target != null && RESULTS_SECTION.equals(section) && pupilId == null) {
+			throw new IllegalArgumentException("Ein Ergebnis-Pfad benötigt eine Schüler:innen-ID.");
 		}
 
 		final Exam exam = examRepository.findById(examId)
@@ -276,12 +294,19 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 		getGrid().select(exam);
 		if (LEVEL_OF_EXPECTATIONS_SECTION.equals(section)) {
 			getContextTabs().setSelectedTab(levelOfExpectationsTab);
+			if (target != null && !levelOfExpectationsEditor.focusRequirement(target)) {
+				Notification.show("Anforderung wurde im angegebenen EH-Pfad nicht gefunden.");
+			}
 			return;
 		}
 		if (RESULTS_SECTION.equals(section)) {
 			getContextTabs().setSelectedTab(resultsTab);
 			if (pupilId != null && !examResultsEditor.selectPupil(pupilId)) {
 				Notification.show("Schüler:in ist dieser Klausur nicht zugeordnet: " + pupilId);
+				return;
+			}
+			if (target != null && !examResultsEditor.focusRequirement(target)) {
+				Notification.show("Anforderung wurde im angegebenen EH-Pfad nicht gefunden.");
 			}
 		}
 	}
@@ -303,6 +328,21 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 
 	private static Integer optionalPositiveId(final RouteParameters parameters, final String parameterName) {
 		return parameters.get(parameterName).isEmpty() ? null : positiveId(parameters, parameterName);
+	}
+
+	private static LoeNavigationTarget optionalLoeTarget(final RouteParameters parameters) {
+		final List<String> pathParameters = List.of(PART_ID_PARAMETER, CATEGORY_ID_PARAMETER, TASK_ID_PARAMETER,
+				REQUIREMENT_ID_PARAMETER);
+		final long presentParameters = pathParameters.stream().filter(name -> parameters.get(name).isPresent()).count();
+		if (presentParameters == 0) {
+			return null;
+		}
+		if (presentParameters != pathParameters.size()) {
+			throw new IllegalArgumentException("Unvollständiger EH-Pfad im TopTeacher-Link.");
+		}
+		return new LoeNavigationTarget(positiveId(parameters, PART_ID_PARAMETER),
+				positiveId(parameters, CATEGORY_ID_PARAMETER), positiveId(parameters, TASK_ID_PARAMETER),
+				positiveId(parameters, REQUIREMENT_ID_PARAMETER));
 	}
 
 	private void configureEditors() {

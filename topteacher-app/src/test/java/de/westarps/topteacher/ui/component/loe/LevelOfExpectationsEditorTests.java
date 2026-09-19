@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -71,6 +72,43 @@ class LevelOfExpectationsEditorTests {
 		final List<Details> refreshedDetails = components(editor, Details.class);
 		assertThat(refreshedDetails).hasSize(3);
 		assertThat(refreshedDetails).extracting(Details::isOpened).containsExactly(true, false, true);
+	}
+
+	@Test
+	void reloadsFromTheDatabaseOnlyWhileTheEditorIsClean() {
+		final LevelOfExpectationsRepository repository = repositoryWithHierarchy();
+		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repository);
+		editor.setExam(EXAM);
+		final Button reload = buttonsByAriaLabel(editor, "Neu laden").getFirst();
+		clearInvocations(repository);
+
+		assertThat(reload.isEnabled()).isTrue();
+		reload.click();
+
+		verify(repository).findPartsByExamId(EXAM.id());
+		verify(repository).findCategoriesByExamId(EXAM.id());
+		verify(repository).findTasksByExamId(EXAM.id());
+		verify(repository).findRequirementsByExamId(EXAM.id());
+
+		components(editor, IntegerField.class).getFirst().setValue(7);
+
+		assertThat(buttonsByAriaLabel(editor, "Neu laden").getFirst().isEnabled()).isFalse();
+	}
+
+	@Test
+	void marksTheHierarchyAndExpandsThePathForDeepLinks() {
+		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repositoryWithHierarchy());
+		editor.setExam(EXAM);
+		collapseButtons(editor).getFirst().click();
+
+		assertThat(components(editor, Details.class)).extracting(Details::isOpened).containsOnly(false);
+		assertThat(
+				editor.focusRequirement(new LoeNavigationTarget(PART.id(), CATEGORY.id(), TASK.id(), REQUIREMENT.id())))
+						.isTrue();
+		assertThat(components(editor, Details.class)).extracting(Details::isOpened).containsOnly(true);
+		assertThat(anchorKeys(editor)).contains("part:1", "category:2", "task:3", "requirement:4");
+		assertThat(editor.focusRequirement(
+				new LoeNavigationTarget(SECOND_PART.id(), CATEGORY.id(), TASK.id(), REQUIREMENT.id()))).isFalse();
 	}
 
 	@Test
@@ -528,6 +566,12 @@ class LevelOfExpectationsEditorTests {
 	private static List<Button> buttonsByAriaLabel(final Component root, final String ariaLabel) {
 		return components(root, Button.class).stream()
 				.filter(button -> ariaLabel.equals(button.getElement().getAttribute("aria-label"))).toList();
+	}
+
+	private static List<String> anchorKeys(final Component root) {
+		return components(root, Component.class).stream()
+				.map(component -> component.getElement().getAttribute("data-tt-anchor")).filter(Objects::nonNull)
+				.toList();
 	}
 
 	private static TextField titleField(final Component root, final String value) {

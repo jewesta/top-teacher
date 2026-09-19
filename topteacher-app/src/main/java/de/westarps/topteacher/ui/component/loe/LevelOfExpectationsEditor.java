@@ -18,6 +18,7 @@ import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeTask;
 import de.westarps.topteacher.ui.component.AbstractDesigner;
+import de.westarps.topteacher.ui.component.DesignerViewport;
 import de.westarps.topteacher.ui.component.FullscreenButton;
 
 public class LevelOfExpectationsEditor extends AbstractDesigner {
@@ -27,6 +28,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 	private final LoeSaveController saveController = new LoeSaveController();
 	private final LoeSectionComponents components = new LoeSectionComponents(saveController);
 	private final LoeCollapseState collapseState = new LoeCollapseState(components);
+	private final DesignerViewport viewport = new DesignerViewport(content());
 	private final LoePartSection.Handler partHandler = new LoePartSection.Handler() {
 
 		@Override
@@ -151,6 +153,15 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 		} : changeHandler;
 	}
 
+	public boolean focusRequirement(final LoeNavigationTarget target) {
+		if (!contains(target)) {
+			return false;
+		}
+		collapseState.expand(List.of(target.partAnchor(), target.categoryAnchor(), target.taskAnchor()));
+		viewport.scrollTo(target.requirementAnchor());
+		return true;
+	}
+
 	private void refresh() {
 		saveController.clearButtons();
 		collapseState.clearRenderedComponents();
@@ -215,6 +226,8 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 	private void configureToolbar() {
 		final Button save = components.saveButton();
 		final Button discard = components.discardButton();
+		final Button reload = saveController
+				.registerClean(components.iconButton("Neu laden", VaadinIcon.REFRESH, event -> refreshFromDatabase()));
 		final Button addPart = components.commandButton("Klausurteil hinzufügen", VaadinIcon.PLUS, event -> {
 			final int sortOrder = levelOfExpectationsRepository.nextPartSortOrder(exam.id());
 			final LoePart part = levelOfExpectationsRepository
@@ -228,7 +241,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 		}
 
 		examPointsBadge = components.pointBadge("Gesamt", this::pointsForExam);
-		toolbar().add(save, discard, addPart, collapseState.toggleButton(allDetailKeys()), fullscreenButton);
+		toolbar().add(save, discard, reload, addPart, collapseState.toggleButton(allDetailKeys()), fullscreenButton);
 		toolbarSummary().add(examPointsBadge);
 	}
 
@@ -239,6 +252,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 				partHandler, () -> percentageForPart(part), () -> pointsForPart(part), partDescendantDetailKeys(part),
 				correctionMode);
 		collapseState.configure(section.getContent(), detailKey("part", part.id()));
+		DesignerViewport.mark(section, detailKey("part", part.id()));
 		return section;
 	}
 
@@ -248,6 +262,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 				taskSections, components, collapseState, categoryHandler, () -> pointsForCategory(category),
 				categoryDescendantDetailKeys(category), correctionMode);
 		collapseState.configure(section.getContent(), detailKey("category", category.id()));
+		DesignerViewport.mark(section, detailKey("category", category.id()));
 		return section;
 	}
 
@@ -258,13 +273,27 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 				components, collapseState, taskHandler, () -> pointsForTask(task),
 				List.of(detailKey("task", task.id())), correctionMode);
 		collapseState.configure(section.getContent(), detailKey("task", task.id()));
+		DesignerViewport.mark(section, detailKey("task", task.id()));
 		return section;
 	}
 
 	private LoeRequirementSection createRequirementSection(final LoeRequirement requirement) {
 		final List<LoeRequirement> siblings = requirementsFor(taskFor(requirement));
-		return new LoeRequirementSection(requirement, siblings, components, requirementHandler,
-				requirementNumber(siblings, requirement), correctionMode);
+		final LoeRequirementSection section = new LoeRequirementSection(requirement, siblings, components,
+				requirementHandler, requirementNumber(siblings, requirement), correctionMode);
+		DesignerViewport.mark(section, detailKey("requirement", requirement.id()));
+		return section;
+	}
+
+	private boolean contains(final LoeNavigationTarget target) {
+		return parts.stream().anyMatch(part -> part.id().equals(target.partId()))
+				&& categories.stream()
+						.anyMatch(category -> category.id().equals(target.categoryId())
+								&& category.partId().equals(target.partId()))
+				&& tasks.stream().anyMatch(
+						task -> task.id().equals(target.taskId()) && task.categoryId().equals(target.categoryId()))
+				&& requirements.stream().anyMatch(requirement -> requirement.id().equals(target.requirementId())
+						&& requirement.taskId().equals(target.taskId()));
 	}
 
 	private void addDefaultCategory(final LoePart part) {
@@ -369,7 +398,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 	}
 
 	private String detailKey(final String type, final Integer id) {
-		return type + ":" + id;
+		return LoeNavigationTarget.anchor(type, id);
 	}
 
 	private List<String> allDetailKeys() {
@@ -557,6 +586,12 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 
 	private void discardDirtySections() {
 		refresh();
+	}
+
+	private void refreshFromDatabase() {
+		if (!isDirty()) {
+			viewport.refreshPreservingPosition(this::refresh);
+		}
 	}
 
 	private void notifyChanged() {

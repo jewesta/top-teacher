@@ -1,6 +1,7 @@
 package de.westarps.topteacher.ui.view;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -18,6 +19,7 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.RouteAlias;
 import com.vaadin.flow.router.RouteParameters;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
@@ -33,6 +35,10 @@ import de.westarps.topteacher.model.Pupil;
 import de.westarps.topteacher.model.SchoolClass;
 import de.westarps.topteacher.model.SchoolYear;
 import de.westarps.topteacher.model.Subject;
+import de.westarps.topteacher.model.loe.LoeCategory;
+import de.westarps.topteacher.model.loe.LoePart;
+import de.westarps.topteacher.model.loe.LoeRequirement;
+import de.westarps.topteacher.model.loe.LoeTask;
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
 
 class ExamsViewDeepLinkTests {
@@ -45,6 +51,10 @@ class ExamsViewDeepLinkTests {
 			GRADING_SCALE.id());
 	private static final Pupil FIRST_PUPIL = new Pupil(50, "Ada", "Lovelace", Lifecycle.ACTIVE);
 	private static final Pupil SECOND_PUPIL = new Pupil(51, "Grace", "Hopper", Lifecycle.ACTIVE);
+	private static final LoePart PART = new LoePart(60, EXAM.id(), "Klausurteil A", 0);
+	private static final LoeCategory CATEGORY = new LoeCategory(61, PART.id(), "Inhalt", "", 0);
+	private static final LoeTask TASK = new LoeTask(62, CATEGORY.id(), "Teilaufgabe 1", 0);
+	private static final LoeRequirement REQUIREMENT = new LoeRequirement(63, TASK.id(), "Anforderung", 5, false, 0);
 
 	private final CourseRepository courses = mock(CourseRepository.class);
 	private final ExamRepository exams = mock(ExamRepository.class);
@@ -66,12 +76,20 @@ class ExamsViewDeepLinkTests {
 		when(exams.findPupilRemovalLocks(EXAM.id())).thenReturn(Map.of());
 		when(gradingScales.findActive()).thenReturn(List.of(GRADING_SCALE));
 		when(gradingScales.findById(GRADING_SCALE.id())).thenReturn(Optional.of(GRADING_SCALE));
+		when(levelOfExpectations.findPartsByExamId(EXAM.id())).thenReturn(List.of(PART));
+		when(levelOfExpectations.findCategoriesByExamId(EXAM.id())).thenReturn(List.of(CATEGORY));
+		when(levelOfExpectations.findTasksByExamId(EXAM.id())).thenReturn(List.of(TASK));
+		when(levelOfExpectations.findRequirementsByExamId(EXAM.id())).thenReturn(List.of(REQUIREMENT));
 		view = new ExamsView(courses, exams, levelOfExpectations, gradingScales);
 	}
 
 	@Test
 	void routeKeepsTheExamListAndAddsOptionalDeepLinkSegments() {
 		assertThat(ExamsView.class.getAnnotation(Route.class).value()).isEqualTo("exams/:examId?/:section?/:pupilId?");
+		assertThat(Stream.of(ExamsView.class.getAnnotationsByType(RouteAlias.class)).map(RouteAlias::value))
+				.containsExactlyInAnyOrder(
+						"exams/:examId/:section/part/:partId/category/:categoryId/task/:taskId/requirement/:requirementId",
+						"exams/:examId/:section/:pupilId/part/:partId/category/:categoryId/task/:taskId/requirement/:requirementId");
 	}
 
 	@Test
@@ -92,13 +110,34 @@ class ExamsViewDeepLinkTests {
 	}
 
 	@Test
+	void opensAConcreteLevelOfExpectationsPath() {
+		view.beforeEnter(
+				event(Map.of("examId", EXAM.id().toString(), "section", ExamsView.LEVEL_OF_EXPECTATIONS_SECTION,
+						"partId", PART.id().toString(), "categoryId", CATEGORY.id().toString(), "taskId",
+						TASK.id().toString(), "requirementId", REQUIREMENT.id().toString())));
+
+		assertThat(selectedExams()).containsExactly(EXAM);
+		assertThat(tabSheet().getSelectedTab().getLabel()).isEqualTo("EH");
+	}
+
+	@Test
 	void opensResultsWithTheRequestedPupilSelected() {
 		view.beforeEnter(event(Map.of("examId", EXAM.id().toString(), "section", ExamsView.RESULTS_SECTION, "pupilId",
 				SECOND_PUPIL.id().toString())));
 
 		assertThat(selectedExams()).containsExactly(EXAM);
 		assertThat(tabSheet().getSelectedTab().getLabel()).isEqualTo("Ergebnisse");
-		verify(levelOfExpectations).findRequirementResultsByExamAndPupil(EXAM.id(), SECOND_PUPIL.id());
+		verify(levelOfExpectations, atLeastOnce()).findRequirementResultsByExamAndPupil(EXAM.id(), SECOND_PUPIL.id());
+	}
+
+	@Test
+	void opensAConcreteResultPathForTheRequestedPupil() {
+		view.beforeEnter(event(Map.of("examId", EXAM.id().toString(), "section", ExamsView.RESULTS_SECTION, "pupilId",
+				SECOND_PUPIL.id().toString(), "partId", PART.id().toString(), "categoryId", CATEGORY.id().toString(),
+				"taskId", TASK.id().toString(), "requirementId", REQUIREMENT.id().toString())));
+
+		assertThat(tabSheet().getSelectedTab().getLabel()).isEqualTo("Ergebnisse");
+		verify(levelOfExpectations, atLeastOnce()).findRequirementResultsByExamAndPupil(EXAM.id(), SECOND_PUPIL.id());
 	}
 
 	private BeforeEnterEvent event(final Map<String, String> parameters) {

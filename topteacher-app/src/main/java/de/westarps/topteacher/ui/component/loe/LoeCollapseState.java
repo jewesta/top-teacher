@@ -72,7 +72,7 @@ final class LoeCollapseState {
 		updateToggleButtons();
 	}
 
-	private void expand(final List<String> keys) {
+	void expand(final List<String> keys) {
 		keys.forEach(key -> {
 			collapsedDetails.remove(key);
 			final Details details = detailsByKey.get(key);

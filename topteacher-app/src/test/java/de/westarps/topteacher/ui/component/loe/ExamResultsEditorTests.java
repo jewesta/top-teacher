@@ -2,6 +2,7 @@ package de.westarps.topteacher.ui.component.loe;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -10,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
@@ -258,6 +260,43 @@ class ExamResultsEditorTests {
 	}
 
 	@Test
+	void reloadsFromTheDatabaseOnlyWhileResultsAreClean() {
+		final LevelOfExpectationsRepository levelOfExpectationsRepository = levelOfExpectationsRepository();
+		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository(), examRepository(),
+				levelOfExpectationsRepository, gradingScaleRepository());
+		editor.setExam(EXAM);
+		final Button reload = buttonByAriaLabel(editor, "Neu laden");
+		clearInvocations(levelOfExpectationsRepository);
+
+		assertThat(reload.isEnabled()).isTrue();
+		reload.click();
+
+		verify(levelOfExpectationsRepository).findPartsByExamId(EXAM.id());
+		verify(levelOfExpectationsRepository).findCategoriesByExamId(EXAM.id());
+		verify(levelOfExpectationsRepository).findTasksByExamId(EXAM.id());
+		verify(levelOfExpectationsRepository).findRequirementsByExamId(EXAM.id());
+		assertThat(pupilSelector(editor).getValue()).isEqualTo(PUPIL);
+
+		components(editor, IntegerField.class).getFirst().setValue(3);
+
+		assertThat(reload.isEnabled()).isFalse();
+	}
+
+	@Test
+	void marksAndValidatesTheHierarchyForDeepLinks() {
+		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository(), examRepository(),
+				levelOfExpectationsRepository(), gradingScaleRepository());
+		editor.setExam(EXAM);
+
+		assertThat(
+				editor.focusRequirement(new LoeNavigationTarget(PART.id(), CATEGORY.id(), TASK.id(), REQUIREMENT.id())))
+						.isTrue();
+		assertThat(anchorKeys(editor)).contains("part:1", "category:2", "task:3", "requirement:4");
+		assertThat(editor.focusRequirement(new LoeNavigationTarget(99, CATEGORY.id(), TASK.id(), REQUIREMENT.id())))
+				.isFalse();
+	}
+
+	@Test
 	void deletesSelectedPupilResultsOnlyAfterConfirmation() {
 		final LevelOfExpectationsRepository levelOfExpectationsRepository = levelOfExpectationsRepository();
 		final CourseRepository courseRepository = courseRepository();
@@ -391,6 +430,12 @@ class ExamResultsEditorTests {
 				.findFirst().orElseThrow();
 	}
 
+	private static Button buttonByAriaLabel(final Component root, final String label) {
+		return components(root, Button.class).stream()
+				.filter(button -> label.equals(button.getElement().getAttribute("aria-label"))).findFirst()
+				.orElseThrow();
+	}
+
 	private static MenuBar pdfMenu(final Component root) {
 		return components(root, MenuBar.class).stream().filter(menu -> menu.getClassNames().contains("tt-pdf-menu"))
 				.findFirst().orElseThrow();
@@ -430,6 +475,12 @@ class ExamResultsEditorTests {
 	private static List<Checkbox> criterionCheckboxes(final Component root) {
 		return components(root, Checkbox.class).stream()
 				.filter(checkbox -> checkbox.getClassNames().contains("tt-results-criterion-checkbox")).toList();
+	}
+
+	private static List<String> anchorKeys(final Component root) {
+		return components(root, Component.class).stream()
+				.map(component -> component.getElement().getAttribute("data-tt-anchor")).filter(Objects::nonNull)
+				.toList();
 	}
 
 	@SuppressWarnings("unchecked")
