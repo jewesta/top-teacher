@@ -1,7 +1,6 @@
 package de.westarps.topteacher.ui.component;
 
 import java.util.List;
-import java.util.function.BooleanSupplier;
 
 import com.vaadin.flow.component.HasValidation;
 import com.vaadin.flow.component.button.Button;
@@ -18,26 +17,18 @@ public final class FormBinders {
 	}
 
 	public static DirtySaveButton bindDirtySaveButton(final Binder<?> binder, final Button saveButton) {
-		return bindDirtySaveButton(binder, saveButton, () -> true);
-	}
-
-	public static DirtySaveButton bindDirtySaveButton(final Binder<?> binder, final Button saveButton,
-			final BooleanSupplier enabledWhenDirty) {
-		return new DirtySaveButton(binder, saveButton, enabledWhenDirty);
+		return new DirtySaveButton(binder, saveButton);
 	}
 
 	public static final class DirtySaveButton {
 
 		private final Binder<?> binder;
 		private final Button saveButton;
-		private final BooleanSupplier enabledWhenDirty;
 		private List<Object> cleanValues = List.of();
 
-		private DirtySaveButton(final Binder<?> binder, final Button saveButton,
-				final BooleanSupplier enabledWhenDirty) {
+		private DirtySaveButton(final Binder<?> binder, final Button saveButton) {
 			this.binder = binder;
 			this.saveButton = saveButton;
-			this.enabledWhenDirty = enabledWhenDirty;
 			binder.setChangeDetectionEnabled(true);
 			binder.addValueChangeListener(event -> update());
 			reset();
@@ -48,11 +39,11 @@ public final class FormBinders {
 			update();
 		}
 
-		public void update() {
-			saveButton.setEnabled(enabledWhenDirty.getAsBoolean() && isDirty());
+		private void update() {
+			saveButton.setEnabled(isDirty());
 		}
 
-		public boolean isDirty() {
+		private boolean isDirty() {
 			return !currentValues().equals(cleanValues);
 		}
 

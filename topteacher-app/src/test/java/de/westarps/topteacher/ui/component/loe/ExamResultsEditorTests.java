@@ -25,8 +25,10 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
+import com.vaadin.flow.component.contextmenu.MenuItem;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.menubar.MenuBar;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
@@ -89,11 +91,22 @@ class ExamResultsEditorTests {
 		editor.setExam(EXAM);
 
 		final Button saveButton = saveButton(editor);
+		final Button discardButton = buttonByAriaLabel(editor, "Änderungen verwerfen");
+		final ConfirmDialog discardConfirmation = confirmation(editor, "Änderungen verwerfen?");
 		final MenuBar pdfMenu = pdfMenu(editor);
 		final IntegerField points = components(editor, IntegerField.class).getFirst();
 		assertThat(saveButton.isEnabled()).isFalse();
+		assertThat(discardButton.isEnabled()).isFalse();
+		assertThat(discardButton.getText()).isEmpty();
+		assertThat(discardButton.getIcon()).isInstanceOf(Icon.class).extracting(icon -> ((Icon) icon).getIcon())
+				.isEqualTo(VaadinIcon.ROTATE_LEFT.create().getIcon());
 		assertThat(pdfMenu.isEnabled()).isTrue();
-		assertThat(pdfMenuIcon(editor).getClassNames()).contains("tt-pdf-menu-icon");
+		final MenuItem pdfMenuItem = pdfMenu.getItems().getFirst();
+		assertThat(pdfMenuItem.getText()).isEqualTo("Laden");
+		assertThat(iconName(pdfMenuItem)).isEqualTo(VaadinIcon.DOWNLOAD.create().getIcon());
+		assertThat(pdfMenuItem.getSubMenu().getItems().stream().map(MenuItem::getText))
+				.containsExactly("Ergebnisbogen (Schüler:innen-Version)", "Ergebnisbogen (Lehrer:innen-Version)");
+		assertThat(pdfMenuItem.getSubMenu().getItems()).allMatch(item -> item.getChildren().findAny().isEmpty());
 		assertThat(points.getLabel()).isNull();
 		assertThat(pointsText(editor)).containsExactly("1 von 5 Punkten");
 		assertThat(points.getValue()).isEqualTo(1);
@@ -107,11 +120,35 @@ class ExamResultsEditorTests {
 		points.setValue(3);
 
 		assertThat(saveButton.isEnabled()).isTrue();
+		assertThat(discardButton.isEnabled()).isTrue();
 		assertThat(pdfMenu.isEnabled()).isFalse();
 		assertThat(pointsText(editor)).containsExactly("3 von 5 Punkten");
 		assertThat(badgeTexts(editor)).contains("Gesamt: 3 (+0)", "Summe: 3 (+0)");
 		verify(levelOfExpectationsRepository, never()).saveRequirementResult(any());
 		verify(levelOfExpectationsRepository, never()).saveCriterionResult(any());
+
+		withUi(() -> {
+			discardButton.click();
+
+			assertThat(discardConfirmation.isOpened()).isTrue();
+			assertThat(points.getValue()).isEqualTo(3);
+			verify(levelOfExpectationsRepository, never()).saveRequirementResult(any());
+			verify(levelOfExpectationsRepository, never()).saveCriterionResult(any());
+
+			ComponentUtil.fireEvent(discardConfirmation, new ConfirmDialog.ConfirmEvent(discardConfirmation, false));
+		});
+
+		assertThat(discardConfirmation.isOpened()).isFalse();
+		assertThat(points.getValue()).isEqualTo(1);
+		assertThat(pointsText(editor)).containsExactly("1 von 5 Punkten");
+		assertThat(badgeTexts(editor)).contains("Gesamt: 1 (+0)", "Summe: 1 (+0)");
+		assertThat(saveButton.isEnabled()).isFalse();
+		assertThat(discardButton.isEnabled()).isFalse();
+		assertThat(pdfMenu.isEnabled()).isTrue();
+		verify(levelOfExpectationsRepository, never()).saveRequirementResult(any());
+		verify(levelOfExpectationsRepository, never()).saveCriterionResult(any());
+
+		points.setValue(3);
 
 		saveButton.click();
 
@@ -119,6 +156,7 @@ class ExamResultsEditorTests {
 				.saveRequirementResult(new LoeRequirementResult(REQUIREMENT.id(), PUPIL.id(), 3));
 		verify(levelOfExpectationsRepository, never()).saveCriterionResult(any(LoeCriterionResult.class));
 		assertThat(saveButton.isEnabled()).isFalse();
+		assertThat(discardButton.isEnabled()).isFalse();
 		assertThat(pdfMenu.isEnabled()).isTrue();
 		assertThat(changes).hasValue(1);
 	}
@@ -318,7 +356,7 @@ class ExamResultsEditorTests {
 			editor.setExam(EXAM);
 
 			final Button deleteButton = deleteButton(editor);
-			final ConfirmDialog confirmation = components(editor, ConfirmDialog.class).getFirst();
+			final ConfirmDialog confirmation = confirmation(editor, "Ergebnisse löschen?");
 			final IntegerField points = components(editor, IntegerField.class).getFirst();
 			final TextArea comment = components(editor, TextArea.class).getFirst();
 			assertThat(deleteButton.isEnabled()).isTrue();
@@ -446,6 +484,21 @@ class ExamResultsEditorTests {
 				.orElseThrow();
 	}
 
+	private static ConfirmDialog confirmation(final Component root, final String header) {
+		return components(root, ConfirmDialog.class).stream()
+				.filter(dialog -> header.equals(dialog.getElement().getProperty("header"))).findFirst().orElseThrow();
+	}
+
+	private static void withUi(final Runnable action) {
+		final UI previousUi = UI.getCurrent();
+		UI.setCurrent(new UI());
+		try {
+			action.run();
+		} finally {
+			UI.setCurrent(previousUi);
+		}
+	}
+
 	private static MenuBar pdfMenu(final Component root) {
 		return components(root, MenuBar.class).stream().filter(menu -> menu.getClassNames().contains("tt-pdf-menu"))
 				.findFirst().orElseThrow();
@@ -456,9 +509,9 @@ class ExamResultsEditorTests {
 				.filter(layout -> layout.getClassNames().contains("tt-designer-toolbar")).findFirst().orElseThrow();
 	}
 
-	private static Icon pdfMenuIcon(final Component root) {
-		return components(root, Icon.class).stream().filter(icon -> icon.getClassNames().contains("tt-pdf-menu-icon"))
-				.findFirst().orElseThrow();
+	private static String iconName(final MenuItem item) {
+		return item.getChildren().filter(Icon.class::isInstance).map(Icon.class::cast).map(Icon::getIcon).findFirst()
+				.orElseThrow();
 	}
 
 	private static List<String> badgeTexts(final Component root) {

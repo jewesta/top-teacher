@@ -42,22 +42,14 @@ public class LevelOfExpectationsExportModelFactory {
 		return createModel(data, MarkdownView.PUPIL, false);
 	}
 
-	public LevelOfExpectationsExportModel createTeacherModel(final LevelOfExpectationsExportData data) {
-		return createTeacherModel(data, true);
-	}
-
 	public LevelOfExpectationsExportModel createTeacherModel(final LevelOfExpectationsExportData data,
 			final boolean showWatermark) {
-		return createModel(data, MarkdownView.TEACHER, true, showWatermark);
+		return createModel(data, MarkdownView.TEACHER, showWatermark);
 	}
 
 	private LevelOfExpectationsExportModel createModel(final LevelOfExpectationsExportData data,
-			final MarkdownView view, final boolean includeTeacherOnlyContent) {
-		return createModel(data, view, includeTeacherOnlyContent, false);
-	}
-
-	private LevelOfExpectationsExportModel createModel(final LevelOfExpectationsExportData data,
-			final MarkdownView view, final boolean includeTeacherOnlyContent, final boolean showWatermark) {
+			final MarkdownView view, final boolean showWatermark) {
+		final boolean teacherView = view == MarkdownView.TEACHER;
 		final Map<Integer, List<LoeCategory>> categoriesByPartId = groupByParentId(
 				sorted(data.categories(), Comparator.comparingInt(LoeCategory::sortOrder).thenComparing(LoeCategory::id,
 						Comparator.nullsLast(Integer::compareTo))),
@@ -84,9 +76,9 @@ public class LevelOfExpectationsExportModelFactory {
 								.stream()
 								.map(part -> createPart(part, categoriesByPartId, tasksByCategoryId,
 										requirementsByTaskId, criteriaByRequirementId, resultsByRequirementId,
-										resultsByCriterionId, view, includeTeacherOnlyContent))
+										resultsByCriterionId, view))
 								.toList();
-		final List<NoteSection> notes = includeTeacherOnlyContent ? sorted(data.noteSections(),
+		final List<NoteSection> notes = teacherView ? sorted(data.noteSections(),
 				Comparator.comparingInt(ExamNoteSection::sortOrder).thenComparing(ExamNoteSection::id,
 						Comparator.nullsLast(Integer::compareTo)))
 								.stream()
@@ -97,7 +89,7 @@ public class LevelOfExpectationsExportModelFactory {
 
 		return new LevelOfExpectationsExportModel(data.course(), data.exam(), data.examNumber(), data.pupil(),
 				data.gradingScale(), data.gradingScaleRanges(), PointSummary.sum(parts, Part::points), parts, notes,
-				showWatermark);
+				teacherView, teacherView && showWatermark);
 	}
 
 	private Part createPart(final LoePart part, final Map<Integer, List<LoeCategory>> categoriesByPartId,
@@ -105,12 +97,10 @@ public class LevelOfExpectationsExportModelFactory {
 			final Map<Integer, List<LoeRequirement>> requirementsByTaskId,
 			final Map<Integer, List<LoeCriterion>> criteriaByRequirementId,
 			final Map<Integer, LoeRequirementResult> resultsByRequirementId,
-			final Map<Integer, LoeCriterionResult> resultsByCriterionId, final MarkdownView view,
-			final boolean includeTeacherOnlyContent) {
+			final Map<Integer, LoeCriterionResult> resultsByCriterionId, final MarkdownView view) {
 		final List<Category> categories = categoriesByPartId.getOrDefault(part.id(), List.of()).stream()
 				.map(category -> createCategory(category, tasksByCategoryId, requirementsByTaskId,
-						criteriaByRequirementId, resultsByRequirementId, resultsByCriterionId, view,
-						includeTeacherOnlyContent))
+						criteriaByRequirementId, resultsByRequirementId, resultsByCriterionId, view))
 				.toList();
 		return new Part(part.title(), PointSummary.sum(categories, Category::points), categories);
 	}
@@ -119,11 +109,10 @@ public class LevelOfExpectationsExportModelFactory {
 			final Map<Integer, List<LoeRequirement>> requirementsByTaskId,
 			final Map<Integer, List<LoeCriterion>> criteriaByRequirementId,
 			final Map<Integer, LoeRequirementResult> resultsByRequirementId,
-			final Map<Integer, LoeCriterionResult> resultsByCriterionId, final MarkdownView view,
-			final boolean includeTeacherOnlyContent) {
+			final Map<Integer, LoeCriterionResult> resultsByCriterionId, final MarkdownView view) {
 		final List<Task> tasks = tasksByCategoryId.getOrDefault(category.id(), List.of()).stream()
 				.map(task -> createTask(task, requirementsByTaskId, criteriaByRequirementId, resultsByRequirementId,
-						resultsByCriterionId, view, includeTeacherOnlyContent))
+						resultsByCriterionId, view))
 				.toList();
 		return new Category(category.title(), sanitizer.markdownToHtml(category.descriptionMarkdown(), view),
 				PointSummary.sum(tasks, Task::points), tasks);
@@ -132,13 +121,12 @@ public class LevelOfExpectationsExportModelFactory {
 	private Task createTask(final LoeTask task, final Map<Integer, List<LoeRequirement>> requirementsByTaskId,
 			final Map<Integer, List<LoeCriterion>> criteriaByRequirementId,
 			final Map<Integer, LoeRequirementResult> resultsByRequirementId,
-			final Map<Integer, LoeCriterionResult> resultsByCriterionId, final MarkdownView view,
-			final boolean includeTeacherOnlyContent) {
+			final Map<Integer, LoeCriterionResult> resultsByCriterionId, final MarkdownView view) {
 		final List<LoeRequirement> requirements = requirementsByTaskId.getOrDefault(task.id(), List.of());
 		final List<Requirement> exportRequirements = new ArrayList<>();
 		for (int index = 0; index < requirements.size(); index++) {
 			exportRequirements.add(createRequirement(requirements.get(index), criteriaByRequirementId,
-					resultsByRequirementId, resultsByCriterionId, view, includeTeacherOnlyContent, index + 1));
+					resultsByRequirementId, resultsByCriterionId, view, index + 1));
 		}
 		return new Task(task.title(), PointSummary.sum(exportRequirements, Requirement::points), exportRequirements);
 	}
@@ -146,11 +134,10 @@ public class LevelOfExpectationsExportModelFactory {
 	private Requirement createRequirement(final LoeRequirement requirement,
 			final Map<Integer, List<LoeCriterion>> criteriaByRequirementId,
 			final Map<Integer, LoeRequirementResult> resultsByRequirementId,
-			final Map<Integer, LoeCriterionResult> resultsByCriterionId, final MarkdownView view,
-			final boolean includeTeacherOnlyContent, final int number) {
+			final Map<Integer, LoeCriterionResult> resultsByCriterionId, final MarkdownView view, final int number) {
 		final LoeRequirementResult result = resultsByRequirementId.get(requirement.id());
 		final int achievedPoints = result == null ? 0 : result.points();
-		final String comment = includeTeacherOnlyContent && result != null ? result.comment() : "";
+		final String comment = view == MarkdownView.TEACHER && result != null ? result.comment() : "";
 		return new Requirement(number,
 				sanitizer.markdownToHtml(requirement.descriptionMarkdown(), view,
 						criterionStatusByKey(criteriaByRequirementId.getOrDefault(requirement.id(), List.of()),
@@ -220,7 +207,7 @@ public class LevelOfExpectationsExportModelFactory {
 
 	public record LevelOfExpectationsExportModel(Course course, Exam exam, ExamNumber examNumber, Pupil pupil,
 			GradingScale gradingScale, List<GradingScaleRange> gradingScaleRanges, PointSummary points,
-			List<Part> parts, List<NoteSection> noteSections, boolean showWatermark) {
+			List<Part> parts, List<NoteSection> noteSections, boolean showBonusPointBreakdown, boolean showWatermark) {
 
 		public LevelOfExpectationsExportModel {
 			course = Objects.requireNonNull(course, "course must not be null");
@@ -248,6 +235,17 @@ public class LevelOfExpectationsExportModelFactory {
 
 		public String pupilDisplayName() {
 			return pupil.name() + " " + pupil.surname();
+		}
+
+		public String aggregateMaxPointsDisplayName(final PointSummary pointSummary) {
+			final PointSummary aggregate = Objects.requireNonNull(pointSummary, "pointSummary must not be null");
+			return showBonusPointBreakdown ? aggregate.maxDisplayName() : String.valueOf(aggregate.maxPoints());
+		}
+
+		public String aggregateAchievedPointsDisplayName(final PointSummary pointSummary) {
+			final PointSummary aggregate = Objects.requireNonNull(pointSummary, "pointSummary must not be null");
+			return showBonusPointBreakdown ? aggregate.achievedDisplayName()
+					: String.valueOf(aggregate.totalAchievedPoints());
 		}
 
 		public String totalGradeDisplayName() {
@@ -396,6 +394,10 @@ public class LevelOfExpectationsExportModelFactory {
 
 		public String achievedDisplayName() {
 			return displayName(achievedPoints, bonusAchievedPoints);
+		}
+
+		public int totalAchievedPoints() {
+			return achievedPoints + bonusAchievedPoints;
 		}
 
 		public int effectiveAchievedPoints(final int maxPoints) {

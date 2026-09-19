@@ -36,7 +36,7 @@ public class ExamEvaluationExportController {
 	}
 
 	private static String excelFileName(final Exam exam) {
-		return "auswertung-" + fileNamePart(exam.title()) + ".xlsx";
+		return "punktetabelle-" + fileNamePart(exam.title()) + ".xlsx";
 	}
 
 	private static String fileNamePart(final String value) {

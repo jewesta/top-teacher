@@ -4,6 +4,8 @@
 	--lumo-primary-color-10pct: hsla(350, 48%, 34%, 0.1);
 	--lumo-primary-text-color: hsl(350, 54%, 30%);
 	--lumo-primary-contrast-color: #fff;
+	/* Prevent horizontal trackpad swipes from triggering browser history navigation. */
+	overscroll-behavior-x: contain;
 }
 
 vaadin-app-layout::part(drawer) {
@@ -427,16 +429,6 @@ vaadin-app-layout::part(navbar) {
 
 .tt-exam-results-editor .tt-designer-toolbar-summary .tt-eh-points {
 	width: var(--tt-results-points-column-width);
-}
-
-.tt-pdf-menu-label {
-	gap: var(--lumo-space-xs);
-}
-
-.tt-pdf-menu-icon {
-	flex: 0 0 auto;
-	height: 1em;
-	width: 1em;
 }
 
 .tt-spreadsheet-grid::part(header-cell) {

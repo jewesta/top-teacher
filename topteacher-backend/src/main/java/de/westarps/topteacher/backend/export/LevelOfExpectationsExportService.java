@@ -1,5 +1,7 @@
 package de.westarps.topteacher.backend.export;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 
 import de.westarps.topteacher.backend.export.LevelOfExpectationsExportModelFactory.LevelOfExpectationsExportData;
@@ -48,52 +50,36 @@ public class LevelOfExpectationsExportService {
 		this.pdfRenderer = pdfRenderer;
 	}
 
-	public String renderPupilHtml(final int examId, final int pupilId) {
-		return htmlRenderer.renderModel(PUPIL_TEMPLATE, createPupilModel(examId, pupilId));
-	}
-
 	public String renderPupilHtml(final LevelOfExpectationsExportModel model) {
 		return htmlRenderer.renderModel(PUPIL_TEMPLATE, model);
-	}
-
-	public String renderTeacherHtml(final int examId, final int pupilId) {
-		return htmlRenderer.renderModel(TEACHER_TEMPLATE, createTeacherModel(examId, pupilId));
 	}
 
 	public String renderTeacherHtml(final LevelOfExpectationsExportModel model) {
 		return htmlRenderer.renderModel(TEACHER_TEMPLATE, model);
 	}
 
-	public byte[] renderPupilA5Pdf(final int examId, final int pupilId) {
-		return renderPupilA5Pdf(createPupilModel(examId, pupilId));
-	}
-
 	public byte[] renderPupilA5Pdf(final LevelOfExpectationsExportModel model) {
 		return pdfRenderer.renderA5Pdf(renderPupilHtml(model));
-	}
-
-	public byte[] renderPupilA4LandscapePdf(final int examId, final int pupilId) {
-		return renderPupilA4LandscapePdf(createPupilModel(examId, pupilId));
 	}
 
 	public byte[] renderPupilA4LandscapePdf(final LevelOfExpectationsExportModel model) {
 		return pdfRenderer.imposeA5OnA4Landscape(renderPupilA5Pdf(model));
 	}
 
-	public byte[] renderTeacherA5Pdf(final int examId, final int pupilId) {
-		return renderTeacherA5Pdf(createTeacherModel(examId, pupilId));
-	}
-
 	public byte[] renderTeacherA5Pdf(final LevelOfExpectationsExportModel model) {
 		return pdfRenderer.renderA5Pdf(renderTeacherHtml(model));
 	}
 
-	public byte[] renderTeacherA4LandscapePdf(final int examId, final int pupilId) {
-		return renderTeacherA4LandscapePdf(createTeacherModel(examId, pupilId));
-	}
-
 	public byte[] renderTeacherA4LandscapePdf(final LevelOfExpectationsExportModel model) {
 		return pdfRenderer.imposeA5OnA4Landscape(renderTeacherA5Pdf(model));
+	}
+
+	public byte[] renderCombinedPupilA4LandscapePdf(final List<LevelOfExpectationsExportModel> models) {
+		return pdfRenderer.merge(models.stream().map(this::renderPupilA4LandscapePdf).toList());
+	}
+
+	public byte[] renderCombinedTeacherA4LandscapePdf(final List<LevelOfExpectationsExportModel> models) {
+		return pdfRenderer.merge(models.stream().map(this::renderTeacherA4LandscapePdf).toList());
 	}
 
 	public LevelOfExpectationsExportModel createPupilModel(final int examId, final int pupilId) {
@@ -103,6 +89,25 @@ public class LevelOfExpectationsExportService {
 	public LevelOfExpectationsExportModel createTeacherModel(final int examId, final int pupilId) {
 		return modelFactory.createTeacherModel(createExportData(examId, pupilId),
 				appSettings.ttLoeExportShowWatermark());
+	}
+
+	public List<LevelOfExpectationsExportModel> createPupilModels(final int examId) {
+		return pupilsForExam(examId).stream().map(pupil -> createPupilModel(examId, pupil.id())).toList();
+	}
+
+	public List<LevelOfExpectationsExportModel> createTeacherModels(final int examId) {
+		return pupilsForExam(examId).stream().map(pupil -> createTeacherModel(examId, pupil.id())).toList();
+	}
+
+	private List<Pupil> pupilsForExam(final int examId) {
+		if (examRepository.findById(examId).isEmpty()) {
+			throw new IllegalArgumentException("Exam does not exist: " + examId);
+		}
+		final List<Pupil> pupils = examRepository.findPupils(examId);
+		if (pupils.isEmpty()) {
+			throw new IllegalArgumentException("Exam has no assigned pupils: " + examId);
+		}
+		return pupils;
 	}
 
 	private LevelOfExpectationsExportData createExportData(final int examId, final int pupilId) {

@@ -1,5 +1,7 @@
 package de.westarps.topteacher.backend.export;
 
+import java.util.List;
+
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -38,10 +40,33 @@ public class LevelOfExpectationsExportController {
 				.contentType(MediaType.APPLICATION_PDF).body(exportService.renderTeacherA4LandscapePdf(model));
 	}
 
+	@GetMapping(value = "/export/exams/{examId}/level-of-expectations.pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+	public ResponseEntity<byte[]> exportAllPupilLevelOfExpectations(@PathVariable final int examId) {
+		final List<LevelOfExpectationsExportModel> models = exportService.createPupilModels(examId);
+		return ResponseEntity.ok()
+				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + combinedPdfFileName(models, false))
+				.contentType(MediaType.APPLICATION_PDF).body(exportService.renderCombinedPupilA4LandscapePdf(models));
+	}
+
+	@GetMapping(value = "/export/exams/{examId}/level-of-expectations-teacher.pdf",
+			produces = MediaType.APPLICATION_PDF_VALUE)
+	public ResponseEntity<byte[]> exportAllTeacherLevelOfExpectations(@PathVariable final int examId) {
+		final List<LevelOfExpectationsExportModel> models = exportService.createTeacherModels(examId);
+		return ResponseEntity.ok()
+				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + combinedPdfFileName(models, true))
+				.contentType(MediaType.APPLICATION_PDF).body(exportService.renderCombinedTeacherA4LandscapePdf(models));
+	}
+
 	private static String pdfFileName(final LevelOfExpectationsExportModel model, final boolean teacherVersion) {
 		final String prefix = teacherVersion ? "lehrerversion-erwartungshorizont" : "erwartungshorizont";
 		return prefix + "-" + fileNamePart(model.exam().title()) + "-" + fileNamePart(model.pupil().surname()) + "-"
 				+ fileNamePart(model.pupil().name()) + ".pdf";
+	}
+
+	private static String combinedPdfFileName(final List<LevelOfExpectationsExportModel> models,
+			final boolean teacherVersion) {
+		final String prefix = teacherVersion ? "lehrerversion-ergebnisboegen" : "ergebnisboegen";
+		return prefix + "-" + fileNamePart(models.getFirst().exam().title()) + ".pdf";
 	}
 
 	private static String fileNamePart(final String value) {

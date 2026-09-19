@@ -18,25 +18,17 @@ public class SettingsRepository {
 	}
 
 	public Optional<String> findValue(final String key) {
-		return findByKey(key).map(AppSetting::value);
-	}
-
-	public Optional<AppSetting> findByKey(final String key) {
 		final AppSetting setting = new AppSetting(key, "");
 		return jdbc.query("""
-			select setting_key, setting_value
+			select setting_value
 			from app_setting
 			where setting_key = :key
-			""", Map.of("key", setting.key()), (resultSet,
-				rowNumber) -> new AppSetting(resultSet.getString("setting_key"), resultSet.getString("setting_value")))
-				.stream().findFirst();
+			""", Map.of("key", setting.key()), (resultSet, rowNumber) -> resultSet.getString("setting_value")).stream()
+				.findFirst();
 	}
 
 	public void save(final String key, final String value) {
-		save(new AppSetting(key, value));
-	}
-
-	public void save(final AppSetting setting) {
+		final AppSetting setting = new AppSetting(key, value);
 		final Map<String, String> parameters = Map.of("key", setting.key(), "value", setting.value());
 		final int updated = jdbc.update("""
 			update app_setting

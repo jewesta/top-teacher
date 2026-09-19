@@ -51,7 +51,8 @@ class LevelOfExpectationsExportServiceTests {
 	void rendersDemoLevelOfExpectationsAsPupilHtml() {
 		final DemoSelection demo = findDemoSelection();
 
-		final String html = exportService.renderPupilHtml(demo.exam().id(), demo.pupil().id());
+		final String html = exportService
+				.renderPupilHtml(exportService.createPupilModel(demo.exam().id(), demo.pupil().id()));
 
 		assertThat(html).contains("Q2_Englisch");
 		assertThat(html).contains("Klausur Nr. 1");
@@ -59,6 +60,7 @@ class LevelOfExpectationsExportServiceTests {
 		assertThat(html).contains("Klausurteil A: Schreiben mit Leseverstehen (integriert)");
 		assertThat(html).contains("Teilaufgabe 2 (Analysis)");
 		assertThat(html).contains("GESAMTPUNKTZAHL KLAUSUR");
+		assertThat(html).doesNotContain("16 (+ 4)", "14 (+ 2)", "105 (+ 6)", "150 (+ 6)");
 		assertThat(html).contains("ungenügend");
 		assertThat(html).doesNotContain("eh:", "tt-criterion", "tt-criterion-badge");
 		assertThat(html).doesNotContain("Klares Fazit", "Notiz: ");
@@ -68,13 +70,15 @@ class LevelOfExpectationsExportServiceTests {
 	void rendersDemoLevelOfExpectationsAsTeacherHtml() {
 		final DemoSelection demo = findDemoSelection();
 
-		final String html = exportService.renderTeacherHtml(demo.exam().id(), demo.pupil().id());
+		final String html = exportService
+				.renderTeacherHtml(exportService.createTeacherModel(demo.exam().id(), demo.pupil().id()));
 
 		assertThat(html).contains("Lehrer:innen-Version");
 		assertThat(html).contains("tt-teacher-watermark");
 		assertThat(html).contains("tt-criterion-highlight");
 		assertThat(html).contains("tt-criterion-marker");
 		assertThat(html).contains("Robshaws Gesamtargumentation");
+		assertThat(html).contains("16 (+ 4)", "14 (+ 2)", "105 (+ 6)", "150 (+ 6)");
 		assertThat(html).doesNotContain("Klares Fazit", "Notiz: ");
 	}
 
@@ -84,7 +88,8 @@ class LevelOfExpectationsExportServiceTests {
 
 		settingsRepository.save(AppSettings.TT_LOE_EXPORT_SHOW_WATERMARK_KEY, "false");
 		try {
-			final String html = exportService.renderTeacherHtml(demo.exam().id(), demo.pupil().id());
+			final String html = exportService
+					.renderTeacherHtml(exportService.createTeacherModel(demo.exam().id(), demo.pupil().id()));
 
 			assertThat(html).doesNotContain("tt-teacher-watermark");
 		} finally {
@@ -96,7 +101,8 @@ class LevelOfExpectationsExportServiceTests {
 	void rendersDemoLevelOfExpectationsAsA4LandscapePdf() throws IOException {
 		final DemoSelection demo = findDemoSelection();
 
-		final byte[] pdf = exportService.renderPupilA4LandscapePdf(demo.exam().id(), demo.pupil().id());
+		final byte[] pdf = exportService
+				.renderPupilA4LandscapePdf(exportService.createPupilModel(demo.exam().id(), demo.pupil().id()));
 
 		assertThat(pdf).startsWith("%PDF".getBytes());
 		try (PDDocument document = PDDocument.load(pdf)) {
@@ -112,7 +118,8 @@ class LevelOfExpectationsExportServiceTests {
 	void omitsTeacherNotesWhenDemoHasNoNotesInTeacherLevelOfExpectationsPdf() throws IOException {
 		final DemoSelection demo = findDemoSelection();
 
-		final byte[] pdf = exportService.renderTeacherA4LandscapePdf(demo.exam().id(), demo.pupil().id());
+		final byte[] pdf = exportService
+				.renderTeacherA4LandscapePdf(exportService.createTeacherModel(demo.exam().id(), demo.pupil().id()));
 
 		try (PDDocument document = PDDocument.load(pdf)) {
 			final String text = new PDFTextStripper().getText(document);
@@ -147,6 +154,44 @@ class LevelOfExpectationsExportServiceTests {
 		assertThat(response.getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION))
 				.isEqualTo("attachment; filename=lehrerversion-erwartungshorizont-1-klausur-shakespeare-weber-mia.pdf");
 		assertThat(response.getBody()).startsWith("%PDF".getBytes());
+	}
+
+	@Test
+	void exportsAllPupilLevelOfExpectationsAsOnePdf() throws IOException {
+		final DemoSelection demo = findDemoSelection();
+		final var pupils = examRepository.findPupils(demo.exam().id());
+
+		final ResponseEntity<byte[]> response = exportController.exportAllPupilLevelOfExpectations(demo.exam().id());
+
+		assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+		assertThat(response.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_PDF);
+		assertThat(response.getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION))
+				.isEqualTo("attachment; filename=ergebnisboegen-1-klausur-shakespeare.pdf");
+		assertThat(response.getBody()).startsWith("%PDF".getBytes());
+		try (PDDocument document = PDDocument.load(response.getBody())) {
+			assertThat(document.getNumberOfPages()).isGreaterThanOrEqualTo(pupils.size());
+			assertThat(new PDFTextStripper().getText(document)).contains(
+					pupils.stream().map(pupil -> pupil.name() + " " + pupil.surname()).toArray(String[]::new));
+		}
+	}
+
+	@Test
+	void exportsAllTeacherLevelOfExpectationsAsOnePdf() throws IOException {
+		final DemoSelection demo = findDemoSelection();
+		final var pupils = examRepository.findPupils(demo.exam().id());
+
+		final ResponseEntity<byte[]> response = exportController.exportAllTeacherLevelOfExpectations(demo.exam().id());
+
+		assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+		assertThat(response.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_PDF);
+		assertThat(response.getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION))
+				.isEqualTo("attachment; filename=lehrerversion-ergebnisboegen-1-klausur-shakespeare.pdf");
+		assertThat(response.getBody()).startsWith("%PDF".getBytes());
+		try (PDDocument document = PDDocument.load(response.getBody())) {
+			assertThat(document.getNumberOfPages()).isGreaterThanOrEqualTo(pupils.size());
+			assertThat(new PDFTextStripper().getText(document)).contains("Lehrer:innen-Version").contains(
+					pupils.stream().map(pupil -> pupil.name() + " " + pupil.surname()).toArray(String[]::new));
+		}
 	}
 
 	private DemoSelection findDemoSelection() {

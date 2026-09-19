@@ -70,13 +70,6 @@ public final class TopTeacherDialogs {
 		return dialog;
 	}
 
-	public static ConfirmDialog archiveConfirmation(final String header, final String text,
-			final Runnable confirmAction) {
-		final ConfirmDialog dialog = new ConfirmDialog();
-		configureArchiveConfirmation(dialog, header, text, confirmAction);
-		return dialog;
-	}
-
 	public static ConfirmDialog archiveConfirmation(final String header, final String firstParagraph,
 			final String secondParagraph, final Runnable confirmAction) {
 		final ConfirmDialog dialog = new ConfirmDialog();
@@ -86,21 +79,25 @@ public final class TopTeacherDialogs {
 
 	public static void configureDeleteConfirmation(final ConfirmDialog dialog, final String header,
 			final Runnable confirmAction) {
-		dialog.setHeader(header);
-		dialog.setText("Diese Aktion kann nicht rückgängig gemacht werden.");
-		dialog.setCancelable(true);
-		dialog.setCancelText("Abbrechen");
-		dialog.setConfirmText("Löschen");
-		dialog.setConfirmButtonTheme("error primary");
-		dialog.addConfirmListener(event -> confirmAction.run());
+		configureDestructiveConfirmation(dialog, header, "Diese Aktion kann nicht rückgängig gemacht werden.",
+				"Löschen", confirmAction);
 	}
 
-	public static void configureArchiveConfirmation(final ConfirmDialog dialog, final String header, final String text,
+	public static void configureDiscardConfirmation(final ConfirmDialog dialog, final String header,
 			final Runnable confirmAction) {
+		configureDestructiveConfirmation(dialog, header, "Die nicht gespeicherten Änderungen gehen verloren.",
+				"Verwerfen", confirmAction);
+	}
+
+	private static void configureDestructiveConfirmation(final ConfirmDialog dialog, final String header,
+			final String text, final String confirmText, final Runnable confirmAction) {
 		dialog.setHeader(header);
-		dialog.removeAll();
 		dialog.setText(text);
-		configureArchiveConfirmationActions(dialog, confirmAction);
+		dialog.setCancelable(true);
+		dialog.setCancelText("Abbrechen");
+		dialog.setConfirmText(confirmText);
+		dialog.setConfirmButtonTheme("error primary");
+		dialog.addConfirmListener(event -> confirmAction.run());
 	}
 
 	public static void configureArchiveConfirmation(final ConfirmDialog dialog, final String header,
@@ -130,15 +127,6 @@ public final class TopTeacherDialogs {
 
 	public static void openDeleteConfirmation(final String header, final Runnable confirmAction) {
 		final ConfirmDialog dialog = deleteConfirmation(header, confirmAction);
-		final UI ui = UI.getCurrent();
-		if (ui != null) {
-			ui.add(dialog);
-		}
-		dialog.open();
-	}
-
-	public static void openArchiveConfirmation(final String header, final String text, final Runnable confirmAction) {
-		final ConfirmDialog dialog = archiveConfirmation(header, text, confirmAction);
 		final UI ui = UI.getCurrent();
 		if (ui != null) {
 			ui.add(dialog);

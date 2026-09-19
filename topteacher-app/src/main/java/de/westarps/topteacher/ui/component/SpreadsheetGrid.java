@@ -24,16 +24,6 @@ public class SpreadsheetGrid<T> extends Grid<T> {
 
 	private int headerLabelMaxLength = DEFAULT_HEADER_LABEL_MAX_LENGTH;
 
-	public SpreadsheetGrid() {
-		super();
-		configure();
-	}
-
-	public SpreadsheetGrid(final Class<T> beanType) {
-		super(beanType);
-		configure();
-	}
-
 	public SpreadsheetGrid(final Class<T> beanType, final boolean autoCreateColumns) {
 		super(beanType, autoCreateColumns);
 		configure();

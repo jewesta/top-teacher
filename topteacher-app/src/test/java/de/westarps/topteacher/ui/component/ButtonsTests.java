@@ -64,10 +64,12 @@ class ButtonsTests {
 
 	@Test
 	void createsResetButtonsWithResetIcon() {
-		final Button opener = Buttons.resetOpener();
+		final Button opener = Buttons.resetOpener(event -> {
+		});
 		final Button confirmationOpener = Buttons.resetConfirmationOpener();
 		final Button reset = Buttons.reset();
-		final Button customReset = Buttons.reset("Verwerfen");
+		final Button customReset = Buttons.reset("Verwerfen", event -> {
+		});
 
 		assertThat(opener.getText()).isEqualTo("Datenbank zurücksetzen...");
 		assertThat(icon(opener)).isEqualTo("vaadin:rotate-left");

@@ -137,7 +137,7 @@ class SplitListDetailViewTests {
 	@Test
 	void initializesWithDefaultHooks() {
 		final SplitListDetailView<String> view = new SplitListDetailView<>("Test", "tt-test-view",
-				new MultiSelectionGrid<>());
+				new MultiSelectionGrid<>(String.class, false));
 
 		view.initializeView();
 
@@ -153,14 +153,14 @@ class SplitListDetailViewTests {
 		private List<String> selectedItems = List.of();
 
 		TestSplitListDetailView(final Component... toolbarComponents) {
-			super("Test", "tt-test-view", new MultiSelectionGrid<>());
+			super("Test", "tt-test-view", new MultiSelectionGrid<>(String.class, false));
 			this.toolbarComponents = List.of(toolbarComponents);
 			this.managedNewButton = null;
 			initializeView();
 		}
 
 		TestSplitListDetailView(final boolean managedNewButton) {
-			super("Test", "tt-test-view", new MultiSelectionGrid<>());
+			super("Test", "tt-test-view", new MultiSelectionGrid<>(String.class, false));
 			this.managedNewButton = managedNewButton ? createNewButton() : null;
 			this.toolbarComponents = this.managedNewButton == null ? List.of() : List.of(this.managedNewButton);
 			initializeView();

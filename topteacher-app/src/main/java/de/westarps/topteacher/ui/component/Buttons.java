@@ -47,13 +47,6 @@ public final class Buttons {
 		return button;
 	}
 
-	public static Button danger(final String text, final VaadinIcon icon,
-			final ComponentEventListener<ClickEvent<Button>> listener) {
-		final Button button = primary(text, icon, listener);
-		button.addThemeVariants(ButtonVariant.LUMO_ERROR);
-		return button;
-	}
-
 	public static Button save() {
 		return primary("Speichern", VaadinIcon.CHECK);
 	}
@@ -66,20 +59,12 @@ public final class Buttons {
 		return command("Neu", VaadinIcon.STAR);
 	}
 
-	public static Button newItem(final ComponentEventListener<ClickEvent<Button>> listener) {
-		return command("Neu", VaadinIcon.STAR, listener);
-	}
-
 	public static Button createOrSave() {
 		return primary("Anlegen", VaadinIcon.PLUS);
 	}
 
 	public static Button archive() {
 		return command("Archivieren...", VaadinIcon.ARCHIVE);
-	}
-
-	public static Button archive(final ComponentEventListener<ClickEvent<Button>> listener) {
-		return command("Archivieren...", VaadinIcon.ARCHIVE, listener);
 	}
 
 	public static Button duplicateOpener() {
@@ -95,16 +80,8 @@ public final class Buttons {
 				event -> TopTeacherDialogs.openDeleteConfirmation(confirmationHeader, confirmAction));
 	}
 
-	public static Button reset(final String text) {
-		return command(text, VaadinIcon.ROTATE_LEFT);
-	}
-
 	public static Button reset(final String text, final ComponentEventListener<ClickEvent<Button>> listener) {
 		return command(text, VaadinIcon.ROTATE_LEFT, listener);
-	}
-
-	public static Button resetOpener() {
-		return reset("Datenbank zurücksetzen...");
 	}
 
 	public static Button resetOpener(final ComponentEventListener<ClickEvent<Button>> listener) {
@@ -117,10 +94,6 @@ public final class Buttons {
 
 	public static Button reset() {
 		return danger("Zurücksetzen", VaadinIcon.ROTATE_LEFT);
-	}
-
-	public static Button reset(final ComponentEventListener<ClickEvent<Button>> listener) {
-		return danger("Zurücksetzen", VaadinIcon.ROTATE_LEFT, listener);
 	}
 
 	public static void setCreateOrSaveMode(final Button button, final boolean editMode) {

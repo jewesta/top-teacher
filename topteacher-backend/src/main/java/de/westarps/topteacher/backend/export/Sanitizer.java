@@ -29,10 +29,6 @@ public class Sanitizer {
 	private final org.commonmark.renderer.html.HtmlRenderer markdownRenderer = org.commonmark.renderer.html.HtmlRenderer
 			.builder().build();
 
-	public SafeHtml markdownToHtml(final String markdown) {
-		return markdownToHtml(markdown, MarkdownView.PUPIL);
-	}
-
 	public SafeHtml markdownToHtml(final String markdown, final MarkdownView view) {
 		return markdownToHtml(markdown, view, ignored -> false);
 	}

@@ -58,16 +58,19 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private final ExamRepository examRepository;
 	private final LevelOfExpectationsRepository levelOfExpectationsRepository;
 	private final GradingScaleRepository gradingScaleRepository;
+	private final LoeSaveController saveController = new LoeSaveController();
 	private final StepperComboBox<Pupil> pupilSelector = new StepperComboBox<>();
 	private final Button saveButton = Buttons.save();
+	private final Button discardButton = Buttons.icon("Änderungen verwerfen", VaadinIcon.ROTATE_LEFT,
+			event -> openDiscardConfirmation());
 	private final Button deleteButton = Buttons.icon("Ergebnisse löschen", VaadinIcon.TRASH,
 			event -> openDeleteConfirmation());
 	private final Button reloadButton = Buttons.icon("Neu laden", VaadinIcon.REFRESH, event -> refreshFromDatabase());
 	private final MenuBar pdfMenu = new MenuBar();
+	private final ConfirmDialog discardConfirmation = new ConfirmDialog();
 	private final ConfirmDialog deleteConfirmation = new ConfirmDialog();
 	private final FullscreenButton fullscreenButton;
 	private final VerticalLayout results;
-	private final LoeSaveController saveController = new LoeSaveController();
 	private final DesignerViewport viewport = new DesignerViewport(content());
 	private final List<LoePointBadge> pointBadges = new ArrayList<>();
 	private final Map<Integer, IntegerField> requirementPointFields = new HashMap<>();
@@ -115,6 +118,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 
 		configurePupilSelector();
 		configureSaveButton();
+		configureDiscardButton();
 		configureReloadButton();
 		configureDeleteButton();
 		configurePdfDownload();
@@ -185,6 +189,14 @@ public class ExamResultsEditor extends AbstractDesigner {
 		saveController.register(saveButton);
 	}
 
+	private void configureDiscardButton() {
+		discardButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY_INLINE);
+		saveController.setDiscardAction(this::discardChanges);
+		saveController.register(discardButton);
+		TopTeacherDialogs.configureDiscardConfirmation(discardConfirmation, "Änderungen verwerfen?",
+				saveController::discard);
+	}
+
 	private void configureReloadButton() {
 		reloadButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY_INLINE);
 		saveController.registerClean(reloadButton);
@@ -200,23 +212,15 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private void configurePdfDownload() {
 		pdfMenu.addClassName("tt-pdf-menu");
 		pdfMenu.addThemeVariants(MenuBarVariant.LUMO_SMALL);
-		pdfMenuItem = pdfMenu.addItem(pdfMenuLabel());
-		pdfMenuItem.setAriaLabel("PDF herunterladen");
-		pdfMenu.setTooltipText(pdfMenuItem, "PDF herunterladen");
-		pupilPdfItem = pdfMenuItem.getSubMenu().addItem("Schüler:innen-Version", event -> downloadPdf(false));
-		teacherPdfItem = pdfMenuItem.getSubMenu().addItem("Lehrer:innen-Version", event -> downloadPdf(true));
+		pdfMenuItem = pdfMenu.addItem("Laden");
+		pdfMenuItem.addComponentAsFirst(VaadinIcon.DOWNLOAD.create());
+		pdfMenuItem.setAriaLabel("Ergebnisbogen herunterladen");
+		pdfMenu.setTooltipText(pdfMenuItem, "Ergebnisbogen herunterladen");
+		pupilPdfItem = pdfMenuItem.getSubMenu().addItem("Ergebnisbogen (Schüler:innen-Version)",
+				event -> downloadPdf(false));
+		teacherPdfItem = pdfMenuItem.getSubMenu().addItem("Ergebnisbogen (Lehrer:innen-Version)",
+				event -> downloadPdf(true));
 		updatePdfDownload();
-	}
-
-	private static HorizontalLayout pdfMenuLabel() {
-		final Icon downloadIcon = VaadinIcon.DOWNLOAD.create();
-		downloadIcon.addClassName("tt-pdf-menu-icon");
-		final HorizontalLayout label = new HorizontalLayout(downloadIcon, new Span("PDF"));
-		label.addClassName("tt-pdf-menu-label");
-		label.setAlignItems(Alignment.CENTER);
-		label.setPadding(false);
-		label.setSpacing(false);
-		return label;
 	}
 
 	private void refresh() {
@@ -245,8 +249,8 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private void configureToolbar() {
 		examPointsBadge = new LoePointBadge("Gesamt", this::pointsForExam);
 		breadcrumb.addClassName("tt-designer-breadcrumb");
-		toolbar().add(pupilSelector, saveButton, deleteButton, pdfMenu, fullscreenButton, deleteConfirmation,
-				reloadButton);
+		toolbar().add(pupilSelector, saveButton, discardButton, deleteButton, pdfMenu, fullscreenButton,
+				discardConfirmation, deleteConfirmation, reloadButton);
 		toolbarSummary().add(breadcrumb, examPointsBadge);
 		toolbarSummary().expand(breadcrumb);
 		bindBreadcrumb();
@@ -802,6 +806,27 @@ public class ExamResultsEditor extends AbstractDesigner {
 						requirement -> currentRequirementPoints(requirement) != persistedRequirementPoints(requirement)
 								|| !currentRequirementComment(requirement)
 										.equals(persistedRequirementComment(requirement)));
+	}
+
+	private void discardChanges() {
+		editedCriterionResults.clear();
+		editedCriterionResults.putAll(persistedCriterionResults);
+		editedRequirementResults.clear();
+		editedRequirementResults.putAll(persistedRequirementResults);
+		editedRequirementComments.clear();
+		editedRequirementComments.putAll(persistedRequirementComments);
+		applyResultState();
+		discardConfirmation.close();
+	}
+
+	private void openDiscardConfirmation() {
+		if (!isDirty()) {
+			return;
+		}
+		final String pupilName = selectedPupil == null ? "" : pupilLabel(selectedPupil);
+		discardConfirmation.setText("Die nicht gespeicherten Änderungen für " + pupilName
+				+ " werden verworfen. Diese Aktion kann nicht rückgängig gemacht werden.");
+		discardConfirmation.open();
 	}
 
 	private void saveResults() {

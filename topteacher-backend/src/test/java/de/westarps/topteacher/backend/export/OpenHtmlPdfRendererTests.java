@@ -3,9 +3,11 @@ package de.westarps.topteacher.backend.export;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.Test;
 
 class OpenHtmlPdfRendererTests {
@@ -47,6 +49,20 @@ class OpenHtmlPdfRendererTests {
 			assertThat(document.getNumberOfPages()).isEqualTo(2);
 			assertThat(document.getPage(0).getMediaBox().getWidth()).isCloseTo(PDRectangle.A4.getHeight(), offset());
 			assertThat(document.getPage(0).getMediaBox().getHeight()).isCloseTo(PDRectangle.A4.getWidth(), offset());
+		}
+	}
+
+	@Test
+	void mergesPdfDocumentsInSourceOrder() throws IOException {
+		final byte[] first = renderer.renderA5Pdf("<html><body>Erstes Dokument</body></html>");
+		final byte[] second = renderer.renderA5Pdf("<html><body>Zweites Dokument</body></html>");
+
+		final byte[] merged = renderer.merge(List.of(first, second));
+
+		try (PDDocument document = PDDocument.load(merged)) {
+			assertThat(document.getNumberOfPages()).isEqualTo(2);
+			assertThat(new PDFTextStripper().getText(document)).containsSubsequence("Erstes Dokument",
+					"Zweites Dokument");
 		}
 	}
 

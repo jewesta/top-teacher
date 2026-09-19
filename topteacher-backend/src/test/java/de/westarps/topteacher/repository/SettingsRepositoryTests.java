@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import de.westarps.topteacher.backend.repo.SettingsRepository;
-import de.westarps.topteacher.model.AppSetting;
 
 @SpringBootTest
 class SettingsRepositoryTests {
@@ -24,7 +23,6 @@ class SettingsRepositoryTests {
 
 		settingsRepository.save(key, "one");
 		assertThat(settingsRepository.findValue(key)).contains("one");
-		assertThat(settingsRepository.findByKey(key)).contains(new AppSetting(key, "one"));
 
 		settingsRepository.save(key, "two");
 		assertThat(settingsRepository.findValue(key)).contains("two");
