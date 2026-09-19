@@ -549,6 +549,25 @@ class LevelOfExpectationsEditorTests {
 		assertThat(collapseIcon(collapseButton)).isEqualTo("vaadin:angle-double-down");
 	}
 
+	@Test
+	void partCollapseButtonTreatsTasksBelowCollapsedCategoriesAsCollapsed() {
+		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repositoryWithHierarchy());
+		editor.setExam(EXAM);
+		final Button partCollapseButton = collapseButtons(editor).get(1);
+		final List<Details> details = components(editor, Details.class);
+
+		details.get(1).setOpened(false);
+
+		assertThat(collapseIcon(partCollapseButton)).isEqualTo("vaadin:angle-double-right");
+		partCollapseButton.click();
+		assertThat(details.subList(1, 3)).extracting(Details::isOpened).containsOnly(true);
+		assertThat(collapseIcon(partCollapseButton)).isEqualTo("vaadin:angle-double-down");
+
+		details.get(1).setOpened(false);
+
+		assertThat(collapseIcon(partCollapseButton)).isEqualTo("vaadin:angle-double-right");
+	}
+
 	private static LevelOfExpectationsRepository repositoryWithHierarchy() {
 		return repositoryWithHierarchy(REQUIREMENT);
 	}

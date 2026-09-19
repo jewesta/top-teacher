@@ -165,6 +165,8 @@ does not expose general-purpose database mutation.
   EH or pupil-initial root link that returns to the top.
 - [x] Keep the breadcrumb hidden until the first EH hierarchy level reaches the
   viewport edge.
+- [x] Keep aggregate EH expand/collapse controls in sync when a parent section
+  is collapsed individually and thereby hides otherwise-open descendants.
 - [x] Added a read-only course-creation options tool; subjects and grading scales
   still have no MCP write path.
 - [x] Added manual database-backup creation through the existing configured

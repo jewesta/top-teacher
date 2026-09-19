@@ -255,7 +255,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 		final LoePartSection section = new LoePartSection(part, parts, categorySections, components, collapseState,
 				partHandler, () -> percentageForPart(part), () -> pointsForPart(part), partDescendantDetailKeys(part),
 				correctionMode);
-		collapseState.configure(section.getContent(), detailKey("part", part.id()));
+		collapseState.configure(section.getContent(), detailKey("part", part.id()), null);
 		DesignerViewport.mark(section, detailKey("part", part.id()), part.title());
 		return section;
 	}
@@ -265,7 +265,8 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 		final LoeCategorySection section = new LoeCategorySection(category, categoriesFor(partFor(category)),
 				taskSections, components, collapseState, categoryHandler, () -> pointsForCategory(category),
 				categoryDescendantDetailKeys(category), correctionMode);
-		collapseState.configure(section.getContent(), detailKey("category", category.id()));
+		collapseState.configure(section.getContent(), detailKey("category", category.id()),
+				detailKey("part", category.partId()));
 		DesignerViewport.mark(section, detailKey("category", category.id()), category.title());
 		return section;
 	}
@@ -276,7 +277,8 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 		final LoeTaskSection section = new LoeTaskSection(task, tasksFor(categoryFor(task)), requirementSections,
 				components, collapseState, taskHandler, () -> pointsForTask(task),
 				List.of(detailKey("task", task.id())), correctionMode);
-		collapseState.configure(section.getContent(), detailKey("task", task.id()));
+		collapseState.configure(section.getContent(), detailKey("task", task.id()),
+				detailKey("category", task.categoryId()));
 		DesignerViewport.mark(section, detailKey("task", task.id()), task.title());
 		return section;
 	}
