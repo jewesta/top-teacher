@@ -161,6 +161,10 @@ does not expose general-purpose database mutation.
   hierarchy and scroll the new element to the top of the viewport.
 - [x] Show the EH hierarchy at the viewport's top as a live breadcrumb beside
   the total points in both the EH and results views.
+- [x] Make breadcrumb levels clickable for in-document navigation and add an
+  EH or pupil-initial root link that returns to the top.
+- [x] Keep the breadcrumb hidden until the first EH hierarchy level reaches the
+  viewport edge.
 - [x] Added a read-only course-creation options tool; subjects and grading scales
   still have no MCP write path.
 - [x] Added manual database-backup creation through the existing configured

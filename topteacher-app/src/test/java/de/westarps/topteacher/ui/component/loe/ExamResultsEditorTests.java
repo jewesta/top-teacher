@@ -226,6 +226,9 @@ class ExamResultsEditorTests {
 		assertThat(points.getValue()).isEqualTo(1);
 		assertThat(comment.getValue()).isEmpty();
 		assertThat(criterionCheckbox.getValue()).isFalse();
+		assertThat(breadcrumb(editor).getElement().getAttribute("data-tt-breadcrumb-root-label")).isEqualTo("EA");
+		assertThat(breadcrumb(editor).getElement().getAttribute("data-tt-breadcrumb-root-title"))
+				.isEqualTo("Ergebnis, Anna");
 		assertThat(criterionIndicatorTexts(editor)).containsExactly("0 von 1 Kriterien erfüllt");
 
 		pupilSelector(editor).setValue(SECOND_PUPIL);
@@ -233,6 +236,9 @@ class ExamResultsEditorTests {
 		assertThat(points.getValue()).isEqualTo(4);
 		assertThat(comment.getValue()).isEqualTo("Guter Fortschritt.");
 		assertThat(criterionCheckbox.getValue()).isTrue();
+		assertThat(breadcrumb(editor).getElement().getAttribute("data-tt-breadcrumb-root-label")).isEqualTo("EB");
+		assertThat(breadcrumb(editor).getElement().getAttribute("data-tt-breadcrumb-root-title"))
+				.isEqualTo("Ergebnis, Berta");
 		assertThat(pointsText(editor)).containsExactly("4 von 5 Punkten");
 		assertThat(criterionIndicatorTexts(editor)).containsExactly("1 von 1 Kriterien erfüllt");
 		assertThat(components(editor, IntegerField.class).getFirst()).isSameAs(points);
@@ -295,8 +301,7 @@ class ExamResultsEditorTests {
 						.isTrue();
 		assertThat(anchorKeys(editor)).contains("part:1", "category:2", "task:3", "requirement:4");
 		assertThat(breadcrumbSegments(editor)).containsExactly("Klausurteil A", "Inhalt", "Teilaufgabe 1", "1");
-		assertThat(components(editor, Span.class).stream()
-				.filter(span -> span.getClassNames().contains("tt-designer-breadcrumb"))).hasSize(1);
+		assertThat(breadcrumb(editor).getElement().getAttribute("data-tt-breadcrumb-root-label")).isEqualTo("EA");
 		assertThat(editor.focusRequirement(new LoeNavigationTarget(99, CATEGORY.id(), TASK.id(), REQUIREMENT.id())))
 				.isFalse();
 	}
@@ -497,6 +502,11 @@ class ExamResultsEditorTests {
 		return components(root, Component.class).stream()
 				.map(component -> component.getElement().getAttribute("data-tt-breadcrumb-segment"))
 				.filter(Objects::nonNull).distinct().toList();
+	}
+
+	private static Span breadcrumb(final Component root) {
+		return components(root, Span.class).stream()
+				.filter(span -> span.getClassNames().contains("tt-designer-breadcrumb")).findFirst().orElseThrow();
 	}
 
 	@SuppressWarnings("unchecked")

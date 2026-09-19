@@ -14,6 +14,8 @@ public final class DesignerViewport implements Serializable {
 
 	private static final String ANCHOR_ATTRIBUTE = "data-tt-anchor";
 	private static final String BREADCRUMB_ATTRIBUTE = "data-tt-breadcrumb-segment";
+	private static final String BREADCRUMB_ROOT_LABEL_ATTRIBUTE = "data-tt-breadcrumb-root-label";
+	private static final String BREADCRUMB_ROOT_TITLE_ATTRIBUTE = "data-tt-breadcrumb-root-title";
 
 	private final Component content;
 	private Component breadcrumb;
@@ -36,9 +38,12 @@ public final class DesignerViewport implements Serializable {
 		component.getElement().setAttribute(BREADCRUMB_ATTRIBUTE, breadcrumbSegment);
 	}
 
-	public void bindBreadcrumb(final Component breadcrumb) {
+	public void bindBreadcrumb(final Component breadcrumb, final String rootLabel, final String rootTitle) {
 		this.breadcrumb = Objects.requireNonNull(breadcrumb, "breadcrumb must not be null");
-		breadcrumb.getElement().setAttribute("hidden", true);
+		breadcrumb.getElement().setAttribute(BREADCRUMB_ROOT_LABEL_ATTRIBUTE,
+				Objects.requireNonNull(rootLabel, "rootLabel must not be null"));
+		breadcrumb.getElement().setAttribute(BREADCRUMB_ROOT_TITLE_ATTRIBUTE,
+				Objects.requireNonNull(rootTitle, "rootTitle must not be null"));
 		bindBreadcrumbIfAttached();
 	}
 
@@ -66,11 +71,61 @@ public final class DesignerViewport implements Serializable {
 			         const bounds = element.getBoundingClientRect();
 			         return bounds.top <= probe && bounds.bottom > probe;
 			      })
-			      .map(element => element.getAttribute('data-tt-breadcrumb-segment'));
-			   const text = segments.join(' > ');
-			   breadcrumb.textContent = text;
-			   breadcrumb.title = text;
-			   breadcrumb.hidden = text.length === 0;
+			      .map(element => ({
+			         anchorKey: element.getAttribute('data-tt-anchor'),
+			         label: element.getAttribute('data-tt-breadcrumb-segment')
+			      }));
+			   const rootLabel = breadcrumb.getAttribute('data-tt-breadcrumb-root-label') || '';
+			   const rootTitle = breadcrumb.getAttribute('data-tt-breadcrumb-root-title') || rootLabel;
+			   if (segments.length === 0) {
+			      breadcrumb.setAttribute('hidden', '');
+			      breadcrumb.removeAttribute('data-tt-breadcrumb-state');
+			      breadcrumb.replaceChildren();
+			      return;
+			   }
+			   breadcrumb.removeAttribute('hidden');
+			   const items = [{ anchorKey: null, label: rootLabel, title: rootTitle },
+			      ...segments.map(segment => ({ ...segment, title: segment.label }))];
+			   const state = JSON.stringify(items);
+			   if (breadcrumb.getAttribute('data-tt-breadcrumb-state') === state) {
+			      return;
+			   }
+
+			   breadcrumb.setAttribute('data-tt-breadcrumb-state', state);
+			   breadcrumb.replaceChildren();
+			   items.forEach((item, index) => {
+			      if (index > 0) {
+			         const separator = document.createElement('span');
+			         separator.setAttribute('class', 'tt-designer-breadcrumb-separator');
+			         separator.setAttribute('aria-hidden', 'true');
+			         separator.textContent = '>';
+			         breadcrumb.append(separator);
+			      }
+
+			      const button = document.createElement('button');
+			      button.setAttribute('type', 'button');
+			      button.setAttribute('class', 'tt-designer-breadcrumb-node');
+			      button.setAttribute('title', item.title);
+			      button.setAttribute('aria-label', item.anchorKey === null
+			         ? item.title + ': zum Anfang'
+			         : item.label);
+			      button.textContent = item.label;
+			      button.addEventListener('click', () => {
+			         if (item.anchorKey === null) {
+			            viewport.scrollTo({ top: 0 });
+			            return;
+			         }
+			         const target = Array.from(viewport.querySelectorAll('[data-tt-anchor]'))
+			            .find(element => element.getAttribute('data-tt-anchor') === item.anchorKey);
+			         if (target) {
+			            const offset = target.getBoundingClientRect().top
+			               - viewport.getBoundingClientRect().top;
+			            viewport.scrollTo({ top: viewport.scrollTop + offset });
+			         }
+			      });
+			      breadcrumb.append(button);
+			   });
+			   breadcrumb.setAttribute('title', items.map(item => item.title).join(' > '));
 			};
 			const scheduleUpdate = () => {
 			   if (animationFrame === null) {

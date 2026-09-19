@@ -112,8 +112,9 @@ class LevelOfExpectationsEditorTests {
 		assertThat(components(editor, Details.class)).extracting(Details::isOpened).containsOnly(true);
 		assertThat(anchorKeys(editor)).contains("part:1", "category:2", "task:3", "requirement:4");
 		assertThat(breadcrumbSegments(editor)).containsExactly("Klausurteil A", "Inhalt", "Teilaufgabe 1", "1");
-		assertThat(components(editor, Span.class).stream()
-				.filter(span -> span.getClassNames().contains("tt-designer-breadcrumb"))).hasSize(1);
+		assertThat(breadcrumb(editor).getElement().getAttribute("data-tt-breadcrumb-root-label")).isEqualTo("EH");
+		assertThat(breadcrumb(editor).getElement().getAttribute("data-tt-breadcrumb-root-title"))
+				.isEqualTo("Erwartungshorizont");
 		assertThat(editor.focusRequirement(
 				new LoeNavigationTarget(SECOND_PART.id(), CATEGORY.id(), TASK.id(), REQUIREMENT.id()))).isFalse();
 	}
@@ -639,6 +640,11 @@ class LevelOfExpectationsEditorTests {
 		return components(root, Component.class).stream()
 				.map(component -> component.getElement().getAttribute("data-tt-breadcrumb-segment"))
 				.filter(Objects::nonNull).distinct().toList();
+	}
+
+	private static Span breadcrumb(final Component root) {
+		return components(root, Span.class).stream()
+				.filter(span -> span.getClassNames().contains("tt-designer-breadcrumb")).findFirst().orElseThrow();
 	}
 
 	private static TextField titleField(final Component root, final String value) {

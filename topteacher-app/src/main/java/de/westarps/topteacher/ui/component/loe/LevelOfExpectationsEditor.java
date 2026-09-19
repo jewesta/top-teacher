@@ -246,7 +246,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 		toolbar().add(save, discard, addPart, collapseState.toggleButton(allDetailKeys()), fullscreenButton, reload);
 		toolbarSummary().add(breadcrumb, examPointsBadge);
 		toolbarSummary().expand(breadcrumb);
-		viewport.bindBreadcrumb(breadcrumb);
+		viewport.bindBreadcrumb(breadcrumb, "EH", "Erwartungshorizont");
 	}
 
 	private LoePartSection createPartSection(final LoePart part) {

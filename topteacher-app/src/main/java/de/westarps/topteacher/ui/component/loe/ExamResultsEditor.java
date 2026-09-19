@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -171,6 +172,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 				return;
 			}
 			selectedPupil = event.getValue();
+			bindBreadcrumb();
 			loadSelectedPupilResults();
 		});
 	}
@@ -247,7 +249,15 @@ public class ExamResultsEditor extends AbstractDesigner {
 				reloadButton);
 		toolbarSummary().add(breadcrumb, examPointsBadge);
 		toolbarSummary().expand(breadcrumb);
-		viewport.bindBreadcrumb(breadcrumb);
+		bindBreadcrumb();
+	}
+
+	private void bindBreadcrumb() {
+		if (selectedPupil == null) {
+			viewport.bindBreadcrumb(breadcrumb, "Ergebnisse", "Ergebnisse");
+			return;
+		}
+		viewport.bindBreadcrumb(breadcrumb, pupilInitials(selectedPupil), pupilLabel(selectedPupil));
 	}
 
 	private void refreshPupils() {
@@ -924,6 +934,10 @@ public class ExamResultsEditor extends AbstractDesigner {
 			return "";
 		}
 		return pupil.surname() + ", " + pupil.name();
+	}
+
+	private static String pupilInitials(final Pupil pupil) {
+		return (pupil.surname().substring(0, 1) + pupil.name().substring(0, 1)).toUpperCase(Locale.GERMAN);
 	}
 
 	private String pdfFileName(final boolean teacherVersion) {
