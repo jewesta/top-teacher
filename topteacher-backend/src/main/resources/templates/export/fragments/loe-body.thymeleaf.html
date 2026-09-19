@@ -46,7 +46,7 @@
                         <td></td>
                         <td th:text="${'SUMME ' + task.title()}">SUMME Teilaufgabe</td>
                         <td class="tt-points-column" th:text="${model.aggregateMaxPointsDisplayName(task.points())}">6</td>
-                        <td class="tt-points-column" th:text="${task.points().achievedDisplayName()}"></td>
+                        <td class="tt-points-column" th:text="${model.aggregateAchievedPointsDisplayName(task.points())}"></td>
                     </tr>
                     </tbody>
                 </table>

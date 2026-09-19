@@ -207,8 +207,7 @@ public class LevelOfExpectationsExportModelFactory {
 
 	public record LevelOfExpectationsExportModel(Course course, Exam exam, ExamNumber examNumber, Pupil pupil,
 			GradingScale gradingScale, List<GradingScaleRange> gradingScaleRanges, PointSummary points,
-			List<Part> parts, List<NoteSection> noteSections, boolean showAchievableBonusPointTotals,
-			boolean showWatermark) {
+			List<Part> parts, List<NoteSection> noteSections, boolean showBonusPointBreakdown, boolean showWatermark) {
 
 		public LevelOfExpectationsExportModel {
 			course = Objects.requireNonNull(course, "course must not be null");
@@ -240,7 +239,13 @@ public class LevelOfExpectationsExportModelFactory {
 
 		public String aggregateMaxPointsDisplayName(final PointSummary pointSummary) {
 			final PointSummary aggregate = Objects.requireNonNull(pointSummary, "pointSummary must not be null");
-			return showAchievableBonusPointTotals ? aggregate.maxDisplayName() : String.valueOf(aggregate.maxPoints());
+			return showBonusPointBreakdown ? aggregate.maxDisplayName() : String.valueOf(aggregate.maxPoints());
+		}
+
+		public String aggregateAchievedPointsDisplayName(final PointSummary pointSummary) {
+			final PointSummary aggregate = Objects.requireNonNull(pointSummary, "pointSummary must not be null");
+			return showBonusPointBreakdown ? aggregate.achievedDisplayName()
+					: String.valueOf(aggregate.totalAchievedPoints());
 		}
 
 		public String totalGradeDisplayName() {
@@ -389,6 +394,10 @@ public class LevelOfExpectationsExportModelFactory {
 
 		public String achievedDisplayName() {
 			return displayName(achievedPoints, bonusAchievedPoints);
+		}
+
+		public int totalAchievedPoints() {
+			return achievedPoints + bonusAchievedPoints;
 		}
 
 		public int effectiveAchievedPoints(final int maxPoints) {

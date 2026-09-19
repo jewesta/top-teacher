@@ -44,7 +44,7 @@ class LevelOfExpectationsExportModelFactoryTests {
 		assertThat(model.examNumberDisplayName()).isEqualTo("Klausur Nr. 1");
 		assertThat(model.parts()).hasSize(1);
 		assertThat(model.aggregateMaxPointsDisplayName(model.points())).isEqualTo("6");
-		assertThat(model.points().achievedDisplayName()).isEqualTo("4 (+ 1)");
+		assertThat(model.aggregateAchievedPointsDisplayName(model.points())).isEqualTo("5");
 		assertThat(model.totalGradeDisplayName()).isEqualTo("ungenügend");
 		assertThat(model.gradingScaleTableRows().getFirst().cells().stream()
 				.map(LevelOfExpectationsExportModelFactory.GradingScaleTableCell::gradeDisplayName).toList())
@@ -80,7 +80,7 @@ class LevelOfExpectationsExportModelFactoryTests {
 		final LevelOfExpectationsExportModel model = factory.createTeacherModel(data(), true);
 
 		assertThat(model.aggregateMaxPointsDisplayName(model.points())).isEqualTo("6 (+ 2)");
-		assertThat(model.points().achievedDisplayName()).isEqualTo("4 (+ 1)");
+		assertThat(model.aggregateAchievedPointsDisplayName(model.points())).isEqualTo("4 (+ 1)");
 
 		final var firstRequirement = model.parts().getFirst().categories().getFirst().tasks().getFirst().requirements()
 				.getFirst();

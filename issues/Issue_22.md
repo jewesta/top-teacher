@@ -12,8 +12,10 @@
 
 - Show only regular maximum points in pupil-facing task sums, part totals, and
   exam totals.
+- Show awarded regular and bonus points as one combined value in pupil-facing
+  task sums, part totals, and exam totals.
 - Keep individual bonus requirements and their parenthesized maximum points
-  visible.
+  and awarded points visible.
 - Continue aggregating achieved bonus points and using them for grade
   calculation.
 - Preserve the existing teacher-facing export, including aggregated achievable
@@ -24,6 +26,8 @@
 - Added an audience-specific display policy for aggregate maximum points.
 - Updated the shared export fragments to apply that policy at every aggregate
   level.
+- Updated pupil-facing aggregate results to add awarded bonus points directly
+  to the regular result instead of showing a separate parenthesized value.
 - Added model and rendered-HTML coverage for the pupil and teacher variants.
 - Removed unused and test-only overloads discovered while reviewing the export
   change, keeping tests on production entry points.
@@ -39,6 +43,7 @@
     achievable bonus totals.
   - Individual bonus requirements still show their parenthesized maximum.
   - Awarded bonus points remain aggregated in the pupil PDF; 2 awarded points
-    were shown as `0 (+ 2)` in the task, part, and exam totals.
+    are shown as `2` in the task, part, and exam totals.
+  - The individual awarded bonus points remain parenthesized as `(2)`.
   - The teacher PDF continues to show the achievable bonus totals, including
     `150 (+ 4)` for the exam total.
