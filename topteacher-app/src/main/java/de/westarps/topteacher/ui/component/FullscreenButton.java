@@ -30,47 +30,47 @@ public class FullscreenButton extends Button {
 
 	private void toggleFullscreen() {
 		getElement().executeJs("""
-				const target = $0;
-				const fullscreenElement = document.fullscreenElement || document.webkitFullscreenElement;
-				if (fullscreenElement === target) {
-					const exitFullscreen = document.exitFullscreen || document.webkitExitFullscreen;
-					if (exitFullscreen) {
-						exitFullscreen.call(document);
-					}
-					return;
+			const target = $0;
+			const fullscreenElement = document.fullscreenElement || document.webkitFullscreenElement;
+			if (fullscreenElement === target) {
+				const exitFullscreen = document.exitFullscreen || document.webkitExitFullscreen;
+				if (exitFullscreen) {
+					exitFullscreen.call(document);
 				}
-				const requestFullscreen = target.requestFullscreen || target.webkitRequestFullscreen;
-				if (requestFullscreen) {
-					requestFullscreen.call(target);
-				}
-				""", target.getElement());
+				return;
+			}
+			const requestFullscreen = target.requestFullscreen || target.webkitRequestFullscreen;
+			if (requestFullscreen) {
+				requestFullscreen.call(target);
+			}
+			""", target.getElement());
 	}
 
 	private void installFullscreenListener() {
 		getElement().executeJs("""
-				const button = this;
-				const target = $0;
-				if (button.__ttFullscreenListener) {
-					return;
-				}
-				button.__ttFullscreenListener = () => {
-					const fullscreenElement = document.fullscreenElement || document.webkitFullscreenElement;
-					button.$server.setFullscreenActive(fullscreenElement === target);
-				};
-				document.addEventListener('fullscreenchange', button.__ttFullscreenListener);
-				document.addEventListener('webkitfullscreenchange', button.__ttFullscreenListener);
-				""", target.getElement());
+			const button = this;
+			const target = $0;
+			if (button.__ttFullscreenListener) {
+				return;
+			}
+			button.__ttFullscreenListener = () => {
+				const fullscreenElement = document.fullscreenElement || document.webkitFullscreenElement;
+				button.$server.setFullscreenActive(fullscreenElement === target);
+			};
+			document.addEventListener('fullscreenchange', button.__ttFullscreenListener);
+			document.addEventListener('webkitfullscreenchange', button.__ttFullscreenListener);
+			""", target.getElement());
 	}
 
 	private void removeFullscreenListener() {
 		getElement().executeJs("""
-				if (!this.__ttFullscreenListener) {
-					return;
-				}
-				document.removeEventListener('fullscreenchange', this.__ttFullscreenListener);
-				document.removeEventListener('webkitfullscreenchange', this.__ttFullscreenListener);
-				delete this.__ttFullscreenListener;
-				""");
+			if (!this.__ttFullscreenListener) {
+				return;
+			}
+			document.removeEventListener('fullscreenchange', this.__ttFullscreenListener);
+			document.removeEventListener('webkitfullscreenchange', this.__ttFullscreenListener);
+			delete this.__ttFullscreenListener;
+			""");
 	}
 
 	@ClientCallable

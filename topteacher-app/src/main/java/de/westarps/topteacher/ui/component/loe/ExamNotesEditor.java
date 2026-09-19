@@ -92,9 +92,9 @@ public class ExamNotesEditor extends AbstractDesigner {
 		title.setWidthFull();
 		title.getElement().setAttribute("aria-label", "Titel");
 		title.addAttachListener(event -> title.getElement().executeJs("""
-				this.addEventListener('click', event => event.stopPropagation());
-				this.addEventListener('keydown', event => event.stopPropagation());
-				"""));
+			this.addEventListener('click', event => event.stopPropagation());
+			this.addEventListener('keydown', event => event.stopPropagation());
+			"""));
 		title.addValueChangeListener(event -> {
 			title.setInvalid(false);
 			if (event.isFromClient()) {

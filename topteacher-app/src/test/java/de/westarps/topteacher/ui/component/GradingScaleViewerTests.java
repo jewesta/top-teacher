@@ -64,7 +64,9 @@ class GradingScaleViewerTests {
 				.toList();
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
+	@SuppressWarnings({
+			"rawtypes", "unchecked"
+	})
 	private static List<GradingScaleRange> items(final Grid grid) {
 		return grid.getDataProvider().fetch(new Query()).toList();
 	}

@@ -28,35 +28,35 @@ public class DatabaseInitializationService {
 	private static final String DEMO_DATA_SCRIPT = "classpath:db/demo-data.sql";
 	private static final String PROMPT_ON_FIRST_START_PROPERTY = "tt.database.initialization.prompt-on-first-start";
 	private static final String BASE_GRADING_SCALE_VALUES = """
-			values
-			    ('Einführungsphase', 100),
-			    ('Qualifikationsphase ab ''25', 150),
-			    ('Qualifikationsphase ab ''25', 160),
-			    ('Qualifikationsphase ab ''25', 200)
-			""";
+		values
+		    ('Einführungsphase', 100),
+		    ('Qualifikationsphase ab ''25', 150),
+		    ('Qualifikationsphase ab ''25', 160),
+		    ('Qualifikationsphase ab ''25', 200)
+		""";
 	private static final String CORE_SUBJECT_VALUES = """
-			values
-			    ('Deutsch'),
-			    ('Mathematik'),
-			    ('Englisch'),
-			    ('Französisch'),
-			    ('Latein'),
-			    ('Spanisch'),
-			    ('Erdkunde'),
-			    ('Geschichte'),
-			    ('Politik'),
-			    ('Biologie'),
-			    ('Chemie'),
-			    ('Physik'),
-			    ('Informatik'),
-			    ('Ev. Religionslehre'),
-			    ('Kath. Religionslehre'),
-			    ('Ethik'),
-			    ('Philosophie'),
-			    ('Kunst'),
-			    ('Musik'),
-			    ('Sport')
-			""";
+		values
+		    ('Deutsch'),
+		    ('Mathematik'),
+		    ('Englisch'),
+		    ('Französisch'),
+		    ('Latein'),
+		    ('Spanisch'),
+		    ('Erdkunde'),
+		    ('Geschichte'),
+		    ('Politik'),
+		    ('Biologie'),
+		    ('Chemie'),
+		    ('Physik'),
+		    ('Informatik'),
+		    ('Ev. Religionslehre'),
+		    ('Kath. Religionslehre'),
+		    ('Ethik'),
+		    ('Philosophie'),
+		    ('Kunst'),
+		    ('Musik'),
+		    ('Sport')
+		""";
 	private static final List<String> BUSINESS_TABLES = List.of("pupil", "course", "course_pupil", "exam", "exam_pupil",
 			"eh_part", "eh_category", "eh_task", "eh_requirement", "eh_criterion", "eh_criterion_result",
 			"eh_requirement_result", "exam_note_section");
@@ -115,33 +115,33 @@ public class DatabaseInitializationService {
 			}
 		}
 		if (count("""
-				select count(*)
-				from grading_scale gs
-				where not exists (
-				    select 1
-				    from (
-				""" + BASE_GRADING_SCALE_VALUES + """
-				    ) base_grading_scale(name, max_points)
-				    where base_grading_scale.name = gs.name
-				      and base_grading_scale.max_points = gs.max_points
-				)
-				""") > 0) {
+			select count(*)
+			from grading_scale gs
+			where not exists (
+			    select 1
+			    from (
+			""" + BASE_GRADING_SCALE_VALUES + """
+			    ) base_grading_scale(name, max_points)
+			    where base_grading_scale.name = gs.name
+			      and base_grading_scale.max_points = gs.max_points
+			)
+			""") > 0) {
 			return Optional.of("custom grading scales");
 		}
 		if (count("""
-				select count(*)
-				from grading_scale_range gsr
-				where not exists (
-				    select 1
-				    from grading_scale gs
-				    join (
-				""" + BASE_GRADING_SCALE_VALUES + """
-				    ) base_grading_scale(name, max_points)
-				        on base_grading_scale.name = gs.name
-				       and base_grading_scale.max_points = gs.max_points
-				    where gs.id = gsr.grading_scale_id
-				)
-				""") > 0) {
+			select count(*)
+			from grading_scale_range gsr
+			where not exists (
+			    select 1
+			    from grading_scale gs
+			    join (
+			""" + BASE_GRADING_SCALE_VALUES + """
+			    ) base_grading_scale(name, max_points)
+			        on base_grading_scale.name = gs.name
+			       and base_grading_scale.max_points = gs.max_points
+			    where gs.id = gsr.grading_scale_id
+			)
+			""") > 0) {
 			return Optional.of("custom grading scale ranges");
 		}
 		if (hasCustomSubjectSetup()) {
@@ -167,12 +167,12 @@ public class DatabaseInitializationService {
 	private List<String> publicTables(final Connection connection) throws SQLException {
 		final List<String> tables = new ArrayList<>();
 		try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery("""
-				select table_name
-				from information_schema.tables
-				where table_schema = 'PUBLIC'
-				  and table_type = 'BASE TABLE'
-				order by table_name
-				""")) {
+			select table_name
+			from information_schema.tables
+			where table_schema = 'PUBLIC'
+			  and table_type = 'BASE TABLE'
+			order by table_name
+			""")) {
 			while (resultSet.next()) {
 				tables.add(quoteIdentifier(resultSet.getString("table_name")));
 			}
@@ -182,28 +182,28 @@ public class DatabaseInitializationService {
 
 	private boolean hasCustomSubjectSetup() {
 		return count("""
-				select count(*)
-				from subject s
-				where s.lifecycle <> 'ACTIVE'
-				   or not exists (
-				       select 1
-				       from (
-				""" + CORE_SUBJECT_VALUES + """
-				       ) core_subject(name)
-				       where core_subject.name = s.name
-				   )
-				""") > 0 || count("""
-				select count(*)
-				from (
-				""" + CORE_SUBJECT_VALUES + """
-				) core_subject(name)
-				where not exists (
-				    select 1
-				    from subject s
-				    where s.name = core_subject.name
-				      and s.lifecycle = 'ACTIVE'
-				)
-				""") > 0;
+			select count(*)
+			from subject s
+			where s.lifecycle <> 'ACTIVE'
+			   or not exists (
+			       select 1
+			       from (
+			""" + CORE_SUBJECT_VALUES + """
+			       ) core_subject(name)
+			       where core_subject.name = s.name
+			   )
+			""") > 0 || count("""
+			select count(*)
+			from (
+			""" + CORE_SUBJECT_VALUES + """
+			) core_subject(name)
+			where not exists (
+			    select 1
+			    from subject s
+			    where s.name = core_subject.name
+			      and s.lifecycle = 'ACTIVE'
+			)
+			""") > 0;
 	}
 
 	private int countRows(final String table) {

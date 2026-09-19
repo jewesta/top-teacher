@@ -31,18 +31,39 @@ public class PupilRepository {
 
 	public List<Pupil> findAll() {
 		return jdbc.query("""
-				select id, name, surname, lifecycle
-				from pupil
-				order by surname, name, id
-				""", rowMapper);
+			select id, name, surname, lifecycle
+			from pupil
+			order by surname, name, id
+			""", rowMapper);
 	}
 
 	public Optional<Pupil> findById(final int id) {
 		return jdbc.query("""
-				select id, name, surname, lifecycle
-				from pupil
-				where id = :id
-				""", Map.of("id", id), rowMapper).stream().findFirst();
+			select id, name, surname, lifecycle
+			from pupil
+			where id = :id
+			""", Map.of("id", id), rowMapper).stream().findFirst();
+	}
+
+	public List<Pupil> findByExactName(final String name, final String surname) {
+		return jdbc.query("""
+			select id, name, surname, lifecycle
+			from pupil
+			where name = :name
+			  and surname = :surname
+			order by id
+			""", Map.of("name", name, "surname", surname), rowMapper);
+	}
+
+	public List<Pupil> findActiveByExactName(final String name, final String surname) {
+		return jdbc.query("""
+			select id, name, surname, lifecycle
+			from pupil
+			where name = :name
+			  and surname = :surname
+			  and lifecycle = :lifecycle
+			order by id
+			""", Map.of("name", name, "surname", surname, "lifecycle", Lifecycle.ACTIVE.name()), rowMapper);
 	}
 
 	public Map<Integer, SchoolClass> findLatestSchoolClassByPupilId() {
@@ -50,18 +71,18 @@ public class PupilRepository {
 		final RowCallbackHandler collectSchoolClasses = resultSet -> schoolClassesByPupilId
 				.put(resultSet.getInt("pupil_id"), SchoolClass.valueOf(resultSet.getString("school_class")));
 		jdbc.query("""
-				select pupil_id, school_class
-				from (
-				    select cp.pupil_id, c.school_class,
-				           row_number() over (
-				               partition by cp.pupil_id
-				               order by c.calendar_year desc, c.id desc
-				           ) as row_num
-				    from course_pupil cp
-				    join course c on c.id = cp.course_id
-				)
-				where row_num = 1
-				""", collectSchoolClasses);
+			select pupil_id, school_class
+			from (
+			    select cp.pupil_id, c.school_class,
+			           row_number() over (
+			               partition by cp.pupil_id
+			               order by c.calendar_year desc, c.id desc
+			           ) as row_num
+			    from course_pupil cp
+			    join course c on c.id = cp.course_id
+			)
+			where row_num = 1
+			""", collectSchoolClasses);
 		return schoolClassesByPupilId;
 	}
 
@@ -76,10 +97,10 @@ public class PupilRepository {
 
 	public void archive(final int id) {
 		jdbc.update("""
-				update pupil
-				set lifecycle = :lifecycle
-				where id = :id
-				""", Map.of("id", id, "lifecycle", Lifecycle.INACTIVE.name()));
+			update pupil
+			set lifecycle = :lifecycle
+			where id = :id
+			""", Map.of("id", id, "lifecycle", Lifecycle.INACTIVE.name()));
 	}
 
 	private Pupil insert(final Pupil pupil) {
@@ -88,9 +109,11 @@ public class PupilRepository {
 				.addValue("surname", pupil.surname()).addValue("lifecycle", pupil.lifecycle().name());
 
 		jdbc.update("""
-				insert into pupil (name, surname, lifecycle)
-				values (:name, :surname, :lifecycle)
-				""", parameters, keyHolder, new String[] { "id" });
+			insert into pupil (name, surname, lifecycle)
+			values (:name, :surname, :lifecycle)
+			""", parameters, keyHolder, new String[] {
+				"id"
+		});
 
 		final Number id = keyHolder.getKey();
 		if (id == null) {
@@ -102,12 +125,12 @@ public class PupilRepository {
 
 	private void update(final Pupil pupil) {
 		jdbc.update("""
-				update pupil
-				set name = :name,
-				    surname = :surname,
-				    lifecycle = :lifecycle
-				where id = :id
-				""", Map.of("id", pupil.id(), "name", pupil.name(), "surname", pupil.surname(), "lifecycle",
+			update pupil
+			set name = :name,
+			    surname = :surname,
+			    lifecycle = :lifecycle
+			where id = :id
+			""", Map.of("id", pupil.id(), "name", pupil.name(), "surname", pupil.surname(), "lifecycle",
 				pupil.lifecycle().name()));
 	}
 

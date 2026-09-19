@@ -22,7 +22,9 @@ class ExamEvaluationExportControllerTests {
 		when(examRepository.findById(exam.id())).thenReturn(Optional.of(exam));
 
 		final ExamEvaluationExcelExportService exportService = mock(ExamEvaluationExcelExportService.class);
-		when(exportService.renderWorkbook(exam.id())).thenReturn(new byte[] { 1, 2, 3 });
+		when(exportService.renderWorkbook(exam.id())).thenReturn(new byte[] {
+				1, 2, 3
+		});
 
 		final ExamEvaluationExportController controller = new ExamEvaluationExportController(examRepository,
 				exportService);

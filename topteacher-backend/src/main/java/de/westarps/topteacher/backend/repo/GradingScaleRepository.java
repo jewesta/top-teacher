@@ -24,8 +24,8 @@ import de.westarps.topteacher.model.Lifecycle;
 public class GradingScaleRepository {
 
 	private static final String USED_BY_EXAM_MESSAGE = """
-			Dieser Notenschlüssel wird bereits von Klausuren verwendet und kann nicht mehr geändert werden.
-			""".trim();
+		Dieser Notenschlüssel wird bereits von Klausuren verwendet und kann nicht mehr geändert werden.
+		""".trim();
 
 	private final NamedParameterJdbcTemplate jdbc;
 	private final RowMapper<GradingScale> gradingScaleRowMapper = this::mapGradingScale;
@@ -37,44 +37,44 @@ public class GradingScaleRepository {
 
 	public List<GradingScale> findAll() {
 		return jdbc.query("""
-				select id, name, max_points, lifecycle
-				from grading_scale
-				order by max_points, name, id
-				""", gradingScaleRowMapper);
+			select id, name, max_points, lifecycle
+			from grading_scale
+			order by max_points, name, id
+			""", gradingScaleRowMapper);
 	}
 
 	public List<GradingScale> findActive() {
 		return jdbc.query("""
-				select id, name, max_points, lifecycle
-				from grading_scale
-				where lifecycle = :lifecycle
-				order by max_points, name, id
-				""", Map.of("lifecycle", Lifecycle.ACTIVE.name()), gradingScaleRowMapper);
+			select id, name, max_points, lifecycle
+			from grading_scale
+			where lifecycle = :lifecycle
+			order by max_points, name, id
+			""", Map.of("lifecycle", Lifecycle.ACTIVE.name()), gradingScaleRowMapper);
 	}
 
 	public Optional<GradingScale> findById(final int id) {
 		return jdbc.query("""
-				select id, name, max_points, lifecycle
-				from grading_scale
-				where id = :id
-				""", Map.of("id", id), gradingScaleRowMapper).stream().findFirst();
+			select id, name, max_points, lifecycle
+			from grading_scale
+			where id = :id
+			""", Map.of("id", id), gradingScaleRowMapper).stream().findFirst();
 	}
 
 	public List<GradingScaleRange> findRangesByGradingScaleId(final int gradingScaleId) {
 		return jdbc.query("""
-				select id, grading_scale_id, grade_points, min_points, max_points
-				from grading_scale_range
-				where grading_scale_id = :gradingScaleId
-				order by grade_points desc
-				""", Map.of("gradingScaleId", gradingScaleId), gradingScaleRangeRowMapper);
+			select id, grading_scale_id, grade_points, min_points, max_points
+			from grading_scale_range
+			where grading_scale_id = :gradingScaleId
+			order by grade_points desc
+			""", Map.of("gradingScaleId", gradingScaleId), gradingScaleRangeRowMapper);
 	}
 
 	public boolean isUsedByExam(final int gradingScaleId) {
 		final Integer count = jdbc.queryForObject("""
-				select count(*)
-				from exam
-				where grading_scale_id = :gradingScaleId
-				""", Map.of("gradingScaleId", gradingScaleId), Integer.class);
+			select count(*)
+			from exam
+			where grading_scale_id = :gradingScaleId
+			""", Map.of("gradingScaleId", gradingScaleId), Integer.class);
 		return count != null && count > 0;
 	}
 
@@ -114,9 +114,11 @@ public class GradingScaleRepository {
 		final MapSqlParameterSource parameters = gradingScaleParameters(gradingScale);
 
 		jdbc.update("""
-				insert into grading_scale (name, max_points, lifecycle)
-				values (:name, :maxPoints, :lifecycle)
-				""", parameters, keyHolder, new String[] { "id" });
+			insert into grading_scale (name, max_points, lifecycle)
+			values (:name, :maxPoints, :lifecycle)
+			""", parameters, keyHolder, new String[] {
+				"id"
+		});
 
 		final Number id = keyHolder.getKey();
 		if (id == null) {
@@ -129,19 +131,19 @@ public class GradingScaleRepository {
 	private void update(final GradingScale gradingScale) {
 		validateScaleNotUsed(gradingScale.id());
 		jdbc.update("""
-				update grading_scale
-				set name = :name,
-				    max_points = :maxPoints,
-				    lifecycle = :lifecycle
-				where id = :id
-				""", gradingScaleParameters(gradingScale).addValue("id", gradingScale.id()));
+			update grading_scale
+			set name = :name,
+			    max_points = :maxPoints,
+			    lifecycle = :lifecycle
+			where id = :id
+			""", gradingScaleParameters(gradingScale).addValue("id", gradingScale.id()));
 	}
 
 	private void replaceRanges(final int gradingScaleId, final List<GradingScaleRange> ranges) {
 		jdbc.update("""
-				delete from grading_scale_range
-				where grading_scale_id = :gradingScaleId
-				""", Map.of("gradingScaleId", gradingScaleId));
+			delete from grading_scale_range
+			where grading_scale_id = :gradingScaleId
+			""", Map.of("gradingScaleId", gradingScaleId));
 		ranges.forEach(range -> insertRange(
 				new GradingScaleRange(null, gradingScaleId, range.gradeLevel(), range.minPoints(), range.maxPoints())));
 	}
@@ -151,9 +153,11 @@ public class GradingScaleRepository {
 		final MapSqlParameterSource parameters = rangeParameters(range);
 
 		jdbc.update("""
-				insert into grading_scale_range (grading_scale_id, grade_points, min_points, max_points)
-				values (:gradingScaleId, :gradePoints, :minPoints, :maxPoints)
-				""", parameters, keyHolder, new String[] { "id" });
+			insert into grading_scale_range (grading_scale_id, grade_points, min_points, max_points)
+			values (:gradingScaleId, :gradePoints, :minPoints, :maxPoints)
+			""", parameters, keyHolder, new String[] {
+				"id"
+		});
 
 		final Number id = keyHolder.getKey();
 		if (id == null) {
@@ -166,13 +170,13 @@ public class GradingScaleRepository {
 
 	private void updateRange(final GradingScaleRange range) {
 		jdbc.update("""
-				update grading_scale_range
-				set grading_scale_id = :gradingScaleId,
-				    grade_points = :gradePoints,
-				    min_points = :minPoints,
-				    max_points = :maxPoints
-				where id = :id
-				""", rangeParameters(range).addValue("id", range.id()));
+			update grading_scale_range
+			set grading_scale_id = :gradingScaleId,
+			    grade_points = :gradePoints,
+			    min_points = :minPoints,
+			    max_points = :maxPoints
+			where id = :id
+			""", rangeParameters(range).addValue("id", range.id()));
 	}
 
 	private MapSqlParameterSource gradingScaleParameters(final GradingScale gradingScale) {

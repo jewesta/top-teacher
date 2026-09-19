@@ -51,6 +51,8 @@ class CourseRepositoryTests {
 
 		assertThat(saved.id()).isNotNull();
 		assertThat(courseRepository.findById(saved.id())).contains(saved);
+		assertThat(courseRepository.findByNaturalKey(saved.schoolClass(), saved.subject().id(), saved.schoolYear(),
+				saved.coursePeriod())).contains(saved);
 
 		final Course updated = new Course(saved.id(), SchoolClass.CLS_5A, subject("Spanisch"), new SchoolYear(2026),
 				CoursePeriod.FIRST_HALF, Lifecycle.ACTIVE, updatedGradingScale.id());

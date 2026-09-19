@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -24,11 +25,13 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.internal.PendingJavaScriptInvocation;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
+import com.vaadin.flow.server.VaadinSession;
 
 import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.model.Exam;
@@ -55,6 +58,7 @@ class LevelOfExpectationsEditorTests {
 			"Very long user-entered requirement text that should not become a summary title", 2, false, 1);
 	private static final LoeRequirement BONUS_REQUIREMENT = new LoeRequirement(10, TASK.id(), "Bonus requirement", 4,
 			true, 1);
+	private static final LoeRequirement NEW_REQUIREMENT = new LoeRequirement(11, TASK.id(), "", 0, false, 1);
 
 	@Test
 	void preservesCollapsedDetailsWhenRefreshingSameExam() {
@@ -71,6 +75,97 @@ class LevelOfExpectationsEditorTests {
 		final List<Details> refreshedDetails = components(editor, Details.class);
 		assertThat(refreshedDetails).hasSize(3);
 		assertThat(refreshedDetails).extracting(Details::isOpened).containsExactly(true, false, true);
+	}
+
+	@Test
+	void reloadsFromTheDatabaseOnlyWhileTheEditorIsClean() {
+		final LevelOfExpectationsRepository repository = repositoryWithHierarchy();
+		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repository);
+		editor.setExam(EXAM);
+		final Button reload = buttonsByAriaLabel(editor, "Neu laden").getFirst();
+		clearInvocations(repository);
+
+		assertThat(reload.isEnabled()).isTrue();
+		assertThat(toolbar(editor).getChildren().toList().getLast()).isSameAs(reload);
+		reload.click();
+
+		verify(repository).findPartsByExamId(EXAM.id());
+		verify(repository).findCategoriesByExamId(EXAM.id());
+		verify(repository).findTasksByExamId(EXAM.id());
+		verify(repository).findRequirementsByExamId(EXAM.id());
+
+		components(editor, IntegerField.class).getFirst().setValue(7);
+
+		assertThat(buttonsByAriaLabel(editor, "Neu laden").getFirst().isEnabled()).isFalse();
+	}
+
+	@Test
+	void marksTheHierarchyAndExpandsThePathForDeepLinks() {
+		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repositoryWithHierarchy());
+		editor.setExam(EXAM);
+		collapseButtons(editor).getFirst().click();
+
+		assertThat(components(editor, Details.class)).extracting(Details::isOpened).containsOnly(false);
+		assertThat(
+				editor.focusRequirement(new LoeNavigationTarget(PART.id(), CATEGORY.id(), TASK.id(), REQUIREMENT.id())))
+						.isTrue();
+		assertThat(components(editor, Details.class)).extracting(Details::isOpened).containsOnly(true);
+		assertThat(anchorKeys(editor)).contains("part:1", "category:2", "task:3", "requirement:4");
+		assertThat(breadcrumbSegments(editor)).containsExactly("Klausurteil A", "Inhalt", "Teilaufgabe 1", "1");
+		assertThat(breadcrumb(editor).getElement().getAttribute("data-tt-breadcrumb-root-label")).isEqualTo("EH");
+		assertThat(breadcrumb(editor).getElement().getAttribute("data-tt-breadcrumb-root-title"))
+				.isEqualTo("Erwartungshorizont");
+		assertThat(editor.focusRequirement(
+				new LoeNavigationTarget(SECOND_PART.id(), CATEGORY.id(), TASK.id(), REQUIREMENT.id()))).isFalse();
+	}
+
+	@Test
+	void scrollsToNewRequirementAfterRefreshingTheHierarchy() {
+		final LevelOfExpectationsRepository repository = repositoryWithHierarchy();
+		when(repository.nextRequirementSortOrder(TASK.id())).thenReturn(NEW_REQUIREMENT.sortOrder());
+		when(repository.saveRequirement(any())).thenReturn(NEW_REQUIREMENT);
+		when(repository.findRequirementsByExamId(EXAM.id())).thenReturn(List.of(REQUIREMENT),
+				List.of(REQUIREMENT, NEW_REQUIREMENT));
+		final UI ui = new UI();
+		ui.getInternals().setSession(mock(VaadinSession.class));
+		UI.setCurrent(ui);
+		try {
+			final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repository);
+			ui.add(editor);
+			editor.setExam(EXAM);
+			ui.getInternals().dumpPendingJavaScriptInvocations();
+
+			button(editor, "Anforderung hinzufügen").click();
+			ui.getInternals().getStateTree().runExecutionsBeforeClientResponse();
+			final List<PendingJavaScriptInvocation> invocations = ui.getInternals().dumpPendingJavaScriptInvocations();
+
+			assertThat(anchorKeys(editor)).contains("requirement:" + NEW_REQUIREMENT.id());
+			assertThat(invocations)
+					.filteredOn(invocation -> invocation.getInvocation().getExpression().contains("pendingViewers"))
+					.anySatisfy(invocation -> assertThat(invocation.getInvocation().getParameters())
+							.contains("requirement:" + NEW_REQUIREMENT.id()));
+		} finally {
+			UI.setCurrent(null);
+		}
+	}
+
+	@Test
+	void bindsTheBreadcrumbWhenTheHierarchyIsAttached() {
+		final UI ui = new UI();
+		ui.getInternals().setSession(mock(VaadinSession.class));
+		UI.setCurrent(ui);
+		try {
+			final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repositoryWithHierarchy());
+			ui.add(editor);
+			editor.setExam(EXAM);
+			ui.getInternals().getStateTree().runExecutionsBeforeClientResponse();
+
+			assertThat(ui.getInternals().dumpPendingJavaScriptInvocations())
+					.anySatisfy(invocation -> assertThat(invocation.getInvocation().getExpression())
+							.contains("data-tt-breadcrumb-bound"));
+		} finally {
+			UI.setCurrent(null);
+		}
 	}
 
 	@Test
@@ -356,7 +451,7 @@ class LevelOfExpectationsEditorTests {
 		assertThat(badgeTexts(editor)).contains("25 %", "75 %");
 		assertThat(components(editor, Span.class).stream()
 				.filter(span -> span.getClassNames().contains("tt-eh-percentage-number")).map(Span::getText))
-				.contains("25", "75");
+						.contains("25", "75");
 	}
 
 	@Test
@@ -454,6 +549,25 @@ class LevelOfExpectationsEditorTests {
 		assertThat(collapseIcon(collapseButton)).isEqualTo("vaadin:angle-double-down");
 	}
 
+	@Test
+	void partCollapseButtonTreatsTasksBelowCollapsedCategoriesAsCollapsed() {
+		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repositoryWithHierarchy());
+		editor.setExam(EXAM);
+		final Button partCollapseButton = collapseButtons(editor).get(1);
+		final List<Details> details = components(editor, Details.class);
+
+		details.get(1).setOpened(false);
+
+		assertThat(collapseIcon(partCollapseButton)).isEqualTo("vaadin:angle-double-right");
+		partCollapseButton.click();
+		assertThat(details.subList(1, 3)).extracting(Details::isOpened).containsOnly(true);
+		assertThat(collapseIcon(partCollapseButton)).isEqualTo("vaadin:angle-double-down");
+
+		details.get(1).setOpened(false);
+
+		assertThat(collapseIcon(partCollapseButton)).isEqualTo("vaadin:angle-double-right");
+	}
+
 	private static LevelOfExpectationsRepository repositoryWithHierarchy() {
 		return repositoryWithHierarchy(REQUIREMENT);
 	}
@@ -512,6 +626,11 @@ class LevelOfExpectationsEditorTests {
 		return components(root, LoeBadge.class).stream().map(LoeBadge::getText).toList();
 	}
 
+	private static HorizontalLayout toolbar(final Component root) {
+		return components(root, HorizontalLayout.class).stream()
+				.filter(layout -> layout.getClassNames().contains("tt-designer-toolbar")).findFirst().orElseThrow();
+	}
+
 	private static List<Button> saveButtons(final Component root) {
 		return components(root, Button.class).stream().filter(button -> "Speichern".equals(button.getText())).toList();
 	}
@@ -528,6 +647,23 @@ class LevelOfExpectationsEditorTests {
 	private static List<Button> buttonsByAriaLabel(final Component root, final String ariaLabel) {
 		return components(root, Button.class).stream()
 				.filter(button -> ariaLabel.equals(button.getElement().getAttribute("aria-label"))).toList();
+	}
+
+	private static List<String> anchorKeys(final Component root) {
+		return components(root, Component.class).stream()
+				.map(component -> component.getElement().getAttribute("data-tt-anchor")).filter(Objects::nonNull)
+				.toList();
+	}
+
+	private static List<String> breadcrumbSegments(final Component root) {
+		return components(root, Component.class).stream()
+				.map(component -> component.getElement().getAttribute("data-tt-breadcrumb-segment"))
+				.filter(Objects::nonNull).distinct().toList();
+	}
+
+	private static Span breadcrumb(final Component root) {
+		return components(root, Span.class).stream()
+				.filter(span -> span.getClassNames().contains("tt-designer-breadcrumb")).findFirst().orElseThrow();
 	}
 
 	private static TextField titleField(final Component root, final String value) {

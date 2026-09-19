@@ -379,6 +379,52 @@ vaadin-app-layout::part(navbar) {
 	margin-left: 0;
 }
 
+.tt-designer-breadcrumb {
+	align-items: center;
+	color: var(--lumo-secondary-text-color);
+	display: flex;
+	font-size: var(--lumo-font-size-s);
+	font-weight: 600;
+	min-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+.tt-designer-breadcrumb-node {
+	appearance: none;
+	background: transparent;
+	border: 0;
+	color: inherit;
+	cursor: pointer;
+	flex: 0 1 auto;
+	font: inherit;
+	min-width: 0;
+	overflow: hidden;
+	padding: 0;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.tt-designer-breadcrumb-node:hover {
+	color: var(--lumo-primary-text-color);
+	text-decoration: underline;
+}
+
+.tt-designer-breadcrumb-node:first-child {
+	flex-shrink: 0;
+}
+
+.tt-designer-breadcrumb-node:focus-visible {
+	border-radius: var(--lumo-border-radius-s);
+	outline: 2px solid var(--lumo-primary-color-50pct);
+	outline-offset: 2px;
+}
+
+.tt-designer-breadcrumb-separator {
+	flex: 0 0 auto;
+	padding: 0 var(--lumo-space-xs);
+}
+
 .tt-exam-results-editor .tt-designer-toolbar-summary .tt-eh-points {
 	width: var(--tt-results-points-column-width);
 }

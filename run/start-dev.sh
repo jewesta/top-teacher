@@ -94,7 +94,7 @@ echo "Database:   ${TT_DATABASE_FILE}.mv.db"
 echo "App:        http://localhost:${APP_PORT}${APP_CONTEXT_PATH}/"
 echo "H2 console: http://localhost:${APP_PORT}${APP_CONTEXT_PATH}${H2_CONSOLE_PATH}/"
 
-mvn -pl westarps-vaadin-markdown,topteacher-backend -am install -DskipTests
+mvn -pl westarps-vaadin-markdown,topteacher-mcp -am install -DskipTests
 mvn -pl topteacher-app vaadin:prepare-frontend -DskipTests
 
 rm -f topteacher-app/src/main/bundles/dev.bundle

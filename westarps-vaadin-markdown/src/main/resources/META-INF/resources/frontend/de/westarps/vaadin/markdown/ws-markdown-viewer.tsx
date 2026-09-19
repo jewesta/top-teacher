@@ -12,6 +12,7 @@ import {
 } from './ws-markdown-support';
 
 type TagCheckedChanged = (detail: { key: string; checked: boolean }) => void;
+type RenderComplete = () => void;
 type MarkdownViewerOptions = Pick<MarkdownOptions, 'tag' | 'tagRenderMode' | 'checkedTagKeys'>;
 type MarkdownInputProps = InputHTMLAttributes<HTMLInputElement> & { node?: unknown };
 
@@ -19,6 +20,7 @@ type MarkdownViewerContentProps = {
   checkedTagKeys: string[];
   content: string;
   markdownOptions: MarkdownViewerOptions;
+  renderComplete: RenderComplete;
   tagCheckedChanged: TagCheckedChanged;
 };
 
@@ -26,6 +28,7 @@ function MarkdownViewerContent({
   checkedTagKeys,
   content,
   markdownOptions,
+  renderComplete,
   tagCheckedChanged,
 }: MarkdownViewerContentProps): ReactElement {
   const [localCheckedTagKeys, setLocalCheckedTagKeys] = React.useState<string[]>(checkedTagKeys);
@@ -36,6 +39,10 @@ function MarkdownViewerContent({
   }, [checkedTagKeySignature]);
 
   const checkedTagKeySet = React.useMemo(() => new Set(localCheckedTagKeys), [localCheckedTagKeys]);
+
+  React.useLayoutEffect(() => {
+    renderComplete();
+  });
 
   const changeTagChecked = (key: string, checked: boolean) => {
     setLocalCheckedTagKeys((currentKeys) => {
@@ -88,13 +95,17 @@ function MarkdownViewerContent({
 }
 
 class MarkdownViewerElement extends ReactAdapterElement {
+  public hasRendered = false;
+
   protected override render(hooks: RenderHooks): ReactElement | null {
+    this.hasRendered = false;
     const [content] = hooks.useState<string>('content', '');
     const [tagNamespace] = hooks.useState<string>('tagNamespace', '');
     const [tagToolbarLabel] = hooks.useState<string>('tagToolbarLabel', '');
     const [tagIdGenerator] = hooks.useState<string>('tagIdGenerator', '');
     const [tagRenderMode] = hooks.useState<string>('tagRenderMode', 'DEFAULT');
     const [checkedTagKeys] = hooks.useState<string[]>('checkedTagKeys', []);
+    const dispatchRenderComplete = hooks.useCustomEvent('render-complete');
     const tagCheckedChanged = hooks.useCustomEvent<{ key: string; checked: boolean }>('tag-checked-changed');
     const markdownOptions = {
       tag: markdownTagOptions(tagNamespace, tagToolbarLabel, tagIdGenerator),
@@ -107,6 +118,10 @@ class MarkdownViewerElement extends ReactAdapterElement {
         checkedTagKeys={checkedTagKeys}
         content={content}
         markdownOptions={markdownOptions}
+        renderComplete={() => {
+          this.hasRendered = true;
+          dispatchRenderComplete();
+        }}
         tagCheckedChanged={tagCheckedChanged}
       />
     );

@@ -43,9 +43,9 @@ final class LoeSectionComponents {
 		field.setWidthFull();
 		field.getElement().setAttribute("aria-label", "Titel");
 		field.addAttachListener(event -> field.getElement().executeJs("""
-				this.addEventListener('click', event => event.stopPropagation());
-				this.addEventListener('keydown', event => event.stopPropagation());
-				"""));
+			this.addEventListener('click', event => event.stopPropagation());
+			this.addEventListener('keydown', event => event.stopPropagation());
+			"""));
 		return field;
 	}
 

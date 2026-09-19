@@ -91,7 +91,7 @@ APP_CONTEXT_PATH=$(sed -n 's/^server\.servlet\.context-path=//p' "$APPLICATION_P
 APP_PORT=${APP_PORT:-8080}
 
 APP_VERSION=$(sed -n 's:.*<version>\([^<]*\)</version>.*:\1:p' topteacher-app/pom.xml | sed -n '1p')
-APP_VERSION=${APP_VERSION:-0.0.1-SNAPSHOT}
+APP_VERSION=${APP_VERSION:-1.1.0}
 START_PROD_TARGET="$PROJECT_ROOT/target/start-prod"
 PACKAGED_JAR="$START_PROD_TARGET/v$APP_VERSION/TopTeacher.jar"
 

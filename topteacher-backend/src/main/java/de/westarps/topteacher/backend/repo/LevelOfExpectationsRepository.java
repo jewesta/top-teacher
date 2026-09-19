@@ -45,119 +45,119 @@ public class LevelOfExpectationsRepository {
 
 	public List<LoePart> findPartsByExamId(final int examId) {
 		return jdbc.query("""
-				select id, exam_id, title, sort_order
-				from eh_part
-				where exam_id = :examId
-				order by sort_order, id
-				""", Map.of("examId", examId), partRowMapper);
+			select id, exam_id, title, sort_order
+			from eh_part
+			where exam_id = :examId
+			order by sort_order, id
+			""", Map.of("examId", examId), partRowMapper);
 	}
 
 	public List<LoeCategory> findCategoriesByExamId(final int examId) {
 		return jdbc.query("""
-				select c.id, c.part_id, c.title, c.description_markdown, c.sort_order
-				from eh_category c
-				join eh_part p on p.id = c.part_id
-				where p.exam_id = :examId
-				order by p.sort_order, p.id, c.sort_order, c.id
-				""", Map.of("examId", examId), categoryRowMapper);
+			select c.id, c.part_id, c.title, c.description_markdown, c.sort_order
+			from eh_category c
+			join eh_part p on p.id = c.part_id
+			where p.exam_id = :examId
+			order by p.sort_order, p.id, c.sort_order, c.id
+			""", Map.of("examId", examId), categoryRowMapper);
 	}
 
 	public List<LoeTask> findTasksByExamId(final int examId) {
 		return jdbc.query("""
-				select t.id, t.category_id, t.title, t.sort_order
-				from eh_task t
-				join eh_category c on c.id = t.category_id
-				join eh_part p on p.id = c.part_id
-				where p.exam_id = :examId
-				order by p.sort_order, p.id, c.sort_order, c.id, t.sort_order, t.id
-				""", Map.of("examId", examId), taskRowMapper);
+			select t.id, t.category_id, t.title, t.sort_order
+			from eh_task t
+			join eh_category c on c.id = t.category_id
+			join eh_part p on p.id = c.part_id
+			where p.exam_id = :examId
+			order by p.sort_order, p.id, c.sort_order, c.id, t.sort_order, t.id
+			""", Map.of("examId", examId), taskRowMapper);
 	}
 
 	public List<LoeRequirement> findRequirementsByExamId(final int examId) {
 		return jdbc.query("""
-				select r.id, r.task_id, r.description_markdown, r.max_points, r.bonus, r.sort_order
-				from eh_requirement r
-				join eh_task t on t.id = r.task_id
-				join eh_category c on c.id = t.category_id
-				join eh_part p on p.id = c.part_id
-				where p.exam_id = :examId
-				order by p.sort_order, p.id, c.sort_order, c.id, t.sort_order, t.id, r.sort_order, r.id
-				""", Map.of("examId", examId), requirementRowMapper);
+			select r.id, r.task_id, r.description_markdown, r.max_points, r.bonus, r.sort_order
+			from eh_requirement r
+			join eh_task t on t.id = r.task_id
+			join eh_category c on c.id = t.category_id
+			join eh_part p on p.id = c.part_id
+			where p.exam_id = :examId
+			order by p.sort_order, p.id, c.sort_order, c.id, t.sort_order, t.id, r.sort_order, r.id
+			""", Map.of("examId", examId), requirementRowMapper);
 	}
 
 	public List<LoeCriterion> findActiveCriteriaByExamId(final int examId) {
 		return jdbc.query("""
-				select cr.id, cr.requirement_id, cr.criterion_key, cr.label, cr.sort_order, cr.active
-				from eh_criterion cr
-				join eh_requirement r on r.id = cr.requirement_id
-				join eh_task t on t.id = r.task_id
-				join eh_category c on c.id = t.category_id
-				join eh_part p on p.id = c.part_id
-				where p.exam_id = :examId
-				  and cr.active = true
-				order by p.sort_order, p.id, c.sort_order, c.id, t.sort_order, t.id, r.sort_order, r.id,
-				         cr.sort_order, cr.id
-				""", Map.of("examId", examId), criterionRowMapper);
+			select cr.id, cr.requirement_id, cr.criterion_key, cr.label, cr.sort_order, cr.active
+			from eh_criterion cr
+			join eh_requirement r on r.id = cr.requirement_id
+			join eh_task t on t.id = r.task_id
+			join eh_category c on c.id = t.category_id
+			join eh_part p on p.id = c.part_id
+			where p.exam_id = :examId
+			  and cr.active = true
+			order by p.sort_order, p.id, c.sort_order, c.id, t.sort_order, t.id, r.sort_order, r.id,
+			         cr.sort_order, cr.id
+			""", Map.of("examId", examId), criterionRowMapper);
 	}
 
 	public List<LoeCriterionResult> findCriterionResultsByExamAndPupil(final int examId, final int pupilId) {
 		return jdbc.query("""
-				select result.criterion_id, result.pupil_id, result.achieved
-				from eh_criterion_result result
-				join eh_criterion cr on cr.id = result.criterion_id
-				join eh_requirement r on r.id = cr.requirement_id
-				join eh_task t on t.id = r.task_id
-				join eh_category c on c.id = t.category_id
-				join eh_part p on p.id = c.part_id
-				where p.exam_id = :examId
-				  and result.pupil_id = :pupilId
-				""", Map.of("examId", examId, "pupilId", pupilId), criterionResultRowMapper);
+			select result.criterion_id, result.pupil_id, result.achieved
+			from eh_criterion_result result
+			join eh_criterion cr on cr.id = result.criterion_id
+			join eh_requirement r on r.id = cr.requirement_id
+			join eh_task t on t.id = r.task_id
+			join eh_category c on c.id = t.category_id
+			join eh_part p on p.id = c.part_id
+			where p.exam_id = :examId
+			  and result.pupil_id = :pupilId
+			""", Map.of("examId", examId, "pupilId", pupilId), criterionResultRowMapper);
 	}
 
 	public List<LoeRequirementResult> findRequirementResultsByExamAndPupil(final int examId, final int pupilId) {
 		return jdbc.query("""
-				select result.requirement_id, result.pupil_id, result.points, result.comment_text
-				from eh_requirement_result result
-				join eh_requirement r on r.id = result.requirement_id
-				join eh_task t on t.id = r.task_id
-				join eh_category c on c.id = t.category_id
-				join eh_part p on p.id = c.part_id
-				where p.exam_id = :examId
-				  and result.pupil_id = :pupilId
-				""", Map.of("examId", examId, "pupilId", pupilId), requirementResultRowMapper);
+			select result.requirement_id, result.pupil_id, result.points, result.comment_text
+			from eh_requirement_result result
+			join eh_requirement r on r.id = result.requirement_id
+			join eh_task t on t.id = r.task_id
+			join eh_category c on c.id = t.category_id
+			join eh_part p on p.id = c.part_id
+			where p.exam_id = :examId
+			  and result.pupil_id = :pupilId
+			""", Map.of("examId", examId, "pupilId", pupilId), requirementResultRowMapper);
 	}
 
 	public List<ExamNoteSection> findNoteSectionsByExamId(final int examId) {
 		return jdbc.query("""
-				select id, exam_id, title, description_markdown, sort_order
-				from exam_note_section
-				where exam_id = :examId
-				order by sort_order, id
-				""", Map.of("examId", examId), noteSectionRowMapper);
+			select id, exam_id, title, description_markdown, sort_order
+			from exam_note_section
+			where exam_id = :examId
+			order by sort_order, id
+			""", Map.of("examId", examId), noteSectionRowMapper);
 	}
 
 	public boolean hasResultsForExam(final int examId) {
 		final Integer count = jdbc.queryForObject("""
-				select count(*)
-				from (
-				    select 1
-				    from eh_requirement_result result
-				    join eh_requirement r on r.id = result.requirement_id
-				    join eh_task t on t.id = r.task_id
-				    join eh_category c on c.id = t.category_id
-				    join eh_part p on p.id = c.part_id
-				    where p.exam_id = :examId
-				    union all
-				    select 1
-				    from eh_criterion_result result
-				    join eh_criterion cr on cr.id = result.criterion_id
-				    join eh_requirement r on r.id = cr.requirement_id
-				    join eh_task t on t.id = r.task_id
-				    join eh_category c on c.id = t.category_id
-				    join eh_part p on p.id = c.part_id
-				    where p.exam_id = :examId
-				) results
-				""", Map.of("examId", examId), Integer.class);
+			select count(*)
+			from (
+			    select 1
+			    from eh_requirement_result result
+			    join eh_requirement r on r.id = result.requirement_id
+			    join eh_task t on t.id = r.task_id
+			    join eh_category c on c.id = t.category_id
+			    join eh_part p on p.id = c.part_id
+			    where p.exam_id = :examId
+			    union all
+			    select 1
+			    from eh_criterion_result result
+			    join eh_criterion cr on cr.id = result.criterion_id
+			    join eh_requirement r on r.id = cr.requirement_id
+			    join eh_task t on t.id = r.task_id
+			    join eh_category c on c.id = t.category_id
+			    join eh_part p on p.id = c.part_id
+			    where p.exam_id = :examId
+			) results
+			""", Map.of("examId", examId), Integer.class);
 		return count != null && count > 0;
 	}
 
@@ -203,11 +203,11 @@ public class LevelOfExpectationsRepository {
 		}
 		validatePartCorrectionMode(part);
 		jdbc.update("""
-				update eh_part
-				set title = :title,
-				    sort_order = :sortOrder
-				where id = :id
-				""", new MapSqlParameterSource().addValue("id", part.id()).addValue("title", part.title())
+			update eh_part
+			set title = :title,
+			    sort_order = :sortOrder
+			where id = :id
+			""", new MapSqlParameterSource().addValue("id", part.id()).addValue("title", part.title())
 				.addValue("sortOrder", part.sortOrder()));
 		return part;
 	}
@@ -219,12 +219,12 @@ public class LevelOfExpectationsRepository {
 		}
 		validateCategoryCorrectionMode(category);
 		jdbc.update("""
-				update eh_category
-				set title = :title,
-				    description_markdown = :descriptionMarkdown,
-				    sort_order = :sortOrder
-				where id = :id
-				""",
+			update eh_category
+			set title = :title,
+			    description_markdown = :descriptionMarkdown,
+			    sort_order = :sortOrder
+			where id = :id
+			""",
 				new MapSqlParameterSource().addValue("id", category.id()).addValue("title", category.title())
 						.addValue("descriptionMarkdown", category.descriptionMarkdown())
 						.addValue("sortOrder", category.sortOrder()));
@@ -238,11 +238,11 @@ public class LevelOfExpectationsRepository {
 		}
 		validateTaskCorrectionMode(task);
 		jdbc.update("""
-				update eh_task
-				set title = :title,
-				    sort_order = :sortOrder
-				where id = :id
-				""", new MapSqlParameterSource().addValue("id", task.id()).addValue("title", task.title())
+			update eh_task
+			set title = :title,
+			    sort_order = :sortOrder
+			where id = :id
+			""", new MapSqlParameterSource().addValue("id", task.id()).addValue("title", task.title())
 				.addValue("sortOrder", task.sortOrder()));
 		return task;
 	}
@@ -256,13 +256,13 @@ public class LevelOfExpectationsRepository {
 		}
 		validateRequirementCorrectionMode(requirement);
 		jdbc.update("""
-				update eh_requirement
-				set description_markdown = :descriptionMarkdown,
-				    max_points = :maxPoints,
-				    bonus = :bonus,
-				    sort_order = :sortOrder
-				where id = :id
-				""",
+			update eh_requirement
+			set description_markdown = :descriptionMarkdown,
+			    max_points = :maxPoints,
+			    bonus = :bonus,
+			    sort_order = :sortOrder
+			where id = :id
+			""",
 				new MapSqlParameterSource().addValue("id", requirement.id())
 						.addValue("descriptionMarkdown", requirement.descriptionMarkdown())
 						.addValue("maxPoints", requirement.maxPoints()).addValue("bonus", requirement.bonus())
@@ -277,19 +277,19 @@ public class LevelOfExpectationsRepository {
 
 	public void saveCriterionResult(final LoeCriterionResult result) {
 		jdbc.update("""
-				merge into eh_criterion_result (criterion_id, pupil_id, achieved)
-				key (criterion_id, pupil_id)
-				values (:criterionId, :pupilId, :achieved)
-				""", new MapSqlParameterSource().addValue("criterionId", result.criterionId())
+			merge into eh_criterion_result (criterion_id, pupil_id, achieved)
+			key (criterion_id, pupil_id)
+			values (:criterionId, :pupilId, :achieved)
+			""", new MapSqlParameterSource().addValue("criterionId", result.criterionId())
 				.addValue("pupilId", result.pupilId()).addValue("achieved", result.achieved()));
 	}
 
 	public void saveRequirementResult(final LoeRequirementResult result) {
 		jdbc.update("""
-				merge into eh_requirement_result (requirement_id, pupil_id, points, comment_text)
-				key (requirement_id, pupil_id)
-				values (:requirementId, :pupilId, :points, :comment)
-				""",
+			merge into eh_requirement_result (requirement_id, pupil_id, points, comment_text)
+			key (requirement_id, pupil_id)
+			values (:requirementId, :pupilId, :points, :comment)
+			""",
 				new MapSqlParameterSource().addValue("requirementId", result.requirementId())
 						.addValue("pupilId", result.pupilId()).addValue("points", result.points())
 						.addValue("comment", result.comment()));
@@ -300,30 +300,30 @@ public class LevelOfExpectationsRepository {
 		final MapSqlParameterSource parameters = new MapSqlParameterSource().addValue("examId", examId)
 				.addValue("pupilId", pupilId);
 		jdbc.update("""
-				delete from eh_criterion_result
-				where pupil_id = :pupilId
-				  and criterion_id in (
-				      select cr.id
-				      from eh_criterion cr
-				      join eh_requirement r on r.id = cr.requirement_id
-				      join eh_task t on t.id = r.task_id
-				      join eh_category c on c.id = t.category_id
-				      join eh_part p on p.id = c.part_id
-				      where p.exam_id = :examId
-				  )
-				""", parameters);
+			delete from eh_criterion_result
+			where pupil_id = :pupilId
+			  and criterion_id in (
+			      select cr.id
+			      from eh_criterion cr
+			      join eh_requirement r on r.id = cr.requirement_id
+			      join eh_task t on t.id = r.task_id
+			      join eh_category c on c.id = t.category_id
+			      join eh_part p on p.id = c.part_id
+			      where p.exam_id = :examId
+			  )
+			""", parameters);
 		jdbc.update("""
-				delete from eh_requirement_result
-				where pupil_id = :pupilId
-				  and requirement_id in (
-				      select r.id
-				      from eh_requirement r
-				      join eh_task t on t.id = r.task_id
-				      join eh_category c on c.id = t.category_id
-				      join eh_part p on p.id = c.part_id
-				      where p.exam_id = :examId
-				  )
-				""", parameters);
+			delete from eh_requirement_result
+			where pupil_id = :pupilId
+			  and requirement_id in (
+			      select r.id
+			      from eh_requirement r
+			      join eh_task t on t.id = r.task_id
+			      join eh_category c on c.id = t.category_id
+			      join eh_part p on p.id = c.part_id
+			      where p.exam_id = :examId
+			  )
+			""", parameters);
 	}
 
 	public ExamNoteSection saveNoteSection(final ExamNoteSection noteSection) {
@@ -331,12 +331,12 @@ public class LevelOfExpectationsRepository {
 			return insertNoteSection(noteSection);
 		}
 		jdbc.update("""
-				update exam_note_section
-				set title = :title,
-				    description_markdown = :descriptionMarkdown,
-				    sort_order = :sortOrder
-				where id = :id
-				""",
+			update exam_note_section
+			set title = :title,
+			    description_markdown = :descriptionMarkdown,
+			    sort_order = :sortOrder
+			where id = :id
+			""",
 				new MapSqlParameterSource().addValue("id", noteSection.id()).addValue("title", noteSection.title())
 						.addValue("descriptionMarkdown", noteSection.descriptionMarkdown())
 						.addValue("sortOrder", noteSection.sortOrder()));
@@ -377,42 +377,42 @@ public class LevelOfExpectationsRepository {
 
 	public int nextPartSortOrder(final int examId) {
 		return nextSortOrder("""
-				select coalesce(max(sort_order), -1) + 1
-				from eh_part
-				where exam_id = :parentId
-				""", examId);
+			select coalesce(max(sort_order), -1) + 1
+			from eh_part
+			where exam_id = :parentId
+			""", examId);
 	}
 
 	public int nextCategorySortOrder(final int partId) {
 		return nextSortOrder("""
-				select coalesce(max(sort_order), -1) + 1
-				from eh_category
-				where part_id = :parentId
-				""", partId);
+			select coalesce(max(sort_order), -1) + 1
+			from eh_category
+			where part_id = :parentId
+			""", partId);
 	}
 
 	public int nextTaskSortOrder(final int categoryId) {
 		return nextSortOrder("""
-				select coalesce(max(sort_order), -1) + 1
-				from eh_task
-				where category_id = :parentId
-				""", categoryId);
+			select coalesce(max(sort_order), -1) + 1
+			from eh_task
+			where category_id = :parentId
+			""", categoryId);
 	}
 
 	public int nextRequirementSortOrder(final int taskId) {
 		return nextSortOrder("""
-				select coalesce(max(sort_order), -1) + 1
-				from eh_requirement
-				where task_id = :parentId
-				""", taskId);
+			select coalesce(max(sort_order), -1) + 1
+			from eh_requirement
+			where task_id = :parentId
+			""", taskId);
 	}
 
 	public int nextNoteSectionSortOrder(final int examId) {
 		return nextSortOrder("""
-				select coalesce(max(sort_order), -1) + 1
-				from exam_note_section
-				where exam_id = :parentId
-				""", examId);
+			select coalesce(max(sort_order), -1) + 1
+			from exam_note_section
+			where exam_id = :parentId
+			""", examId);
 	}
 
 	public void movePart(final LoePart part, final int offset) {
@@ -501,96 +501,98 @@ public class LevelOfExpectationsRepository {
 
 	private LoePart findPartById(final int id) {
 		return jdbc.queryForObject("""
-				select id, exam_id, title, sort_order
-				from eh_part
-				where id = :id
-				""", Map.of("id", id), partRowMapper);
+			select id, exam_id, title, sort_order
+			from eh_part
+			where id = :id
+			""", Map.of("id", id), partRowMapper);
 	}
 
 	private LoeCategory findCategoryById(final int id) {
 		return jdbc.queryForObject("""
-				select id, part_id, title, description_markdown, sort_order
-				from eh_category
-				where id = :id
-				""", Map.of("id", id), categoryRowMapper);
+			select id, part_id, title, description_markdown, sort_order
+			from eh_category
+			where id = :id
+			""", Map.of("id", id), categoryRowMapper);
 	}
 
 	private LoeTask findTaskById(final int id) {
 		return jdbc.queryForObject("""
-				select id, category_id, title, sort_order
-				from eh_task
-				where id = :id
-				""", Map.of("id", id), taskRowMapper);
+			select id, category_id, title, sort_order
+			from eh_task
+			where id = :id
+			""", Map.of("id", id), taskRowMapper);
 	}
 
 	private LoeRequirement findRequirementById(final int id) {
 		return jdbc.queryForObject("""
-				select id, task_id, description_markdown, max_points, bonus, sort_order
-				from eh_requirement
-				where id = :id
-				""", Map.of("id", id), requirementRowMapper);
+			select id, task_id, description_markdown, max_points, bonus, sort_order
+			from eh_requirement
+			where id = :id
+			""", Map.of("id", id), requirementRowMapper);
 	}
 
 	private int examIdForPart(final int partId) {
 		return jdbc.queryForObject("""
-				select exam_id
-				from eh_part
-				where id = :id
-				""", Map.of("id", partId), Integer.class);
+			select exam_id
+			from eh_part
+			where id = :id
+			""", Map.of("id", partId), Integer.class);
 	}
 
 	private int examIdForCategory(final int categoryId) {
 		return jdbc.queryForObject("""
-				select p.exam_id
-				from eh_category c
-				join eh_part p on p.id = c.part_id
-				where c.id = :id
-				""", Map.of("id", categoryId), Integer.class);
+			select p.exam_id
+			from eh_category c
+			join eh_part p on p.id = c.part_id
+			where c.id = :id
+			""", Map.of("id", categoryId), Integer.class);
 	}
 
 	private int examIdForTask(final int taskId) {
 		return jdbc.queryForObject("""
-				select p.exam_id
-				from eh_task t
-				join eh_category c on c.id = t.category_id
-				join eh_part p on p.id = c.part_id
-				where t.id = :id
-				""", Map.of("id", taskId), Integer.class);
+			select p.exam_id
+			from eh_task t
+			join eh_category c on c.id = t.category_id
+			join eh_part p on p.id = c.part_id
+			where t.id = :id
+			""", Map.of("id", taskId), Integer.class);
 	}
 
 	private int examIdForRequirement(final int requirementId) {
 		return jdbc.queryForObject("""
-				select p.exam_id
-				from eh_requirement r
-				join eh_task t on t.id = r.task_id
-				join eh_category c on c.id = t.category_id
-				join eh_part p on p.id = c.part_id
-				where r.id = :id
-				""", Map.of("id", requirementId), Integer.class);
+			select p.exam_id
+			from eh_requirement r
+			join eh_task t on t.id = r.task_id
+			join eh_category c on c.id = t.category_id
+			join eh_part p on p.id = c.part_id
+			where r.id = :id
+			""", Map.of("id", requirementId), Integer.class);
 	}
 
 	private LoePart insertPart(final LoePart part) {
 		final KeyHolder keyHolder = new GeneratedKeyHolder();
-		jdbc.update(
-				"""
-						insert into eh_part (exam_id, title, sort_order)
-						values (:examId, :title, :sortOrder)
-						""", new MapSqlParameterSource().addValue("examId", part.examId())
-						.addValue("title", part.title()).addValue("sortOrder", part.sortOrder()),
-				keyHolder, new String[] { "id" });
+		jdbc.update("""
+			insert into eh_part (exam_id, title, sort_order)
+			values (:examId, :title, :sortOrder)
+			""", new MapSqlParameterSource().addValue("examId", part.examId()).addValue("title", part.title())
+				.addValue("sortOrder", part.sortOrder()), keyHolder, new String[] {
+						"id"
+		});
 		return new LoePart(generatedId(keyHolder, "EH part"), part.examId(), part.title(), part.sortOrder());
 	}
 
 	private LoeCategory insertCategory(final LoeCategory category) {
 		final KeyHolder keyHolder = new GeneratedKeyHolder();
 		jdbc.update("""
-				insert into eh_category (part_id, title, description_markdown, sort_order)
-				values (:partId, :title, :descriptionMarkdown, :sortOrder)
-				""",
+			insert into eh_category (part_id, title, description_markdown, sort_order)
+			values (:partId, :title, :descriptionMarkdown, :sortOrder)
+			""",
 				new MapSqlParameterSource().addValue("partId", category.partId()).addValue("title", category.title())
 						.addValue("descriptionMarkdown", category.descriptionMarkdown())
 						.addValue("sortOrder", category.sortOrder()),
-				keyHolder, new String[] { "id" });
+				keyHolder, new String[] {
+						"id"
+				});
 		return new LoeCategory(generatedId(keyHolder, "EH category"), category.partId(), category.title(),
 				category.descriptionMarkdown(), category.sortOrder());
 	}
@@ -599,25 +601,29 @@ public class LevelOfExpectationsRepository {
 		final KeyHolder keyHolder = new GeneratedKeyHolder();
 		jdbc.update(
 				"""
-						insert into eh_task (category_id, title, sort_order)
-						values (:categoryId, :title, :sortOrder)
-						""", new MapSqlParameterSource().addValue("categoryId", task.categoryId())
+					insert into eh_task (category_id, title, sort_order)
+					values (:categoryId, :title, :sortOrder)
+					""", new MapSqlParameterSource().addValue("categoryId", task.categoryId())
 						.addValue("title", task.title()).addValue("sortOrder", task.sortOrder()),
-				keyHolder, new String[] { "id" });
+				keyHolder, new String[] {
+						"id"
+				});
 		return new LoeTask(generatedId(keyHolder, "EH task"), task.categoryId(), task.title(), task.sortOrder());
 	}
 
 	private LoeRequirement insertRequirement(final LoeRequirement requirement) {
 		final KeyHolder keyHolder = new GeneratedKeyHolder();
 		jdbc.update("""
-				insert into eh_requirement (task_id, description_markdown, max_points, bonus, sort_order)
-				values (:taskId, :descriptionMarkdown, :maxPoints, :bonus, :sortOrder)
-				""",
+			insert into eh_requirement (task_id, description_markdown, max_points, bonus, sort_order)
+			values (:taskId, :descriptionMarkdown, :maxPoints, :bonus, :sortOrder)
+			""",
 				new MapSqlParameterSource().addValue("taskId", requirement.taskId())
 						.addValue("descriptionMarkdown", requirement.descriptionMarkdown())
 						.addValue("maxPoints", requirement.maxPoints()).addValue("bonus", requirement.bonus())
 						.addValue("sortOrder", requirement.sortOrder()),
-				keyHolder, new String[] { "id" });
+				keyHolder, new String[] {
+						"id"
+				});
 		return new LoeRequirement(generatedId(keyHolder, "EH requirement"), requirement.taskId(),
 				requirement.descriptionMarkdown(), requirement.maxPoints(), requirement.bonus(),
 				requirement.sortOrder());
@@ -625,19 +631,19 @@ public class LevelOfExpectationsRepository {
 
 	private void syncCriteria(final LoeRequirement requirement) {
 		jdbc.update("""
-				update eh_criterion
-				set active = false
-				where requirement_id = :requirementId
-				""", Map.of("requirementId", requirement.id()));
+			update eh_criterion
+			set active = false
+			where requirement_id = :requirementId
+			""", Map.of("requirementId", requirement.id()));
 
 		for (final LoeCriterion criterion : LoeCriterionParser.parse(requirement.id(),
 				requirement.descriptionMarkdown())) {
 			final List<Integer> existingIds = jdbc.queryForList("""
-					select id
-					from eh_criterion
-					where requirement_id = :requirementId
-					  and criterion_key = :criterionKey
-					""", new MapSqlParameterSource().addValue("requirementId", criterion.requirementId())
+				select id
+				from eh_criterion
+				where requirement_id = :requirementId
+				  and criterion_key = :criterionKey
+				""", new MapSqlParameterSource().addValue("requirementId", criterion.requirementId())
 					.addValue("criterionKey", criterion.criterionKey()), Integer.class);
 			if (existingIds.isEmpty()) {
 				insertCriterion(criterion);
@@ -650,21 +656,23 @@ public class LevelOfExpectationsRepository {
 	private LoeCriterion insertCriterion(final LoeCriterion criterion) {
 		final KeyHolder keyHolder = new GeneratedKeyHolder();
 		jdbc.update("""
-				insert into eh_criterion (requirement_id, criterion_key, label, sort_order, active)
-				values (:requirementId, :criterionKey, :label, :sortOrder, :active)
-				""", criterionParameters(criterion), keyHolder, new String[] { "id" });
+			insert into eh_criterion (requirement_id, criterion_key, label, sort_order, active)
+			values (:requirementId, :criterionKey, :label, :sortOrder, :active)
+			""", criterionParameters(criterion), keyHolder, new String[] {
+				"id"
+		});
 		return new LoeCriterion(generatedId(keyHolder, "EH criterion"), criterion.requirementId(),
 				criterion.criterionKey(), criterion.label(), criterion.sortOrder(), criterion.active());
 	}
 
 	private void updateCriterion(final int id, final LoeCriterion criterion) {
 		jdbc.update("""
-				update eh_criterion
-				set label = :label,
-				    sort_order = :sortOrder,
-				    active = :active
-				where id = :id
-				""", criterionParameters(criterion).addValue("id", id));
+			update eh_criterion
+			set label = :label,
+			    sort_order = :sortOrder,
+			    active = :active
+			where id = :id
+			""", criterionParameters(criterion).addValue("id", id));
 	}
 
 	private MapSqlParameterSource criterionParameters(final LoeCriterion criterion) {
@@ -676,14 +684,16 @@ public class LevelOfExpectationsRepository {
 	private ExamNoteSection insertNoteSection(final ExamNoteSection noteSection) {
 		final KeyHolder keyHolder = new GeneratedKeyHolder();
 		jdbc.update("""
-				insert into exam_note_section (exam_id, title, description_markdown, sort_order)
-				values (:examId, :title, :descriptionMarkdown, :sortOrder)
-				""",
+			insert into exam_note_section (exam_id, title, description_markdown, sort_order)
+			values (:examId, :title, :descriptionMarkdown, :sortOrder)
+			""",
 				new MapSqlParameterSource().addValue("examId", noteSection.examId())
 						.addValue("title", noteSection.title())
 						.addValue("descriptionMarkdown", noteSection.descriptionMarkdown())
 						.addValue("sortOrder", noteSection.sortOrder()),
-				keyHolder, new String[] { "id" });
+				keyHolder, new String[] {
+						"id"
+				});
 		return new ExamNoteSection(generatedId(keyHolder, "note section"), noteSection.examId(), noteSection.title(),
 				noteSection.descriptionMarkdown(), noteSection.sortOrder());
 	}
@@ -694,82 +704,82 @@ public class LevelOfExpectationsRepository {
 
 	private void assertNoCriterionResultsForPart(final int partId) {
 		assertNoResults("""
-				select count(*)
-				from eh_criterion_result result
-				join eh_criterion cr on cr.id = result.criterion_id
-				join eh_requirement r on r.id = cr.requirement_id
-				join eh_task t on t.id = r.task_id
-				join eh_category c on c.id = t.category_id
-				where c.part_id = :id
-				""", partId);
+			select count(*)
+			from eh_criterion_result result
+			join eh_criterion cr on cr.id = result.criterion_id
+			join eh_requirement r on r.id = cr.requirement_id
+			join eh_task t on t.id = r.task_id
+			join eh_category c on c.id = t.category_id
+			where c.part_id = :id
+			""", partId);
 	}
 
 	private void assertNoCriterionResultsForCategory(final int categoryId) {
 		assertNoResults("""
-				select count(*)
-				from eh_criterion_result result
-				join eh_criterion cr on cr.id = result.criterion_id
-				join eh_requirement r on r.id = cr.requirement_id
-				join eh_task t on t.id = r.task_id
-				where t.category_id = :id
-				""", categoryId);
+			select count(*)
+			from eh_criterion_result result
+			join eh_criterion cr on cr.id = result.criterion_id
+			join eh_requirement r on r.id = cr.requirement_id
+			join eh_task t on t.id = r.task_id
+			where t.category_id = :id
+			""", categoryId);
 	}
 
 	private void assertNoCriterionResultsForTask(final int taskId) {
 		assertNoResults("""
-				select count(*)
-				from eh_criterion_result result
-				join eh_criterion cr on cr.id = result.criterion_id
-				join eh_requirement r on r.id = cr.requirement_id
-				where r.task_id = :id
-				""", taskId);
+			select count(*)
+			from eh_criterion_result result
+			join eh_criterion cr on cr.id = result.criterion_id
+			join eh_requirement r on r.id = cr.requirement_id
+			where r.task_id = :id
+			""", taskId);
 	}
 
 	private void assertNoCriterionResultsForRequirement(final int requirementId) {
 		assertNoResults("""
-				select count(*)
-				from eh_criterion_result result
-				join eh_criterion cr on cr.id = result.criterion_id
-				where cr.requirement_id = :id
-				""", requirementId);
+			select count(*)
+			from eh_criterion_result result
+			join eh_criterion cr on cr.id = result.criterion_id
+			where cr.requirement_id = :id
+			""", requirementId);
 	}
 
 	private void assertNoRequirementResultsForPart(final int partId) {
 		assertNoResults("""
-				select count(*)
-				from eh_requirement_result result
-				join eh_requirement r on r.id = result.requirement_id
-				join eh_task t on t.id = r.task_id
-				join eh_category c on c.id = t.category_id
-				where c.part_id = :id
-				""", partId);
+			select count(*)
+			from eh_requirement_result result
+			join eh_requirement r on r.id = result.requirement_id
+			join eh_task t on t.id = r.task_id
+			join eh_category c on c.id = t.category_id
+			where c.part_id = :id
+			""", partId);
 	}
 
 	private void assertNoRequirementResultsForCategory(final int categoryId) {
 		assertNoResults("""
-				select count(*)
-				from eh_requirement_result result
-				join eh_requirement r on r.id = result.requirement_id
-				join eh_task t on t.id = r.task_id
-				where t.category_id = :id
-				""", categoryId);
+			select count(*)
+			from eh_requirement_result result
+			join eh_requirement r on r.id = result.requirement_id
+			join eh_task t on t.id = r.task_id
+			where t.category_id = :id
+			""", categoryId);
 	}
 
 	private void assertNoRequirementResultsForTask(final int taskId) {
 		assertNoResults("""
-				select count(*)
-				from eh_requirement_result result
-				join eh_requirement r on r.id = result.requirement_id
-				where r.task_id = :id
-				""", taskId);
+			select count(*)
+			from eh_requirement_result result
+			join eh_requirement r on r.id = result.requirement_id
+			where r.task_id = :id
+			""", taskId);
 	}
 
 	private void assertNoRequirementResultsForRequirement(final int requirementId) {
 		assertNoResults("""
-				select count(*)
-				from eh_requirement_result result
-				where result.requirement_id = :id
-				""", requirementId);
+			select count(*)
+			from eh_requirement_result result
+			where result.requirement_id = :id
+			""", requirementId);
 	}
 
 	private void assertNoResults(final String sql, final int id) {
@@ -794,14 +804,14 @@ public class LevelOfExpectationsRepository {
 		final SortableItem current = siblings.get(currentIndex);
 		final SortableItem target = siblings.get(targetIndex);
 		jdbc.update("""
-				update %s
-				set sort_order = case
-				    when id = :currentId then :targetSortOrder
-				    when id = :targetId then :currentSortOrder
-				    else sort_order
-				end
-				where id in (:currentId, :targetId)
-				""".formatted(table),
+			update %s
+			set sort_order = case
+			    when id = :currentId then :targetSortOrder
+			    when id = :targetId then :currentSortOrder
+			    else sort_order
+			end
+			where id in (:currentId, :targetId)
+			""".formatted(table),
 				new MapSqlParameterSource().addValue("currentId", current.id()).addValue("targetId", target.id())
 						.addValue("currentSortOrder", current.sortOrder())
 						.addValue("targetSortOrder", target.sortOrder()));

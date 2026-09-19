@@ -11,6 +11,7 @@
 - Keep module boundaries clear: domain types live in `topteacher-model`, repositories/export services and SQL/templates in `topteacher-backend`, and Vaadin/application wiring in `topteacher-app`.
 - Preserve UI state where possible. Avoid unnecessary full rerenders, especially in EH design and result entry flows.
 - Save actions should respect dirty state where applicable.
+- Treat archived records as historical data throughout TopTeacher. Exclude them from default discovery, identity matching, duplicate detection, and new assignments; expose them only through explicitly requested archive views, and never reactivate them implicitly as a side effect of another operation.
 - Prefer Vaadin Binder for form validation instead of manual if/else validation in form editors.
 - Keep `db/schema.sql`, `db/base-data.sql`, and `db/demo-data.sql` in sync when persistence changes.
 - For issue branches, maintain a concise summary in `issues/Issue_<nr>.md`; derive the issue number from the branch name when possible.

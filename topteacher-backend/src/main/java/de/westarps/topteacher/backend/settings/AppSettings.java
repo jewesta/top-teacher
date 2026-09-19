@@ -89,8 +89,8 @@ public class AppSettings {
 		return switch (value.trim().toLowerCase(Locale.ROOT)) {
 		case "true" -> true;
 		case "false" -> false;
-		default ->
-			throw new IllegalArgumentException("Setting " + key + " must be true or false, but was '" + value + "'.");
+		default -> throw new IllegalArgumentException(
+				"Setting " + key + " must be true or false, but was '" + value + "'.");
 		};
 	}
 }
