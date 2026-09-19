@@ -1,10 +1,15 @@
 package de.westarps.topteacher.backend.export;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Objects;
 
+import org.apache.pdfbox.io.MemoryUsageSetting;
 import org.apache.pdfbox.multipdf.LayerUtility;
+import org.apache.pdfbox.multipdf.PDFMergerUtility;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -66,6 +71,23 @@ public class OpenHtmlPdfRenderer implements PdfRenderer {
 			return output.toByteArray();
 		} catch (final IOException exception) {
 			throw new IllegalStateException("PDF-Seiten konnten nicht auf A4 quer gesetzt werden.", exception);
+		}
+	}
+
+	@Override
+	public byte[] merge(final List<byte[]> pdfs) {
+		final List<byte[]> sourcePdfs = List.copyOf(Objects.requireNonNull(pdfs, "pdfs must not be null"));
+		if (sourcePdfs.isEmpty()) {
+			throw new IllegalArgumentException("pdfs must not be empty");
+		}
+		try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+			final PDFMergerUtility merger = new PDFMergerUtility();
+			sourcePdfs.forEach(pdf -> merger.addSource(new ByteArrayInputStream(pdf)));
+			merger.setDestinationStream(output);
+			merger.mergeDocuments(MemoryUsageSetting.setupMainMemoryOnly());
+			return output.toByteArray();
+		} catch (final IOException exception) {
+			throw new IllegalStateException("PDF-Dokumente konnten nicht zusammengeführt werden.", exception);
 		}
 	}
 

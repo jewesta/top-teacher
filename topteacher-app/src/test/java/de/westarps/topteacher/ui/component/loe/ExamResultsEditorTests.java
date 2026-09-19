@@ -25,8 +25,10 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
+import com.vaadin.flow.component.contextmenu.MenuItem;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.menubar.MenuBar;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
@@ -93,7 +95,12 @@ class ExamResultsEditorTests {
 		final IntegerField points = components(editor, IntegerField.class).getFirst();
 		assertThat(saveButton.isEnabled()).isFalse();
 		assertThat(pdfMenu.isEnabled()).isTrue();
-		assertThat(pdfMenuIcon(editor).getClassNames()).contains("tt-pdf-menu-icon");
+		final MenuItem pdfMenuItem = pdfMenu.getItems().getFirst();
+		assertThat(pdfMenuItem.getText()).isEqualTo("Laden");
+		assertThat(iconName(pdfMenuItem)).isEqualTo(VaadinIcon.DOWNLOAD.create().getIcon());
+		assertThat(pdfMenuItem.getSubMenu().getItems().stream().map(MenuItem::getText))
+				.containsExactly("Ergebnisbogen (Schüler:innen-Version)", "Ergebnisbogen (Lehrer:innen-Version)");
+		assertThat(pdfMenuItem.getSubMenu().getItems()).allMatch(item -> item.getChildren().findAny().isEmpty());
 		assertThat(points.getLabel()).isNull();
 		assertThat(pointsText(editor)).containsExactly("1 von 5 Punkten");
 		assertThat(points.getValue()).isEqualTo(1);
@@ -456,9 +463,9 @@ class ExamResultsEditorTests {
 				.filter(layout -> layout.getClassNames().contains("tt-designer-toolbar")).findFirst().orElseThrow();
 	}
 
-	private static Icon pdfMenuIcon(final Component root) {
-		return components(root, Icon.class).stream().filter(icon -> icon.getClassNames().contains("tt-pdf-menu-icon"))
-				.findFirst().orElseThrow();
+	private static String iconName(final MenuItem item) {
+		return item.getChildren().filter(Icon.class::isInstance).map(Icon.class::cast).map(Icon::getIcon).findFirst()
+				.orElseThrow();
 	}
 
 	private static List<String> badgeTexts(final Component root) {

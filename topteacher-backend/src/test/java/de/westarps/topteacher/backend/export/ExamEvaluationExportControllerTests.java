@@ -35,7 +35,7 @@ class ExamEvaluationExportControllerTests {
 		assertThat(response.getHeaders().getContentType().toString())
 				.isEqualTo("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 		assertThat(response.getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION))
-				.isEqualTo("attachment; filename=auswertung-klausur-nr-1.xlsx");
+				.isEqualTo("attachment; filename=punktetabelle-klausur-nr-1.xlsx");
 		assertThat(response.getBody()).containsExactly(1, 2, 3);
 	}
 }

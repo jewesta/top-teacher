@@ -156,6 +156,44 @@ class LevelOfExpectationsExportServiceTests {
 		assertThat(response.getBody()).startsWith("%PDF".getBytes());
 	}
 
+	@Test
+	void exportsAllPupilLevelOfExpectationsAsOnePdf() throws IOException {
+		final DemoSelection demo = findDemoSelection();
+		final var pupils = examRepository.findPupils(demo.exam().id());
+
+		final ResponseEntity<byte[]> response = exportController.exportAllPupilLevelOfExpectations(demo.exam().id());
+
+		assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+		assertThat(response.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_PDF);
+		assertThat(response.getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION))
+				.isEqualTo("attachment; filename=ergebnisboegen-1-klausur-shakespeare.pdf");
+		assertThat(response.getBody()).startsWith("%PDF".getBytes());
+		try (PDDocument document = PDDocument.load(response.getBody())) {
+			assertThat(document.getNumberOfPages()).isGreaterThanOrEqualTo(pupils.size());
+			assertThat(new PDFTextStripper().getText(document)).contains(
+					pupils.stream().map(pupil -> pupil.name() + " " + pupil.surname()).toArray(String[]::new));
+		}
+	}
+
+	@Test
+	void exportsAllTeacherLevelOfExpectationsAsOnePdf() throws IOException {
+		final DemoSelection demo = findDemoSelection();
+		final var pupils = examRepository.findPupils(demo.exam().id());
+
+		final ResponseEntity<byte[]> response = exportController.exportAllTeacherLevelOfExpectations(demo.exam().id());
+
+		assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+		assertThat(response.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_PDF);
+		assertThat(response.getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION))
+				.isEqualTo("attachment; filename=lehrerversion-ergebnisboegen-1-klausur-shakespeare.pdf");
+		assertThat(response.getBody()).startsWith("%PDF".getBytes());
+		try (PDDocument document = PDDocument.load(response.getBody())) {
+			assertThat(document.getNumberOfPages()).isGreaterThanOrEqualTo(pupils.size());
+			assertThat(new PDFTextStripper().getText(document)).contains("Lehrer:innen-Version").contains(
+					pupils.stream().map(pupil -> pupil.name() + " " + pupil.surname()).toArray(String[]::new));
+		}
+	}
+
 	private DemoSelection findDemoSelection() {
 		final Course course = courseRepository.findAll().stream()
 				.filter(candidate -> candidate.schoolClass() == SchoolClass.CLS_Q2)

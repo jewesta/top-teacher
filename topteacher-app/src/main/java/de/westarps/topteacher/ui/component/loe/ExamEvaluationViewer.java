@@ -2,14 +2,16 @@ package de.westarps.topteacher.ui.component.loe;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.contextmenu.MenuItem;
 import com.vaadin.flow.component.grid.ColumnTextAlign;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.menubar.MenuBar;
+import com.vaadin.flow.component.menubar.MenuBarVariant;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.ExamRepository;
@@ -42,7 +44,7 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 	private final LevelOfExpectationsRepository levelOfExpectationsRepository;
 	private final GradingScaleRepository gradingScaleRepository;
 	private final SpreadsheetGrid<EvaluationRow> grid = new SpreadsheetGrid<>(EvaluationRow.class, false);
-	private final Button excelButton = new Button("Excel", VaadinIcon.DOWNLOAD.create());
+	private final MenuBar downloadMenu = new MenuBar();
 	private final FullscreenButton fullscreenButton;
 
 	private Exam exam;
@@ -65,11 +67,23 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 		grid.setSelectionMode(Grid.SelectionMode.NONE);
 		grid.setSizeFull();
 
-		excelButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
-		excelButton.setTooltipText("Excel herunterladen");
-		excelButton.addClickListener(event -> downloadExcel());
+		configureDownloadMenu();
 
 		fullscreenButton = new FullscreenButton(this);
+	}
+
+	private void configureDownloadMenu() {
+		downloadMenu.addThemeVariants(MenuBarVariant.LUMO_SMALL);
+		final MenuItem downloadItem = downloadMenu.addItem("Laden");
+		downloadItem.addComponentAsFirst(VaadinIcon.DOWNLOAD.create());
+		downloadItem.setAriaLabel("Dateien herunterladen");
+		downloadMenu.setTooltipText(downloadItem, "Dateien herunterladen");
+
+		downloadItem.getSubMenu().addItem("Punktetabelle", event -> download(this::excelUrl, this::excelFileName));
+		downloadItem.getSubMenu().addItem("Alle Ergebnisbögen (Schüler:innen-Version)",
+				event -> download(this::pupilResultSheetsUrl, this::pupilResultSheetsFileName));
+		downloadItem.getSubMenu().addItem("Alle Ergebnisbögen (Lehrer:innen-Version)",
+				event -> download(this::teacherResultSheetsUrl, this::teacherResultSheetsFileName));
 	}
 
 	public void setExam(final Exam exam) {
@@ -109,7 +123,7 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 		configureGrid(LoeAggregationColumns.from(parts, categories, tasks, requirements));
 		grid.setItems(pupils.stream().map(this::evaluationRow).toList());
 
-		toolbar().add(excelButton, fullscreenButton);
+		toolbar().add(downloadMenu, fullscreenButton);
 		content().add(grid);
 		content().expand(grid);
 		showDesigner();
@@ -160,7 +174,7 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 		return new EvaluationRow(pupil, achievedPointsByRequirementId);
 	}
 
-	private void downloadExcel() {
+	private void download(final Supplier<String> url, final Supplier<String> fileName) {
 		if (exam == null) {
 			return;
 		}
@@ -172,7 +186,7 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 			document.body.appendChild(anchor);
 			anchor.click();
 			anchor.remove();
-			""", excelUrl(), excelFileName()));
+			""", url.get(), fileName.get()));
 	}
 
 	private String excelUrl() {
@@ -180,7 +194,23 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 	}
 
 	private String excelFileName() {
-		return "auswertung-" + fileNamePart(exam.title()) + ".xlsx";
+		return "punktetabelle-" + fileNamePart(exam.title()) + ".xlsx";
+	}
+
+	private String pupilResultSheetsUrl() {
+		return UiUrls.contextRelative("/export/exams/" + exam.id() + "/level-of-expectations.pdf");
+	}
+
+	private String pupilResultSheetsFileName() {
+		return "ergebnisboegen-" + fileNamePart(exam.title()) + ".pdf";
+	}
+
+	private String teacherResultSheetsUrl() {
+		return UiUrls.contextRelative("/export/exams/" + exam.id() + "/level-of-expectations-teacher.pdf");
+	}
+
+	private String teacherResultSheetsFileName() {
+		return "lehrerversion-ergebnisboegen-" + fileNamePart(exam.title()) + ".pdf";
 	}
 
 	private String gradeDisplayName(final EvaluationRow row) {

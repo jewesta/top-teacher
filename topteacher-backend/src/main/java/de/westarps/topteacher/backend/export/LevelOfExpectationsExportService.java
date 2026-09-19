@@ -1,5 +1,7 @@
 package de.westarps.topteacher.backend.export;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 
 import de.westarps.topteacher.backend.export.LevelOfExpectationsExportModelFactory.LevelOfExpectationsExportData;
@@ -72,6 +74,14 @@ public class LevelOfExpectationsExportService {
 		return pdfRenderer.imposeA5OnA4Landscape(renderTeacherA5Pdf(model));
 	}
 
+	public byte[] renderCombinedPupilA4LandscapePdf(final List<LevelOfExpectationsExportModel> models) {
+		return pdfRenderer.merge(models.stream().map(this::renderPupilA4LandscapePdf).toList());
+	}
+
+	public byte[] renderCombinedTeacherA4LandscapePdf(final List<LevelOfExpectationsExportModel> models) {
+		return pdfRenderer.merge(models.stream().map(this::renderTeacherA4LandscapePdf).toList());
+	}
+
 	public LevelOfExpectationsExportModel createPupilModel(final int examId, final int pupilId) {
 		return modelFactory.createPupilModel(createExportData(examId, pupilId));
 	}
@@ -79,6 +89,25 @@ public class LevelOfExpectationsExportService {
 	public LevelOfExpectationsExportModel createTeacherModel(final int examId, final int pupilId) {
 		return modelFactory.createTeacherModel(createExportData(examId, pupilId),
 				appSettings.ttLoeExportShowWatermark());
+	}
+
+	public List<LevelOfExpectationsExportModel> createPupilModels(final int examId) {
+		return pupilsForExam(examId).stream().map(pupil -> createPupilModel(examId, pupil.id())).toList();
+	}
+
+	public List<LevelOfExpectationsExportModel> createTeacherModels(final int examId) {
+		return pupilsForExam(examId).stream().map(pupil -> createTeacherModel(examId, pupil.id())).toList();
+	}
+
+	private List<Pupil> pupilsForExam(final int examId) {
+		if (examRepository.findById(examId).isEmpty()) {
+			throw new IllegalArgumentException("Exam does not exist: " + examId);
+		}
+		final List<Pupil> pupils = examRepository.findPupils(examId);
+		if (pupils.isEmpty()) {
+			throw new IllegalArgumentException("Exam has no assigned pupils: " + examId);
+		}
+		return pupils;
 	}
 
 	private LevelOfExpectationsExportData createExportData(final int examId, final int pupilId) {

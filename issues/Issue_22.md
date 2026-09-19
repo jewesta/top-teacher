@@ -20,6 +20,13 @@
   calculation.
 - Preserve the existing teacher-facing export, including aggregated achievable
   bonus points.
+- Replace the technology-named `Excel` action in the evaluation view with a
+  `Laden` menu containing the `Punktetabelle` spreadsheet and combined
+  pupil- and teacher-facing result sheets.
+- Export all result sheets of one audience as one PDF, preserving the pupil
+  order and starting each pupil on a separate PDF document boundary.
+- Keep the download options text-only; use the concise label `Laden` and the
+  established download icon for both menu buttons.
 
 ## Progress
 
@@ -31,6 +38,11 @@
 - Added model and rendered-HTML coverage for the pupil and teacher variants.
 - Removed unused and test-only overloads discovered while reviewing the export
   change, keeping tests on production entry points.
+- Added combined pupil- and teacher-facing PDF exports for every pupil assigned
+  to an exam.
+- Replaced the evaluation view's `Excel` action with the three-option
+  `Laden` menu, naming the spreadsheet and its downloaded file by their purpose
+  as `Punktetabelle`.
 
 ## Verification
 
@@ -47,3 +59,12 @@
   - The individual awarded bonus points remain parenthesized as `(2)`.
   - The teacher PDF continues to show the achievable bonus totals, including
     `150 (+ 4)` for the exam total.
+  - The evaluation view shows `Laden` with `Punktetabelle` and both combined
+    result-sheet downloads as text-only menu options.
+  - The results view uses the same `Laden` label and the explicit singular
+    options `Ergebnisbogen (Schüler:innen-Version)` and `Ergebnisbogen
+    (Lehrer:innen-Version)`.
+  - For seven assigned pupils, the combined pupil PDF has 14 pages and the
+    combined teacher PDF has 21 pages. Extracted text and rendered page samples
+    confirm the pupil order, clean boundaries between pupils, and the existing
+    audience-specific layouts.

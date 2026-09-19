@@ -200,23 +200,15 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private void configurePdfDownload() {
 		pdfMenu.addClassName("tt-pdf-menu");
 		pdfMenu.addThemeVariants(MenuBarVariant.LUMO_SMALL);
-		pdfMenuItem = pdfMenu.addItem(pdfMenuLabel());
-		pdfMenuItem.setAriaLabel("PDF herunterladen");
-		pdfMenu.setTooltipText(pdfMenuItem, "PDF herunterladen");
-		pupilPdfItem = pdfMenuItem.getSubMenu().addItem("Schüler:innen-Version", event -> downloadPdf(false));
-		teacherPdfItem = pdfMenuItem.getSubMenu().addItem("Lehrer:innen-Version", event -> downloadPdf(true));
+		pdfMenuItem = pdfMenu.addItem("Laden");
+		pdfMenuItem.addComponentAsFirst(VaadinIcon.DOWNLOAD.create());
+		pdfMenuItem.setAriaLabel("Ergebnisbogen herunterladen");
+		pdfMenu.setTooltipText(pdfMenuItem, "Ergebnisbogen herunterladen");
+		pupilPdfItem = pdfMenuItem.getSubMenu().addItem("Ergebnisbogen (Schüler:innen-Version)",
+				event -> downloadPdf(false));
+		teacherPdfItem = pdfMenuItem.getSubMenu().addItem("Ergebnisbogen (Lehrer:innen-Version)",
+				event -> downloadPdf(true));
 		updatePdfDownload();
-	}
-
-	private static HorizontalLayout pdfMenuLabel() {
-		final Icon downloadIcon = VaadinIcon.DOWNLOAD.create();
-		downloadIcon.addClassName("tt-pdf-menu-icon");
-		final HorizontalLayout label = new HorizontalLayout(downloadIcon, new Span("PDF"));
-		label.addClassName("tt-pdf-menu-label");
-		label.setAlignItems(Alignment.CENTER);
-		label.setPadding(false);
-		label.setSpacing(false);
-		return label;
 	}
 
 	private void refresh() {
