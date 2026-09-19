@@ -122,6 +122,19 @@ public class ExamResultsEditor extends AbstractDesigner {
 		refresh();
 	}
 
+	public boolean selectPupil(final int pupilId) {
+		if (exam == null) {
+			return false;
+		}
+		final Pupil pupil = examRepository.findPupils(exam.id()).stream()
+				.filter(candidate -> candidate.id().equals(pupilId)).findFirst().orElse(null);
+		if (pupil == null) {
+			return false;
+		}
+		pupilSelector.setValue(pupil);
+		return true;
+	}
+
 	public void setChangeHandler(final Runnable changeHandler) {
 		this.changeHandler = changeHandler == null ? () -> {
 		} : changeHandler;

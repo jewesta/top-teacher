@@ -26,7 +26,10 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.RouteParameters;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.ExamRepository;
@@ -51,8 +54,16 @@ import de.westarps.topteacher.ui.component.loe.ExamNotesEditor;
 import de.westarps.topteacher.ui.component.loe.ExamResultsEditor;
 import de.westarps.topteacher.ui.component.loe.LevelOfExpectationsEditor;
 
-@Route(value = "exams", layout = MainLayout.class)
-public class ExamsView extends SplitListDetailView<Exam> {
+@Route(value = "exams/:examId?/:section?/:pupilId?", layout = MainLayout.class)
+public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterObserver {
+
+	public static final String ROUTE = "exams";
+	public static final String LEVEL_OF_EXPECTATIONS_SECTION = "level-of-expectations";
+	public static final String RESULTS_SECTION = "results";
+
+	private static final String EXAM_ID_PARAMETER = "examId";
+	private static final String SECTION_PARAMETER = "section";
+	private static final String PUPIL_ID_PARAMETER = "pupilId";
 
 	private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
@@ -135,6 +146,21 @@ public class ExamsView extends SplitListDetailView<Exam> {
 		initializeView();
 		refreshCourseFilter();
 		clearSingleEditor();
+	}
+
+	@Override
+	public void beforeEnter(final BeforeEnterEvent event) {
+		final RouteParameters parameters = event.getRouteParameters();
+		if (parameters.get(EXAM_ID_PARAMETER).isEmpty()) {
+			return;
+		}
+
+		try {
+			openDeepLink(positiveId(parameters, EXAM_ID_PARAMETER), parameters.get(SECTION_PARAMETER).orElse(null),
+					optionalPositiveId(parameters, PUPIL_ID_PARAMETER));
+		} catch (final IllegalArgumentException exception) {
+			Notification.show(exception.getMessage());
+		}
 	}
 
 	@Override
@@ -227,6 +253,56 @@ public class ExamsView extends SplitListDetailView<Exam> {
 			refreshGradingScaleOptions();
 			refreshGrid();
 		});
+	}
+
+	private void openDeepLink(final int examId, final String section, final Integer pupilId) {
+		if (pupilId != null && !RESULTS_SECTION.equals(section)) {
+			throw new IllegalArgumentException(
+					"Eine Schüler:innen-ID kann nur mit dem Bereich Ergebnisse geöffnet werden.");
+		}
+		if (section != null && !LEVEL_OF_EXPECTATIONS_SECTION.equals(section) && !RESULTS_SECTION.equals(section)) {
+			throw new IllegalArgumentException("Unbekannter Klausurbereich: " + section);
+		}
+
+		final Exam exam = examRepository.findById(examId)
+				.orElseThrow(() -> new IllegalArgumentException("Klausur nicht gefunden: " + examId));
+		final Course course = courseRepository.findById(exam.courseId())
+				.orElseThrow(() -> new IllegalArgumentException("Kurs nicht gefunden: " + exam.courseId()));
+		if (course.lifecycle() != Lifecycle.ACTIVE) {
+			throw new IllegalArgumentException("Die Klausur gehört zu einem archivierten Kurs: " + examId);
+		}
+
+		courseFilter.setValue(course);
+		getGrid().select(exam);
+		if (LEVEL_OF_EXPECTATIONS_SECTION.equals(section)) {
+			getContextTabs().setSelectedTab(levelOfExpectationsTab);
+			return;
+		}
+		if (RESULTS_SECTION.equals(section)) {
+			getContextTabs().setSelectedTab(resultsTab);
+			if (pupilId != null && !examResultsEditor.selectPupil(pupilId)) {
+				Notification.show("Schüler:in ist dieser Klausur nicht zugeordnet: " + pupilId);
+			}
+		}
+	}
+
+	private static int positiveId(final RouteParameters parameters, final String parameterName) {
+		final int id;
+		try {
+			id = parameters.getInteger(parameterName)
+					.orElseThrow(() -> new IllegalArgumentException("Fehlende ID im TopTeacher-Link."));
+		} catch (final IllegalArgumentException invalidId) {
+			throw new IllegalArgumentException(
+					"Ungültige ID im TopTeacher-Link: " + parameters.get(parameterName).orElse(""), invalidId);
+		}
+		if (id <= 0) {
+			throw new IllegalArgumentException("Ungültige ID im TopTeacher-Link: " + id);
+		}
+		return id;
+	}
+
+	private static Integer optionalPositiveId(final RouteParameters parameters, final String parameterName) {
+		return parameters.get(parameterName).isEmpty() ? null : positiveId(parameters, parameterName);
 	}
 
 	private void configureEditors() {

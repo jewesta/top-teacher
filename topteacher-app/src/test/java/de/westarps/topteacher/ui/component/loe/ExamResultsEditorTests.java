@@ -245,6 +245,19 @@ class ExamResultsEditorTests {
 	}
 
 	@Test
+	void selectsAnAssignedPupilProgrammaticallyForDeepLinks() {
+		final LevelOfExpectationsRepository levelOfExpectationsRepository = levelOfExpectationsRepository();
+		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository(),
+				examRepository(List.of(PUPIL, SECOND_PUPIL)), levelOfExpectationsRepository, gradingScaleRepository());
+		editor.setExam(EXAM);
+
+		assertThat(editor.selectPupil(SECOND_PUPIL.id())).isTrue();
+		assertThat(pupilSelector(editor).getValue()).isEqualTo(SECOND_PUPIL);
+		assertThat(editor.selectPupil(999)).isFalse();
+		assertThat(pupilSelector(editor).getValue()).isEqualTo(SECOND_PUPIL);
+	}
+
+	@Test
 	void deletesSelectedPupilResultsOnlyAfterConfirmation() {
 		final LevelOfExpectationsRepository levelOfExpectationsRepository = levelOfExpectationsRepository();
 		final CourseRepository courseRepository = courseRepository();

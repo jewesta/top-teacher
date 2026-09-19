@@ -142,6 +142,8 @@ does not expose general-purpose database mutation.
   cannot change lifecycle state or implicitly reactivate a pupil.
 - [x] Closed the existing exam-assignment archive gap in the shared backend and
   UI so archived pupils cannot receive new exam assignments.
+- [x] Added stable exam-view deep links for the exam itself, its level of
+  expectations, its Results tab, and an assigned pupil within Results.
 - [x] Added a read-only course-creation options tool; subjects and grading scales
   still have no MCP write path.
 - [x] Added manual database-backup creation through the existing configured
