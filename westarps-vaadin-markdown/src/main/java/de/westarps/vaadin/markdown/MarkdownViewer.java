@@ -12,6 +12,7 @@ import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.dependency.NpmPackage;
 import com.vaadin.flow.function.SerializableConsumer;
+import com.vaadin.flow.function.SerializableRunnable;
 import com.vaadin.flow.shared.Registration;
 
 import tools.jackson.databind.JsonNode;
@@ -79,6 +80,11 @@ public class MarkdownViewer extends MarkdownComponent {
 			}
 			listener.accept(new MarkdownTagCheckedChange(key, bool(eventData, "event.detail.checked")));
 		}).addEventData("event.detail.key").addEventData("event.detail.checked");
+	}
+
+	public Registration addRenderCompleteListener(final SerializableRunnable listener) {
+		Objects.requireNonNull(listener, "listener must not be null");
+		return getElement().addEventListener("render-complete", event -> listener.run());
 	}
 
 	private static String text(final JsonNode eventData, final String key) {
