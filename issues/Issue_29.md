@@ -167,6 +167,7 @@ does not expose general-purpose database mutation.
   viewport edge.
 - [x] Keep aggregate EH expand/collapse controls in sync when a parent section
   is collapsed individually and thereby hides otherwise-open descendants.
+- [x] Raised the reactor and packaged application version to `1.1.0`.
 - [x] Added a read-only course-creation options tool; subjects and grading scales
   still have no MCP write path.
 - [x] Added manual database-backup creation through the existing configured
@@ -177,8 +178,8 @@ does not expose general-purpose database mutation.
 
 ## Verification
 
-- `mvn -pl topteacher-app -am test`: 286 tests passed across the six-module
-  reactor, including 70 focused `topteacher-mcp` tests and 123 assembled
+- `mvn -pl topteacher-app -am test`: 289 tests passed across the six-module
+  reactor, including 70 focused `topteacher-mcp` tests and 126 assembled
   `topteacher-app` tests.
 - Focused editor and route tests verify clean-state reload actions, stable
   hierarchy anchors, full parent-chain validation, EH ancestor expansion, and

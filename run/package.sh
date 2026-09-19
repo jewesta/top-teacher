@@ -216,7 +216,7 @@ require_command jar "jar is required but was not found on PATH. Use a JDK 21 ins
 cd "$PROJECT_ROOT"
 
 APP_VERSION=$(sed -n 's:.*<version>\([^<]*\)</version>.*:\1:p' topteacher-app/pom.xml | sed -n '1p')
-APP_VERSION=${APP_VERSION:-0.0.1-SNAPSHOT}
+APP_VERSION=${APP_VERSION:-1.1.0}
 PACKAGE_VERSION=${APP_VERSION%-SNAPSHOT}
 case "$PACKAGE_VERSION" in
     0.*|0)

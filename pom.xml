@@ -13,7 +13,7 @@
 
     <groupId>de.westarps.topteacher</groupId>
     <artifactId>topteacher</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.1.0</version>
     <packaging>pom</packaging>
     <name>TopTeacher</name>
     <description>Local-network web utility for managing pupils' grades and printing result sheets.</description>
