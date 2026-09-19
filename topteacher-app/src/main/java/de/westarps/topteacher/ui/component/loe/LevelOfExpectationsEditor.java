@@ -233,7 +233,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 			final LoePart part = levelOfExpectationsRepository
 					.savePart(new LoePart(null, exam.id(), "Klausurteil " + partLetter(sortOrder), sortOrder));
 			addDefaultCategory(part);
-			refresh();
+			refreshAndScrollTo(detailKey("part", part.id()));
 			notifyChanged();
 		});
 		if (correctionMode) {
@@ -296,21 +296,23 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 						&& requirement.taskId().equals(target.taskId()));
 	}
 
-	private void addDefaultCategory(final LoePart part) {
+	private LoeCategory addDefaultCategory(final LoePart part) {
 		final LoeCategory category = levelOfExpectationsRepository.saveCategory(new LoeCategory(null, part.id(),
 				"Leistungskategorie", "", levelOfExpectationsRepository.nextCategorySortOrder(part.id())));
 		addDefaultTask(category);
+		return category;
 	}
 
-	private void addDefaultTask(final LoeCategory category) {
+	private LoeTask addDefaultTask(final LoeCategory category) {
 		final int sortOrder = levelOfExpectationsRepository.nextTaskSortOrder(category.id());
 		final LoeTask task = levelOfExpectationsRepository
 				.saveTask(new LoeTask(null, category.id(), "Teilaufgabe " + (sortOrder + 1), sortOrder));
 		addDefaultRequirement(task);
+		return task;
 	}
 
-	private void addDefaultRequirement(final LoeTask task) {
-		levelOfExpectationsRepository.saveRequirement(new LoeRequirement(null, task.id(), "", 0, false,
+	private LoeRequirement addDefaultRequirement(final LoeTask task) {
+		return levelOfExpectationsRepository.saveRequirement(new LoeRequirement(null, task.id(), "", 0, false,
 				levelOfExpectationsRepository.nextRequirementSortOrder(task.id())));
 	}
 
@@ -455,8 +457,8 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 	}
 
 	private void addCategory(final LoePart part) {
-		addDefaultCategory(part);
-		refresh();
+		final LoeCategory category = addDefaultCategory(part);
+		refreshAndScrollTo(detailKey("category", category.id()));
 		notifyChanged();
 	}
 
@@ -486,8 +488,8 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 	}
 
 	private void addTask(final LoeCategory category) {
-		addDefaultTask(category);
-		refresh();
+		final LoeTask task = addDefaultTask(category);
+		refreshAndScrollTo(detailKey("task", task.id()));
 		notifyChanged();
 	}
 
@@ -508,8 +510,8 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 	}
 
 	private void addRequirement(final LoeTask task) {
-		addDefaultRequirement(task);
-		refresh();
+		final LoeRequirement requirement = addDefaultRequirement(task);
+		refreshAndScrollTo(detailKey("requirement", requirement.id()));
 		notifyChanged();
 	}
 
@@ -592,6 +594,11 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 		if (!isDirty()) {
 			viewport.refreshPreservingPosition(this::refresh);
 		}
+	}
+
+	private void refreshAndScrollTo(final String anchorKey) {
+		refresh();
+		viewport.scrollTo(anchorKey);
 	}
 
 	private void notifyChanged() {

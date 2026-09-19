@@ -157,6 +157,8 @@ does not expose general-purpose database mutation.
 - [x] Positioned reload at the end of both toolbars and added an explicit
   Markdown viewer render-completion event so result scrolling is restored only
   after asynchronously rendered content has settled.
+- [x] After adding an EH part, category, task, or requirement, rerender the
+  hierarchy and scroll the new element to the top of the viewport.
 - [x] Added a read-only course-creation options tool; subjects and grading scales
   still have no MCP write path.
 - [x] Added manual database-backup creation through the existing configured

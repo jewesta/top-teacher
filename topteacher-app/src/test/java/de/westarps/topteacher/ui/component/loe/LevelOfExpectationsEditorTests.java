@@ -25,11 +25,13 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.internal.PendingJavaScriptInvocation;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
+import com.vaadin.flow.server.VaadinSession;
 
 import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.model.Exam;
@@ -56,6 +58,7 @@ class LevelOfExpectationsEditorTests {
 			"Very long user-entered requirement text that should not become a summary title", 2, false, 1);
 	private static final LoeRequirement BONUS_REQUIREMENT = new LoeRequirement(10, TASK.id(), "Bonus requirement", 4,
 			true, 1);
+	private static final LoeRequirement NEW_REQUIREMENT = new LoeRequirement(11, TASK.id(), "", 0, false, 1);
 
 	@Test
 	void preservesCollapsedDetailsWhenRefreshingSameExam() {
@@ -110,6 +113,36 @@ class LevelOfExpectationsEditorTests {
 		assertThat(anchorKeys(editor)).contains("part:1", "category:2", "task:3", "requirement:4");
 		assertThat(editor.focusRequirement(
 				new LoeNavigationTarget(SECOND_PART.id(), CATEGORY.id(), TASK.id(), REQUIREMENT.id()))).isFalse();
+	}
+
+	@Test
+	void scrollsToNewRequirementAfterRefreshingTheHierarchy() {
+		final LevelOfExpectationsRepository repository = repositoryWithHierarchy();
+		when(repository.nextRequirementSortOrder(TASK.id())).thenReturn(NEW_REQUIREMENT.sortOrder());
+		when(repository.saveRequirement(any())).thenReturn(NEW_REQUIREMENT);
+		when(repository.findRequirementsByExamId(EXAM.id())).thenReturn(List.of(REQUIREMENT),
+				List.of(REQUIREMENT, NEW_REQUIREMENT));
+		final UI ui = new UI();
+		ui.getInternals().setSession(mock(VaadinSession.class));
+		UI.setCurrent(ui);
+		try {
+			final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repository);
+			ui.add(editor);
+			editor.setExam(EXAM);
+			ui.getInternals().dumpPendingJavaScriptInvocations();
+
+			button(editor, "Anforderung hinzufügen").click();
+			ui.getInternals().getStateTree().runExecutionsBeforeClientResponse();
+			final List<PendingJavaScriptInvocation> invocations = ui.getInternals().dumpPendingJavaScriptInvocations();
+
+			assertThat(anchorKeys(editor)).contains("requirement:" + NEW_REQUIREMENT.id());
+			assertThat(invocations)
+					.filteredOn(invocation -> invocation.getInvocation().getExpression().contains("pendingViewers"))
+					.anySatisfy(invocation -> assertThat(invocation.getInvocation().getParameters())
+							.contains("requirement:" + NEW_REQUIREMENT.id()));
+		} finally {
+			UI.setCurrent(null);
+		}
 	}
 
 	@Test
