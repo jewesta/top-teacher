@@ -1,29 +1,37 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -eu
 
-# Get the absolute directory path where this script is located
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+DEFAULT_JAR="$SCRIPT_DIR/TopTeacher.jar"
 
-# Change the current working directory to the script's directory
-cd "$SCRIPT_DIR"
+usage() {
+    echo "Usage: $0 <TopTeacher.jar> [Spring Boot options...]" >&2
+    echo "The jar argument may be omitted when TopTeacher.jar is beside this script." >&2
+}
 
-# Start the Spring Boot application in the background
-java -jar TopTeacher.jar &
+if [ "$#" -gt 0 ]; then
+    TOPTEACHER_JAR=$1
+    shift
+else
+    TOPTEACHER_JAR=$DEFAULT_JAR
+fi
 
-# Store the Process ID (PID) of the started Java process
-APP_PID=$!
+if [ ! -f "$TOPTEACHER_JAR" ]; then
+    echo "Could not find the TopTeacher jar at $TOPTEACHER_JAR." >&2
+    usage
+    exit 1
+fi
 
-# Wait for 3 seconds to allow the Spring Boot server to initialize
-sleep 5
+if ! command -v java >/dev/null 2>&1; then
+    echo "Java 21 or newer is required but was not found on PATH." >&2
+    exit 1
+fi
 
-# Open the default system browser with the specified local URL
-xdg-open "http://localhost:8081/top-teacher/"
+echo "TopTeacher is running in this terminal. Press Ctrl-C to stop it."
 
-# Display a graphical dialog to the user (UI language remains German)
-# This execution blocks until the user clicks the button or closes the window
-zenity --info \
-       --title="TopTeacher läuft" \
-       --text="Die Anwendung läuft im Hintergrund.\nKlicke auf Anwendung beenden, um TopTeacher zu beenden." \
-       --ok-label="Anwendung beenden"
-
-# Terminate the Spring Boot application using its stored PID after the dialog is closed
-kill "$APP_PID"
+exec java -jar "$TOPTEACHER_JAR" \
+    --tt.launch-browser=true \
+    --spring.h2.console.enabled=false \
+    --spring.devtools.restart.enabled=false \
+    --spring.devtools.livereload.enabled=false \
+    "$@"
