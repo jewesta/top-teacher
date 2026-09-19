@@ -9,6 +9,7 @@ import com.vaadin.flow.component.button.Button;
 final class LoeSaveController {
 
 	private final List<Button> dirtyButtons = new ArrayList<>();
+	private final List<Button> cleanButtons = new ArrayList<>();
 	private BooleanSupplier dirtySupplier = () -> false;
 	private Runnable saveAction = () -> {
 	};
@@ -30,6 +31,7 @@ final class LoeSaveController {
 
 	void clearButtons() {
 		dirtyButtons.clear();
+		cleanButtons.clear();
 	}
 
 	Button register(final Button button) {
@@ -38,9 +40,16 @@ final class LoeSaveController {
 		return button;
 	}
 
+	Button registerClean(final Button button) {
+		cleanButtons.add(button);
+		button.setEnabled(!isDirty());
+		return button;
+	}
+
 	void update() {
 		final boolean dirty = isDirty();
 		dirtyButtons.forEach(button -> button.setEnabled(dirty));
+		cleanButtons.forEach(button -> button.setEnabled(!dirty));
 	}
 
 	void save() {

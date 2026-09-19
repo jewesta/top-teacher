@@ -116,6 +116,7 @@ public class ExamRepository {
 			join course_pupil cp on cp.pupil_id = p.id
 			join exam e on e.course_id = cp.course_id
 			where e.id = :examId
+			  and p.lifecycle = :lifecycle
 			  and not exists (
 			      select 1
 			      from exam_pupil ep
@@ -123,7 +124,7 @@ public class ExamRepository {
 			        and ep.pupil_id = p.id
 			  )
 			order by p.surname, p.name, p.id
-			""", Map.of("examId", examId), pupilRowMapper);
+			""", Map.of("examId", examId, "lifecycle", Lifecycle.ACTIVE.name()), pupilRowMapper);
 	}
 
 	public boolean hasPupil(final int examId, final int pupilId) {
@@ -380,14 +381,16 @@ public class ExamRepository {
 			select e.id, cp.pupil_id
 			from exam e
 			join course_pupil cp on cp.course_id = e.course_id
+			join pupil p on p.id = cp.pupil_id
 			where e.id = :examId
+			  and p.lifecycle = :lifecycle
 			  and not exists (
 			      select 1
 			      from exam_pupil ep
 			      where ep.exam_id = e.id
 			        and ep.pupil_id = cp.pupil_id
 			  )
-			""", Map.of("examId", examId));
+			""", Map.of("examId", examId, "lifecycle", Lifecycle.ACTIVE.name()));
 	}
 
 	private void ensureExamExists(final int examId) {
@@ -410,9 +413,11 @@ public class ExamRepository {
 			select count(distinct cp.pupil_id)
 			from exam e
 			join course_pupil cp on cp.course_id = e.course_id
+			join pupil p on p.id = cp.pupil_id
 			where e.id = :examId
 			  and cp.pupil_id in (:pupilIds)
-			""", Map.of("examId", examId, "pupilIds", pupilIds), Integer.class);
+			  and p.lifecycle = :lifecycle
+			""", Map.of("examId", examId, "pupilIds", pupilIds, "lifecycle", Lifecycle.ACTIVE.name()), Integer.class);
 		if (count == null || count != pupilIds.size()) {
 			throw new IllegalArgumentException("Alle teilnehmenden Schüler:innen müssen dem Kurs zugeordnet sein.");
 		}

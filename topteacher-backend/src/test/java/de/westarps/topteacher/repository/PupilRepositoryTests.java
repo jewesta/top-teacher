@@ -53,6 +53,16 @@ class PupilRepositoryTests {
 	}
 
 	@Test
+	void findsEveryPupilWithTheExactSameNameWithoutMergingThem() {
+		final Pupil first = pupilRepository.save(new Pupil(null, "Exact", "Duplicate", Lifecycle.ACTIVE));
+		final Pupil second = pupilRepository.save(new Pupil(null, "Exact", "Duplicate", Lifecycle.INACTIVE));
+		pupilRepository.save(new Pupil(null, "exact", "Duplicate", Lifecycle.ACTIVE));
+
+		assertThat(pupilRepository.findByExactName("Exact", "Duplicate")).containsExactly(first, second);
+		assertThat(pupilRepository.findActiveByExactName("Exact", "Duplicate")).containsExactly(first);
+	}
+
+	@Test
 	void findsLatestSchoolClassByPupilId() {
 		final GradingScale gradingScale = gradingScaleRepository
 				.save(new GradingScale(null, "Pupil Latest Class 100", 100, Lifecycle.ACTIVE));

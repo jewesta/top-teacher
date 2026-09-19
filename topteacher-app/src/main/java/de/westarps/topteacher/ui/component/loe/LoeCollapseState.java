@@ -16,6 +16,7 @@ final class LoeCollapseState {
 	private final LoeSectionComponents components;
 	private final Set<String> collapsedDetails = new HashSet<>();
 	private final Map<String, Details> detailsByKey = new HashMap<>();
+	private final Map<String, String> parentKeyByKey = new HashMap<>();
 	private final List<CollapseToggleButton> toggleButtons = new ArrayList<>();
 
 	LoeCollapseState(final LoeSectionComponents components) {
@@ -28,11 +29,15 @@ final class LoeCollapseState {
 
 	void clearRenderedComponents() {
 		detailsByKey.clear();
+		parentKeyByKey.clear();
 		toggleButtons.clear();
 	}
 
-	void configure(final Details details, final String key) {
+	void configure(final Details details, final String key, final String parentKey) {
 		detailsByKey.put(key, details);
+		if (parentKey != null) {
+			parentKeyByKey.put(key, parentKey);
+		}
 		details.setOpened(!collapsedDetails.contains(key));
 		details.addOpenedChangeListener(event -> {
 			if (event.isOpened()) {
@@ -72,7 +77,7 @@ final class LoeCollapseState {
 		updateToggleButtons();
 	}
 
-	private void expand(final List<String> keys) {
+	void expand(final List<String> keys) {
 		keys.forEach(key -> {
 			collapsedDetails.remove(key);
 			final Details details = detailsByKey.get(key);
@@ -84,7 +89,18 @@ final class LoeCollapseState {
 	}
 
 	private boolean allCollapsed(final List<String> keys) {
-		return !keys.isEmpty() && keys.stream().allMatch(collapsedDetails::contains);
+		return !keys.isEmpty() && keys.stream().allMatch(this::isEffectivelyCollapsed);
+	}
+
+	private boolean isEffectivelyCollapsed(final String key) {
+		String currentKey = key;
+		while (currentKey != null) {
+			if (collapsedDetails.contains(currentKey)) {
+				return true;
+			}
+			currentKey = parentKeyByKey.get(currentKey);
+		}
+		return false;
 	}
 
 	private void updateToggleButtons() {
