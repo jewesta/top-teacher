@@ -4,6 +4,8 @@
 	--lumo-primary-color-10pct: hsla(350, 48%, 34%, 0.1);
 	--lumo-primary-text-color: hsl(350, 54%, 30%);
 	--lumo-primary-contrast-color: #fff;
+	/* Prevent horizontal trackpad swipes from triggering browser history navigation. */
+	overscroll-behavior-x: contain;
 }
 
 vaadin-app-layout::part(drawer) {
