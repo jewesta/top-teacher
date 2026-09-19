@@ -33,3 +33,12 @@
 - `mvn -pl topteacher-app -am test`
 - DevTools canonical formatter assertion for the branch
 - `git diff --check`
+- Local browser test with a fresh demo database and the Spanish demo exam
+  (150 regular points and 4 achievable bonus points):
+  - The pupil PDF shows 150, 120, and the regular task totals without the
+    achievable bonus totals.
+  - Individual bonus requirements still show their parenthesized maximum.
+  - Awarded bonus points remain aggregated in the pupil PDF; 2 awarded points
+    were shown as `0 (+ 2)` in the task, part, and exam totals.
+  - The teacher PDF continues to show the achievable bonus totals, including
+    `150 (+ 4)` for the exam total.
