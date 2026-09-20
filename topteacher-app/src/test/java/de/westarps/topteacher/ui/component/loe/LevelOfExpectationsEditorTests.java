@@ -79,9 +79,29 @@ class LevelOfExpectationsEditorTests {
 			assertThat(tray.isVisible()).isTrue();
 			assertThat(tray.getState()).isEqualTo(TrayState.PEEK);
 			assertThat(tray.getItems()).singleElement()
-					.satisfies(result -> assertThat(result.message()).contains("0 von 5 Kriterienpunkten"));
+					.satisfies(result -> assertThat(result.message())
+							.isEqualTo("Aufgabe 1 · Anforderung 1: Vergib weitere 5 Kriterienpunkte."));
 		});
 		assertThat(editor.getDesignState()).isEqualTo(DesignState.INCOMPLETE);
+	}
+
+	@Test
+	void opensAndEmphasizesTheRequirementFromItsStatusEntry() {
+		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repositoryWithHierarchy());
+		editor.setExam(EXAM);
+		final StatusTray tray = components(editor, StatusTray.class).getFirst();
+		collapseButtons(editor).getFirst().click();
+		tray.show();
+
+		components(tray, Button.class).stream()
+				.filter(button -> button.getText().startsWith("Aufgabe 1 · Anforderung 1:"))
+				.findFirst().orElseThrow().click();
+
+		assertThat(tray.getState()).isEqualTo(TrayState.PEEK);
+		assertThat(components(editor, Details.class)).extracting(Details::isOpened).containsOnly(true);
+		assertThat(components(editor, VerticalLayout.class).stream()
+				.filter(layout -> layout.getClassNames().contains("tt-eh-requirement")).findFirst().orElseThrow()
+				.getClassNames()).contains("animate__animated", "animate__pulse", "animate__faster");
 	}
 
 	@Test
@@ -129,7 +149,8 @@ class LevelOfExpectationsEditorTests {
 		assertThat(saveButtons(editor)).extracting(Button::isEnabled).containsOnly(false);
 		assertThat(discardButtons(editor)).extracting(Button::isEnabled).containsOnly(true);
 		assertThat(components(editor, StatusTray.class).getFirst().getItems()).singleElement()
-				.satisfies(result -> assertThat(result.message()).contains("3 von 2 Kriterienpunkten", "zu viel"));
+				.satisfies(result -> assertThat(result.message())
+						.isEqualTo("Aufgabe 1 · Anforderung 1: Vergib einen Kriterienpunkt weniger."));
 		verify(repository, never()).saveRequirement(any());
 	}
 
@@ -145,7 +166,8 @@ class LevelOfExpectationsEditorTests {
 		assertThat(saveButtons(editor)).extracting(Button::isEnabled).containsOnly(false);
 		assertThat(discardButtons(editor)).extracting(Button::isEnabled).containsOnly(true);
 		assertThat(components(editor, StatusTray.class).getFirst().getItems())
-				.anySatisfy(result -> assertThat(result.message()).contains("3 von 2 regulären Punkten", "zu viel"));
+				.anySatisfy(result -> assertThat(result.message())
+						.isEqualTo("Erwartungshorizont: Vergib einen Punkt weniger."));
 		verify(repository, never()).saveRequirement(any());
 	}
 

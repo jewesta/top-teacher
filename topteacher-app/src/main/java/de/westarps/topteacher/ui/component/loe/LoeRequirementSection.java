@@ -18,6 +18,9 @@ import com.vaadin.flow.component.textfield.IntegerField;
 import de.westarps.topteacher.model.loe.LoeCriterion;
 import de.westarps.topteacher.model.loe.LoeCriterionParser;
 import de.westarps.topteacher.model.loe.LoeRequirement;
+import de.westarps.vaadin.animate.Animations;
+import de.westarps.vaadin.animate.Effect;
+import de.westarps.vaadin.animate.Speed;
 import de.westarps.vaadin.markdown.MarkdownEditor;
 
 final class LoeRequirementSection extends Composite<VerticalLayout> implements LoeEditable {
@@ -100,6 +103,10 @@ final class LoeRequirementSection extends Composite<VerticalLayout> implements L
 
 	boolean hasValidMaxPoints() {
 		return validMaxPoints();
+	}
+
+	void emphasize() {
+		Animations.playOnce(getContent(), Effect.PULSE, Speed.FASTER);
 	}
 
 	@Override

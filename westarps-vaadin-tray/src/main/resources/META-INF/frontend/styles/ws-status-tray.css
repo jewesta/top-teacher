@@ -45,8 +45,29 @@
 }
 
 .ws-status-tray-entry-message {
+   display: block;
    font-size: var(--lumo-font-size-s);
    min-width: 0;
    overflow-wrap: anywhere;
    white-space: normal;
+}
+
+.ws-status-tray-entry-action {
+   cursor: pointer;
+}
+
+.ws-status-tray-entry-button {
+   color: inherit;
+   font-size: var(--lumo-font-size-s);
+   height: auto;
+   justify-content: flex-start;
+   min-height: 0;
+   overflow-wrap: anywhere;
+   text-align: start;
+   white-space: normal;
+}
+
+.ws-status-tray-entry-action:hover,
+.ws-status-tray-entry-action:focus-within {
+   box-shadow: inset 0 0 0 1px var(--ws-status-tray-entry-color);
 }

@@ -163,6 +163,10 @@ public abstract class Tray<I> extends Card implements TrayController<I> {
 		return contentLayout;
 	}
 
+	protected final List<Component> getRenderedComponents() {
+		return renderedItems.stream().map(RenderedItem::component).toList();
+	}
+
 	protected final BadgeController getNotchBadgeController() {
 		return notch.getBadgeController();
 	}

@@ -1,8 +1,13 @@
 package de.westarps.topteacher.model.loe;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.Objects;
 
-public record LoeValidationTarget(Kind kind, Integer requirementId) {
+public record LoeValidationTarget(Kind kind, Integer requirementId) implements Serializable {
+
+	@Serial
+	private static final long serialVersionUID = 1L;
 
 	public enum Kind {
 		TOTAL_POINTS,

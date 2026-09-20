@@ -1,9 +1,14 @@
 package de.westarps.vaadin.tray;
 
+import java.io.Serializable;
 import java.util.Objects;
+import java.util.function.Predicate;
+
+import com.vaadin.flow.function.SerializableConsumer;
 
 import de.westarps.validate.TestResult;
 import de.westarps.validate.TestResults;
+import de.westarps.validate.ValidationResults;
 import de.westarps.validate.ValidationSummary;
 
 public interface StatusTrayController extends TrayController<TestResult> {
@@ -16,4 +21,7 @@ public interface StatusTrayController extends TrayController<TestResult> {
 		Objects.requireNonNull(results, "results must not be null");
 		setItems(results.getTestResults());
 	}
+
+	<T extends Serializable> void setResults(ValidationResults<T> results, Predicate<? super T> actionableTarget,
+			SerializableConsumer<? super T> action);
 }

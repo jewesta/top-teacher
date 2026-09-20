@@ -2,11 +2,16 @@ package de.westarps.vaadin.tray;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.HasText;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Span;
 
 import de.westarps.vaadin.badge.AttachedBadge;
 import de.westarps.vaadin.badge.Badge;
@@ -62,6 +67,27 @@ class StatusTrayTests {
 		final StatusTray tray = new StatusTray(results);
 
 		assertThat(entries(tray)).extracting(StatusTrayTests::message).containsExactly("Incomplete", "Over-allocated");
+	}
+
+	@Test
+	void makesOnlySelectedValidationTargetsActionable() {
+		final ValidationResults<String> results = ValidationResults.<String>builder()
+				.add(ValidationResult.warning("overall", "Allocate more points"))
+				.add(ValidationResult.error("requirement-2", "Reduce criterion points")).build();
+		final List<String> activatedTargets = new ArrayList<>();
+		final StatusTray tray = new StatusTray();
+
+		tray.setResults(results, target -> target.startsWith("requirement"), activatedTargets::add);
+
+		final List<Div> entries = entries(tray);
+		assertThat(entries.get(0).getChildren()).singleElement().isInstanceOf(Span.class);
+		assertThat(entries.get(0).getClassNames()).doesNotContain("ws-status-tray-entry-action");
+		assertThat(entries.get(1).getChildren()).singleElement().isInstanceOf(Button.class);
+		assertThat(entries.get(1).getClassNames()).contains("ws-status-tray-entry-action");
+
+		((Button) entries.get(1).getChildren().findFirst().orElseThrow()).click();
+
+		assertThat(activatedTargets).containsExactly("requirement-2");
 	}
 
 	@Test
@@ -149,7 +175,8 @@ class StatusTrayTests {
 	}
 
 	private static String message(final Div entry) {
-		return entry.getText();
+		final Component message = entry.getChildren().findFirst().orElseThrow();
+		return ((HasText) message).getText();
 	}
 
 	private static AttachedBadge attachedBadge(final StatusTray tray) {

@@ -39,12 +39,10 @@ public final class LoeValidator {
 		final int difference = expectedPoints - assignedPoints;
 		if (difference > 0) {
 			results.add(ValidationResult.warning(LoeValidationTarget.totalPoints(),
-					"Im Erwartungshorizont sind " + assignedPoints + " von " + expectedPoints
-							+ " regulären Punkten vergeben. " + missingPoints(difference)));
+					"Erwartungshorizont: " + assignMorePoints(difference)));
 		} else if (difference < 0) {
 			results.add(ValidationResult.error(LoeValidationTarget.totalPoints(),
-					"Im Erwartungshorizont sind " + assignedPoints + " von " + expectedPoints
-							+ " regulären Punkten vergeben. " + excessivePoints(-difference)));
+					"Erwartungshorizont: " + assignFewerPoints(-difference)));
 		}
 	}
 
@@ -56,28 +54,28 @@ public final class LoeValidator {
 		final int difference = requirement.maxPoints() - criterionPoints;
 		if (difference > 0) {
 			results.add(ValidationResult.warning(LoeValidationTarget.requirementCriteria(requirement.id()),
-					"Es sind " + criterionPoints + " von " + requirement.maxPoints()
-							+ " Kriterienpunkten vergeben. " + missingCriterionPoints(difference)));
+					assignMoreCriterionPoints(difference)));
 		} else if (difference < 0) {
 			results.add(ValidationResult.error(LoeValidationTarget.requirementCriteria(requirement.id()),
-					"Es sind " + criterionPoints + " von " + requirement.maxPoints()
-							+ " Kriterienpunkten vergeben. " + excessiveCriterionPoints(-difference)));
+					assignFewerCriterionPoints(-difference)));
 		}
 	}
 
-	private static String missingPoints(final int points) {
-		return points == 1 ? "Es fehlt 1 Punkt." : "Es fehlen " + points + " Punkte.";
+	private static String assignMorePoints(final int points) {
+		return points == 1 ? "Vergib einen weiteren Punkt." : "Vergib weitere " + points + " Punkte.";
 	}
 
-	private static String excessivePoints(final int points) {
-		return points == 1 ? "1 Punkt ist zu viel." : points + " Punkte sind zu viel.";
+	private static String assignFewerPoints(final int points) {
+		return points == 1 ? "Vergib einen Punkt weniger." : "Vergib " + points + " Punkte weniger.";
 	}
 
-	private static String missingCriterionPoints(final int points) {
-		return points == 1 ? "Es fehlt 1 Kriterienpunkt." : "Es fehlen " + points + " Kriterienpunkte.";
+	private static String assignMoreCriterionPoints(final int points) {
+		return points == 1 ? "Vergib einen weiteren Kriterienpunkt."
+				: "Vergib weitere " + points + " Kriterienpunkte.";
 	}
 
-	private static String excessiveCriterionPoints(final int points) {
-		return points == 1 ? "1 Kriterienpunkt ist zu viel." : points + " Kriterienpunkte sind zu viel.";
+	private static String assignFewerCriterionPoints(final int points) {
+		return points == 1 ? "Vergib einen Kriterienpunkt weniger."
+				: "Vergib " + points + " Kriterienpunkte weniger.";
 	}
 }

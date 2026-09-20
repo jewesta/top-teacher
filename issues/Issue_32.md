@@ -47,6 +47,9 @@ because the application supports half points elsewhere.
   redundant severity icon. Validation changes do not open or close the tray.
   A top-right badge shows the message count, using grey, warning, or error color
   according to the most severe message; no badge is shown for an empty result.
+- Targeted validation results can opt into an action for selected targets. The
+  tray retains ordinary test-result list behavior; target interpretation and
+  navigation remain the responsibility of the consuming designer.
 - `AbstractDesigner` hosts one initially empty `StatusTray` outside its
   rerendered toolbar and content. The tray is fully hidden by default; designers
   that use it explicitly enable its PEPPER-style peeking state. EH and Results
@@ -67,6 +70,11 @@ because the application supports half points elsewhere.
   corrected or discarded.
 - Validation uses the current unsaved editor values and is rendered in the EH
   status tray. The complete/incomplete state therefore updates while editing.
+- Messages are short corrective actions expressed in points so they remain
+  valid once half-point criteria are introduced. Requirement messages identify
+  their task and requirement. Clicking one closes the tray, expands and scrolls
+  to the exact requirement, and briefly emphasizes it. The global EH allocation
+  message is deliberately not clickable because it has no single edit target.
 - The tray's peek position exposes only its header, with the centered toggle
   icon above the label. Wrapped status messages keep their natural height inside
   the scrollable list, and the card uses a uniform border on every side. Clicking

@@ -30,6 +30,12 @@
 
         <dependency>
             <groupId>de.westarps.vaadin</groupId>
+            <artifactId>westarps-vaadin-animate</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>de.westarps.vaadin</groupId>
             <artifactId>westarps-vaadin-markdown</artifactId>
             <version>${project.version}</version>
         </dependency>

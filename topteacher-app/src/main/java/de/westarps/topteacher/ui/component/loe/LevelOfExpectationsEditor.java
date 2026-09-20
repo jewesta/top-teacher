@@ -689,9 +689,11 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 							LoeValidationTarget.requirementCriteria(section.requirement().id()),
 							"Die maximale Punktzahl einer Anforderung muss 0 oder größer sein."))
 					.forEach(results::add);
-			validationResults = addRequirementPaths(results.build());
+			validationResults = addRequirementLabels(results.build());
 		}
-		setValidationResults(validationResults);
+		setValidationResults(validationResults,
+				target -> target.kind() == LoeValidationTarget.Kind.REQUIREMENT_CRITERIA,
+				this::showValidationTarget);
 		updateDesignState();
 	}
 
@@ -699,7 +701,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 		return !validationResults.hasFailed();
 	}
 
-	private ValidationResults<LoeValidationTarget> addRequirementPaths(
+	private ValidationResults<LoeValidationTarget> addRequirementLabels(
 			final ValidationResults<LoeValidationTarget> results) {
 		final ValidationResults.Builder<LoeValidationTarget> labeledResults = ValidationResults.builder();
 		results.forEach(result -> {
@@ -707,7 +709,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 				labeledResults.add(result);
 				return;
 			}
-			final String prefix = requirementPath(result.getTarget().requirementId());
+			final String prefix = requirementLabel(result.getTarget().requirementId());
 			final ValidationResult.Builder<LoeValidationTarget> labeledResult = ValidationResult
 					.builder(result.getTarget());
 			result.getResults().stream()
@@ -718,16 +720,34 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 		return labeledResults.build();
 	}
 
-	private String requirementPath(final Integer requirementId) {
+	private String requirementLabel(final Integer requirementId) {
 		return requirements.stream().filter(requirement -> requirement.id().equals(requirementId)).findFirst()
 				.map(requirement -> {
 					final LoeTask task = taskFor(requirement);
 					final LoeCategory category = categoryFor(task);
-					final LoePart part = partFor(category);
-					return part.title() + " › " + category.title() + " › " + task.title() + " › Anforderung "
+					return "Aufgabe " + taskNumber(tasksFor(category), task) + " · Anforderung "
 							+ requirementNumber(requirementsFor(task), requirement);
 				})
 				.orElse("Anforderung");
+	}
+
+	private void showValidationTarget(final LoeValidationTarget target) {
+		if (target.kind() != LoeValidationTarget.Kind.REQUIREMENT_CRITERIA) {
+			return;
+		}
+		requirementSections.stream()
+				.filter(section -> section.requirement().id().equals(target.requirementId())).findFirst()
+				.ifPresent(section -> {
+					final LoeRequirement requirement = section.requirement();
+					final LoeTask task = taskFor(requirement);
+					final LoeCategory category = categoryFor(task);
+					final LoePart part = partFor(category);
+					statusTray().peek();
+					collapseState.expand(List.of(detailKey("part", part.id()), detailKey("category", category.id()),
+							detailKey("task", task.id())));
+					viewport.scrollTo(detailKey("requirement", requirement.id()));
+					section.emphasize();
+				});
 	}
 
 	private void updateDesignState() {
@@ -742,5 +762,14 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 
 	private String partLetter(final int index) {
 		return String.valueOf((char) ('A' + Math.min(index, 25)));
+	}
+
+	private String taskNumber(final List<LoeTask> siblings, final LoeTask task) {
+		for (int index = 0; index < siblings.size(); index++) {
+			if (siblings.get(index).id().equals(task.id())) {
+				return String.valueOf(index + 1);
+			}
+		}
+		throw new IllegalStateException("Missing EH task: " + task.id());
 	}
 }

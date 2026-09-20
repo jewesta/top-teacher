@@ -1,9 +1,14 @@
 package de.westarps.topteacher.ui.component;
 
+import java.io.Serializable;
+import java.util.function.Predicate;
+
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.function.SerializableConsumer;
 
+import de.westarps.validate.ValidationResults;
 import de.westarps.validate.ValidationSummary;
 import de.westarps.vaadin.tray.StatusTray;
 import de.westarps.vaadin.tray.StatusTrayController;
@@ -68,6 +73,11 @@ public abstract class AbstractDesigner extends VerticalLayout {
 
 	protected final void setValidationResults(final ValidationSummary results) {
 		statusTray.setResults(results);
+	}
+
+	protected final <T extends Serializable> void setValidationResults(final ValidationResults<T> results,
+			final Predicate<? super T> actionableTarget, final SerializableConsumer<? super T> action) {
+		statusTray.setResults(results, actionableTarget, action);
 	}
 
 	protected void resetDesigner() {
