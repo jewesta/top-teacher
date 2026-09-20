@@ -12,10 +12,12 @@
 }
 
 .ws-status-tray-entry {
+   align-items: center;
    background-color: var(--ws-status-tray-entry-background);
    border-inline-start: 0.25rem solid var(--ws-status-tray-entry-color);
    border-radius: var(--lumo-border-radius-m);
    box-sizing: border-box;
+   display: flex;
    min-height: 2.5rem;
    padding: var(--lumo-space-s);
 }
@@ -33,12 +35,6 @@
 .ws-status-tray-entry[data-severity="error"] {
    --ws-status-tray-entry-background: var(--ws-status-tray-error-background);
    --ws-status-tray-entry-color: var(--ws-status-tray-error-color);
-}
-
-.ws-status-tray-entry-icon {
-   color: var(--ws-status-tray-entry-color);
-   flex: 0 0 auto;
-   margin-inline-end: var(--lumo-space-s);
 }
 
 .ws-status-tray-entry-message {

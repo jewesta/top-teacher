@@ -33,8 +33,9 @@ because the application supports half points elsewhere.
   arbitrary vertical content area, and explicit `HIDE`, `PEEK`, and `SHOW`
   states. Its header toggles between `PEEK` and `SHOW`.
 - `StatusTray` specializes the tray for validation summaries. It renders each
-  test result as a non-collapsible severity-colored entry and returns to its
-  header-only peeking state when there are no results.
+  test result as a compact, non-collapsible severity-colored entry without a
+  redundant severity icon, and returns to its header-only peeking state when
+  there are no results.
 - `AbstractDesigner` hosts one initially empty `StatusTray` outside its
   rerendered toolbar and content. The tray is fully hidden by default; designers
   that use it explicitly enable its PEPPER-style peeking state. EH and Results

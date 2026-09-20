@@ -6,10 +6,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.icon.Icon;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.html.Div;
 
 import de.westarps.validate.TestResult;
 import de.westarps.validate.TestResults;
@@ -41,10 +38,8 @@ class StatusTrayTests {
 				.containsExactly("info", "warning", "error");
 		assertThat(entries(tray)).extracting(StatusTrayTests::message).containsExactly("Information", "Warning",
 				"Error");
-		assertThat(entries(tray)).allSatisfy(entry -> {
-			assertThat(entry.getElement().getAttribute("role")).isEqualTo("listitem");
-			assertThat(entry.getChildren().filter(Icon.class::isInstance)).hasSize(1);
-		});
+		assertThat(entries(tray)).allSatisfy(entry -> assertThat(entry.getElement().getAttribute("role"))
+				.isEqualTo("listitem"));
 	}
 
 	@Test
@@ -88,12 +83,11 @@ class StatusTrayTests {
 		assertThat(tray.isVisible()).isFalse();
 	}
 
-	private static List<HorizontalLayout> entries(final StatusTray tray) {
-		return tray.getContentLayout().getChildren().map(HorizontalLayout.class::cast).toList();
+	private static List<Div> entries(final StatusTray tray) {
+		return tray.getContentLayout().getChildren().map(Div.class::cast).toList();
 	}
 
-	private static String message(final HorizontalLayout entry) {
-		return entry.getChildren().filter(Span.class::isInstance).map(Span.class::cast).map(Component::getElement)
-				.map(element -> element.getText()).findFirst().orElseThrow();
+	private static String message(final Div entry) {
+		return entry.getText();
 	}
 }
