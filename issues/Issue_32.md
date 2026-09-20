@@ -44,8 +44,9 @@ because the application supports half points elsewhere.
   order, and each concrete tray decides how one item is rendered.
 - `StatusTray` specializes the tray for validation summaries. It renders each
   test result as a compact, non-collapsible severity-colored entry without a
-  redundant severity icon. Changed non-empty results show the tray, while an
-  empty result list returns it to its header-only peeking state.
+  redundant severity icon. Validation changes do not open or close the tray.
+  A top-right badge shows the message count, using grey, warning, or error color
+  according to the most severe message; no badge is shown for an empty result.
 - `AbstractDesigner` hosts one initially empty `StatusTray` outside its
   rerendered toolbar and content. The tray is fully hidden by default; designers
   that use it explicitly enable its PEPPER-style peeking state. EH and Results

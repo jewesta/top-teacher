@@ -77,7 +77,7 @@ class LevelOfExpectationsEditorTests {
 
 		assertThat(components(editor, StatusTray.class)).singleElement().satisfies(tray -> {
 			assertThat(tray.isVisible()).isTrue();
-			assertThat(tray.getState()).isEqualTo(TrayState.SHOW);
+			assertThat(tray.getState()).isEqualTo(TrayState.PEEK);
 			assertThat(tray.getItems()).singleElement()
 					.satisfies(result -> assertThat(result.message()).contains("0 von 5 Kriterienpunkten"));
 		});

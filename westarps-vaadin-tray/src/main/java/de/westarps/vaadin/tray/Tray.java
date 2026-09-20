@@ -22,6 +22,10 @@ import com.vaadin.flow.shared.Registration;
 import de.westarps.vaadin.animate.Animations;
 import de.westarps.vaadin.animate.Effect;
 import de.westarps.vaadin.animate.Speed;
+import de.westarps.vaadin.badge.AttachedBadge.Position;
+import de.westarps.vaadin.badge.BadgeController;
+import de.westarps.vaadin.badge.Badgeable;
+import de.westarps.vaadin.badge.BadgedComponent;
 
 @SuppressWarnings("serial")
 @CssImport(Animations.STYLESHEET)
@@ -52,9 +56,27 @@ public abstract class Tray<I> extends Card implements TrayController<I> {
 	private record RenderedItem<I>(I item, Component component) {
 	}
 
+	private static final class TrayNotch extends Button implements Badgeable<TrayNotch> {
+
+		private BadgeController badgeController;
+
+		private TrayNotch(final Icon icon) {
+			super(icon);
+		}
+
+		@Override
+		public void onBadged(final BadgeController badgeController) {
+			this.badgeController = badgeController;
+		}
+
+		private BadgeController getBadgeController() {
+			return Objects.requireNonNull(badgeController, "notch has no attached badge");
+		}
+	}
+
 	private final Icon toggleIcon = VaadinIcon.ANGLE_UP.create();
 
-	private final Button notch = new Button(toggleIcon);
+	private final TrayNotch notch = new TrayNotch(toggleIcon);
 
 	private final VerticalLayout contentLayout = new VerticalLayout();
 	private final List<RenderedItem<I>> renderedItems = new ArrayList<>();
@@ -66,6 +88,10 @@ public abstract class Tray<I> extends Card implements TrayController<I> {
 	}
 
 	protected Tray(final String label) {
+		this(label, null);
+	}
+
+	protected Tray(final String label, final Position badgePosition) {
 		addClassName("ws-tray");
 		addThemeVariants(CardVariant.LUMO_ELEVATED);
 		toggleIcon.addClassName("ws-tray-toggle-icon");
@@ -82,7 +108,16 @@ public abstract class Tray<I> extends Card implements TrayController<I> {
 		contentLayout.setSpacing(true);
 		contentLayout.setWidthFull();
 
-		setHeader(notch);
+		if (badgePosition == null) {
+			setHeader(notch);
+		} else {
+			final BadgedComponent<TrayNotch> badgedNotch = new BadgedComponent<>(badgePosition, notch);
+			badgedNotch.addClassName("ws-tray-badged-notch");
+			badgedNotch.getBadge().addClassName("ws-tray-notch-badge");
+			badgedNotch.getBadge().addClickListener(event -> togglePeekShow(event.isFromClient()));
+			badgedNotch.setWidthFull();
+			setHeader(badgedNotch);
+		}
 		super.add(List.of(contentLayout));
 		setLabel(label);
 		updateState();
@@ -126,6 +161,10 @@ public abstract class Tray<I> extends Card implements TrayController<I> {
 
 	protected final VerticalLayout getContentLayout() {
 		return contentLayout;
+	}
+
+	protected final BadgeController getNotchBadgeController() {
+		return notch.getBadgeController();
 	}
 
 	@Override

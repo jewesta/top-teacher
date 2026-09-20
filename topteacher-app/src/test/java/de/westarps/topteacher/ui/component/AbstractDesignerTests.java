@@ -63,7 +63,7 @@ class AbstractDesignerTests {
 		designer.showValidation(TestResults.warning("Unvollständig"));
 
 		assertThat(tray.isVisible()).isTrue();
-		assertThat(trayController.getState()).isEqualTo(TrayState.SHOW);
+		assertThat(trayController.getState()).isEqualTo(TrayState.PEEK);
 		assertThat(trayController.getResults().getTestResults()).extracting(result -> result.message())
 				.containsExactly("Unvollständig");
 

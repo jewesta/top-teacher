@@ -7,19 +7,26 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.html.Div;
 
+import de.westarps.vaadin.badge.AttachedBadge.Position;
+import de.westarps.vaadin.badge.Badge.BadgeVariant;
+import de.westarps.vaadin.badge.BadgeController;
 import de.westarps.validate.TestResult;
+import de.westarps.validate.ValidationSeverity;
 import de.westarps.validate.ValidationSummary;
 
 @SuppressWarnings("serial")
 @CssImport("./styles/ws-status-tray.css")
 public class StatusTray extends Tray<TestResult> implements StatusTrayController {
 
+	private final BadgeController statusBadge;
+
 	public StatusTray() {
 		this("");
 	}
 
 	public StatusTray(final String label) {
-		super(label);
+		super(label, Position.TOP_RIGHT);
+		statusBadge = getNotchBadgeController();
 		addClassName("ws-status-tray");
 		getContentLayout().setSpacing(false);
 		getContentLayout().getElement().setAttribute("role", "list");
@@ -36,14 +43,11 @@ public class StatusTray extends Tray<TestResult> implements StatusTrayController
 
 	@Override
 	protected void onItemsChanged(final List<TestResult> previousItems, final List<TestResult> currentItems) {
-		if (getState() == TrayState.HIDE) {
+		if (currentItems.isEmpty()) {
+			statusBadge.hide();
 			return;
 		}
-		if (currentItems.isEmpty()) {
-			peek();
-		} else {
-			show();
-		}
+		statusBadge.show(badgeVariant(currentItems), Integer.toString(currentItems.size()));
 	}
 
 	@Override
@@ -54,5 +58,19 @@ public class StatusTray extends Tray<TestResult> implements StatusTrayController
 		entry.getElement().setAttribute("role", "listitem");
 		entry.setWidthFull();
 		return entry;
+	}
+
+	private BadgeVariant badgeVariant(final List<TestResult> results) {
+		if (containsSeverity(results, ValidationSeverity.ERROR)) {
+			return BadgeVariant.ERROR;
+		}
+		if (containsSeverity(results, ValidationSeverity.WARNING)) {
+			return BadgeVariant.WARNING;
+		}
+		return BadgeVariant.CONTRAST;
+	}
+
+	private boolean containsSeverity(final List<TestResult> results, final ValidationSeverity severity) {
+		return results.stream().anyMatch(result -> result.severity() == severity);
 	}
 }

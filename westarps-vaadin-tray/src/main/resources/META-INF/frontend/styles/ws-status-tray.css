@@ -5,6 +5,12 @@
    --ws-status-tray-warning-color: var(--lumo-warning-color, hsl(43, 100%, 40%));
    --ws-status-tray-error-background: var(--lumo-error-color-10pct);
    --ws-status-tray-error-color: var(--lumo-error-color);
+   overflow: visible;
+}
+
+.ws-status-tray .ws-tray-badged-notch [theme~="badge"][theme~="contrast"] {
+   background-color: var(--lumo-contrast-60pct);
+   color: var(--lumo-base-color);
 }
 
 .ws-status-tray .ws-tray-content {

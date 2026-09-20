@@ -36,12 +36,6 @@
 
         <dependency>
             <groupId>de.westarps.vaadin</groupId>
-            <artifactId>westarps-vaadin-badge</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>de.westarps.vaadin</groupId>
             <artifactId>westarps-vaadin-tray</artifactId>
             <version>${project.version}</version>
         </dependency>
