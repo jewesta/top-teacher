@@ -18,6 +18,12 @@
 
     <dependencies>
         <dependency>
+            <groupId>de.westarps</groupId>
+            <artifactId>westarps-validate</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>flow-server</artifactId>
         </dependency>

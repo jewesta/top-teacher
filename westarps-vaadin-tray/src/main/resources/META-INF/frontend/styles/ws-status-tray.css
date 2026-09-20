@@ -1,0 +1,49 @@
+.ws-status-tray {
+   --ws-status-tray-info-background: var(--lumo-primary-color-10pct);
+   --ws-status-tray-info-color: var(--lumo-primary-color);
+   --ws-status-tray-warning-background: var(--lumo-warning-color-10pct, hsla(43, 100%, 50%, 0.1));
+   --ws-status-tray-warning-color: var(--lumo-warning-color, hsl(43, 100%, 40%));
+   --ws-status-tray-error-background: var(--lumo-error-color-10pct);
+   --ws-status-tray-error-color: var(--lumo-error-color);
+}
+
+.ws-status-tray .ws-tray-content {
+   gap: var(--lumo-space-xs);
+}
+
+.ws-status-tray-entry {
+   background-color: var(--ws-status-tray-entry-background);
+   border-inline-start: 0.25rem solid var(--ws-status-tray-entry-color);
+   border-radius: var(--lumo-border-radius-m);
+   box-sizing: border-box;
+   min-height: 2.5rem;
+   padding: var(--lumo-space-s);
+}
+
+.ws-status-tray-entry[data-severity="info"] {
+   --ws-status-tray-entry-background: var(--ws-status-tray-info-background);
+   --ws-status-tray-entry-color: var(--ws-status-tray-info-color);
+}
+
+.ws-status-tray-entry[data-severity="warning"] {
+   --ws-status-tray-entry-background: var(--ws-status-tray-warning-background);
+   --ws-status-tray-entry-color: var(--ws-status-tray-warning-color);
+}
+
+.ws-status-tray-entry[data-severity="error"] {
+   --ws-status-tray-entry-background: var(--ws-status-tray-error-background);
+   --ws-status-tray-entry-color: var(--ws-status-tray-error-color);
+}
+
+.ws-status-tray-entry-icon {
+   color: var(--ws-status-tray-entry-color);
+   flex: 0 0 auto;
+   margin-inline-end: var(--lumo-space-s);
+}
+
+.ws-status-tray-entry-message {
+   font-size: var(--lumo-font-size-s);
+   min-width: 0;
+   overflow-wrap: anywhere;
+   white-space: normal;
+}

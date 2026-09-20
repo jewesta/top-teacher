@@ -32,6 +32,9 @@ because the application supports half points elsewhere.
 - The generic tray is a Vaadin `Card` with a configurable notch label, an
   arbitrary vertical content area, and programmatic and click-driven open/close
   behavior.
+- `StatusTray` specializes the tray for validation summaries. It renders each
+  test result as a non-collapsible severity-colored entry and hides itself when
+  there are no results.
 
 ## Remaining design questions
 
@@ -55,6 +58,6 @@ The change is cross-cutting and is expected to affect:
 
 ## Status
 
-The reusable `westarps-vaadin-tray` and Java-only `westarps-validate` modules
-are contained preparatory changes. Half-point domain and UI behavior are not
-implemented yet.
+The reusable `westarps-vaadin-tray` module, its validation-aware `StatusTray`,
+and the Java-only `westarps-validate` module are contained preparatory changes.
+Half-point domain and UI behavior are not implemented yet.
