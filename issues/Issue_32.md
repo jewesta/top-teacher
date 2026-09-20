@@ -71,6 +71,8 @@ because the application supports half points elsewhere.
   corrected or discarded.
 - Validation uses the current unsaved editor values and is rendered in the EH
   status tray. The complete/incomplete state therefore updates while editing.
+- Requirement, task, category, part, and overall point badges use the same
+  pending values and update immediately when points or bonus status changes.
 - Messages are short corrective actions expressed in points so they remain
   valid once half-point criteria are introduced. Requirement messages identify
   their task and requirement. Targeted messages are links, not buttons;

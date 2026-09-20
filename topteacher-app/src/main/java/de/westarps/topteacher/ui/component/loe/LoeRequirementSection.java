@@ -68,11 +68,11 @@ final class LoeRequirementSection extends Composite<VerticalLayout> implements L
 		maxPoints.setEnabled(!correctionMode);
 		bonusButton.setEnabled(!correctionMode);
 		components.trackDirty(descriptionEditor);
-		components.trackDirty(maxPoints);
+		components.trackPoints(maxPoints);
 		bonusButton.addClickListener(event -> {
 			bonus = !bonus;
 			updateBonusButton();
-			components.updateDirty();
+			components.updatePoints();
 		});
 		final Button delete = components.deleteButton("Anforderung löschen?", () -> handler.delete(requirement));
 		if (correctionMode) {

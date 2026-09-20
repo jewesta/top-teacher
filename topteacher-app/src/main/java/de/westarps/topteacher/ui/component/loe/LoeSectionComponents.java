@@ -32,6 +32,8 @@ final class LoeSectionComponents {
 	private final LoeSaveController saveController;
 	private Runnable valueChangeHandler = () -> {
 	};
+	private Runnable pointsChangeHandler = () -> {
+	};
 
 	LoeSectionComponents(final LoeSaveController saveController) {
 		this.saveController = saveController;
@@ -40,6 +42,11 @@ final class LoeSectionComponents {
 	void setValueChangeHandler(final Runnable valueChangeHandler) {
 		this.valueChangeHandler = valueChangeHandler == null ? () -> {
 		} : valueChangeHandler;
+	}
+
+	void setPointsChangeHandler(final Runnable pointsChangeHandler) {
+		this.pointsChangeHandler = pointsChangeHandler == null ? () -> {
+		} : pointsChangeHandler;
 	}
 
 	TextField summaryTitleField(final String value) {
@@ -244,6 +251,15 @@ final class LoeSectionComponents {
 
 	void trackDirty(final HasValue<?, ?> field) {
 		field.addValueChangeListener(event -> updateDirty());
+	}
+
+	void trackPoints(final HasValue<?, ?> field) {
+		field.addValueChangeListener(event -> updatePoints());
+	}
+
+	void updatePoints() {
+		pointsChangeHandler.run();
+		updateDirty();
 	}
 
 	void updateDirty() {

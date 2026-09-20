@@ -164,6 +164,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 		fullscreenButton = new FullscreenButton(this);
 
 		components.setValueChangeHandler(this::updateValidation);
+		components.setPointsChangeHandler(this::refreshBadges);
 		saveController.setDirtySupplier(this::isDirty);
 		saveController.setSaveAllowedSupplier(this::isSaveAllowed);
 		saveController.setSaveAction(this::saveDirtySections);
@@ -418,8 +419,11 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 	}
 
 	private LoePoints pointsForRequirement(final LoeRequirement requirement) {
-		return requirement.bonus() ? new LoePoints(0, requirement.maxPoints())
-				: new LoePoints(requirement.maxPoints(), 0);
+		final LoeRequirement pendingRequirement = requirementSections.stream()
+				.filter(section -> section.requirement().id().equals(requirement.id()))
+				.map(LoeRequirementSection::pendingRequirement).findFirst().orElse(requirement);
+		return pendingRequirement.bonus() ? new LoePoints(0, pendingRequirement.maxPoints())
+				: new LoePoints(pendingRequirement.maxPoints(), 0);
 	}
 
 	private int percentageForPart(final LoePart part) {

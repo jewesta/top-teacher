@@ -303,6 +303,10 @@ class LevelOfExpectationsEditorTests {
 		clearInvocations(repository);
 
 		components(editor, IntegerField.class).getFirst().setValue(7);
+
+		assertThat(badgeTexts(editor)).contains("Summe: 7 (+0)", "Gesamt: 7 (+0)", "100 %");
+		assertThat(components(editor, Details.class).getFirst()).isSameAs(partDetails);
+
 		final List<Button> saveButtons = saveButtons(editor);
 		assertThat(saveButtons).hasSize(1);
 		saveButtons.getFirst().click();
@@ -327,6 +331,10 @@ class LevelOfExpectationsEditorTests {
 
 		components(editor, IntegerField.class).getFirst().setValue(7);
 		bonusButtons(editor).getFirst().click();
+
+		assertThat(badgeTexts(editor)).contains("Summe: 0 (+7)", "Gesamt: 0 (+7)", "0 %");
+		assertThat(components(editor, Details.class).getFirst()).isSameAs(partDetails);
+
 		final List<Button> saveButtons = saveButtons(editor);
 		saveButtons.getFirst().click();
 
