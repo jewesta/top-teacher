@@ -1,113 +1,70 @@
 # Issue 32: Support half points
 
-## Intent
+## Goal
 
-Support levels of expectations in which individual scoring units can be worth
-half a point. A half-point unit is either achieved or not achieved, just like a
-full-point unit. A full-point unit must not become partially achievable merely
-because the application supports half points elsewhere.
+Support criterion values in half-point increments while keeping requirements
+as the rounding boundary. A requirement may also be defined without criteria
+and marked holistically.
 
-## Agreed model
+Compatibility with existing level-of-expectations data is not required because
+no production data has been created yet.
 
-- A requirement retains its explicitly declared integer maximum. Its criteria
-  are each worth either one point or half a point.
-- Criterion results remain boolean. Achieved criterion values are summed in
-  integer half-point units and rounded half-up within their requirement. Only
-  integer requirement results are aggregated further.
-- Criterion allocation is compared with the requirement maximum; regular
-  requirement maxima are compared with the authoritative grading-scale total.
-- Under-allocation is a saveable intermediate design. Over-allocation may exist
-  in the dirty editor state but prevents the complete pending edit from being
-  saved.
-- EH state is derived rather than persisted: incomplete and editable, complete
-  and editable, or complete and locked because results exist.
-- Compatibility with existing EH data is not required because no production EH
-  has been created yet.
+## Authoritative requirements
 
-## Validation presentation
+- [Level of Expectations](../doc/ops/LevelOfExpectations.md)
+- [Level of Expectations Results](../doc/ops/LevelOfExpectationsResults.md)
+- [Level of Expectations PDF Export](../doc/ops/LevelOfExpectationsPdfExport.md)
 
-- The EH tab uses a pen, tick, or lock icon for the three derived states.
-- Allocation issues will be presented in a reusable bottom tray. The same tray
-  component is intended for the result view and other projects.
-- The generic tray is a Vaadin `Card` with a configurable notch label, a
-  scrollable vertical list, and explicit `HIDE`, `PEEK`, and `SHOW` states. Its
-  header toggles between `PEEK` and `SHOW`, and an outside click returns a shown
-  tray to `PEEK`.
-- `westarps-vaadin-animate` packages Animate.css 4.1.1 and reusable Java helpers
-  for effects, speeds, repetitions, reliable replay, and automatic one-shot
-  cleanup. The tray uses its `HEAD_SHAKE` effect when an empty header is clicked.
-- `westarps-vaadin-badge` packages PEPPER's badge, positioned wrapper,
-  `Badgeable` handshake, and controller as a reusable Vaadin module without
-  PEPPER-specific translation or styling dependencies.
-- `TrayController<I>` provides list-oriented control. Individual and batched
-  additions are placed at the top, full replacements retain their supplied
-  order, and each concrete tray decides how one item is rendered.
-- `StatusTray` specializes the tray for validation summaries. It renders each
-  test result as a compact, non-collapsible severity-colored entry without a
-  redundant severity icon. Validation changes do not open or close the tray.
-  A top-right badge shows the message count, using grey, warning, or error color
-  according to the most severe message; no badge is shown for an empty result.
-- Targeted validation results can opt into an in-page link for selected
-  targets. The tray retains ordinary test-result list behavior; target URLs,
-  interpretation, and navigation remain the responsibility of the consuming
-  designer.
-- `AbstractDesigner` hosts one initially empty `StatusTray` outside its
-  rerendered toolbar and content. The tray is fully hidden by default; designers
-  that use it explicitly enable its PEPPER-style peeking state. EH and Results
-  enable it, while other designer-based tabs remain unaffected.
+These operational documents are the authoritative functional specification.
+This issue note records the implementation sequence and current status only.
 
-## Remaining design questions
+## Core decisions
 
-- Choose the exact `eh:` URL syntax for full- and half-point criteria.
+- Point values are represented internally as integer half-point units.
+- Criterion definitions use `eh:<key>[/<points>]`; the point value defaults to
+  one and the key remains the stable identity.
+- Requirements retain an explicit integer maximum. If criteria exist, their
+  configured values must sum exactly to that maximum; zero criteria is valid.
+- The grading-scale maximum is authoritative for regular requirement maxima.
+- Under-allocation is a saveable incomplete design. Over-allocation may exist
+  in pending editor state but prevents saving.
+- During marking, criteria guide the marker but do not hard-gate the awarded
+  result. A requirement-level adjustment covers valid work outside predefined
+  criteria.
+- Raw half points are rounded half-up inside each requirement. No half point is
+  aggregated beyond the requirement.
 
-## EH validation implementation
+## Implementation sequence
 
-- `LoeValidator` compares regular requirement maxima with the grading-scale
-  maximum and each requirement's tagged criteria with its own declared maximum.
-  Bonus requirements are excluded from the grading-scale total but still
-  validate their own criteria.
-- Missing allocations are warnings and remain saveable. Excess allocations are
-  errors: they may exist in the pending editor state but disable only Save until
-  corrected or discarded.
-- Validation uses the current unsaved editor values and is rendered in the EH
-  status tray. The complete/incomplete state therefore updates while editing.
-- Requirement, task, category, part, and overall point badges use the same
-  pending values and update immediately when points or bonus status changes.
-- EH and Results point badges share one fixed width. The nested EH aggregate
-  badges compensate for their section borders so their right edge stays aligned
-  with the overall badge.
-- Messages are short corrective actions expressed in points so they remain
-  valid once half-point criteria are introduced. Requirement messages identify
-  their task and requirement. Targeted messages are links, not buttons;
-  following one closes the tray, expands and scrolls to the exact requirement,
-  and briefly emphasizes it. The global EH allocation message is deliberately
-  not clickable because it has no single edit target.
-- The tray's peek position exposes only its header, with the centered toggle
-  icon above the label. Wrapped status messages keep their natural height inside
-  the scrollable list, and the card uses a uniform border on every side. Clicking
-  an empty peeking tray keeps it compact and gives it a brief wiggle instead.
-- The EH tab shows a pen for an incomplete editable design, a tick for a complete
-  editable design, and a lock once results exist. The state remains derived and
-  is not persisted.
+1. Introduce reusable validation and tray infrastructure and repair EH
+   validation with whole points.
+2. Add half-point criterion values and optional criteria to EH design.
+3. Add awarded criterion values, adjustment, direct holistic marking, and the
+   revised Results interactions.
+4. Update PDF and other exports, integrations, fixture data, and tests.
 
-## Expected impact
+## Completed preparation
 
-The change is cross-cutting and is expected to affect:
+- Added the reusable `westarps-validate`, `westarps-vaadin-animate`,
+  `westarps-vaadin-badge`, and `westarps-vaadin-tray` modules.
+- Added common designer tray plumbing and the validation-aware `StatusTray`.
+- Implemented whole-point EH validation against the grading-scale and
+  requirement totals.
+- Added derived pen, tick, and lock tab states; live pending aggregates; concise
+  targeted tray messages; and the agreed tray interactions.
+- Aligned EH and Results aggregate badges and applied the shared pointer-cursor
+  behavior to interactive controls.
 
-- the domain types for EH requirements, results, point summaries, and point
-  rules;
-- the database schema and migration of existing point values;
-- EH design and result-entry controls and validation;
-- bonus-point capping and all aggregate displays;
-- PDF and spreadsheet exports;
-- grading and evaluation;
-- MCP input and output schemas;
-- base data, demo data, and automated tests.
+## Remaining implementation
+
+- Introduce the half-point model, persistence, parser, and `eh:` syntax.
+- Update EH criterion presentation and optional-criteria validation.
+- Implement Results criterion awards, adjustment budgeting, holistic marking,
+  synchronized controls, and bidirectional criterion highlighting.
+- Update PDF and spreadsheet exports, grading and evaluation paths, MCP
+  schemas, base/demo data, and automated tests.
 
 ## Status
 
-The reusable `westarps-vaadin-animate`, `westarps-vaadin-badge`, and
-`westarps-vaadin-tray` modules, the tray's validation-aware `StatusTray`, the
-Java-only `westarps-validate` module, common designer tray plumbing, and the
-whole-point EH validation refactor are implemented. Half-point domain and UI
-behavior are not implemented yet.
+The reusable preparation and whole-point EH validation refactor are complete.
+The half-point domain and user-interface behavior have not been implemented.

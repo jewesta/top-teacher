@@ -1,12 +1,14 @@
 # Level of Expectations
 
 The level of expectations is the app's English domain name for the German
-school concept "Erwartungshorizont". It belongs to exactly one exam, describes
-the grading structure of that exam, and acts as the template for entering pupil
+school concept "Erwartungshorizont". It belongs to exactly one exam, defines
+that exam's assessment structure, and provides the basis for marking pupil
 results.
 
-The persisted markdown tag namespace remains `eh:` for now because it is short,
-already part of stored data, and mirrors the German UI tab label.
+Result-entry behavior is specified in
+[LevelOfExpectationsResults.md](LevelOfExpectationsResults.md). PDF behavior is
+specified in
+[LevelOfExpectationsPdfExport.md](LevelOfExpectationsPdfExport.md).
 
 ## Structure
 
@@ -20,142 +22,144 @@ The structure is hierarchical:
 ### Part
 
 A part is the top-level subject-specific section inside an exam, for example
-"Klausurteil A: Schreiben mit Leseverstehen". It has:
+"Klausurteil A: Schreiben mit Leseverstehen". It has a title and sort order.
+Its regular and bonus points are aggregated from all requirements below it.
 
-- title
-- sort order
-- aggregated points from all requirements below it
-
-### Performance Category
+### Performance category
 
 A performance category groups tasks by assessment area, for example content or
-language performance. It has:
-
-- title
-- optional markdown description
-- sort order
-- aggregated points from all requirements below it
+language performance. It has a title, optional markdown description, and sort
+order. Its regular and bonus points are aggregated from all requirements below
+it.
 
 ### Task
 
-A task groups concrete requirements. It has:
-
-- title
-- sort order
-- aggregated points from its requirements
+A task groups concrete requirements. It has a title and sort order. Its regular
+and bonus points are aggregated from its requirements.
 
 ### Requirement
 
-A requirement is the deepest structural level. It is the unit for manual point
-entry during result entry. It has:
+A requirement is the deepest structural level and the boundary at which
+half-point results are rounded. It has:
 
-- markdown description
-- maximum points
-- bonus flag
-- sort order
+- a markdown description;
+- an explicitly assigned integer maximum;
+- a bonus flag;
+- a sort order;
+- zero or more optional criteria embedded in its description.
 
-A requirement does not make sense without points. The database technically
-allows `0` so new requirements can be created incrementally, but before result
-entry a real requirement should have a positive point value.
+The editor may temporarily contain a zero-point requirement while the design is
+incomplete. A completed requirement must have a meaningful positive maximum.
+
+## Authoritative totals
+
+The grading scale defines the authoritative regular maximum for the exam. A
+complete level of expectations must assign exactly that number of regular
+requirement points.
+
+- Too few regular requirement points make the design incomplete but remain
+  saveable as an intermediate state.
+- Too many regular requirement points are an error. The editor may temporarily
+  display the pending over-allocation, but it must not save it.
+- Bonus requirements do not count toward the grading-scale maximum.
+- Regular and bonus totals are displayed separately, for example
+  `Summe: 98 (+ 2)`.
+
+Changes to pending requirement maxima and bonus flags must update requirement,
+task, category, part, and exam totals immediately.
 
 ## Criteria
 
-Inside a requirement's markdown description, small criteria can be marked for
-the teacher. Criteria are checkable helper markers and do not calculate points.
+Criteria identify concrete aspects within a requirement. They help the marker
+work quickly and consistently, but the ministry or another authority may define
+a requirement too holistically for meaningful criteria.
 
-Syntax:
+Consequently:
+
+- a requirement may have no criteria at all;
+- a criterion-free requirement is valid and complete;
+- once a requirement contains criteria, their configured values must add up
+  exactly to the requirement maximum before the requirement is complete.
+
+An under-allocated criterion set is a saveable intermediate state. An
+over-allocated set may be displayed while editing but must not be saved.
+
+### Tag syntax
+
+Criteria are declared with markdown links in the `eh:` namespace:
 
 ```markdown
 [correct tense](eh:1)
+[complete explanation](eh:2/2)
+[supporting detail](eh:3/0.5)
 ```
 
-`eh` is the tag namespace and `1` is the criterion key inside the requirement.
-The teacher-facing renderer highlights the criterion and shows the key as a
-small badge. During result entry each criterion can be checked per pupil.
+The canonical syntax is:
 
-Important rules:
+```text
+eh:<key>[/<points>]
+```
 
-- Criteria are synchronized from requirement markdown links.
-- The `criterion_key` is unique per requirement.
-- Removed criteria are deactivated instead of hard-deleted.
-- Criteria are teacher-facing, not pupil-facing.
-- Pupil PDFs remove criteria markers and highlighting from the markdown.
+- The key is stable and unique inside its requirement.
+- Omitting the point value defaults it to one, so `eh:1` and `eh:1/1` are
+  equivalent.
+- A criterion value must be positive and use half-point increments.
+- The canonical decimal separator in the tag is a dot. The UI displays values
+  using the user's locale.
+- Malformed definitions and duplicate keys are validation issues; they must not
+  silently turn a requirement into a valid criterion-free requirement.
 
-## Pupil Results
+The UI displays a criterion's point value in its pill rather than the internal
+key. Accessible text retains the criterion identity as well as its value.
 
-Results are entered for `pupil x requirement` and optionally for
-`pupil x criterion`.
+All criterion values are represented internally as integer half-point units.
+Floating-point arithmetic must not be used for point calculations.
 
-### Requirement Result
+## Derived design state
 
-For each pupil and requirement, the app stores:
+The level of expectations has no separately persisted lifecycle state. Its
+state is derived from its contents and existing results:
 
-- achieved points
-- optional note
+- **Incomplete and editable:** one or more required point allocations are
+  missing or otherwise invalid.
+- **Complete and editable:** grading-scale and criterion allocations match and
+  no pupil results exist.
+- **Complete and locked:** pupil results exist, so structure, point maxima,
+  bonus status, and criterion identities may no longer change.
 
-Points are assigned manually. Criteria can guide the teacher's work, but they
-are not the source of point calculation.
+The EH tab represents these states with a pen, tick, and lock respectively.
 
-### Criterion Result
+## Validation presentation
 
-For each pupil and criterion, the app stores:
+Validation issues are presented in the status tray at the bottom of the EH
+designer.
 
-- achieved / not achieved
+- The tray peeks into view whenever the EH uses validation.
+- Its badge shows the number of messages and the most severe message level.
+- Overall allocation messages are not links because they have no single edit
+  target.
+- Requirement-specific messages identify their task and requirement. Activating
+  one expands, scrolls to, and briefly emphasizes the affected requirement.
+- Missing allocations are warnings. Excess allocations and malformed values are
+  errors.
+- An empty tray remains compact when activated.
 
-This information is for the teacher's internal workflow.
+## Bonus points
 
-## Points And Bonus Points
+Regular and bonus points are aggregated independently.
 
-Regular points and bonus points are aggregated separately.
+- Regular requirements count toward the grading-scale total.
+- Bonus requirements are shown in parentheses.
+- Awarded bonus points may raise the effective exam result only up to the
+  grading-scale maximum.
+- The UI continues to show entered regular and bonus points separately even
+  when the effective total is capped.
 
-- Regular requirements count toward the regular total.
-- Bonus requirements are displayed in parentheses, for example `(2)`.
-- Aggregations show bonus points separately, for example `Summe: 98 (+2)`.
-- The grading scale defines the fixed regular maximum.
-- The regular points of the level of expectations must match the grading scale
-  maximum.
-- Bonus points can raise the effective total only up to the grading scale
-  maximum.
-
-Example with a grading scale maximum of 100 points:
-
-- regular achieved: 99
-- bonus achieved: 4
-- effective total: 100
-
-The UI still shows regular and bonus points separately so the entered data stays
-visible.
+For example, with a grading-scale maximum of 100, 99 regular points and four
+bonus points remain visible as `99 (+ 4)`, while the effective result is 100.
 
 ## Notes
 
-An exam can have several note sections. Each section has:
-
-- title
-- markdown description
-- sort order
-
-These sections are free-form and are not modeled as fixed categories.
-
-## Grading Scale
-
-The grading scale belongs to the course, not directly to the exam or level of
-expectations. It defines:
-
-- name
-- maximum points
-- fixed mapping from point ranges to grade points and grade levels
-
-The level of expectations must be compatible with the grading scale maximum.
-
-## PDF Export
-
-The pupil-facing PDF export is based on the level of expectations and one
-pupil's results.
-
-Rules:
-
-- Markdown is converted to safe HTML before export.
-- Criteria markers are removed from pupil PDFs.
-- The table structure follows the requirements.
-- Notes and grading scale are rendered as separate sections.
-- Bonus points remain visible in parentheses.
+An exam may contain several free-form note sections. Each section has a title,
+markdown description, and sort order. Notes are not fixed assessment categories
+and do not contribute points.
