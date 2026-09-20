@@ -62,20 +62,20 @@ public final class LoeValidator {
 	}
 
 	private static String assignMorePoints(final int points) {
-		return points == 1 ? "Vergib einen weiteren Punkt." : "Vergib weitere " + points + " Punkte.";
+		return points == 1 ? "Ordne einen weiteren Punkt zu." : "Ordne weitere " + points + " Punkte zu.";
 	}
 
 	private static String assignFewerPoints(final int points) {
-		return points == 1 ? "Vergib einen Punkt weniger." : "Vergib " + points + " Punkte weniger.";
+		return points == 1 ? "Ordne einen Punkt weniger zu." : "Ordne " + points + " Punkte weniger zu.";
 	}
 
 	private static String assignMoreCriterionPoints(final int points) {
-		return points == 1 ? "Vergib einen weiteren Kriterienpunkt."
-				: "Vergib weitere " + points + " Kriterienpunkte.";
+		return points == 1 ? "Ordne einen weiteren Kriterienpunkt zu."
+				: "Ordne weitere " + points + " Kriterienpunkte zu.";
 	}
 
 	private static String assignFewerCriterionPoints(final int points) {
-		return points == 1 ? "Vergib einen Kriterienpunkt weniger."
-				: "Vergib " + points + " Kriterienpunkte weniger.";
+		return points == 1 ? "Ordne einen Kriterienpunkt weniger zu."
+				: "Ordne " + points + " Kriterienpunkte weniger zu.";
 	}
 }

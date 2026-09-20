@@ -8,6 +8,11 @@
 	overscroll-behavior-x: contain;
 }
 
+vaadin-button:not([disabled]),
+vaadin-tab:not([disabled]) {
+	cursor: pointer;
+}
+
 vaadin-app-layout::part(drawer) {
 	background-image: none;
 }

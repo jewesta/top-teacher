@@ -36,8 +36,9 @@ class StatusTrayTests {
 		assertThat(tray.getState()).isEqualTo(TrayState.PEEK);
 		assertThat(tray.getContentLayout().getChildren()).isEmpty();
 		assertThat(attachedBadge(tray).getClassNames()).contains("ws-badge-fade-hidden");
-		assertThat(attachedBadge(tray).getStyle().get("top")).isEqualTo("-0.5em");
+		assertThat(attachedBadge(tray).getStyle().get("top")).isEqualTo("0");
 		assertThat(attachedBadge(tray).getStyle().get("right")).isEqualTo("-0.5em");
+		assertThat(attachedBadge(tray).getStyle().get("transform")).isEqualTo("translateY(-50%)");
 	}
 
 	@Test

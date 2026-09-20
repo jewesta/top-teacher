@@ -81,7 +81,7 @@ class LevelOfExpectationsEditorTests {
 			assertThat(tray.getState()).isEqualTo(TrayState.PEEK);
 			assertThat(tray.getItems()).singleElement()
 					.satisfies(result -> assertThat(result.message())
-							.isEqualTo("Aufgabe 1 · Anforderung 1: Vergib weitere 5 Kriterienpunkte."));
+							.isEqualTo("Aufgabe 1 · Anforderung 1: Ordne weitere 5 Kriterienpunkte zu."));
 		});
 		assertThat(editor.getDesignState()).isEqualTo(DesignState.INCOMPLETE);
 	}
@@ -153,7 +153,7 @@ class LevelOfExpectationsEditorTests {
 		assertThat(discardButtons(editor)).extracting(Button::isEnabled).containsOnly(true);
 		assertThat(components(editor, StatusTray.class).getFirst().getItems()).singleElement()
 				.satisfies(result -> assertThat(result.message())
-						.isEqualTo("Aufgabe 1 · Anforderung 1: Vergib einen Kriterienpunkt weniger."));
+						.isEqualTo("Aufgabe 1 · Anforderung 1: Ordne einen Kriterienpunkt weniger zu."));
 		verify(repository, never()).saveRequirement(any());
 	}
 
@@ -170,7 +170,7 @@ class LevelOfExpectationsEditorTests {
 		assertThat(discardButtons(editor)).extracting(Button::isEnabled).containsOnly(true);
 		assertThat(components(editor, StatusTray.class).getFirst().getItems())
 				.anySatisfy(result -> assertThat(result.message())
-						.isEqualTo("Erwartungshorizont: Vergib einen Punkt weniger."));
+						.isEqualTo("Erwartungshorizont: Ordne einen Punkt weniger zu."));
 		verify(repository, never()).saveRequirement(any());
 	}
 

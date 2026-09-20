@@ -37,7 +37,8 @@ public class AttachedBadge extends Div {
 					.set("transform", "translateY(-50%)");
 			break;
 		case TOP_RIGHT:
-			getStyle().set("position", "absolute").setTop(MOVE_OUT_BY).setRight(MOVE_OUT_BY);
+			getStyle().set("position", "absolute").setTop("0").setRight(MOVE_OUT_BY)
+					.set("transform", "translateY(-50%)");
 			break;
 		}
 		add(badge);

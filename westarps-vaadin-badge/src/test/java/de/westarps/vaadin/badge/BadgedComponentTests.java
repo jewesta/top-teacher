@@ -68,8 +68,9 @@ class BadgedComponentTests {
 		final AttachedBadge topRight = new AttachedBadge(Position.TOP_RIGHT);
 		final AttachedBadge right = new AttachedBadge(Position.RIGHT);
 
-		assertThat(topRight.getStyle().get("top")).isEqualTo("-0.5em");
+		assertThat(topRight.getStyle().get("top")).isEqualTo("0");
 		assertThat(topRight.getStyle().get("right")).isEqualTo("-0.5em");
+		assertThat(topRight.getStyle().get("transform")).isEqualTo("translateY(-50%)");
 		assertThat(right.getStyle().get("top")).isEqualTo("50%");
 		assertThat(right.getStyle().get("transform")).isEqualTo("translateY(-50%)");
 	}

@@ -26,7 +26,7 @@ class LoeValidatorTests {
 		assertThat(results.getTestResults()).extracting(result -> result.severity())
 				.containsExactly(ValidationSeverity.WARNING, ValidationSeverity.WARNING);
 		assertThat(results.messages(ValidationSeverity.WARNING)).containsExactly(
-				"Erwartungshorizont: Vergib weitere 2 Punkte.", "Vergib einen weiteren Kriterienpunkt.");
+				"Erwartungshorizont: Ordne weitere 2 Punkte zu.", "Ordne einen weiteren Kriterienpunkt zu.");
 		assertThat(results.getTargets()).containsExactly(LoeValidationTarget.totalPoints(),
 				LoeValidationTarget.requirementCriteria(requirement.id()));
 	}
@@ -41,7 +41,7 @@ class LoeValidatorTests {
 		assertThat(results.getTestResults()).extracting(result -> result.severity())
 				.containsExactly(ValidationSeverity.ERROR, ValidationSeverity.ERROR);
 		assertThat(results.messages(ValidationSeverity.ERROR)).containsExactly(
-				"Erwartungshorizont: Vergib einen Punkt weniger.", "Vergib einen Kriterienpunkt weniger.");
+				"Erwartungshorizont: Ordne einen Punkt weniger zu.", "Ordne einen Kriterienpunkt weniger zu.");
 	}
 
 	@Test
@@ -53,7 +53,7 @@ class LoeValidatorTests {
 
 		assertThat(results.getTestResults()).singleElement().satisfies(result -> {
 			assertThat(result.severity()).isEqualTo(ValidationSeverity.WARNING);
-			assertThat(result.message()).isEqualTo("Vergib einen weiteren Kriterienpunkt.");
+			assertThat(result.message()).isEqualTo("Ordne einen weiteren Kriterienpunkt zu.");
 		});
 		assertThat(results.getTargets()).containsExactly(LoeValidationTarget.requirementCriteria(bonus.id()));
 	}
