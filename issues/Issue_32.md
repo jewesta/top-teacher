@@ -73,6 +73,9 @@ because the application supports half points elsewhere.
   status tray. The complete/incomplete state therefore updates while editing.
 - Requirement, task, category, part, and overall point badges use the same
   pending values and update immediately when points or bonus status changes.
+- EH and Results point badges share one fixed width. The nested EH aggregate
+  badges compensate for their section borders so their right edge stays aligned
+  with the overall badge.
 - Messages are short corrective actions expressed in points so they remain
   valid once half-point criteria are introduced. Requirement messages identify
   their task and requirement. Targeted messages are links, not buttons;

@@ -349,8 +349,9 @@ vaadin-app-layout::part(navbar) {
 	width: 100%;
 }
 
+.tt-eh-editor,
 .tt-exam-results-editor {
-	--tt-results-points-column-width: 10rem;
+	--tt-points-column-width: 10rem;
 }
 
 .tt-fullscreen-target:fullscreen,
@@ -433,7 +434,7 @@ vaadin-app-layout::part(navbar) {
 }
 
 .tt-exam-results-editor .tt-designer-toolbar-summary .tt-eh-points {
-	width: var(--tt-results-points-column-width);
+	width: var(--tt-points-column-width);
 }
 
 .tt-spreadsheet-grid::part(header-cell) {
@@ -575,7 +576,7 @@ vaadin-app-layout::part(navbar) {
 }
 
 .tt-results-header .tt-eh-points {
-	width: var(--tt-results-points-column-width);
+	width: var(--tt-points-column-width);
 }
 
 .tt-results-title {
@@ -648,10 +649,10 @@ vaadin-app-layout::part(navbar) {
 	align-items: flex-start;
 	box-sizing: border-box;
 	display: flex;
-	flex: 0 0 calc(var(--tt-results-points-column-width) + var(--lumo-space-s) + var(--lumo-space-s));
+	flex: 0 0 calc(var(--tt-points-column-width) + var(--lumo-space-s) + var(--lumo-space-s));
 	justify-content: flex-start;
 	padding: 0 var(--lumo-space-s) var(--lumo-space-m) var(--lumo-space-s);
-	width: calc(var(--tt-results-points-column-width) + var(--lumo-space-s) + var(--lumo-space-s));
+	width: calc(var(--tt-points-column-width) + var(--lumo-space-s) + var(--lumo-space-s));
 }
 
 .tt-results-bonus-icon {
@@ -789,6 +790,22 @@ vaadin-app-layout::part(navbar) {
 .tt-eh-points {
 	margin-left: auto;
 	margin-right: var(--lumo-space-s);
+}
+
+.tt-eh-editor .tt-eh-points {
+	width: var(--tt-points-column-width);
+}
+
+.tt-eh-part > vaadin-details-summary .tt-eh-points {
+	margin-right: -1px;
+}
+
+.tt-eh-category > vaadin-details-summary .tt-eh-points {
+	margin-right: -2px;
+}
+
+.tt-eh-task > vaadin-details-summary .tt-eh-points {
+	margin-right: -3px;
 }
 
 .tt-eh-summary-with-percentage .tt-eh-points {
