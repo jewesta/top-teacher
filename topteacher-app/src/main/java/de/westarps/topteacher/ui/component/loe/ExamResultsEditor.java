@@ -109,6 +109,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 			final LevelOfExpectationsRepository levelOfExpectationsRepository,
 			final GradingScaleRepository gradingScaleRepository) {
 		super("tt-exam-results-editor");
+		enableStatusTray();
 		this.courseRepository = courseRepository;
 		this.examRepository = examRepository;
 		this.levelOfExpectationsRepository = levelOfExpectationsRepository;

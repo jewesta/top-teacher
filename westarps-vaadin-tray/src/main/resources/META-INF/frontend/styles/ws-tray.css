@@ -20,7 +20,7 @@
    z-index: var(--ws-tray-z-index);
 }
 
-.ws-tray[data-opened="true"] {
+.ws-tray[data-state="show"] {
    transform: translate(-50%, 0);
    width: min(var(--ws-tray-width), calc(100vw - 2 * var(--lumo-space-m)));
 }
@@ -42,7 +42,7 @@
    transition: transform 0.2s ease;
 }
 
-.ws-tray[data-opened="true"] .ws-tray-toggle-icon {
+.ws-tray[data-state="show"] .ws-tray-toggle-icon {
    transform: rotate(180deg);
 }
 

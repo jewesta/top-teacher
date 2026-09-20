@@ -133,6 +133,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 
 	public LevelOfExpectationsEditor(final LevelOfExpectationsRepository levelOfExpectationsRepository) {
 		super("tt-eh-editor");
+		enableStatusTray();
 		this.levelOfExpectationsRepository = levelOfExpectationsRepository;
 		fullscreenButton = new FullscreenButton(this);
 

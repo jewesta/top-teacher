@@ -14,6 +14,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import de.westarps.validate.TestResults;
 import de.westarps.validate.ValidationSummary;
 import de.westarps.vaadin.tray.StatusTray;
+import de.westarps.vaadin.tray.TrayState;
 
 class AbstractDesignerTests {
 
@@ -32,6 +33,7 @@ class AbstractDesignerTests {
 		assertThat(children.get(1).getClassNames()).contains("tt-designer-content");
 		assertThat(children.get(2)).isInstanceOf(StatusTray.class);
 		assertThat(children.get(2).isVisible()).isFalse();
+		assertThat(((StatusTray) children.get(2)).getState()).isEqualTo(TrayState.HIDE);
 	}
 
 	@Test
@@ -54,10 +56,12 @@ class AbstractDesignerTests {
 		final TestDesigner designer = new TestDesigner();
 		designer.render();
 		final StatusTray tray = designer.exposedStatusTray();
+		designer.enableStatus();
 
 		designer.showValidation(TestResults.warning("Unvollständig"));
 
 		assertThat(tray.isVisible()).isTrue();
+		assertThat(tray.getState()).isEqualTo(TrayState.PEEK);
 		assertThat(tray.getResults().getTestResults()).extracting(result -> result.message())
 				.containsExactly("Unvollständig");
 
@@ -95,6 +99,10 @@ class AbstractDesignerTests {
 
 		private void showValidation(final ValidationSummary results) {
 			setValidationResults(results);
+		}
+
+		private void enableStatus() {
+			enableStatusTray();
 		}
 
 		private StatusTray exposedStatusTray() {

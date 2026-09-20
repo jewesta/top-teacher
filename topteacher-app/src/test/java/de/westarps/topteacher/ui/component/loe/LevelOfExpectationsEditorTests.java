@@ -41,6 +41,8 @@ import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeTask;
 import de.westarps.topteacher.ui.component.FullscreenButton;
 import de.westarps.vaadin.markdown.MarkdownEditor;
+import de.westarps.vaadin.tray.StatusTray;
+import de.westarps.vaadin.tray.TrayState;
 
 class LevelOfExpectationsEditorTests {
 
@@ -59,6 +61,18 @@ class LevelOfExpectationsEditorTests {
 	private static final LoeRequirement BONUS_REQUIREMENT = new LoeRequirement(10, TASK.id(), "Bonus requirement", 4,
 			true, 1);
 	private static final LoeRequirement NEW_REQUIREMENT = new LoeRequirement(11, TASK.id(), "", 0, false, 1);
+
+	@Test
+	void keepsTheStatusTrayPeekingWhenThereAreNoValidationResults() {
+		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repositoryWithHierarchy());
+
+		editor.setExam(EXAM);
+
+		assertThat(components(editor, StatusTray.class)).singleElement().satisfies(tray -> {
+			assertThat(tray.isVisible()).isTrue();
+			assertThat(tray.getState()).isEqualTo(TrayState.PEEK);
+		});
+	}
 
 	@Test
 	void preservesCollapsedDetailsWhenRefreshingSameExam() {

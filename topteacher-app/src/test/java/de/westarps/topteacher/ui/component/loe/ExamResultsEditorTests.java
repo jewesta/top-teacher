@@ -57,6 +57,8 @@ import de.westarps.topteacher.model.loe.LoeTask;
 import de.westarps.topteacher.ui.component.FullscreenButton;
 import de.westarps.topteacher.ui.component.StepperComboBox;
 import de.westarps.vaadin.markdown.MarkdownViewer;
+import de.westarps.vaadin.tray.StatusTray;
+import de.westarps.vaadin.tray.TrayState;
 
 class ExamResultsEditorTests {
 
@@ -78,6 +80,19 @@ class ExamResultsEditorTests {
 			true);
 	private static final LoeRequirement BONUS_REQUIREMENT = new LoeRequirement(6, TASK.id(), "Bonusaufgabe", 2, true,
 			1);
+
+	@Test
+	void keepsTheStatusTrayPeekingWhenThereAreNoValidationResults() {
+		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository(), examRepository(),
+				levelOfExpectationsRepository(), gradingScaleRepository());
+
+		editor.setExam(EXAM);
+
+		assertThat(components(editor, StatusTray.class)).singleElement().satisfies(tray -> {
+			assertThat(tray.isVisible()).isTrue();
+			assertThat(tray.getState()).isEqualTo(TrayState.PEEK);
+		});
+	}
 
 	@Test
 	void savesRequirementPointsOnlyWhenToolbarSaveIsClicked() {

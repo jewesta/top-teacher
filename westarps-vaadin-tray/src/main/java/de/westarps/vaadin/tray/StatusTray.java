@@ -30,7 +30,6 @@ public class StatusTray extends Tray {
 		addClassName("ws-status-tray");
 		getContentLayout().setSpacing(false);
 		getContentLayout().getElement().setAttribute("role", "list");
-		setVisible(false);
 	}
 
 	public StatusTray(final ValidationSummary results) {
@@ -51,10 +50,8 @@ public class StatusTray extends Tray {
 		getContentLayout().removeAll();
 		this.results.getTestResults().stream().map(StatusTray::createEntry).forEach(getContentLayout()::add);
 
-		final boolean hasResults = this.results.hasAny();
-		setVisible(hasResults);
-		if (!hasResults) {
-			close();
+		if (!this.results.hasAny() && getState() != TrayState.HIDE) {
+			peek();
 		}
 	}
 

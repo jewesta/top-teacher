@@ -19,12 +19,13 @@ import de.westarps.validate.ValidationResults;
 class StatusTrayTests {
 
 	@Test
-	void startsHiddenWithoutResults() {
+	void startsPeekingWithoutResults() {
 		final StatusTray tray = new StatusTray("Status");
 
 		assertThat(tray.getLabel()).isEqualTo("Status");
 		assertThat(tray.getResults()).isSameAs(TestResults.PASS);
-		assertThat(tray.isVisible()).isFalse();
+		assertThat(tray.isVisible()).isTrue();
+		assertThat(tray.getState()).isEqualTo(TrayState.PEEK);
 		assertThat(tray.getContentLayout().getChildren()).isEmpty();
 	}
 
@@ -59,20 +60,32 @@ class StatusTrayTests {
 	}
 
 	@Test
-	void replacesEntriesAndHidesAndClosesForAnEmptySummary() {
+	void replacesEntriesAndReturnsToPeekingForAnEmptySummary() {
 		final StatusTray tray = new StatusTray(TestResults.warning("Initial warning"));
-		tray.open();
+		tray.show();
 
 		tray.setResults(TestResults.error("Replacement error"));
 
 		assertThat(entries(tray)).extracting(StatusTrayTests::message).containsExactly("Replacement error");
-		assertThat(tray.isOpened()).isTrue();
+		assertThat(tray.getState()).isEqualTo(TrayState.SHOW);
 
 		tray.setResults(TestResults.pass());
 
-		assertThat(tray.isVisible()).isFalse();
-		assertThat(tray.isOpened()).isFalse();
+		assertThat(tray.isVisible()).isTrue();
+		assertThat(tray.getState()).isEqualTo(TrayState.PEEK);
 		assertThat(tray.getContentLayout().getChildren()).isEmpty();
+	}
+
+	@Test
+	void changingResultsDoesNotOptInAFullyHiddenTray() {
+		final StatusTray tray = new StatusTray();
+		tray.hide();
+
+		tray.setResults(TestResults.warning("Hidden warning"));
+		tray.setResults(TestResults.pass());
+
+		assertThat(tray.getState()).isEqualTo(TrayState.HIDE);
+		assertThat(tray.isVisible()).isFalse();
 	}
 
 	private static List<HorizontalLayout> entries(final StatusTray tray) {

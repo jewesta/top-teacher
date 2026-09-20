@@ -37,6 +37,8 @@ public abstract class AbstractDesigner extends VerticalLayout {
 		content.setPadding(false);
 		content.setSpacing(false);
 		content.setWidthFull();
+
+		disableStatusTray();
 	}
 
 	protected HorizontalLayout toolbar() {
@@ -53,6 +55,14 @@ public abstract class AbstractDesigner extends VerticalLayout {
 
 	protected final StatusTray statusTray() {
 		return statusTray;
+	}
+
+	protected final void enableStatusTray() {
+		statusTray.peek();
+	}
+
+	protected final void disableStatusTray() {
+		statusTray.hide();
 	}
 
 	protected final void setValidationResults(final ValidationSummary results) {

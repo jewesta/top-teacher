@@ -21,17 +21,24 @@ import com.vaadin.flow.shared.Registration;
 @CssImport("./styles/ws-tray.css")
 public class Tray extends Card {
 
-	public static final class OpenedChangeEvent extends ComponentEvent<Tray> {
+	public static final class StateChangeEvent extends ComponentEvent<Tray> {
 
-		private final boolean opened;
+		private final TrayState previousState;
+		private final TrayState state;
 
-		private OpenedChangeEvent(final Tray source, final boolean fromClient, final boolean opened) {
+		private StateChangeEvent(final Tray source, final boolean fromClient, final TrayState previousState,
+				final TrayState state) {
 			super(source, fromClient);
-			this.opened = opened;
+			this.previousState = previousState;
+			this.state = state;
 		}
 
-		public boolean isOpened() {
-			return opened;
+		public TrayState getPreviousState() {
+			return previousState;
+		}
+
+		public TrayState getState() {
+			return state;
 		}
 	}
 
@@ -41,7 +48,7 @@ public class Tray extends Card {
 
 	private final VerticalLayout contentLayout = new VerticalLayout();
 
-	private boolean opened;
+	private TrayState state = TrayState.PEEK;
 
 	public Tray() {
 		this("");
@@ -55,7 +62,7 @@ public class Tray extends Card {
 		notch.addClassName("ws-tray-notch");
 		notch.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
 		notch.setWidthFull();
-		notch.addClickListener(event -> setOpened(!opened, event.isFromClient()));
+		notch.addClickListener(event -> togglePeekShow(event.isFromClient()));
 
 		contentLayout.addClassName("ws-tray-content");
 		contentLayout.setPadding(false);
@@ -65,7 +72,7 @@ public class Tray extends Card {
 		setHeader(notch);
 		super.add(List.of(contentLayout));
 		setLabel(label);
-		updateOpenedState();
+		updateState();
 	}
 
 	public String getLabel() {
@@ -76,28 +83,28 @@ public class Tray extends Card {
 		notch.setText(label == null ? "" : label);
 	}
 
-	public boolean isOpened() {
-		return opened;
+	public TrayState getState() {
+		return state;
 	}
 
-	public void setOpened(final boolean opened) {
-		setOpened(opened, false);
+	public void setState(final TrayState state) {
+		setState(state, false);
 	}
 
-	public void open() {
-		setOpened(true);
+	public void hide() {
+		setState(TrayState.HIDE);
 	}
 
-	public void close() {
-		setOpened(false);
+	public void peek() {
+		setState(TrayState.PEEK);
 	}
 
-	public void toggle() {
-		setOpened(!opened);
+	public void show() {
+		setState(TrayState.SHOW);
 	}
 
-	public Registration addOpenedChangeListener(final ComponentEventListener<OpenedChangeEvent> listener) {
-		return addListener(OpenedChangeEvent.class, Objects.requireNonNull(listener, "listener must not be null"));
+	public Registration addStateChangeListener(final ComponentEventListener<StateChangeEvent> listener) {
+		return addListener(StateChangeEvent.class, Objects.requireNonNull(listener, "listener must not be null"));
 	}
 
 	public VerticalLayout getContentLayout() {
@@ -134,20 +141,31 @@ public class Tray extends Card {
 		contentLayout.addComponentAtIndex(index, component);
 	}
 
-	private void setOpened(final boolean opened, final boolean fromClient) {
-		if (this.opened == opened) {
+	private void togglePeekShow(final boolean fromClient) {
+		if (state == TrayState.HIDE) {
 			return;
 		}
-		this.opened = opened;
-		updateOpenedState();
-		fireEvent(new OpenedChangeEvent(this, fromClient, opened));
+		setState(state == TrayState.PEEK ? TrayState.SHOW : TrayState.PEEK, fromClient);
 	}
 
-	private void updateOpenedState() {
-		getElement().setAttribute("data-opened", String.valueOf(opened));
-		notch.getElement().setAttribute("aria-expanded", String.valueOf(opened));
-		contentLayout.getElement().setAttribute("aria-hidden", String.valueOf(!opened));
-		if (opened) {
+	private void setState(final TrayState state, final boolean fromClient) {
+		final TrayState nextState = Objects.requireNonNull(state, "state must not be null");
+		if (this.state == nextState) {
+			return;
+		}
+		final TrayState previousState = this.state;
+		this.state = nextState;
+		updateState();
+		fireEvent(new StateChangeEvent(this, fromClient, previousState, nextState));
+	}
+
+	private void updateState() {
+		final boolean shown = state == TrayState.SHOW;
+		super.setVisible(state != TrayState.HIDE);
+		getElement().setAttribute("data-state", state.name().toLowerCase(java.util.Locale.ROOT));
+		notch.getElement().setAttribute("aria-expanded", String.valueOf(shown));
+		contentLayout.getElement().setAttribute("aria-hidden", String.valueOf(!shown));
+		if (shown) {
 			contentLayout.getElement().removeAttribute("inert");
 		} else {
 			contentLayout.getElement().setAttribute("inert", "");

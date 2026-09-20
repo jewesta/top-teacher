@@ -30,15 +30,15 @@ because the application supports half points elsewhere.
 - Allocation issues will be presented in a reusable bottom tray. The same tray
   component is intended for the result view and other projects.
 - The generic tray is a Vaadin `Card` with a configurable notch label, an
-  arbitrary vertical content area, and programmatic and click-driven open/close
-  behavior.
+  arbitrary vertical content area, and explicit `HIDE`, `PEEK`, and `SHOW`
+  states. Its header toggles between `PEEK` and `SHOW`.
 - `StatusTray` specializes the tray for validation summaries. It renders each
-  test result as a non-collapsible severity-colored entry and hides itself when
-  there are no results.
+  test result as a non-collapsible severity-colored entry and returns to its
+  header-only peeking state when there are no results.
 - `AbstractDesigner` hosts one initially empty `StatusTray` outside its
-  rerendered toolbar and content. All designer-based tabs therefore share the
-  same validation plumbing without being required to publish validation
-  results.
+  rerendered toolbar and content. The tray is fully hidden by default; designers
+  that use it explicitly enable its PEPPER-style peeking state. EH and Results
+  enable it, while other designer-based tabs remain unaffected.
 
 ## Remaining design questions
 

@@ -15,48 +15,59 @@ import com.vaadin.flow.component.html.Span;
 class TrayTests {
 
 	@Test
-	void startsClosedWithConfiguredLabel() {
+	void startsPeekingWithConfiguredLabel() {
 		final Tray tray = new Tray("Prüfung");
 
 		assertThat(tray.getLabel()).isEqualTo("Prüfung");
 		assertThat(tray).isInstanceOf(Card.class);
 		assertThat(tray.getThemeNames()).contains(CardVariant.LUMO_ELEVATED.getVariantName());
-		assertThat(tray.isOpened()).isFalse();
-		assertThat(tray.getElement().getAttribute("data-opened")).isEqualTo("false");
+		assertThat(tray.getState()).isEqualTo(TrayState.PEEK);
+		assertThat(tray.isVisible()).isTrue();
+		assertThat(tray.getElement().getAttribute("data-state")).isEqualTo("peek");
 		assertThat(notch(tray).getElement().getAttribute("aria-expanded")).isEqualTo("false");
 		assertThat(tray.getContentLayout().getElement().getAttribute("aria-hidden")).isEqualTo("true");
 		assertThat(tray.getContentLayout().getElement().hasAttribute("inert")).isTrue();
 	}
 
 	@Test
-	void opensClosesAndNotifiesOnlyAboutChanges() {
+	void changesStateProgrammaticallyAndNotifiesOnlyAboutChanges() {
 		final Tray tray = new Tray();
-		final List<Boolean> changes = new ArrayList<>();
-		tray.addOpenedChangeListener(event -> changes.add(event.isOpened()));
+		final List<TrayState> changes = new ArrayList<>();
+		tray.addStateChangeListener(event -> changes.add(event.getState()));
 
-		tray.open();
-		tray.open();
+		tray.show();
+		tray.show();
 
-		assertThat(tray.isOpened()).isTrue();
-		assertThat(tray.getElement().getAttribute("data-opened")).isEqualTo("true");
+		assertThat(tray.getState()).isEqualTo(TrayState.SHOW);
+		assertThat(tray.getElement().getAttribute("data-state")).isEqualTo("show");
 		assertThat(notch(tray).getElement().getAttribute("aria-expanded")).isEqualTo("true");
 		assertThat(tray.getContentLayout().getElement().getAttribute("aria-hidden")).isEqualTo("false");
 		assertThat(tray.getContentLayout().getElement().hasAttribute("inert")).isFalse();
-		assertThat(changes).containsExactly(true);
+		assertThat(changes).containsExactly(TrayState.SHOW);
 
-		tray.toggle();
+		tray.peek();
 
-		assertThat(tray.isOpened()).isFalse();
-		assertThat(changes).containsExactly(true, false);
+		assertThat(tray.getState()).isEqualTo(TrayState.PEEK);
+		assertThat(changes).containsExactly(TrayState.SHOW, TrayState.PEEK);
+
+		tray.hide();
+
+		assertThat(tray.getState()).isEqualTo(TrayState.HIDE);
+		assertThat(tray.isVisible()).isFalse();
+		assertThat(changes).containsExactly(TrayState.SHOW, TrayState.PEEK, TrayState.HIDE);
 	}
 
 	@Test
-	void clickingTheNotchTogglesTheTray() {
+	void clickingTheNotchTogglesBetweenPeekAndShow() {
 		final Tray tray = new Tray();
 
 		notch(tray).click();
 
-		assertThat(tray.isOpened()).isTrue();
+		assertThat(tray.getState()).isEqualTo(TrayState.SHOW);
+
+		notch(tray).click();
+
+		assertThat(tray.getState()).isEqualTo(TrayState.PEEK);
 	}
 
 	@Test
