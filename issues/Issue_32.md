@@ -29,13 +29,17 @@ because the application supports half points elsewhere.
 - The EH tab uses a pen, tick, or lock icon for the three derived states.
 - Allocation issues will be presented in a reusable bottom tray. The same tray
   component is intended for the result view and other projects.
-- The generic tray is a Vaadin `Card` with a configurable notch label, an
-  arbitrary vertical content area, and explicit `HIDE`, `PEEK`, and `SHOW`
-  states. Its header toggles between `PEEK` and `SHOW`.
+- The generic tray is a Vaadin `Card` with a configurable notch label, a
+  scrollable vertical list, and explicit `HIDE`, `PEEK`, and `SHOW` states. Its
+  header toggles between `PEEK` and `SHOW`, and an outside click returns a shown
+  tray to `PEEK`.
+- `TrayController<I>` provides list-oriented control. Individual and batched
+  additions are placed at the top, full replacements retain their supplied
+  order, and each concrete tray decides how one item is rendered.
 - `StatusTray` specializes the tray for validation summaries. It renders each
   test result as a compact, non-collapsible severity-colored entry without a
-  redundant severity icon, and returns to its header-only peeking state when
-  there are no results.
+  redundant severity icon. Changed non-empty results show the tray, while an
+  empty result list returns it to its header-only peeking state.
 - `AbstractDesigner` hosts one initially empty `StatusTray` outside its
   rerendered toolbar and content. The tray is fully hidden by default; designers
   that use it explicitly enable its PEPPER-style peeking state. EH and Results

@@ -6,6 +6,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 
 import de.westarps.validate.ValidationSummary;
 import de.westarps.vaadin.tray.StatusTray;
+import de.westarps.vaadin.tray.StatusTrayController;
 
 public abstract class AbstractDesigner extends VerticalLayout {
 
@@ -53,7 +54,7 @@ public abstract class AbstractDesigner extends VerticalLayout {
 		return content;
 	}
 
-	protected final StatusTray statusTray() {
+	protected final StatusTrayController statusTray() {
 		return statusTray;
 	}
 

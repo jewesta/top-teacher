@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.card.Card;
 import com.vaadin.flow.component.card.CardVariant;
@@ -16,7 +17,7 @@ class TrayTests {
 
 	@Test
 	void startsPeekingWithConfiguredLabel() {
-		final Tray tray = new Tray("Prüfung");
+		final StringTray tray = new StringTray("Prüfung");
 
 		assertThat(tray.getLabel()).isEqualTo("Prüfung");
 		assertThat(tray).isInstanceOf(Card.class);
@@ -31,7 +32,7 @@ class TrayTests {
 
 	@Test
 	void changesStateProgrammaticallyAndNotifiesOnlyAboutChanges() {
-		final Tray tray = new Tray();
+		final StringTray tray = new StringTray();
 		final List<TrayState> changes = new ArrayList<>();
 		tray.addStateChangeListener(event -> changes.add(event.getState()));
 
@@ -59,7 +60,7 @@ class TrayTests {
 
 	@Test
 	void clickingTheNotchTogglesBetweenPeekAndShow() {
-		final Tray tray = new Tray();
+		final StringTray tray = new StringTray();
 
 		notch(tray).click();
 
@@ -71,25 +72,101 @@ class TrayTests {
 	}
 
 	@Test
-	void managesArbitraryComponentsInTheVerticalContentLayout() {
-		final Tray tray = new Tray();
-		final Span first = new Span("First");
-		final Span second = new Span("Second");
+	void outsideClickReturnsOnlyAShownTrayToPeek() {
+		final StringTray tray = new StringTray();
+		final List<Boolean> fromClient = new ArrayList<>();
+		tray.addStateChangeListener(event -> fromClient.add(event.isFromClient()));
 
-		tray.add(first, second);
+		tray.show();
+		tray.handleOutsideClick();
+		tray.handleOutsideClick();
 
-		assertThat(tray.getContentLayout().getChildren()).containsExactly(first, second);
-
-		tray.remove(first);
-
-		assertThat(tray.getContentLayout().getChildren()).containsExactly(second);
-
-		tray.removeAll();
-
-		assertThat(tray.getContentLayout().getChildren()).isEmpty();
+		assertThat(tray.getState()).isEqualTo(TrayState.PEEK);
+		assertThat(fromClient).containsExactly(false, true);
 	}
 
-	private static Button notch(final Tray tray) {
+	@Test
+	void replacesItemsInTheirSuppliedOrder() {
+		final StringTray tray = new StringTray();
+
+		tray.setItems(List.of("First", "Second"));
+
+		assertThat(tray.getItems()).containsExactly("First", "Second");
+		assertThat(tray.renderedText()).containsExactly("First", "Second");
+		assertThat(tray.changes).containsExactly(List.of("First", "Second"));
+	}
+
+	@Test
+	void addsIndividualItemsAndBatchesAtTheTopWithoutReversingThem() {
+		final StringTray tray = new StringTray();
+		tray.setItems(List.of("Existing"));
+
+		tray.addItem("Newest");
+		tray.addItems(List.of("Batch first", "Batch second"));
+
+		assertThat(tray.getItems()).containsExactly("Batch first", "Batch second", "Newest", "Existing");
+		assertThat(tray.renderedText()).containsExactly("Batch first", "Batch second", "Newest", "Existing");
+	}
+
+	@Test
+	void removesTheFirstMatchingItemAndCanClearTheList() {
+		final StringTray tray = new StringTray();
+		tray.setItems(List.of("Duplicate", "Middle", "Duplicate"));
+
+		assertThat(tray.removeItem("Duplicate")).isTrue();
+		assertThat(tray.removeItem("Missing")).isFalse();
+		assertThat(tray.getItems()).containsExactly("Middle", "Duplicate");
+		assertThat(tray.renderedText()).containsExactly("Middle", "Duplicate");
+
+		tray.clearItems();
+
+		assertThat(tray.getItems()).isEmpty();
+		assertThat(tray.renderedText()).isEmpty();
+	}
+
+	@Test
+	void ignoresAnUnchangedReplacement() {
+		final StringTray tray = new StringTray();
+		tray.setItems(List.of("Unchanged"));
+		final int renderedItems = tray.renderedItems;
+		final int changes = tray.changes.size();
+
+		tray.setItems(List.of("Unchanged"));
+
+		assertThat(tray.renderedItems).isEqualTo(renderedItems);
+		assertThat(tray.changes).hasSize(changes);
+	}
+
+	private static Button notch(final Tray<?> tray) {
 		return (Button) tray.getHeader();
+	}
+
+	private static final class StringTray extends Tray<String> {
+
+		private final List<List<String>> changes = new ArrayList<>();
+		private int renderedItems;
+
+		private StringTray() {
+			this("");
+		}
+
+		private StringTray(final String label) {
+			super(label);
+		}
+
+		@Override
+		protected Component renderItem(final String item) {
+			renderedItems++;
+			return new Span(item);
+		}
+
+		@Override
+		protected void onItemsChanged(final List<String> previousItems, final List<String> currentItems) {
+			changes.add(currentItems);
+		}
+
+		private List<String> renderedText() {
+			return getContentLayout().getChildren().map(Component::getElement).map(element -> element.getText()).toList();
+		}
 	}
 }

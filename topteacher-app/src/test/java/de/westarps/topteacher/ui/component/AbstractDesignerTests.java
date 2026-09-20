@@ -14,6 +14,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import de.westarps.validate.TestResults;
 import de.westarps.validate.ValidationSummary;
 import de.westarps.vaadin.tray.StatusTray;
+import de.westarps.vaadin.tray.StatusTrayController;
 import de.westarps.vaadin.tray.TrayState;
 
 class AbstractDesignerTests {
@@ -55,20 +56,21 @@ class AbstractDesignerTests {
 	void preservesOneStatusTrayAcrossDesignerLayouts() {
 		final TestDesigner designer = new TestDesigner();
 		designer.render();
-		final StatusTray tray = designer.exposedStatusTray();
+		final StatusTrayController trayController = designer.exposedStatusTray();
+		final Component tray = (Component) trayController;
 		designer.enableStatus();
 
 		designer.showValidation(TestResults.warning("Unvollständig"));
 
 		assertThat(tray.isVisible()).isTrue();
-		assertThat(tray.getState()).isEqualTo(TrayState.PEEK);
-		assertThat(tray.getResults().getTestResults()).extracting(result -> result.message())
+		assertThat(trayController.getState()).isEqualTo(TrayState.SHOW);
+		assertThat(trayController.getResults().getTestResults()).extracting(result -> result.message())
 				.containsExactly("Unvollständig");
 
 		designer.renderMessage();
 
 		assertThat(designer.getChildren().toList()).containsExactly(designer.message(), tray);
-		assertThat(designer.exposedStatusTray()).isSameAs(tray);
+		assertThat(designer.exposedStatusTray()).isSameAs(trayController);
 	}
 
 	private static final class TestDesigner extends AbstractDesigner {
@@ -105,7 +107,7 @@ class AbstractDesignerTests {
 			enableStatusTray();
 		}
 
-		private StatusTray exposedStatusTray() {
+		private StatusTrayController exposedStatusTray() {
 			return statusTray();
 		}
 

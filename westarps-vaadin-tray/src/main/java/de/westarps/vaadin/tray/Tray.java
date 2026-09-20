@@ -1,9 +1,11 @@
 package de.westarps.vaadin.tray;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
+import com.vaadin.flow.component.ClientCallable;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.ComponentEventListener;
@@ -19,14 +21,14 @@ import com.vaadin.flow.shared.Registration;
 
 @SuppressWarnings("serial")
 @CssImport("./styles/ws-tray.css")
-public class Tray extends Card {
+public abstract class Tray<I> extends Card implements TrayController<I> {
 
-	public static final class StateChangeEvent extends ComponentEvent<Tray> {
+	public static final class StateChangeEvent extends ComponentEvent<Tray<?>> {
 
 		private final TrayState previousState;
 		private final TrayState state;
 
-		private StateChangeEvent(final Tray source, final boolean fromClient, final TrayState previousState,
+		private StateChangeEvent(final Tray<?> source, final boolean fromClient, final TrayState previousState,
 				final TrayState state) {
 			super(source, fromClient);
 			this.previousState = previousState;
@@ -42,19 +44,23 @@ public class Tray extends Card {
 		}
 	}
 
+	private record RenderedItem<I>(I item, Component component) {
+	}
+
 	private final Icon toggleIcon = VaadinIcon.ANGLE_UP.create();
 
 	private final Button notch = new Button(toggleIcon);
 
 	private final VerticalLayout contentLayout = new VerticalLayout();
+	private final List<RenderedItem<I>> renderedItems = new ArrayList<>();
 
 	private TrayState state = TrayState.PEEK;
 
-	public Tray() {
+	protected Tray() {
 		this("");
 	}
 
-	public Tray(final String label) {
+	protected Tray(final String label) {
 		addClassName("ws-tray");
 		addThemeVariants(CardVariant.LUMO_ELEVATED);
 		toggleIcon.addClassName("ws-tray-toggle-icon");
@@ -63,6 +69,8 @@ public class Tray extends Card {
 		notch.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
 		notch.setWidthFull();
 		notch.addClickListener(event -> togglePeekShow(event.isFromClient()));
+		addAttachListener(event -> installOutsideClickListener());
+		addDetachListener(event -> removeOutsideClickListener());
 
 		contentLayout.addClassName("ws-tray-content");
 		contentLayout.setPadding(false);
@@ -83,6 +91,7 @@ public class Tray extends Card {
 		notch.setText(label == null ? "" : label);
 	}
 
+	@Override
 	public TrayState getState() {
 		return state;
 	}
@@ -91,14 +100,17 @@ public class Tray extends Card {
 		setState(state, false);
 	}
 
+	@Override
 	public void hide() {
 		setState(TrayState.HIDE);
 	}
 
+	@Override
 	public void peek() {
 		setState(TrayState.PEEK);
 	}
 
+	@Override
 	public void show() {
 		setState(TrayState.SHOW);
 	}
@@ -107,38 +119,83 @@ public class Tray extends Card {
 		return addListener(StateChangeEvent.class, Objects.requireNonNull(listener, "listener must not be null"));
 	}
 
-	public VerticalLayout getContentLayout() {
+	protected final VerticalLayout getContentLayout() {
 		return contentLayout;
 	}
 
 	@Override
-	public void add(final Component... components) {
-		contentLayout.add(components);
+	public final List<I> getItems() {
+		return renderedItems.stream().map(RenderedItem::item).toList();
 	}
 
 	@Override
-	public void add(final Collection<Component> components) {
-		contentLayout.add(components);
-	}
+	public final void setItems(final Collection<? extends I> items) {
+		final List<I> nextItems = copyItems(items);
+		final List<I> previousItems = getItems();
+		if (previousItems.equals(nextItems)) {
+			return;
+		}
 
-	@Override
-	public void remove(final Component... components) {
-		contentLayout.remove(components);
-	}
-
-	@Override
-	public void remove(final Collection<Component> components) {
-		contentLayout.remove(components);
-	}
-
-	@Override
-	public void removeAll() {
+		final List<RenderedItem<I>> nextRenderedItems = renderItems(nextItems);
+		renderedItems.clear();
+		renderedItems.addAll(nextRenderedItems);
 		contentLayout.removeAll();
+		contentLayout.add(nextRenderedItems.stream().map(RenderedItem::component).toList());
+		scrollToTop();
+		onItemsChanged(previousItems, getItems());
 	}
 
 	@Override
-	public void addComponentAtIndex(final int index, final Component component) {
-		contentLayout.addComponentAtIndex(index, component);
+	public final void addItem(final I item) {
+		addItems(List.of(Objects.requireNonNull(item, "item must not be null")));
+	}
+
+	@Override
+	public final void addItems(final Collection<? extends I> items) {
+		final List<I> addedItems = copyItems(items);
+		if (addedItems.isEmpty()) {
+			return;
+		}
+
+		final List<I> previousItems = getItems();
+		final List<RenderedItem<I>> addedRenderedItems = renderItems(addedItems);
+		renderedItems.addAll(0, addedRenderedItems);
+		for (int index = 0; index < addedRenderedItems.size(); index++) {
+			contentLayout.addComponentAtIndex(index, addedRenderedItems.get(index).component());
+		}
+		scrollToTop();
+		onItemsChanged(previousItems, getItems());
+	}
+
+	@Override
+	public final boolean removeItem(final I item) {
+		Objects.requireNonNull(item, "item must not be null");
+		for (int index = 0; index < renderedItems.size(); index++) {
+			if (Objects.equals(renderedItems.get(index).item(), item)) {
+				final List<I> previousItems = getItems();
+				final RenderedItem<I> removedItem = renderedItems.remove(index);
+				contentLayout.remove(removedItem.component());
+				onItemsChanged(previousItems, getItems());
+				return true;
+			}
+		}
+		return false;
+	}
+
+	@Override
+	public final void clearItems() {
+		if (renderedItems.isEmpty()) {
+			return;
+		}
+		final List<I> previousItems = getItems();
+		renderedItems.clear();
+		contentLayout.removeAll();
+		onItemsChanged(previousItems, List.of());
+	}
+
+	protected abstract Component renderItem(I item);
+
+	protected void onItemsChanged(final List<I> previousItems, final List<I> currentItems) {
 	}
 
 	private void togglePeekShow(final boolean fromClient) {
@@ -157,6 +214,56 @@ public class Tray extends Card {
 		this.state = nextState;
 		updateState();
 		fireEvent(new StateChangeEvent(this, fromClient, previousState, nextState));
+	}
+
+	@ClientCallable
+	public void handleOutsideClick() {
+		if (state == TrayState.SHOW) {
+			setState(TrayState.PEEK, true);
+		}
+	}
+
+	private void installOutsideClickListener() {
+		getElement().executeJs("""
+			const tray = this;
+			if (tray.__wsTrayOutsideClickListener) {
+				return;
+			}
+			tray.__wsTrayOutsideClickListener = event => {
+				if (tray.dataset.state === 'show' && !event.composedPath().includes(tray)) {
+					tray.$server.handleOutsideClick();
+				}
+			};
+			document.addEventListener('click', tray.__wsTrayOutsideClickListener, true);
+			""");
+	}
+
+	private void removeOutsideClickListener() {
+		getElement().executeJs("""
+			if (!this.__wsTrayOutsideClickListener) {
+				return;
+			}
+			document.removeEventListener('click', this.__wsTrayOutsideClickListener, true);
+			delete this.__wsTrayOutsideClickListener;
+			""");
+	}
+
+	private List<I> copyItems(final Collection<? extends I> items) {
+		Objects.requireNonNull(items, "items must not be null");
+		final List<I> copy = new ArrayList<>(items.size());
+		for (final I item : items) {
+			copy.add(Objects.requireNonNull(item, "item must not be null"));
+		}
+		return List.copyOf(copy);
+	}
+
+	private List<RenderedItem<I>> renderItems(final List<I> items) {
+		return items.stream().map(item -> new RenderedItem<>(item,
+				Objects.requireNonNull(renderItem(item), "rendered item must not be null"))).toList();
+	}
+
+	private void scrollToTop() {
+		contentLayout.getElement().executeJs("this.scrollTop = 0");
 	}
 
 	private void updateState() {

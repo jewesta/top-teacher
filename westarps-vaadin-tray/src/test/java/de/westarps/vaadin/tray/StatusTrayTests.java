@@ -19,6 +19,7 @@ class StatusTrayTests {
 	void startsPeekingWithoutResults() {
 		final StatusTray tray = new StatusTray("Status");
 
+		assertThat(tray).isInstanceOf(StatusTrayController.class);
 		assertThat(tray.getLabel()).isEqualTo("Status");
 		assertThat(tray.getResults()).isSameAs(TestResults.PASS);
 		assertThat(tray.isVisible()).isTrue();
@@ -27,13 +28,14 @@ class StatusTrayTests {
 	}
 
 	@Test
-	void rendersEveryTestResultInValidationOrder() {
+	void rendersEveryTestResultInValidationOrderAndShowsTheTray() {
 		final TestResults results = TestResults.builder().info("Information").warning("Warning").error("Error")
 				.build();
 		final StatusTray tray = new StatusTray("Status", results);
 
 		assertThat(tray.isVisible()).isTrue();
-		assertThat(tray.getResults()).isSameAs(results);
+		assertThat(tray.getState()).isEqualTo(TrayState.SHOW);
+		assertThat(tray.getResults().getTestResults()).containsExactlyElementsOf(results.getTestResults());
 		assertThat(entries(tray)).extracting(entry -> entry.getElement().getAttribute("data-severity"))
 				.containsExactly("info", "warning", "error");
 		assertThat(entries(tray)).extracting(StatusTrayTests::message).containsExactly("Information", "Warning",
@@ -55,9 +57,20 @@ class StatusTrayTests {
 	}
 
 	@Test
+	void individualResultsAreAddedAtTheTop() {
+		final StatusTray tray = new StatusTray(TestResults.warning("Existing warning"));
+		tray.peek();
+
+		tray.addItem(TestResult.error("Newest error"));
+
+		assertThat(tray.getState()).isEqualTo(TrayState.SHOW);
+		assertThat(entries(tray)).extracting(StatusTrayTests::message).containsExactly("Newest error",
+				"Existing warning");
+	}
+
+	@Test
 	void replacesEntriesAndReturnsToPeekingForAnEmptySummary() {
 		final StatusTray tray = new StatusTray(TestResults.warning("Initial warning"));
-		tray.show();
 
 		tray.setResults(TestResults.error("Replacement error"));
 
@@ -69,6 +82,28 @@ class StatusTrayTests {
 		assertThat(tray.isVisible()).isTrue();
 		assertThat(tray.getState()).isEqualTo(TrayState.PEEK);
 		assertThat(tray.getContentLayout().getChildren()).isEmpty();
+	}
+
+	@Test
+	void anUnchangedSummaryDoesNotReopenTheTray() {
+		final TestResults results = TestResults.warning("Unchanged warning");
+		final StatusTray tray = new StatusTray(results);
+		tray.peek();
+
+		tray.setResults(results);
+
+		assertThat(tray.getState()).isEqualTo(TrayState.PEEK);
+	}
+
+	@Test
+	void removingTheFinalResultReturnsTheTrayToPeek() {
+		final TestResult warning = TestResult.warning("Temporary warning");
+		final StatusTray tray = new StatusTray(TestResults.of(warning));
+
+		tray.removeItem(warning);
+
+		assertThat(tray.getResults()).isSameAs(TestResults.PASS);
+		assertThat(tray.getState()).isEqualTo(TrayState.PEEK);
 	}
 
 	@Test
