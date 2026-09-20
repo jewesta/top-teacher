@@ -55,5 +55,6 @@ The change is cross-cutting and is expected to affect:
 
 ## Status
 
-The reusable `westarps-vaadin-tray` module is the first contained preparatory
-change. Half-point domain and UI behavior are not implemented yet.
+The reusable `westarps-vaadin-tray` and Java-only `westarps-validate` modules
+are contained preparatory changes. Half-point domain and UI behavior are not
+implemented yet.
