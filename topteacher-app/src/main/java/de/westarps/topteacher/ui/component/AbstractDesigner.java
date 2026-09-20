@@ -4,11 +4,15 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 
+import de.westarps.validate.ValidationSummary;
+import de.westarps.vaadin.tray.StatusTray;
+
 public abstract class AbstractDesigner extends VerticalLayout {
 
 	private final HorizontalLayout toolbar = new HorizontalLayout();
 	private final HorizontalLayout toolbarSummary = new HorizontalLayout();
 	private final VerticalLayout content = new VerticalLayout();
+	private final StatusTray statusTray = new StatusTray("Status");
 
 	protected AbstractDesigner(final String className) {
 		addClassNames("tt-designer", className);
@@ -47,6 +51,14 @@ public abstract class AbstractDesigner extends VerticalLayout {
 		return content;
 	}
 
+	protected final StatusTray statusTray() {
+		return statusTray;
+	}
+
+	protected final void setValidationResults(final ValidationSummary results) {
+		statusTray.setResults(results);
+	}
+
 	protected void resetDesigner() {
 		removeAll();
 		toolbar.removeAll();
@@ -64,11 +76,12 @@ public abstract class AbstractDesigner extends VerticalLayout {
 		}
 		add(content);
 		expand(content);
+		add(statusTray);
 	}
 
 	protected void showDesignerMessage(final Component message) {
 		resetDesigner();
-		add(message);
+		add(message, statusTray);
 	}
 
 	private static boolean hasChildren(final Component component) {

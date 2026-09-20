@@ -35,6 +35,10 @@ because the application supports half points elsewhere.
 - `StatusTray` specializes the tray for validation summaries. It renders each
   test result as a non-collapsible severity-colored entry and hides itself when
   there are no results.
+- `AbstractDesigner` hosts one initially empty `StatusTray` outside its
+  rerendered toolbar and content. All designer-based tabs therefore share the
+  same validation plumbing without being required to publish validation
+  results.
 
 ## Remaining design questions
 
@@ -59,5 +63,6 @@ The change is cross-cutting and is expected to affect:
 ## Status
 
 The reusable `westarps-vaadin-tray` module, its validation-aware `StatusTray`,
-and the Java-only `westarps-validate` module are contained preparatory changes.
-Half-point domain and UI behavior are not implemented yet.
+the Java-only `westarps-validate` module, and common designer tray plumbing are
+contained preparatory changes. Half-point domain and UI behavior are not
+implemented yet.
