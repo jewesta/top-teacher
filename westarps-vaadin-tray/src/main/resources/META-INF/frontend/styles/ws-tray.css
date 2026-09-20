@@ -1,0 +1,61 @@
+.ws-tray {
+   --vaadin-card-gap: 0;
+   --vaadin-card-padding: 0;
+   --ws-tray-bottom-offset: var(--lumo-space-m);
+   --ws-tray-max-height: 17.5rem;
+   --ws-tray-notch-height: var(--lumo-size-m);
+   --ws-tray-notch-width: 12rem;
+   --ws-tray-width: 31.25rem;
+   --ws-tray-z-index: 10;
+
+   bottom: var(--ws-tray-bottom-offset);
+   box-sizing: border-box;
+   left: 50%;
+   max-width: calc(100vw - 2 * var(--lumo-space-m));
+   overflow: hidden;
+   position: fixed;
+   transform: translate(-50%, calc(100% - var(--ws-tray-notch-height)));
+   transition: transform 0.2s ease, width 0.2s ease;
+   width: min(var(--ws-tray-notch-width), calc(100vw - 2 * var(--lumo-space-m)));
+   z-index: var(--ws-tray-z-index);
+}
+
+.ws-tray[data-opened="true"] {
+   transform: translate(-50%, 0);
+   width: min(var(--ws-tray-width), calc(100vw - 2 * var(--lumo-space-m)));
+}
+
+.ws-tray-notch {
+   border-radius: 0;
+   flex: 0 0 var(--ws-tray-notch-height);
+   height: var(--ws-tray-notch-height);
+   margin: 0;
+   min-height: var(--ws-tray-notch-height);
+   overflow: hidden;
+   padding-inline: var(--lumo-space-s);
+   text-overflow: ellipsis;
+   white-space: nowrap;
+}
+
+.ws-tray-toggle-icon {
+   flex: 0 0 auto;
+   transition: transform 0.2s ease;
+}
+
+.ws-tray[data-opened="true"] .ws-tray-toggle-icon {
+   transform: rotate(180deg);
+}
+
+.ws-tray-content {
+   box-sizing: border-box;
+   max-height: var(--ws-tray-max-height);
+   overflow-y: auto;
+   padding: var(--lumo-space-m);
+}
+
+@media (prefers-reduced-motion: reduce) {
+   .ws-tray,
+   .ws-tray-toggle-icon {
+      transition: none;
+   }
+}

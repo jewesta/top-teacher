@@ -35,6 +35,12 @@
         </dependency>
 
         <dependency>
+            <groupId>de.westarps.vaadin</groupId>
+            <artifactId>westarps-vaadin-tray</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-spring-boot-starter</artifactId>
         </dependency>

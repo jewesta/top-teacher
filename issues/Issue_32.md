@@ -7,44 +7,37 @@ half a point. A half-point unit is either achieved or not achieved, just like a
 full-point unit. A full-point unit must not become partially achievable merely
 because the application supports half points elsewhere.
 
-## Current state
+## Agreed model
 
-- TopTeacher currently represents maximum points, achieved points, grading
-  scale boundaries, aggregations, persistence values, exports, and MCP values
-  as integers.
-- The EH designer and result editor use integer-only point fields.
-- Allowing every result field to use increments of `0.5` would be incorrect: it
-  would also allow a declared full point to be awarded as half a point.
-- An integer maximum does not necessarily reveal the scoring units from which
-  it is composed. A maximum of four points could mean four full-point units,
-  eight half-point units, or a mixture of both.
+- A requirement retains its explicitly declared integer maximum. Its criteria
+  are each worth either one point or half a point.
+- Criterion results remain boolean. Achieved criterion values are summed in
+  integer half-point units and rounded half-up within their requirement. Only
+  integer requirement results are aggregated further.
+- Criterion allocation is compared with the requirement maximum; regular
+  requirement maxima are compared with the authoritative grading-scale total.
+- Under-allocation is a saveable intermediate design. Over-allocation may exist
+  in the dirty editor state but prevents the complete pending edit from being
+  saved.
+- EH state is derived rather than persisted: incomplete and editable, complete
+  and editable, or complete and locked because results exist.
+- Compatibility with existing EH data is not required because no production EH
+  has been created yet.
 
-## Design direction
+## Validation presentation
 
-- Store and aggregate exact half-point values without floating-point
-  arithmetic. One possible representation is an integer count of half-point
-  units, where one unit represents `0.5` points and two units represent one
-  point.
-- Preserve exact values throughout EH editing, result entry, aggregation, and
-  export. Any grading-related rounding should happen once at the grading
-  boundary, not in intermediate totals.
-- Add an explicit way to declare where half-point results are permitted. The
-  precise model is intentionally undecided. Candidates include a per-
-  requirement point increment, a count of half-point units, or individually
-  weighted scoring items.
-- Existing whole-point data must migrate losslessly.
+- The EH tab uses a pen, tick, or lock icon for the three derived states.
+- Allocation issues will be presented in a reusable bottom tray. The same tray
+  component is intended for the result view and other projects.
+- The generic tray is a Vaadin `Card` with a configurable notch label, an
+  arbitrary vertical content area, and programmatic and click-driven open/close
+  behavior.
 
-## Open questions
+## Remaining design questions
 
-- Can a requirement with a whole-number maximum nevertheless contain one or
-  more half-point units?
-- Can one requirement mix full-point and half-point units?
-- Must TopTeacher remember which individual scoring unit was achieved, or is an
-  aggregate result for the requirement sufficient?
-- How should an exact half-point total be rounded when applying an integer
-  grading scale?
-- Should grading scales and their ranges remain integer-based, or must they
-  support half-point boundaries as well?
+- Choose the exact `eh:` URL syntax for full- and half-point criteria.
+- Design the TopTeacher-specific validation issue components placed inside the
+  generic tray.
 
 ## Expected impact
 
@@ -62,5 +55,5 @@ The change is cross-cutting and is expected to affect:
 
 ## Status
 
-Design discussion postponed. Implement this as a dedicated issue rather than
-as part of Issue 22.
+The reusable `westarps-vaadin-tray` module is the first contained preparatory
+change. Half-point domain and UI behavior are not implemented yet.
