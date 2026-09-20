@@ -21,6 +21,7 @@
     <modules>
         <module>westarps-validate</module>
         <module>westarps-vaadin-animate</module>
+        <module>westarps-vaadin-badge</module>
         <module>westarps-vaadin-markdown</module>
         <module>westarps-vaadin-tray</module>
         <module>topteacher-model</module>

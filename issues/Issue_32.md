@@ -36,6 +36,9 @@ because the application supports half points elsewhere.
 - `westarps-vaadin-animate` packages Animate.css 4.1.1 and reusable Java helpers
   for effects, speeds, repetitions, reliable replay, and automatic one-shot
   cleanup. The tray uses its `HEAD_SHAKE` effect when an empty header is clicked.
+- `westarps-vaadin-badge` packages PEPPER's badge, positioned wrapper,
+  `Badgeable` handshake, and controller as a reusable Vaadin module without
+  PEPPER-specific translation or styling dependencies.
 - `TrayController<I>` provides list-oriented control. Individual and batched
   additions are placed at the top, full replacements retain their supplied
   order, and each concrete tray decides how one item is rendered.
@@ -87,7 +90,8 @@ The change is cross-cutting and is expected to affect:
 
 ## Status
 
-The reusable `westarps-vaadin-animate` and `westarps-vaadin-tray` modules, the
-tray's validation-aware `StatusTray`, the Java-only `westarps-validate` module,
-common designer tray plumbing, and the whole-point EH validation refactor are
-implemented. Half-point domain and UI behavior are not implemented yet.
+The reusable `westarps-vaadin-animate`, `westarps-vaadin-badge`, and
+`westarps-vaadin-tray` modules, the tray's validation-aware `StatusTray`, the
+Java-only `westarps-validate` module, common designer tray plumbing, and the
+whole-point EH validation refactor are implemented. Half-point domain and UI
+behavior are not implemented yet.
