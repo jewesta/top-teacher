@@ -9,8 +9,10 @@ import com.vaadin.flow.component.button.Button;
 final class LoeSaveController {
 
 	private final List<Button> dirtyButtons = new ArrayList<>();
+	private final List<Button> saveButtons = new ArrayList<>();
 	private final List<Button> cleanButtons = new ArrayList<>();
 	private BooleanSupplier dirtySupplier = () -> false;
+	private BooleanSupplier saveAllowedSupplier = () -> true;
 	private Runnable saveAction = () -> {
 	};
 	private Runnable discardAction = () -> {
@@ -25,18 +27,30 @@ final class LoeSaveController {
 		this.saveAction = saveAction;
 	}
 
+	void setSaveAllowedSupplier(final BooleanSupplier saveAllowedSupplier) {
+		this.saveAllowedSupplier = saveAllowedSupplier;
+		update();
+	}
+
 	void setDiscardAction(final Runnable discardAction) {
 		this.discardAction = discardAction;
 	}
 
 	void clearButtons() {
 		dirtyButtons.clear();
+		saveButtons.clear();
 		cleanButtons.clear();
 	}
 
 	Button register(final Button button) {
 		dirtyButtons.add(button);
 		button.setEnabled(isDirty());
+		return button;
+	}
+
+	Button registerSave(final Button button) {
+		saveButtons.add(button);
+		button.setEnabled(isDirty() && isSaveAllowed());
 		return button;
 	}
 
@@ -49,10 +63,15 @@ final class LoeSaveController {
 	void update() {
 		final boolean dirty = isDirty();
 		dirtyButtons.forEach(button -> button.setEnabled(dirty));
+		saveButtons.forEach(button -> button.setEnabled(dirty && isSaveAllowed()));
 		cleanButtons.forEach(button -> button.setEnabled(!dirty));
 	}
 
 	void save() {
+		if (!isSaveAllowed()) {
+			update();
+			return;
+		}
 		saveAction.run();
 		update();
 	}
@@ -64,5 +83,9 @@ final class LoeSaveController {
 
 	private boolean isDirty() {
 		return dirtySupplier.getAsBoolean();
+	}
+
+	private boolean isSaveAllowed() {
+		return saveAllowedSupplier.getAsBoolean();
 	}
 }

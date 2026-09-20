@@ -93,6 +93,15 @@ final class LoeRequirementSection extends Composite<VerticalLayout> implements L
 		return requirement;
 	}
 
+	LoeRequirement pendingRequirement() {
+		return new LoeRequirement(requirement.id(), requirement.taskId(), componentsValue(descriptionEditor),
+				validMaxPoints() ? maxPoints.getValue() : 0, bonus, requirement.sortOrder());
+	}
+
+	boolean hasValidMaxPoints() {
+		return validMaxPoints();
+	}
+
 	@Override
 	public void refreshBadges() {
 	}
@@ -136,6 +145,10 @@ final class LoeRequirementSection extends Composite<VerticalLayout> implements L
 		maxPoints.setValue(requirement.maxPoints());
 		stopSummaryToggle(maxPoints);
 		return maxPoints;
+	}
+
+	private boolean validMaxPoints() {
+		return maxPoints.getValue() != null && maxPoints.getValue() >= 0;
 	}
 
 	private static Button bonusButton() {

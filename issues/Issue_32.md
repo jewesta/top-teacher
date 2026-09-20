@@ -33,6 +33,9 @@ because the application supports half points elsewhere.
   scrollable vertical list, and explicit `HIDE`, `PEEK`, and `SHOW` states. Its
   header toggles between `PEEK` and `SHOW`, and an outside click returns a shown
   tray to `PEEK`.
+- `westarps-vaadin-animate` packages Animate.css 4.1.1 and reusable Java helpers
+  for effects, speeds, repetitions, reliable replay, and automatic one-shot
+  cleanup. The tray uses its `HEAD_SHAKE` effect when an empty header is clicked.
 - `TrayController<I>` provides list-oriented control. Individual and batched
   additions are placed at the top, full replacements retain their supplied
   order, and each concrete tray decides how one item is rendered.
@@ -48,8 +51,25 @@ because the application supports half points elsewhere.
 ## Remaining design questions
 
 - Choose the exact `eh:` URL syntax for full- and half-point criteria.
-- Design the TopTeacher-specific validation issue components placed inside the
-  generic tray.
+
+## EH validation implementation
+
+- `LoeValidator` compares regular requirement maxima with the grading-scale
+  maximum and each requirement's tagged criteria with its own declared maximum.
+  Bonus requirements are excluded from the grading-scale total but still
+  validate their own criteria.
+- Missing allocations are warnings and remain saveable. Excess allocations are
+  errors: they may exist in the pending editor state but disable only Save until
+  corrected or discarded.
+- Validation uses the current unsaved editor values and is rendered in the EH
+  status tray. The complete/incomplete state therefore updates while editing.
+- The tray's peek position exposes only its header, with the centered toggle
+  icon above the label. Wrapped status messages keep their natural height inside
+  the scrollable list, and the card uses a uniform border on every side. Clicking
+  an empty peeking tray keeps it compact and gives it a brief wiggle instead.
+- The EH tab shows a pen for an incomplete editable design, a tick for a complete
+  editable design, and a lock once results exist. The state remains derived and
+  is not persisted.
 
 ## Expected impact
 
@@ -67,7 +87,7 @@ The change is cross-cutting and is expected to affect:
 
 ## Status
 
-The reusable `westarps-vaadin-tray` module, its validation-aware `StatusTray`,
-the Java-only `westarps-validate` module, and common designer tray plumbing are
-contained preparatory changes. Half-point domain and UI behavior are not
-implemented yet.
+The reusable `westarps-vaadin-animate` and `westarps-vaadin-tray` modules, the
+tray's validation-aware `StatusTray`, the Java-only `westarps-validate` module,
+common designer tray plumbing, and the whole-point EH validation refactor are
+implemented. Half-point domain and UI behavior are not implemented yet.

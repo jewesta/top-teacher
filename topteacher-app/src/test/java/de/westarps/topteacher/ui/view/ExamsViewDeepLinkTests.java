@@ -16,6 +16,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.Route;
@@ -107,6 +109,32 @@ class ExamsViewDeepLinkTests {
 
 		assertThat(selectedExams()).containsExactly(EXAM);
 		assertThat(tabSheet().getSelectedTab().getLabel()).isEqualTo("EH");
+		assertThat(levelOfExpectationsStatusIcon()).isEqualTo("vaadin:pencil");
+	}
+
+	@Test
+	void showsTheCompleteLevelOfExpectationsStateInTheTab() {
+		when(gradingScales.findById(GRADING_SCALE.id()))
+				.thenReturn(Optional.of(new GradingScale(GRADING_SCALE.id(), "Leer", 0, Lifecycle.ACTIVE)));
+		when(levelOfExpectations.findRequirementsByExamId(EXAM.id()))
+				.thenReturn(List.of(new LoeRequirement(REQUIREMENT.id(), TASK.id(), "", 0, false, 0)));
+		view = new ExamsView(courses, exams, levelOfExpectations, gradingScales);
+
+		view.beforeEnter(
+				event(Map.of("examId", EXAM.id().toString(), "section", ExamsView.LEVEL_OF_EXPECTATIONS_SECTION)));
+
+		assertThat(levelOfExpectationsStatusIcon()).isEqualTo("vaadin:check");
+	}
+
+	@Test
+	void showsTheLockedLevelOfExpectationsStateInTheTabWhenResultsExist() {
+		when(levelOfExpectations.hasResultsForExam(EXAM.id())).thenReturn(true);
+		view = new ExamsView(courses, exams, levelOfExpectations, gradingScales);
+
+		view.beforeEnter(
+				event(Map.of("examId", EXAM.id().toString(), "section", ExamsView.LEVEL_OF_EXPECTATIONS_SECTION)));
+
+		assertThat(levelOfExpectationsStatusIcon()).isEqualTo("vaadin:lock");
 	}
 
 	@Test
@@ -148,6 +176,19 @@ class ExamsViewDeepLinkTests {
 
 	private TabSheet tabSheet() {
 		return components(view, TabSheet.class).getFirst();
+	}
+
+	private String levelOfExpectationsStatusIcon() {
+		final TabSheet tabSheet = tabSheet();
+		for (int index = 0; index < tabSheet.getTabCount(); index++) {
+			final Tab tab = tabSheet.getTabAt(index);
+			if ("EH".equals(tab.getLabel())) {
+				return tab.getChildren().filter(Icon.class::isInstance).map(Icon.class::cast)
+						.peek(icon -> assertThat(icon.getClassNames()).contains("tt-tab-status-icon"))
+						.map(icon -> icon.getElement().getAttribute("icon")).findFirst().orElseThrow();
+			}
+		}
+		throw new IllegalStateException("Missing EH tab");
 	}
 
 	@SuppressWarnings("unchecked")

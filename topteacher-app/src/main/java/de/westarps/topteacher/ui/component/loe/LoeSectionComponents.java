@@ -30,9 +30,16 @@ final class LoeSectionComponents {
 	static final String CORRECTION_MODE_TOOLTIP = "Korrekturmodus: Ergebnisse vorhanden. Struktur, Punkte und Kriteriennummern sind gesperrt.";
 
 	private final LoeSaveController saveController;
+	private Runnable valueChangeHandler = () -> {
+	};
 
 	LoeSectionComponents(final LoeSaveController saveController) {
 		this.saveController = saveController;
+	}
+
+	void setValueChangeHandler(final Runnable valueChangeHandler) {
+		this.valueChangeHandler = valueChangeHandler == null ? () -> {
+		} : valueChangeHandler;
 	}
 
 	TextField summaryTitleField(final String value) {
@@ -134,7 +141,7 @@ final class LoeSectionComponents {
 	Button saveButton() {
 		final Button button = Buttons.save(event -> saveController.save());
 		button.addThemeVariants(ButtonVariant.LUMO_SMALL);
-		return saveController.register(button);
+		return saveController.registerSave(button);
 	}
 
 	Button discardButton() {
@@ -236,10 +243,11 @@ final class LoeSectionComponents {
 	}
 
 	void trackDirty(final HasValue<?, ?> field) {
-		field.addValueChangeListener(event -> saveController.update());
+		field.addValueChangeListener(event -> updateDirty());
 	}
 
 	void updateDirty() {
+		valueChangeHandler.run();
 		saveController.update();
 	}
 }

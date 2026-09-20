@@ -19,7 +19,12 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.shared.Registration;
 
+import de.westarps.vaadin.animate.Animations;
+import de.westarps.vaadin.animate.Effect;
+import de.westarps.vaadin.animate.Speed;
+
 @SuppressWarnings("serial")
+@CssImport(Animations.STYLESHEET)
 @CssImport("./styles/ws-tray.css")
 public abstract class Tray<I> extends Card implements TrayController<I> {
 
@@ -200,6 +205,10 @@ public abstract class Tray<I> extends Card implements TrayController<I> {
 
 	private void togglePeekShow(final boolean fromClient) {
 		if (state == TrayState.HIDE) {
+			return;
+		}
+		if (state == TrayState.PEEK && renderedItems.isEmpty()) {
+			Animations.playOnce(this, Effect.HEAD_SHAKE, Speed.FASTER);
 			return;
 		}
 		setState(state == TrayState.PEEK ? TrayState.SHOW : TrayState.PEEK, fromClient);

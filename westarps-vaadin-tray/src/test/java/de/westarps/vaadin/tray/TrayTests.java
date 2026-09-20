@@ -61,6 +61,7 @@ class TrayTests {
 	@Test
 	void clickingTheNotchTogglesBetweenPeekAndShow() {
 		final StringTray tray = new StringTray();
+		tray.addItem("Message");
 
 		notch(tray).click();
 
@@ -69,6 +70,18 @@ class TrayTests {
 		notch(tray).click();
 
 		assertThat(tray.getState()).isEqualTo(TrayState.PEEK);
+	}
+
+	@Test
+	void clickingTheNotchDoesNotOpenAnEmptyTray() {
+		final StringTray tray = new StringTray();
+		final List<TrayState> changes = new ArrayList<>();
+		tray.addStateChangeListener(event -> changes.add(event.getState()));
+
+		notch(tray).click();
+
+		assertThat(tray.getState()).isEqualTo(TrayState.PEEK);
+		assertThat(changes).isEmpty();
 	}
 
 	@Test

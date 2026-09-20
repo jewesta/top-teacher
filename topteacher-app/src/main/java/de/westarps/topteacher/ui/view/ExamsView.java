@@ -54,6 +54,7 @@ import de.westarps.topteacher.ui.component.loe.ExamEvaluationViewer;
 import de.westarps.topteacher.ui.component.loe.ExamNotesEditor;
 import de.westarps.topteacher.ui.component.loe.ExamResultsEditor;
 import de.westarps.topteacher.ui.component.loe.LevelOfExpectationsEditor;
+import de.westarps.topteacher.ui.component.loe.LevelOfExpectationsEditor.DesignState;
 import de.westarps.topteacher.ui.component.loe.LoeNavigationTarget;
 
 @Route(value = "exams/:examId?/:section?/:pupilId?", layout = MainLayout.class)
@@ -142,7 +143,8 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 		this.examRepository = examRepository;
 		this.levelOfExpectationsRepository = levelOfExpectationsRepository;
 		this.gradingScaleRepository = gradingScaleRepository;
-		this.levelOfExpectationsEditor = new LevelOfExpectationsEditor(levelOfExpectationsRepository);
+		this.levelOfExpectationsEditor = new LevelOfExpectationsEditor(levelOfExpectationsRepository,
+				gradingScaleRepository);
 		this.examNotesEditor = new ExamNotesEditor(levelOfExpectationsRepository);
 		this.examResultsEditor = new ExamResultsEditor(courseRepository, examRepository, levelOfExpectationsRepository,
 				gradingScaleRepository);
@@ -414,6 +416,7 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 
 		levelOfExpectationsEditor
 				.setChangeHandler(() -> refreshRegistry.publish(ExamContextChange.LEVEL_OF_EXPECTATIONS));
+		levelOfExpectationsEditor.setDesignStateChangeHandler(this::updateLevelOfExpectationsTabLabel);
 		examResultsEditor.setChangeHandler(() -> refreshRegistry.publish(ExamContextChange.RESULTS));
 		getContextTabs().addSelectedChangeListener(event -> {
 			final ExamContextTarget selectedTarget = selectedExamContextTarget();
@@ -608,8 +611,8 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 		}
 
 		refreshPupilAssignments();
-		updateLevelOfExpectationsTabLabel(exam);
 		levelOfExpectationsEditor.setExam(exam);
+		updateLevelOfExpectationsTabLabel(exam);
 		examNotesEditor.setExam(exam);
 		examResultsEditor.setExam(exam);
 		examEvaluationViewer.setExam(exam);
@@ -675,26 +678,39 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 	}
 
 	private void updateLevelOfExpectationsTabLabel(final Exam exam) {
+		final DesignState state = exam != null && levelOfExpectationsRepository.hasResultsForExam(exam.id())
+				? DesignState.LOCKED
+				: levelOfExpectationsEditor.getDesignState();
+		updateLevelOfExpectationsTabLabel(state);
+	}
+
+	private void updateLevelOfExpectationsTabLabel(final DesignState state) {
 		if (levelOfExpectationsTab == null) {
 			return;
 		}
 
-		final boolean correctionMode = exam != null && levelOfExpectationsRepository.hasResultsForExam(exam.id());
+		final String statusLabel = switch (state) {
+			case INCOMPLETE -> "Unvollständig";
+			case COMPLETE -> "Vollständig und bearbeitbar";
+			case LOCKED -> "Vollständig, Ergebnisse vorhanden";
+		};
+		final VaadinIcon statusIcon = switch (state) {
+			case INCOMPLETE -> VaadinIcon.PENCIL;
+			case COMPLETE -> VaadinIcon.CHECK;
+			case LOCKED -> VaadinIcon.LOCK;
+		};
 		levelOfExpectationsTab.removeAll();
 		levelOfExpectationsTab.setLabel("EH");
-		if (correctionMode) {
-			levelOfExpectationsTab.add(levelOfExpectationsLockIcon());
-		}
-		levelOfExpectationsTab.getElement().setAttribute("aria-label",
-				correctionMode ? "EH, Korrekturmodus: Ergebnisse vorhanden." : "EH");
+		levelOfExpectationsTab.add(levelOfExpectationsStatusIcon(statusIcon, statusLabel));
+		levelOfExpectationsTab.getElement().setAttribute("aria-label", "EH, " + statusLabel + ".");
 	}
 
-	private Icon levelOfExpectationsLockIcon() {
-		final Icon lock = VaadinIcon.LOCK.create();
-		lock.addClassName("tt-tab-status-icon");
-		lock.getElement().setAttribute("aria-label", "Korrekturmodus: Ergebnisse vorhanden.");
-		lock.setTooltipText("Korrekturmodus: Ergebnisse vorhanden.");
-		return lock;
+	private Icon levelOfExpectationsStatusIcon(final VaadinIcon iconType, final String statusLabel) {
+		final Icon icon = iconType.create();
+		icon.addClassName("tt-tab-status-icon");
+		icon.getElement().setAttribute("aria-label", statusLabel + ".");
+		icon.setTooltipText(statusLabel);
+		return icon;
 	}
 
 	private void updateEditorEnabled() {

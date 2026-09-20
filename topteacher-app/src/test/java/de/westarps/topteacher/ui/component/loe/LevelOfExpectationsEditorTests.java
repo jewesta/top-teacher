@@ -12,7 +12,9 @@ import static org.mockito.Mockito.when;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -33,20 +35,25 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.server.VaadinSession;
 
+import de.westarps.topteacher.backend.repo.GradingScaleRepository;
 import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.model.Exam;
+import de.westarps.topteacher.model.GradingScale;
+import de.westarps.topteacher.model.Lifecycle;
 import de.westarps.topteacher.model.loe.LoeCategory;
 import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeTask;
 import de.westarps.topteacher.ui.component.FullscreenButton;
+import de.westarps.topteacher.ui.component.loe.LevelOfExpectationsEditor.DesignState;
 import de.westarps.vaadin.markdown.MarkdownEditor;
 import de.westarps.vaadin.tray.StatusTray;
 import de.westarps.vaadin.tray.TrayState;
 
 class LevelOfExpectationsEditorTests {
 
-	private static final Exam EXAM = new Exam(1, 10, "Klausur", LocalDate.of(2026, 9, 1));
+	private static final int GRADING_SCALE_ID = 30;
+	private static final Exam EXAM = new Exam(1, 10, "Klausur", LocalDate.of(2026, 9, 1), null, GRADING_SCALE_ID);
 	private static final LoePart PART = new LoePart(1, EXAM.id(), "Klausurteil A", 0);
 	private static final LoeCategory CATEGORY = new LoeCategory(2, PART.id(), "Inhalt", "Beschreibung", 0);
 	private static final LoeTask TASK = new LoeTask(3, CATEGORY.id(), "Teilaufgabe 1", 0);
@@ -63,15 +70,95 @@ class LevelOfExpectationsEditorTests {
 	private static final LoeRequirement NEW_REQUIREMENT = new LoeRequirement(11, TASK.id(), "", 0, false, 1);
 
 	@Test
-	void keepsTheStatusTrayPeekingWhenThereAreNoValidationResults() {
+	void showsAllocationWarningsInTheStatusTray() {
 		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repositoryWithHierarchy());
 
 		editor.setExam(EXAM);
 
 		assertThat(components(editor, StatusTray.class)).singleElement().satisfies(tray -> {
 			assertThat(tray.isVisible()).isTrue();
+			assertThat(tray.getState()).isEqualTo(TrayState.SHOW);
+			assertThat(tray.getItems()).singleElement()
+					.satisfies(result -> assertThat(result.message()).contains("0 von 5 Kriterienpunkten"));
+		});
+		assertThat(editor.getDesignState()).isEqualTo(DesignState.INCOMPLETE);
+	}
+
+	@Test
+	void marksAMatchingLevelOfExpectationsAsCompleteAndKeepsTheTrayPeeking() {
+		final LoeRequirement completeRequirement = requirementWithCriteria(REQUIREMENT, 2, 2);
+		final LevelOfExpectationsEditor editor = editorWithGradingScale(
+				repositoryWithHierarchy(completeRequirement), 2);
+
+		editor.setExam(EXAM);
+
+		assertThat(editor.getDesignState()).isEqualTo(DesignState.COMPLETE);
+		assertThat(components(editor, StatusTray.class)).singleElement().satisfies(tray -> {
+			assertThat(tray.getItems()).isEmpty();
 			assertThat(tray.getState()).isEqualTo(TrayState.PEEK);
 		});
+	}
+
+	@Test
+	void allowsSavingAnUnderAllocatedIntermediateDesign() {
+		final LoeRequirement completeRequirement = requirementWithCriteria(REQUIREMENT, 2, 2);
+		final LevelOfExpectationsRepository repository = repositoryWithHierarchy(completeRequirement);
+		final LevelOfExpectationsEditor editor = editorWithGradingScale(repository, 4);
+		editor.setExam(EXAM);
+
+		titleField(editor, PART.title()).setValue("Klausurteil Alpha");
+
+		assertThat(editor.getDesignState()).isEqualTo(DesignState.INCOMPLETE);
+		assertThat(saveButtons(editor)).extracting(Button::isEnabled).containsOnly(true);
+
+		saveButtons(editor).getFirst().click();
+
+		verify(repository).savePart(new LoePart(PART.id(), PART.examId(), "Klausurteil Alpha", PART.sortOrder()));
+	}
+
+	@Test
+	void blocksSavingWhenACriterionAllocationExceedsItsRequirement() {
+		final LoeRequirement completeRequirement = requirementWithCriteria(REQUIREMENT, 2, 2);
+		final LevelOfExpectationsRepository repository = repositoryWithHierarchy(completeRequirement);
+		final LevelOfExpectationsEditor editor = editorWithGradingScale(repository, 2);
+		editor.setExam(EXAM);
+
+		markdownEditor(editor, completeRequirement.descriptionMarkdown())
+				.setValue(completeRequirement.descriptionMarkdown() + " [Kriterium 3](eh:3)");
+
+		assertThat(saveButtons(editor)).extracting(Button::isEnabled).containsOnly(false);
+		assertThat(discardButtons(editor)).extracting(Button::isEnabled).containsOnly(true);
+		assertThat(components(editor, StatusTray.class).getFirst().getItems()).singleElement()
+				.satisfies(result -> assertThat(result.message()).contains("3 von 2 Kriterienpunkten", "zu viel"));
+		verify(repository, never()).saveRequirement(any());
+	}
+
+	@Test
+	void blocksSavingWhenRegularRequirementPointsExceedTheGradingScale() {
+		final LoeRequirement completeRequirement = requirementWithCriteria(REQUIREMENT, 2, 2);
+		final LevelOfExpectationsRepository repository = repositoryWithHierarchy(completeRequirement);
+		final LevelOfExpectationsEditor editor = editorWithGradingScale(repository, 2);
+		editor.setExam(EXAM);
+
+		components(editor, IntegerField.class).getFirst().setValue(3);
+
+		assertThat(saveButtons(editor)).extracting(Button::isEnabled).containsOnly(false);
+		assertThat(discardButtons(editor)).extracting(Button::isEnabled).containsOnly(true);
+		assertThat(components(editor, StatusTray.class).getFirst().getItems())
+				.anySatisfy(result -> assertThat(result.message()).contains("3 von 2 regulären Punkten", "zu viel"));
+		verify(repository, never()).saveRequirement(any());
+	}
+
+	@Test
+	void derivesTheLockedStateWhenResultsExist() {
+		final LoeRequirement completeRequirement = requirementWithCriteria(REQUIREMENT, 2, 2);
+		final LevelOfExpectationsRepository repository = repositoryWithHierarchy(completeRequirement);
+		when(repository.hasResultsForExam(EXAM.id())).thenReturn(true);
+		final LevelOfExpectationsEditor editor = editorWithGradingScale(repository, 2);
+
+		editor.setExam(EXAM);
+
+		assertThat(editor.getDesignState()).isEqualTo(DesignState.LOCKED);
 	}
 
 	@Test
@@ -629,6 +716,22 @@ class LevelOfExpectationsEditorTests {
 		when(repository.findTasksByExamId(EXAM.id())).thenReturn(List.of());
 		when(repository.findRequirementsByExamId(EXAM.id())).thenReturn(List.of());
 		return repository;
+	}
+
+	private static LevelOfExpectationsEditor editorWithGradingScale(
+			final LevelOfExpectationsRepository repository, final int maxPoints) {
+		final GradingScaleRepository gradingScaleRepository = mock(GradingScaleRepository.class);
+		when(gradingScaleRepository.findById(GRADING_SCALE_ID))
+				.thenReturn(Optional.of(new GradingScale(GRADING_SCALE_ID, "Test", maxPoints, Lifecycle.ACTIVE)));
+		return new LevelOfExpectationsEditor(repository, gradingScaleRepository);
+	}
+
+	private static LoeRequirement requirementWithCriteria(final LoeRequirement requirement, final int maxPoints,
+			final int criterionCount) {
+		final String description = IntStream.rangeClosed(1, criterionCount)
+				.mapToObj(index -> "[Kriterium " + index + "](eh:" + index + ")").collect(java.util.stream.Collectors.joining(" "));
+		return new LoeRequirement(requirement.id(), requirement.taskId(), description, maxPoints, requirement.bonus(),
+				requirement.sortOrder());
 	}
 
 	private static <T extends Component> List<T> components(final Component root, final Class<T> type) {

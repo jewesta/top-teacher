@@ -11,20 +11,26 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>topteacher-model</artifactId>
-    <name>TopTeacher Model</name>
-    <description>Domain model for TopTeacher.</description>
+    <groupId>de.westarps.vaadin</groupId>
+    <artifactId>westarps-vaadin-animate</artifactId>
+    <name>Westarps Vaadin Animate</name>
+    <description>Reusable Animate.css integration and animation helpers for Vaadin components.</description>
 
     <dependencies>
         <dependency>
-            <groupId>de.westarps</groupId>
-            <artifactId>westarps-validate</artifactId>
-            <version>${project.version}</version>
+            <groupId>com.vaadin</groupId>
+            <artifactId>flow-server</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

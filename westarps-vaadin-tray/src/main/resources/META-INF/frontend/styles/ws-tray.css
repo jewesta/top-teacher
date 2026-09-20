@@ -3,25 +3,26 @@
    --vaadin-card-padding: 0;
    --ws-tray-bottom-offset: var(--lumo-space-m);
    --ws-tray-max-height: 17.5rem;
-   --ws-tray-notch-height: var(--lumo-size-m);
+   --ws-tray-notch-height: var(--lumo-size-xl);
    --ws-tray-notch-width: 12rem;
    --ws-tray-width: 31.25rem;
    --ws-tray-z-index: 10;
 
    bottom: var(--ws-tray-bottom-offset);
+   border: 1px solid var(--lumo-contrast-20pct);
    box-sizing: border-box;
    left: 50%;
    max-width: calc(100vw - 2 * var(--lumo-space-m));
    overflow: hidden;
    position: fixed;
-   transform: translate(-50%, calc(100% - var(--ws-tray-notch-height)));
-   transition: transform 0.2s ease, width 0.2s ease;
+   translate: -50% calc(100% - var(--ws-tray-notch-height) + var(--ws-tray-bottom-offset));
+   transition: translate 0.2s ease, width 0.2s ease;
    width: min(var(--ws-tray-notch-width), calc(100vw - 2 * var(--lumo-space-m)));
    z-index: var(--ws-tray-z-index);
 }
 
 .ws-tray[data-state="show"] {
-   transform: translate(-50%, 0);
+   translate: -50% 0;
    width: min(var(--ws-tray-width), calc(100vw - 2 * var(--lumo-space-m)));
 }
 
@@ -35,6 +36,18 @@
    padding-inline: var(--lumo-space-s);
    text-overflow: ellipsis;
    white-space: nowrap;
+}
+
+.ws-tray-notch::part(prefix) {
+   inset-block-start: 0;
+   inset-inline-start: 50%;
+   margin: 0;
+   position: absolute;
+   transform: translateX(-50%);
+}
+
+.ws-tray-notch::part(label) {
+   padding-block-start: var(--lumo-icon-size-m);
 }
 
 .ws-tray-toggle-icon {
