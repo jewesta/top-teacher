@@ -7,9 +7,11 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.HasText;
-import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 
@@ -70,22 +72,26 @@ class StatusTrayTests {
 	}
 
 	@Test
-	void makesOnlySelectedValidationTargetsActionable() {
+	void makesOnlySelectedValidationTargetsLinks() {
 		final ValidationResults<String> results = ValidationResults.<String>builder()
 				.add(ValidationResult.warning("overall", "Allocate more points"))
 				.add(ValidationResult.error("requirement-2", "Reduce criterion points")).build();
 		final List<String> activatedTargets = new ArrayList<>();
 		final StatusTray tray = new StatusTray();
 
-		tray.setResults(results, target -> target.startsWith("requirement"), activatedTargets::add);
+		tray.setResults(results, target -> target.startsWith("requirement"), target -> "#" + target,
+				activatedTargets::add);
 
 		final List<Div> entries = entries(tray);
 		assertThat(entries.get(0).getChildren()).singleElement().isInstanceOf(Span.class);
-		assertThat(entries.get(0).getClassNames()).doesNotContain("ws-status-tray-entry-action");
-		assertThat(entries.get(1).getChildren()).singleElement().isInstanceOf(Button.class);
-		assertThat(entries.get(1).getClassNames()).contains("ws-status-tray-entry-action");
+		assertThat(entries.get(0).getClassNames()).doesNotContain("ws-status-tray-entry-linked");
+		assertThat(entries.get(1).getChildren()).singleElement().isInstanceOf(Anchor.class);
+		assertThat(entries.get(1).getClassNames()).contains("ws-status-tray-entry-linked");
+		final Anchor link = (Anchor) entries.get(1).getChildren().findFirst().orElseThrow();
+		assertThat(link.getHref()).isEqualTo("#requirement-2");
+		assertThat(link.isRouterIgnore()).isTrue();
 
-		((Button) entries.get(1).getChildren().findFirst().orElseThrow()).click();
+		ComponentUtil.fireEvent(link, new ClickEvent<>(link));
 
 		assertThat(activatedTargets).containsExactly("requirement-2");
 	}

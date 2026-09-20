@@ -7,6 +7,7 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.function.SerializableConsumer;
+import com.vaadin.flow.function.SerializableFunction;
 
 import de.westarps.validate.ValidationResults;
 import de.westarps.validate.ValidationSummary;
@@ -76,8 +77,9 @@ public abstract class AbstractDesigner extends VerticalLayout {
 	}
 
 	protected final <T extends Serializable> void setValidationResults(final ValidationResults<T> results,
-			final Predicate<? super T> actionableTarget, final SerializableConsumer<? super T> action) {
-		statusTray.setResults(results, actionableTarget, action);
+			final Predicate<? super T> linkedTarget, final SerializableFunction<? super T, String> href,
+			final SerializableConsumer<? super T> action) {
+		statusTray.setResults(results, linkedTarget, href, action);
 	}
 
 	protected void resetDesigner() {

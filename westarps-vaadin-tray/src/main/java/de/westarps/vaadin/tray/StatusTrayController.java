@@ -5,6 +5,7 @@ import java.util.Objects;
 import java.util.function.Predicate;
 
 import com.vaadin.flow.function.SerializableConsumer;
+import com.vaadin.flow.function.SerializableFunction;
 
 import de.westarps.validate.TestResult;
 import de.westarps.validate.TestResults;
@@ -22,6 +23,6 @@ public interface StatusTrayController extends TrayController<TestResult> {
 		setItems(results.getTestResults());
 	}
 
-	<T extends Serializable> void setResults(ValidationResults<T> results, Predicate<? super T> actionableTarget,
-			SerializableConsumer<? super T> action);
+	<T extends Serializable> void setResults(ValidationResults<T> results, Predicate<? super T> linkedTarget,
+			SerializableFunction<? super T, String> href, SerializableConsumer<? super T> action);
 }

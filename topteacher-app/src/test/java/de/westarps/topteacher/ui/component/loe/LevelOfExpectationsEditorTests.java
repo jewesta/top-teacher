@@ -26,6 +26,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.details.Details;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.internal.PendingJavaScriptInvocation;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -93,9 +94,11 @@ class LevelOfExpectationsEditorTests {
 		collapseButtons(editor).getFirst().click();
 		tray.show();
 
-		components(tray, Button.class).stream()
-				.filter(button -> button.getText().startsWith("Aufgabe 1 · Anforderung 1:"))
-				.findFirst().orElseThrow().click();
+		final Anchor link = components(tray, Anchor.class).stream()
+				.filter(anchor -> anchor.getText().startsWith("Aufgabe 1 · Anforderung 1:"))
+				.findFirst().orElseThrow();
+		assertThat(link.getHref()).isEqualTo("exams#tt-eh-requirement-" + REQUIREMENT.id());
+		ComponentUtil.fireEvent(link, new com.vaadin.flow.component.ClickEvent<>(link));
 
 		assertThat(tray.getState()).isEqualTo(TrayState.PEEK);
 		assertThat(components(editor, Details.class)).extracting(Details::isOpened).containsOnly(true);

@@ -7,13 +7,14 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Predicate;
 
+import com.vaadin.flow.component.ClickNotifier;
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dependency.CssImport;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.function.SerializableConsumer;
+import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.function.SerializableRunnable;
 
 import de.westarps.vaadin.badge.AttachedBadge.Position;
@@ -28,7 +29,18 @@ import de.westarps.validate.ValidationSummary;
 @CssImport("./styles/ws-status-tray.css")
 public class StatusTray extends Tray<TestResult> implements StatusTrayController {
 
-	private record ActionTarget<T>(int index, T target) {
+	private record LinkTarget<T>(int index, T target) {
+	}
+
+	private static final class StatusLink extends Anchor implements ClickNotifier<StatusLink> {
+
+		private StatusLink(final String href, final String text, final SerializableRunnable action) {
+			super(href, text);
+			setRouterIgnore(true);
+			addClassName("ws-status-tray-entry-link");
+			getElement().setAttribute("title", "Zum betroffenen Abschnitt springen");
+			addClickListener(event -> action.run());
+		}
 	}
 
 	private static final class StatusEntry extends Div {
@@ -45,21 +57,17 @@ public class StatusTray extends Tray<TestResult> implements StatusTrayController
 			setWidthFull();
 		}
 
-		private void clearAction() {
-			removeClassName("ws-status-tray-entry-action");
+		private void clearLink() {
+			removeClassName("ws-status-tray-entry-linked");
 			removeAll();
 			add(message);
 		}
 
-		private void setAction(final SerializableRunnable action) {
-			final Button button = new Button(message.getText(), event -> action.run());
-			button.addClassName("ws-status-tray-entry-button");
-			button.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
-			button.setTooltipText("Zum betroffenen Abschnitt springen");
-			button.setWidthFull();
-			addClassName("ws-status-tray-entry-action");
+		private void setLink(final String href, final SerializableRunnable action) {
+			final StatusLink link = new StatusLink(href, message.getText(), action);
+			addClassName("ws-status-tray-entry-linked");
 			removeAll();
-			add(button);
+			add(link);
 		}
 	}
 
@@ -88,7 +96,7 @@ public class StatusTray extends Tray<TestResult> implements StatusTrayController
 
 	@Override
 	protected void onItemsChanged(final List<TestResult> previousItems, final List<TestResult> currentItems) {
-		clearActions();
+		clearLinks();
 		if (currentItems.isEmpty()) {
 			statusBadge.hide();
 			return;
@@ -103,33 +111,36 @@ public class StatusTray extends Tray<TestResult> implements StatusTrayController
 
 	@Override
 	public void setResults(final ValidationSummary results) {
-		clearActions();
+		clearLinks();
 		StatusTrayController.super.setResults(results);
 	}
 
 	@Override
 	public <T extends Serializable> void setResults(final ValidationResults<T> results,
-			final Predicate<? super T> actionableTarget,
+			final Predicate<? super T> linkedTarget,
+			final SerializableFunction<? super T, String> href,
 			final SerializableConsumer<? super T> action) {
 		Objects.requireNonNull(results, "results must not be null");
-		Objects.requireNonNull(actionableTarget, "actionableTarget must not be null");
+		Objects.requireNonNull(linkedTarget, "linkedTarget must not be null");
+		Objects.requireNonNull(href, "href must not be null");
 		Objects.requireNonNull(action, "action must not be null");
 
 		final List<TestResult> testResults = new ArrayList<>();
-		final List<ActionTarget<T>> actionTargets = new ArrayList<>();
+		final List<LinkTarget<T>> linkTargets = new ArrayList<>();
 		results.forEach(result -> result.getTestResults().forEach(testResult -> {
 			final int index = testResults.size();
 			testResults.add(testResult);
-			if (actionableTarget.test(result.getTarget())) {
-				actionTargets.add(new ActionTarget<>(index, result.getTarget()));
+			if (linkedTarget.test(result.getTarget())) {
+				linkTargets.add(new LinkTarget<>(index, result.getTarget()));
 			}
 		}));
 
-		clearActions();
+		clearLinks();
 		setItems(testResults);
 		final List<Component> renderedComponents = getRenderedComponents();
-		actionTargets.forEach(actionTarget -> ((StatusEntry) renderedComponents.get(actionTarget.index()))
-				.setAction(() -> action.accept(actionTarget.target())));
+		linkTargets.forEach(linkTarget -> ((StatusEntry) renderedComponents.get(linkTarget.index()))
+				.setLink(Objects.requireNonNull(href.apply(linkTarget.target()), "href must not return null"),
+						() -> action.accept(linkTarget.target())));
 	}
 
 	private BadgeVariant badgeVariant(final List<TestResult> results) {
@@ -146,7 +157,7 @@ public class StatusTray extends Tray<TestResult> implements StatusTrayController
 		return results.stream().anyMatch(result -> result.severity() == severity);
 	}
 
-	private void clearActions() {
-		getRenderedComponents().stream().map(StatusEntry.class::cast).forEach(StatusEntry::clearAction);
+	private void clearLinks() {
+		getRenderedComponents().stream().map(StatusEntry.class::cast).forEach(StatusEntry::clearLink);
 	}
 }

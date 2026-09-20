@@ -333,6 +333,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 		final LoeRequirementSection section = new LoeRequirementSection(requirement, siblings, components,
 				requirementHandler, requirementNumber(siblings, requirement), correctionMode);
 		requirementSections.add(section);
+		section.setId(validationTargetId(requirement.id()));
 		DesignerViewport.mark(section, detailKey("requirement", requirement.id()),
 				requirementNumber(siblings, requirement));
 		return section;
@@ -693,6 +694,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 		}
 		setValidationResults(validationResults,
 				target -> target.kind() == LoeValidationTarget.Kind.REQUIREMENT_CRITERIA,
+				this::validationTargetHref,
 				this::showValidationTarget);
 		updateDesignState();
 	}
@@ -729,6 +731,14 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 							+ requirementNumber(requirementsFor(task), requirement);
 				})
 				.orElse("Anforderung");
+	}
+
+	private String validationTargetHref(final LoeValidationTarget target) {
+		return "exams#" + validationTargetId(target.requirementId());
+	}
+
+	private String validationTargetId(final Integer requirementId) {
+		return "tt-eh-requirement-" + requirementId;
 	}
 
 	private void showValidationTarget(final LoeValidationTarget target) {
