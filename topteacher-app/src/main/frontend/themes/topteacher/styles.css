@@ -661,10 +661,8 @@ vaadin-app-layout::part(navbar) {
 
 .tt-results-points-cell {
 	align-items: center;
-	background: var(--lumo-primary-color-10pct);
 	border-radius: var(--lumo-border-radius-s);
 	box-sizing: border-box;
-	color: var(--lumo-primary-text-color);
 	display: grid;
 	flex: 0 0 auto;
 	font-size: var(--lumo-font-size-s);
@@ -674,6 +672,12 @@ vaadin-app-layout::part(navbar) {
 	margin-left: auto;
 	margin-right: var(--lumo-space-s);
 	width: var(--tt-points-column-width, 10rem);
+}
+
+.tt-results-aggregate-points,
+.tt-results-requirement-total {
+	background: var(--lumo-primary-color-10pct);
+	color: var(--lumo-primary-text-color);
 }
 
 .tt-results-points-cell-leading,
@@ -713,6 +717,10 @@ vaadin-app-layout::part(navbar) {
 	margin: 0;
 }
 
+.tt-results-point-stepper:is(:hover, :focus-within, .tt-results-criterion-highlighted) {
+	background: var(--lumo-primary-color-10pct);
+}
+
 .tt-results-point-stepper vaadin-button {
 	font-size: var(--lumo-font-size-s);
 	height: var(--lumo-size-xs);
@@ -750,10 +758,6 @@ vaadin-app-layout::part(navbar) {
 
 .tt-results-criterion-checkbox-row {
 	margin: 0;
-}
-
-.tt-results-criterion-highlighted {
-	box-shadow: inset 0 0 0 2px var(--lumo-primary-color-50pct);
 }
 
 .tt-results-criterion-badge {

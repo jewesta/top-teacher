@@ -77,6 +77,9 @@ same criterion results.
   controls share one points-cell footprint and center their numeric value on
   the same vertical axis. Aggregate chips show `∑` or `∑∑` at the left while
   retaining their full labels for accessibility.
+- Only aggregate badges and requirement totals have a permanent red-tinted
+  background. Point steppers are transparent at rest; hover, keyboard focus,
+  or the linked criterion highlight adds the tint without a border.
 - The `Zusatzpunkte` label uses the same secondary text styling as the
   `n von m Punkten` label. Partial inline checkboxes show a dash.
 - Changes made in either the text or quick-marking column update the other
