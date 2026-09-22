@@ -409,7 +409,7 @@ class ExamResultsEditorTests {
 		final TextArea comment = components(editor, TextArea.class).getFirst();
 		assertThat(saveButton.isEnabled()).isFalse();
 		assertThat(comment.getMinRows()).isEqualTo(2);
-		assertThat(comment.getMaxRows()).isEqualTo(2);
+		assertThat(comment.getMaxRows()).isNull();
 
 		comment.setValue("Zeitform noch einmal besprechen.");
 

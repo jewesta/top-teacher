@@ -643,7 +643,6 @@ public class ExamResultsEditor extends AbstractDesigner {
 		comment.setPlaceholder("Notiz");
 		comment.setMaxLength(2000);
 		comment.setMinRows(2);
-		comment.setMaxRows(2);
 		comment.setValue(currentRequirementComment(requirement));
 		comment.setValueChangeMode(ValueChangeMode.EAGER);
 		comment.setWidthFull();

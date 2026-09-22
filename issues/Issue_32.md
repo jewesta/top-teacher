@@ -99,6 +99,8 @@ This issue note records the implementation sequence and current status only.
   in the same bottom-of-column position; requirement totals stay read-only.
 - Report full and partial criterion fulfilment in the requirement status line;
   omit it when no criteria exist.
+- Let result comments grow from a two-line minimum and remove the field's
+  extra host padding while retaining its gap above the field.
 - Preserve dirty-state save/discard behavior and expose raw values through MCP.
 - Give all context-tab contents one flush outer-layout contract, removing the
   assignment grid's extra padding in both the exam and course tabs.

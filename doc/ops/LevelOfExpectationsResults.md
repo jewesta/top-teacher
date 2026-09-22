@@ -142,7 +142,8 @@ column.
 
 Every requirement may have a marker comment. Comments do not affect points.
 They remain visually associated with freely awarded points because those
-points will usually need an explanation when criteria are defined.
+points will usually need an explanation when criteria are defined. The comment
+field starts at two lines and grows with its content without a row limit.
 
 ## Regular and bonus aggregation
 

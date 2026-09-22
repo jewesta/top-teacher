@@ -627,6 +627,7 @@ vaadin-app-layout::part(navbar) {
 
 .tt-results-comment-field {
 	margin-top: var(--lumo-space-s);
+	padding: 0;
 	resize: none;
 	width: 100%;
 }
