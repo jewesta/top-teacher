@@ -85,7 +85,8 @@ This issue note records the implementation sequence and current status only.
 - Synchronize inline tri-state checkboxes, awarded-value pills with point
   popovers, and compact quick-marking steppers without changing the tuned
   aggregation-chip alignment. Results pills share EH styling and stay adjacent
-  to their checkboxes.
+  to their checkboxes. The inline checkbox frame stays aligned with the point
+  pill across unchecked, checked, and partial states.
 - Give Results aggregates, requirement totals, criterion controls, and
   adjustment steppers a shared points-cell structure, with centered values,
   consistent dimensions, symbolic aggregate captions, and visible partial
