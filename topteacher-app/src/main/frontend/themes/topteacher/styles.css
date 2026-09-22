@@ -433,8 +433,8 @@ vaadin-app-layout::part(navbar) {
 	padding: 0 var(--lumo-space-xs);
 }
 
-.tt-exam-results-editor .tt-designer-toolbar-summary .tt-eh-points {
-	width: var(--tt-points-column-width);
+.tt-exam-results-editor .tt-designer-toolbar-summary .tt-results-points-cell {
+	margin-left: 0;
 }
 
 .tt-spreadsheet-grid::part(header-cell) {
@@ -575,10 +575,6 @@ vaadin-app-layout::part(navbar) {
 	min-width: 0;
 }
 
-.tt-results-header .tt-eh-points {
-	width: var(--tt-points-column-width);
-}
-
 .tt-results-title {
 	font-weight: 600;
 	min-width: 0;
@@ -613,8 +609,6 @@ vaadin-app-layout::part(navbar) {
 	gap: var(--lumo-space-s);
 	justify-content: flex-start;
 	padding: var(--lumo-space-m) var(--lumo-space-s) var(--lumo-space-m) var(--lumo-space-s);
-	/* To compensate for the points control top margin */
-	margin-top: var(--lumo-space-xs)
 }
 
 .tt-results-requirement-content {
@@ -624,8 +618,6 @@ vaadin-app-layout::part(navbar) {
 	min-width: 0;
 	padding: var(--lumo-space-m) var(--lumo-space-m) var(--lumo-space-m) 0;
 	width: 100%;
-	/* To compensate for the points control top margin */
-	margin-top: var(--lumo-space-xs)
 }
 
 .tt-results-requirement-description {
@@ -667,10 +659,50 @@ vaadin-app-layout::part(navbar) {
 	width: 100%;
 }
 
+.tt-results-points-cell {
+	align-items: center;
+	background: var(--lumo-primary-color-10pct);
+	border-radius: var(--lumo-border-radius-s);
+	box-sizing: border-box;
+	color: var(--lumo-primary-text-color);
+	display: grid;
+	flex: 0 0 auto;
+	font-size: var(--lumo-font-size-s);
+	font-weight: 600;
+	grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+	height: var(--lumo-size-s);
+	margin-left: auto;
+	margin-right: var(--lumo-space-s);
+	width: var(--tt-points-column-width, 10rem);
+}
+
+.tt-results-points-cell-leading,
+.tt-results-points-cell-trailing {
+	align-items: center;
+	display: flex;
+	min-width: 0;
+}
+
+.tt-results-points-cell-leading {
+	justify-content: flex-start;
+	padding-left: var(--lumo-space-xs);
+}
+
+.tt-results-points-cell-trailing {
+	justify-content: flex-end;
+	padding-right: var(--lumo-space-xs);
+}
+
+.tt-results-points-cell-value {
+	font-variant-numeric: tabular-nums;
+	justify-self: center;
+	text-align: center;
+	white-space: nowrap;
+}
+
 .tt-results-requirement-total {
 	cursor: default;
 	margin: 0;
-	width: 100%;
 }
 
 .tt-results-requirement-total[role="button"] {
@@ -678,18 +710,18 @@ vaadin-app-layout::part(navbar) {
 }
 
 .tt-results-point-stepper {
-	justify-content: space-between;
-	width: 100%;
+	margin: 0;
 }
 
-.tt-results-point-stepper-value {
-	flex: 1 1 auto;
-	font-variant-numeric: tabular-nums;
-	text-align: center;
+.tt-results-point-stepper vaadin-button {
+	font-size: var(--lumo-font-size-s);
+	height: var(--lumo-size-xs);
+	min-width: var(--lumo-size-xs);
+	padding: 0;
+	width: var(--lumo-size-xs);
 }
 
 .tt-results-adjustment {
-	font-size: var(--lumo-font-size-xs);
 	margin-top: auto;
 	padding-top: var(--lumo-space-s);
 }
@@ -704,7 +736,8 @@ vaadin-app-layout::part(navbar) {
 	min-width: 0;
 }
 
-.tt-results-points-text {
+.tt-results-points-text,
+.tt-results-adjustment-label {
 	align-self: flex-start;
 	color: var(--lumo-secondary-text-color);
 	font-size: var(--lumo-font-size-xs);
@@ -716,12 +749,11 @@ vaadin-app-layout::part(navbar) {
 }
 
 .tt-results-criterion-checkbox-row {
-	column-gap: var(--lumo-space-xs);
-	min-height: var(--lumo-size-s);
+	margin: 0;
 }
 
 .tt-results-criterion-highlighted {
-	background: var(--lumo-primary-color-10pct);
+	box-shadow: inset 0 0 0 2px var(--lumo-primary-color-50pct);
 }
 
 .tt-results-criterion-badge {

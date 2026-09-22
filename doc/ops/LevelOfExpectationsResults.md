@@ -51,10 +51,8 @@ text.
 
 - The criterion pill displays awarded points rather than the internal
   criterion key.
-- It uses the same visual styling as the EH pill. An invisible slot reserves
-  enough width for any value up to that criterion's configured maximum,
-  including half points; changing the award must not shift the surrounding
-  text.
+- It uses the same visual styling as the EH pill and stays adjacent to its
+  checkbox. Its width follows its current value.
 - Its accessible description includes the criterion identity, awarded value,
   and available value.
 - Clicking the pill opens a Vaadin popover below it.
@@ -75,6 +73,12 @@ same criterion results.
   rounded values.
 - Every criterion row contains its three-state checkbox followed by an
   always-visible compact minus/plus control.
+- Aggregate badges, requirement totals, criterion controls, and adjustment
+  controls share one points-cell footprint and center their numeric value on
+  the same vertical axis. Aggregate chips show `∑` or `∑∑` at the left while
+  retaining their full labels for accessibility.
+- The `Zusatzpunkte` label uses the same secondary text styling as the
+  `n von m Punkten` label. Partial inline checkboxes show a dash.
 - Changes made in either the text or quick-marking column update the other
   representation immediately.
 

@@ -112,6 +112,20 @@
 	transform: rotate(45deg) scale(1);
 }
 
+.wmde-markdown .tt-criterion-checkbox:indeterminate {
+	background: var(--lumo-primary-color);
+	border-color: var(--lumo-primary-color);
+}
+
+.wmde-markdown .tt-criterion-checkbox:indeterminate::before {
+	border: 0;
+	background: var(--lumo-primary-contrast-color, #fff);
+	height: 0.12em;
+	margin: 0;
+	transform: none;
+	width: 0.5em;
+}
+
 .wmde-markdown .tt-criterion-checkbox:focus-visible {
 	outline: 2px solid var(--lumo-primary-color-50pct, var(--lumo-primary-color));
 	outline-offset: 2px;

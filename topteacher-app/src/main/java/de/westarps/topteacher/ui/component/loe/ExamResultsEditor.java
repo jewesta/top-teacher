@@ -74,17 +74,17 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private final FullscreenButton fullscreenButton;
 	private final VerticalLayout results;
 	private final DesignerViewport viewport = new DesignerViewport(content());
-	private final List<LoePointBadge> pointBadges = new ArrayList<>();
+	private final List<ResultsAggregatePointCell> pointBadges = new ArrayList<>();
 	private final Map<Integer, LoePointStepper> directPointControls = new HashMap<>();
 	private final Map<Integer, LoePointStepper> adjustmentControls = new HashMap<>();
 	private final Map<Integer, LoePointStepper> criterionPointControls = new HashMap<>();
-	private final Map<Integer, Span> requirementResultBadges = new HashMap<>();
+	private final Map<Integer, ResultsRequirementPointCell> requirementResultBadges = new HashMap<>();
 	private final Map<Integer, Span> requirementPointTexts = new HashMap<>();
 	private final Map<Integer, TextArea> requirementCommentFields = new HashMap<>();
 	private final Map<Integer, CriterionMarkdownViewer> requirementDescriptions = new HashMap<>();
 	private final Map<Integer, Span> requirementCriterionIndicators = new HashMap<>();
 	private final Map<Integer, Checkbox> criterionCheckboxes = new HashMap<>();
-	private final Map<Integer, HorizontalLayout> criterionRows = new HashMap<>();
+	private final Map<Integer, LoeCriterionPointStepper> criterionRows = new HashMap<>();
 	private final Set<Integer> highlightedQuickCriteria = new HashSet<>();
 	private final Set<Integer> highlightedInlineCriteria = new HashSet<>();
 	private final Map<Integer, Integer> editedCriterionResults = new HashMap<>();
@@ -102,7 +102,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private List<LoeTask> tasks = List.of();
 	private List<LoeRequirement> requirements = List.of();
 	private List<LoeCriterion> criteria = List.of();
-	private LoePointBadge examPointsBadge;
+	private ResultsAggregatePointCell examPointsBadge;
 	private final Span breadcrumb = new Span();
 	private MenuItem pdfMenuItem;
 	private MenuItem pupilPdfItem;
@@ -258,7 +258,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 	}
 
 	private void configureToolbar() {
-		examPointsBadge = new LoePointBadge("Gesamt", this::pointsForExam);
+		examPointsBadge = new ResultsAggregatePointCell("Gesamt", "∑∑", this::pointsForExam);
 		breadcrumb.addClassName("tt-designer-breadcrumb");
 		toolbar().add(pupilSelector, saveButton, discardButton, deleteButton, pdfMenu, fullscreenButton,
 				discardConfirmation, deleteConfirmation, reloadButton);
@@ -610,7 +610,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 		}
 		final boolean highlighted = highlightedQuickCriteria.contains(criterion.id())
 				|| highlightedInlineCriteria.contains(criterion.id());
-		final HorizontalLayout row = criterionRows.get(criterion.id());
+		final LoeCriterionPointStepper row = criterionRows.get(criterion.id());
 		if (row != null) {
 			row.getElement().getClassList().set("tt-results-criterion-highlighted", highlighted);
 		}
@@ -675,8 +675,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 	}
 
 	private Component pointsControl(final LoeRequirement requirement, final List<LoeCriterion> requirementCriteria) {
-		final Span resultBadge = new Span();
-		resultBadge.addClassNames("tt-eh-points", "tt-results-requirement-total");
+		final ResultsRequirementPointCell resultBadge = new ResultsRequirementPointCell();
 		requirementResultBadges.put(requirement.id(), resultBadge);
 
 		final Span pointsText = new Span();
@@ -709,7 +708,9 @@ public class ExamResultsEditor extends AbstractDesigner {
 			final LoePointStepper adjustment = new LoePointStepper("Zusatzpunkte");
 			adjustment.setChangeHandler(units -> setAdjustmentPointUnits(requirement, units));
 			adjustmentControls.put(requirement.id(), adjustment);
-			final VerticalLayout adjustmentArea = new VerticalLayout(new Span("Zusatzpunkte"), adjustment);
+			final Span adjustmentLabel = new Span("Zusatzpunkte");
+			adjustmentLabel.addClassName("tt-results-adjustment-label");
+			final VerticalLayout adjustmentArea = new VerticalLayout(adjustmentLabel, adjustment);
 			adjustmentArea.addClassName("tt-results-adjustment");
 			adjustmentArea.setPadding(false);
 			adjustmentArea.setSpacing(false);
@@ -742,16 +743,12 @@ public class ExamResultsEditor extends AbstractDesigner {
 		});
 		criterionCheckboxes.put(criterion.id(), checkbox);
 
-		final LoePointStepper points = new LoePointStepper(criterion.label() + " Punkte");
+		final LoeCriterionPointStepper points = new LoeCriterionPointStepper(criterion.label() + " Punkte",
+				checkbox);
 		points.setChangeHandler(units -> setCriterionPointUnits(requirement, criterion, units));
 		criterionPointControls.put(criterion.id(), points);
 
-		final HorizontalLayout row = new HorizontalLayout(checkbox, points);
-		row.addClassName("tt-results-criterion-checkbox-row");
-		row.setAlignItems(Alignment.CENTER);
-		row.setPadding(false);
-		row.setSpacing(false);
-		row.setWidthFull();
+		final LoeCriterionPointStepper row = points;
 		row.getElement().setAttribute("aria-label", criterion.label() + ": "
 				+ LoePointUnits.formatGerman(criterion.pointUnits())
 				+ (criterion.pointUnits() == LoePointUnits.UNITS_PER_POINT ? " Punkt" : " Punkte") + " möglich");
@@ -799,17 +796,17 @@ public class ExamResultsEditor extends AbstractDesigner {
 		return header;
 	}
 
-	private LoePointBadge pointBadge(final String label, final Supplier<LoePoints> pointsSupplier) {
-		final LoePointBadge badge = new LoePointBadge(label, pointsSupplier);
+	private ResultsAggregatePointCell pointBadge(final String label, final Supplier<LoePoints> pointsSupplier) {
+		final ResultsAggregatePointCell badge = new ResultsAggregatePointCell(label, "∑", pointsSupplier);
 		pointBadges.add(badge);
 		return badge;
 	}
 
 	private void refreshPointBadges() {
 		if (examPointsBadge != null) {
-			examPointsBadge.refreshBadges();
+			examPointsBadge.refresh();
 		}
-		pointBadges.forEach(LoePointBadge::refreshBadges);
+		pointBadges.forEach(ResultsAggregatePointCell::refresh);
 	}
 
 	private void refreshRequirementPointTexts() {
@@ -821,9 +818,9 @@ public class ExamResultsEditor extends AbstractDesigner {
 		if (pointsText != null) {
 			pointsText.setText(currentRequirementPoints(requirement) + " von " + requirement.maxPoints() + " Punkten");
 		}
-		final Span badge = requirementResultBadges.get(requirement.id());
+		final ResultsRequirementPointCell badge = requirementResultBadges.get(requirement.id());
 		if (badge != null) {
-			badge.setText(String.valueOf(currentRequirementPoints(requirement)));
+			badge.setPoints(currentRequirementPoints(requirement));
 			final int rawUnits = currentRequirementRawUnits(requirement);
 			badge.getElement().setAttribute("title", rawUnits % LoePointUnits.UNITS_PER_POINT == 0
 					? "Erreichte Punkte: " + currentRequirementPoints(requirement)

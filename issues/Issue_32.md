@@ -84,8 +84,12 @@ This issue note records the implementation sequence and current status only.
 - Round each raw requirement result before higher-level aggregation.
 - Synchronize inline tri-state checkboxes, awarded-value pills with point
   popovers, and compact quick-marking steppers without changing the tuned
-  aggregation-chip alignment. Results pills share EH styling and reserve
-  width for half-point values without shifting the surrounding text.
+  aggregation-chip alignment. Results pills share EH styling and stay adjacent
+  to their checkboxes.
+- Give Results aggregates, requirement totals, criterion controls, and
+  adjustment steppers a shared points-cell structure, with centered values,
+  consistent dimensions, symbolic aggregate captions, and visible partial
+  inline checkboxes.
 - Add requirement-local adjustment budgeting, direct marking for requirements
   without criteria, and bidirectional hover/focus highlighting.
 - Preserve dirty-state save/discard behavior and expose raw values through MCP.

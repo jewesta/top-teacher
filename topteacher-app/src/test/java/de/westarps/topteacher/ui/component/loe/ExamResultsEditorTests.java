@@ -95,6 +95,27 @@ class ExamResultsEditorTests {
 	}
 
 	@Test
+	void resultsPointCellsShareTheSameStructureAndKeepTheirValuesInTheMiddle() {
+		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository(), examRepository(),
+				levelOfExpectationsRepository(), gradingScaleRepository());
+		editor.setExam(EXAM);
+
+		final List<ResultsPointsCell> cells = components(editor, ResultsPointsCell.class);
+		assertThat(cells).isNotEmpty().allSatisfy(cell -> {
+			assertThat(cell.getClassNames()).contains("tt-results-points-cell");
+			assertThat(cell.getChildren().map(child -> child.getClassNames().iterator().next()))
+					.containsExactly("tt-results-points-cell-leading", "tt-results-points-cell-value",
+							"tt-results-points-cell-trailing");
+		});
+		assertThat(components(editor, ResultsAggregatePointCell.class)).hasSize(4)
+				.extracting(cell -> ((Span) cell.getChildren().findFirst().orElseThrow().getChildren()
+						.findFirst().orElseThrow()).getText())
+				.containsExactly("∑∑", "∑", "∑", "∑");
+		assertThat(criterionCheckboxes(editor)).allSatisfy(checkbox -> assertThat(checkbox.getParent()
+				.orElseThrow().getParent().orElseThrow()).isInstanceOf(LoeCriterionPointStepper.class));
+	}
+
+	@Test
 	void savesAdjustmentOnlyWhenToolbarSaveIsClicked() {
 		final LevelOfExpectationsRepository levelOfExpectationsRepository = levelOfExpectationsRepository();
 		final CourseRepository courseRepository = courseRepository();
@@ -618,7 +639,8 @@ class ExamResultsEditorTests {
 	}
 
 	private static List<String> badgeTexts(final Component root) {
-		return components(root, LoeBadge.class).stream().map(LoeBadge::getText).toList();
+		return components(root, ResultsAggregatePointCell.class).stream()
+				.map(ResultsAggregatePointCell::getBadgeText).toList();
 	}
 
 	private static List<Icon> bonusIcons(final Component root) {
