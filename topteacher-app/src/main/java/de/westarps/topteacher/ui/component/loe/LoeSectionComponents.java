@@ -22,12 +22,22 @@ import de.westarps.topteacher.model.loe.LoeCriterionParser;
 import de.westarps.topteacher.ui.component.Buttons;
 import de.westarps.vaadin.markdown.MarkdownEditor;
 import de.westarps.vaadin.markdown.MarkdownTag;
+import de.westarps.vaadin.markdown.MarkdownTagValueOption;
+import de.westarps.vaadin.markdown.MarkdownTagValueSelector;
 
 final class LoeSectionComponents {
 
 	static final MarkdownTag CRITERION_TAG = MarkdownTag.nextNumber(LoeCriterionParser.TAG_NAMESPACE,
-			"Kriterium markieren");
-	static final String CORRECTION_MODE_TOOLTIP = "Korrekturmodus: Ergebnisse vorhanden. Struktur, Punkte und Kriteriennummern sind gesperrt.";
+			"Kriterium mit Punkten markieren",
+			new MarkdownTagValueSelector(
+					List.of(new MarkdownTagValueOption("0,5", "0,5"), new MarkdownTagValueOption("1", "1"),
+							new MarkdownTagValueOption("1,5", "1,5"), new MarkdownTagValueOption("2", "2"),
+							new MarkdownTagValueOption("2,5", "2,5"), new MarkdownTagValueOption("3", "3"),
+							new MarkdownTagValueOption("3,5", "3,5"), new MarkdownTagValueOption("4", "4")),
+					"1", "/", "P", "4+", "Andere Punktzahl eingeben", "?",
+					"(?:0[.,]5|(?:[1-9]\\d{0,1}|[1-8]\\d{2}|9(?:[0-8]\\d|9[0-8]))(?:[.,][05])?|999(?:[.,]0)?)",
+					"Kriterium entfernen"));
+	static final String CORRECTION_MODE_TOOLTIP = "Korrekturmodus: Ergebnisse vorhanden. Struktur, Punkte und Kriterien sind gesperrt.";
 
 	private final LoeSaveController saveController;
 	private Runnable valueChangeHandler = () -> {

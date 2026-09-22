@@ -81,7 +81,7 @@ public class LevelOfExpectationsMcpTools {
 
 	@Transactional
 	@McpTool(name = "create_level_of_expectations", title = "Create a level of expectations",
-			description = "Create a complete nested level of expectations and optional notes for a blank exam. Existing designs or notes are never overwritten. List order becomes display order. Use [label](eh:key) Markdown links to define criteria.",
+			description = "Create a complete nested level of expectations and optional notes for a blank exam. Existing designs or notes are never overwritten. List order becomes display order. Use [label](eh:key[/points]) Markdown links to define criteria; an omitted value means one point, and comma or dot half-point values are accepted.",
 			generateOutputSchema = true, annotations = @McpTool.McpAnnotations(readOnlyHint = false,
 					destructiveHint = false, idempotentHint = false, openWorldHint = false))
 	public LevelOfExpectationsView createLevelOfExpectations(@McpToolParam(
@@ -270,7 +270,8 @@ public class LevelOfExpectationsMcpTools {
 	}
 
 	private static CriterionView criterionView(final LoeCriterion criterion) {
-		return new CriterionView(criterion.id(), criterion.criterionKey(), criterion.label(), criterion.sortOrder());
+		return new CriterionView(criterion.id(), criterion.criterionKey(), criterion.label(), criterion.pointUnits(),
+				criterion.sortOrder());
 	}
 
 	private static NoteSectionView noteView(final ExamNoteSection note) {
@@ -338,7 +339,7 @@ public class LevelOfExpectationsMcpTools {
 		}
 	}
 
-	public record CriterionView(int id, String key, String label, int sortOrder) {
+	public record CriterionView(int id, String key, String label, int pointUnits, int sortOrder) {
 	}
 
 	public record NoteSectionView(int id, String title, String descriptionMarkdown, int sortOrder) {

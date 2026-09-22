@@ -1,4 +1,4 @@
-.ws-status-tray {
+.ws-tray.ws-status-tray {
    --ws-status-tray-info-background: var(--lumo-primary-color-10pct);
    --ws-status-tray-info-color: var(--lumo-primary-color);
    --ws-status-tray-warning-background: var(--lumo-warning-color-10pct, hsla(43, 100%, 50%, 0.1));

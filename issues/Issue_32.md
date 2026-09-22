@@ -50,21 +50,38 @@ This issue note records the implementation sequence and current status only.
 - Added common designer tray plumbing and the validation-aware `StatusTray`.
 - Implemented whole-point EH validation against the grading-scale and
   requirement totals.
-- Added derived pen, tick, and lock tab states; live pending aggregates; concise
-  targeted tray messages; and the agreed tray interactions.
+- Added derived hourglass, tick, and lock tab states; live pending aggregates; concise
+  targeted tray messages; and the agreed tray interactions. Status links now
+  perform their in-page jump without navigating away from the selected exam.
 - Aligned EH and Results aggregate badges and applied the shared pointer-cursor
   behavior to interactive controls.
 
+## Completed EH half-point phase
+
+- Added integer half-point units to the criterion model and persistence schema.
+- Extended criterion tags to `eh:<key>[/<points>]`, including comma and dot
+  parsing, default one-point values, malformed-tag reporting, and stable keys.
+- Added the reusable Markdown tag value-selector extension and configured the
+  EH `P` control with the agreed 0,5-through-4 presets, `4+` placeholder, and
+  a maximum valid custom value of 999 points.
+- Changed criterion pills from internal keys to point values.
+- Made criterion-free requirements valid while retaining exact allocation when
+  at least one criterion exists.
+- Enforced save blocking for excess or malformed criterion allocations while
+  keeping under-allocation saveable.
+- Added a live inline warning or error beside each affected requirement maximum
+  from the same criterion validation result shown in the status tray.
+- Persisted criterion values, included them in correction-mode locking and MCP
+  views, and retained teacher-export criterion identity matching.
+
 ## Remaining implementation
 
-- Introduce the half-point model, persistence, parser, and `eh:` syntax.
-- Update EH criterion presentation and optional-criteria validation.
 - Implement Results criterion awards, adjustment budgeting, holistic marking,
   synchronized controls, and bidirectional criterion highlighting.
-- Update PDF and spreadsheet exports, grading and evaluation paths, MCP
-  schemas, base/demo data, and automated tests.
+- Update PDF and spreadsheet exports and the remaining grading and evaluation
+  paths for the Results-side half-point behavior.
 
 ## Status
 
-The reusable preparation and whole-point EH validation refactor are complete.
-The half-point domain and user-interface behavior have not been implemented.
+The reusable preparation, EH validation refactor, and EH half-point phase are
+complete. Results-side marking behavior and the final export work remain.

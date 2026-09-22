@@ -23,11 +23,12 @@ import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeRequirementResult;
 import de.westarps.topteacher.model.loe.LoeTask;
+import de.westarps.topteacher.model.loe.LoeValidator;
 
 @Repository
 public class LevelOfExpectationsRepository {
 
-	private static final String CORRECTION_MODE_MESSAGE = "Der Erwartungshorizont ist im Korrekturmodus. Struktur, Punkte und Kriteriennummern können nicht geändert werden.";
+	private static final String CORRECTION_MODE_MESSAGE = "Der Erwartungshorizont ist im Korrekturmodus. Struktur, Punkte und Kriterien können nicht geändert werden.";
 
 	private final NamedParameterJdbcTemplate jdbc;
 	private final RowMapper<LoePart> partRowMapper = this::mapPart;
@@ -87,7 +88,7 @@ public class LevelOfExpectationsRepository {
 
 	public List<LoeCriterion> findActiveCriteriaByExamId(final int examId) {
 		return jdbc.query("""
-			select cr.id, cr.requirement_id, cr.criterion_key, cr.label, cr.sort_order, cr.active
+			select cr.id, cr.requirement_id, cr.criterion_key, cr.label, cr.point_units, cr.sort_order, cr.active
 			from eh_criterion cr
 			join eh_requirement r on r.id = cr.requirement_id
 			join eh_task t on t.id = r.task_id
@@ -249,12 +250,14 @@ public class LevelOfExpectationsRepository {
 
 	public LoeRequirement saveRequirement(final LoeRequirement requirement) {
 		if (requirement.id() == null) {
+			assertCriterionAllocationSaveable(requirement);
 			assertNoResultsForExam(examIdForTask(requirement.taskId()));
 			final LoeRequirement insertedRequirement = insertRequirement(requirement);
 			syncCriteria(insertedRequirement);
 			return insertedRequirement;
 		}
 		validateRequirementCorrectionMode(requirement);
+		assertCriterionAllocationSaveable(requirement);
 		jdbc.update("""
 			update eh_requirement
 			set description_markdown = :descriptionMarkdown,
@@ -269,6 +272,13 @@ public class LevelOfExpectationsRepository {
 						.addValue("sortOrder", requirement.sortOrder()));
 		syncCriteria(requirement);
 		return requirement;
+	}
+
+	private static void assertCriterionAllocationSaveable(final LoeRequirement requirement) {
+		final var validation = LoeValidator.validateRequirements(List.of(requirement));
+		validation.getTestResults().stream().filter(result -> result.hasFailed()).findFirst().ifPresent(result -> {
+			throw new IllegalArgumentException(result.message());
+		});
 	}
 
 	public void syncCriteriaForExam(final int examId) {
@@ -483,14 +493,14 @@ public class LevelOfExpectationsRepository {
 		}
 		if (!existing.taskId().equals(requirement.taskId()) || existing.maxPoints() != requirement.maxPoints()
 				|| existing.bonus() != requirement.bonus() || existing.sortOrder() != requirement.sortOrder()
-				|| !criterionKeys(existing).equals(criterionKeys(requirement))) {
+				|| !criterionDefinitions(existing).equals(criterionDefinitions(requirement))) {
 			throw new IllegalStateException(CORRECTION_MODE_MESSAGE);
 		}
 	}
 
-	private List<String> criterionKeys(final LoeRequirement requirement) {
+	private List<String> criterionDefinitions(final LoeRequirement requirement) {
 		return LoeCriterionParser.parse(requirement.id(), requirement.descriptionMarkdown()).stream()
-				.map(LoeCriterion::criterionKey).toList();
+				.map(criterion -> criterion.criterionKey() + ":" + criterion.pointUnits()).toList();
 	}
 
 	private void assertNoResultsForExam(final int examId) {
@@ -656,19 +666,21 @@ public class LevelOfExpectationsRepository {
 	private LoeCriterion insertCriterion(final LoeCriterion criterion) {
 		final KeyHolder keyHolder = new GeneratedKeyHolder();
 		jdbc.update("""
-			insert into eh_criterion (requirement_id, criterion_key, label, sort_order, active)
-			values (:requirementId, :criterionKey, :label, :sortOrder, :active)
+			insert into eh_criterion (requirement_id, criterion_key, label, point_units, sort_order, active)
+			values (:requirementId, :criterionKey, :label, :pointUnits, :sortOrder, :active)
 			""", criterionParameters(criterion), keyHolder, new String[] {
 				"id"
 		});
 		return new LoeCriterion(generatedId(keyHolder, "EH criterion"), criterion.requirementId(),
-				criterion.criterionKey(), criterion.label(), criterion.sortOrder(), criterion.active());
+				criterion.criterionKey(), criterion.label(), criterion.pointUnits(), criterion.sortOrder(),
+				criterion.active());
 	}
 
 	private void updateCriterion(final int id, final LoeCriterion criterion) {
 		jdbc.update("""
 			update eh_criterion
 			set label = :label,
+			    point_units = :pointUnits,
 			    sort_order = :sortOrder,
 			    active = :active
 			where id = :id
@@ -678,7 +690,8 @@ public class LevelOfExpectationsRepository {
 	private MapSqlParameterSource criterionParameters(final LoeCriterion criterion) {
 		return new MapSqlParameterSource().addValue("requirementId", criterion.requirementId())
 				.addValue("criterionKey", criterion.criterionKey()).addValue("label", criterion.label())
-				.addValue("sortOrder", criterion.sortOrder()).addValue("active", criterion.active());
+				.addValue("pointUnits", criterion.pointUnits()).addValue("sortOrder", criterion.sortOrder())
+				.addValue("active", criterion.active());
 	}
 
 	private ExamNoteSection insertNoteSection(final ExamNoteSection noteSection) {
@@ -857,8 +870,8 @@ public class LevelOfExpectationsRepository {
 
 	private LoeCriterion mapCriterion(final ResultSet resultSet, final int rowNumber) throws SQLException {
 		return new LoeCriterion(resultSet.getInt("id"), resultSet.getInt("requirement_id"),
-				resultSet.getString("criterion_key"), resultSet.getString("label"), resultSet.getInt("sort_order"),
-				resultSet.getBoolean("active"));
+				resultSet.getString("criterion_key"), resultSet.getString("label"), resultSet.getInt("point_units"),
+				resultSet.getInt("sort_order"), resultSet.getBoolean("active"));
 	}
 
 	private LoeCriterionResult mapCriterionResult(final ResultSet resultSet, final int rowNumber) throws SQLException {

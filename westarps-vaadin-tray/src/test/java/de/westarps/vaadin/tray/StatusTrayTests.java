@@ -7,13 +7,15 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.HasText;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.dom.DomEvent;
+import com.vaadin.flow.internal.nodefeature.ElementListenerMap;
+
+import tools.jackson.databind.node.JsonNodeFactory;
 
 import de.westarps.vaadin.badge.AttachedBadge;
 import de.westarps.vaadin.badge.Badge;
@@ -91,8 +93,10 @@ class StatusTrayTests {
 		final Anchor link = (Anchor) entries.get(1).getChildren().findFirst().orElseThrow();
 		assertThat(link.getHref()).isEqualTo("#requirement-2");
 		assertThat(link.isRouterIgnore()).isTrue();
+		final ElementListenerMap listeners = link.getElement().getNode().getFeature(ElementListenerMap.class);
+		assertThat(listeners.getExpressions("click")).contains("event.preventDefault()");
 
-		ComponentUtil.fireEvent(link, new ClickEvent<>(link));
+		listeners.fireEvent(new DomEvent(link.getElement(), "click", JsonNodeFactory.instance.objectNode()));
 
 		assertThat(activatedTargets).containsExactly("requirement-2");
 	}

@@ -1,6 +1,7 @@
 package de.westarps.topteacher.ui.component.loe;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 import com.vaadin.flow.component.Component;
@@ -18,6 +19,7 @@ import com.vaadin.flow.component.textfield.IntegerField;
 import de.westarps.topteacher.model.loe.LoeCriterion;
 import de.westarps.topteacher.model.loe.LoeCriterionParser;
 import de.westarps.topteacher.model.loe.LoeRequirement;
+import de.westarps.validate.TestResult;
 import de.westarps.vaadin.animate.Animations;
 import de.westarps.vaadin.animate.Effect;
 import de.westarps.vaadin.animate.Speed;
@@ -30,6 +32,7 @@ final class LoeRequirementSection extends Composite<VerticalLayout> implements L
 	private final MarkdownEditor descriptionEditor;
 	private final IntegerField maxPoints;
 	private final Button bonusButton;
+	private final Span allocationMessage;
 	private final Component summary;
 	private final Component description;
 	private final Component actions;
@@ -44,22 +47,24 @@ final class LoeRequirementSection extends Composite<VerticalLayout> implements L
 			final boolean correctionMode) {
 		this(requirement, components, handler,
 				components.requirementDescriptionEditor(requirement.descriptionMarkdown(), "Beschreibung"),
-				requirementNumber, maxPoints(requirement), bonusButton(), siblings, correctionMode);
+				requirementNumber, maxPoints(requirement), bonusButton(), allocationMessage(), siblings,
+				correctionMode);
 	}
 
 	private LoeRequirementSection(final LoeRequirement requirement, final LoeSectionComponents components,
 			final Handler handler, final MarkdownEditor descriptionEditor, final String requirementNumber,
-			final IntegerField maxPoints, final Button bonusButton, final List<LoeRequirement> siblings,
-			final boolean correctionMode) {
+			final IntegerField maxPoints, final Button bonusButton, final Span allocationMessage,
+			final List<LoeRequirement> siblings, final boolean correctionMode) {
 		this.requirement = requirement;
 		this.handler = handler;
 		this.descriptionEditor = descriptionEditor;
 		this.maxPoints = maxPoints;
 		this.bonusButton = bonusButton;
+		this.allocationMessage = allocationMessage;
 		this.correctionMode = correctionMode;
 		this.bonus = requirement.bonus();
 		this.summary = components.requirementSummary(requirementNumber, bonusControl(bonusButton),
-				headerControls(maxPoints));
+				headerControls(allocationMessage, maxPoints));
 		this.description = components.markdownBlock(descriptionEditor);
 		this.savedDescriptionMarkdown = normalized(requirement.descriptionMarkdown());
 		this.savedMaxPoints = requirement.maxPoints();
@@ -111,6 +116,21 @@ final class LoeRequirementSection extends Composite<VerticalLayout> implements L
 
 	@Override
 	public void refreshBadges() {
+		// The requirement has no point badge; its message is refreshed from validation results.
+	}
+
+	void setCriterionValidation(final List<TestResult> results) {
+		if (results.isEmpty()) {
+			allocationMessage.setText("");
+			allocationMessage.setVisible(false);
+			allocationMessage.getElement().removeAttribute("data-severity");
+			return;
+		}
+		final TestResult result = results.getFirst();
+		allocationMessage.getElement().setAttribute("data-severity",
+				result.severity().name().toLowerCase(Locale.ROOT));
+		allocationMessage.setText(result.message());
+		allocationMessage.setVisible(true);
 	}
 
 	@Override
@@ -132,7 +152,7 @@ final class LoeRequirementSection extends Composite<VerticalLayout> implements L
 		final int maxPointsValue = maxPoints.getValue();
 		final boolean bonusValue = bonus;
 		if (correctionMode && (savedMaxPoints != maxPointsValue || savedBonus != bonusValue
-				|| !criterionKeys(savedDescriptionMarkdown).equals(criterionKeys(descriptionMarkdown)))) {
+				|| !criterionDefinitions(savedDescriptionMarkdown).equals(criterionDefinitions(descriptionMarkdown)))) {
 			Notification.show(LoeSectionComponents.CORRECTION_MODE_TOOLTIP);
 			return false;
 		}
@@ -176,8 +196,8 @@ final class LoeRequirementSection extends Composite<VerticalLayout> implements L
 		bonusButton.getElement().setAttribute("aria-pressed", String.valueOf(bonus));
 	}
 
-	private static HorizontalLayout headerControls(final IntegerField maxPoints) {
-		final HorizontalLayout controls = new HorizontalLayout(maxPointsControl(maxPoints));
+	private static HorizontalLayout headerControls(final Span allocationMessage, final IntegerField maxPoints) {
+		final HorizontalLayout controls = new HorizontalLayout(maxPointsControl(allocationMessage, maxPoints));
 		controls.addClassName("tt-eh-requirement-header-controls");
 		controls.setPadding(false);
 		controls.setSpacing(false);
@@ -192,15 +212,22 @@ final class LoeRequirementSection extends Composite<VerticalLayout> implements L
 		return control;
 	}
 
-	private static HorizontalLayout maxPointsControl(final IntegerField maxPoints) {
+	private static HorizontalLayout maxPointsControl(final Span allocationMessage, final IntegerField maxPoints) {
 		final Span label = new Span("Max. Punkte");
 		label.addClassName("tt-field-label");
 
-		final HorizontalLayout control = new HorizontalLayout(label, maxPoints);
+		final HorizontalLayout control = new HorizontalLayout(allocationMessage, label, maxPoints);
 		control.addClassName("tt-eh-requirement-points-control");
 		control.setPadding(false);
 		control.setSpacing(false);
 		return control;
+	}
+
+	private static Span allocationMessage() {
+		final Span message = new Span();
+		message.addClassName("tt-eh-requirement-allocation-message");
+		message.setVisible(false);
+		return message;
 	}
 
 	private static void stopSummaryToggle(final Component component) {
@@ -218,9 +245,9 @@ final class LoeRequirementSection extends Composite<VerticalLayout> implements L
 		return value == null ? "" : value;
 	}
 
-	private List<String> criterionKeys(final String descriptionMarkdown) {
-		return LoeCriterionParser.parse(requirement.id(), descriptionMarkdown).stream().map(LoeCriterion::criterionKey)
-				.toList();
+	private List<String> criterionDefinitions(final String descriptionMarkdown) {
+		return LoeCriterionParser.parse(requirement.id(), descriptionMarkdown).stream()
+				.map(criterion -> criterion.criterionKey() + ":" + criterion.pointUnits()).toList();
 	}
 
 	interface Handler extends LoeSectionHandler<LoeRequirement> {

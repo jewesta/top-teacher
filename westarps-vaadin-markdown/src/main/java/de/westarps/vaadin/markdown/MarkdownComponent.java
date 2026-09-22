@@ -61,6 +61,20 @@ abstract class MarkdownComponent extends ReactAdapterComponent implements HasSiz
 		setState("tagNamespace", tag == null ? "" : tag.namespace());
 		setState("tagToolbarLabel", tag == null ? "" : tag.toolbarLabel());
 		setState("tagIdGenerator", tag == null ? "" : tag.idGenerator().name());
+		final MarkdownTagValueSelector valueSelector = tag == null ? null : tag.valueSelector();
+		setState("tagValueOptionValues", valueSelector == null ? java.util.List.of()
+				: valueSelector.options().stream().map(MarkdownTagValueOption::value).toList());
+		setState("tagValueOptionLabels", valueSelector == null ? java.util.List.of()
+				: valueSelector.options().stream().map(MarkdownTagValueOption::label).toList());
+		setState("tagValueDefault", valueSelector == null ? "" : valueSelector.defaultValue());
+		setState("tagValueSeparator", valueSelector == null ? "" : valueSelector.separator());
+		setState("tagValueToolbarIconText", valueSelector == null ? "" : valueSelector.toolbarIconText());
+		setState("tagValueCustomOptionLabel", valueSelector == null ? "" : valueSelector.customOptionLabel());
+		setState("tagValueCustomOptionAriaLabel",
+				valueSelector == null ? "" : valueSelector.customOptionAriaLabel());
+		setState("tagValueCustomPlaceholder", valueSelector == null ? "" : valueSelector.customPlaceholder());
+		setState("tagValueCustomPattern", valueSelector == null ? "" : valueSelector.customValuePattern());
+		setState("tagValueRemoveLabel", valueSelector == null ? "" : valueSelector.removeLabel());
 	}
 
 	@Override

@@ -109,7 +109,7 @@ class ExamsViewDeepLinkTests {
 
 		assertThat(selectedExams()).containsExactly(EXAM);
 		assertThat(tabSheet().getSelectedTab().getLabel()).isEqualTo("EH");
-		assertThat(levelOfExpectationsStatusIcon()).isEqualTo("vaadin:pencil");
+		assertThat(levelOfExpectationsStatusIcon()).isEqualTo("vaadin:hourglass");
 	}
 
 	@Test
@@ -124,6 +124,8 @@ class ExamsViewDeepLinkTests {
 				event(Map.of("examId", EXAM.id().toString(), "section", ExamsView.LEVEL_OF_EXPECTATIONS_SECTION)));
 
 		assertThat(levelOfExpectationsStatusIcon()).isEqualTo("vaadin:check");
+		assertThat(tabSheet().getSelectedTab().getElement().getAttribute("aria-label"))
+				.isEqualTo("EH, Vollständig.");
 	}
 
 	@Test
@@ -135,6 +137,8 @@ class ExamsViewDeepLinkTests {
 				event(Map.of("examId", EXAM.id().toString(), "section", ExamsView.LEVEL_OF_EXPECTATIONS_SECTION)));
 
 		assertThat(levelOfExpectationsStatusIcon()).isEqualTo("vaadin:lock");
+		assertThat(tabSheet().getSelectedTab().getElement().getAttribute("aria-label"))
+				.isEqualTo("EH, Eingeschränkt bearbeitbar (Korrekturmodus).");
 	}
 
 	@Test

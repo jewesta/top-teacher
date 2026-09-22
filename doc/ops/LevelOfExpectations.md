@@ -91,7 +91,7 @@ Criteria are declared with markdown links in the `eh:` namespace:
 ```markdown
 [correct tense](eh:1)
 [complete explanation](eh:2/2)
-[supporting detail](eh:3/0.5)
+[supporting detail](eh:3/0,5)
 ```
 
 The canonical syntax is:
@@ -104,8 +104,11 @@ eh:<key>[/<points>]
 - Omitting the point value defaults it to one, so `eh:1` and `eh:1/1` are
   equivalent.
 - A criterion value must be positive and use half-point increments.
-- The canonical decimal separator in the tag is a dot. The UI displays values
-  using the user's locale.
+- Criterion values have no artificial upper limit. Values through four points
+  are convenient presets; larger values remain available as an explicit custom
+  entry.
+- Both comma and dot are accepted as decimal separators. The editor generates
+  commas and the UI always displays values with the German comma form.
 - Malformed definitions and duplicate keys are validation issues; they must not
   silently turn a requirement into a valid criterion-free requirement.
 
@@ -114,6 +117,57 @@ key. Accessible text retains the criterion identity as well as its value.
 
 All criterion values are represented internally as integer half-point units.
 Floating-point arithmetic must not be used for point calculations.
+
+### Markdown editor interaction
+
+The Markdown toolbar provides a criterion command rather than requiring the
+user to construct an `eh:` URL manually. Its icon is a compact pill containing
+`P`, representing points without implying either a fixed value or a visible
+criterion number. The button is labelled `Kriterium mit Punkten markieren`.
+
+The command opens a compact value selector whose visual arrangement separates
+whole- and half-point values:
+
+```text
+      | 0,5
+  1   | 1,5
+  2   | 2,5
+  3   | 3,5
+  4   | 4+
+```
+
+The eight numeric entries are ordinary choices. Selecting one wraps the
+selected criterion text with the next stable key and the chosen value. If no
+text is selected, the command uses the word under the cursor. The one-point
+choice omits the redundant value, so it generates `eh:<key>` rather than
+`eh:<key>/1`. Decimal presets use a comma.
+
+`4+` is labelled accessibly as `Andere Punktzahl eingeben`. It is an escape
+hatch rather than a point value:
+
+- it inserts `eh:<key>/?`;
+- it immediately selects only the `?` and returns focus to the editor so the
+  user can replace it by typing;
+- the parser accepts a comma or dot in the entered value;
+- any positive half-point value up to and including 999 is valid.
+
+If the placeholder remains, the tag is still recognized as a criterion and
+its key remains reserved. The preview renders any invalid point value as `?`
+using the ordinary point-pill design, and the targeted validation message asks
+the user to assign a valid point value. This malformed value is an error and
+prevents saving; it must not be mistaken for a criterion-free requirement.
+
+Opening the selector while the cursor or selection is inside an existing
+criterion shows its current preset. A valid custom value above four, or an
+invalid placeholder, selects `4+`. Choosing another numeric entry changes only
+the point value and preserves the criterion text and stable key. Removing the
+criterion is a separate, explicit action in the selector rather than an
+implicit toggle of the toolbar button.
+
+The selector must be implemented as an optional extension of the reusable
+Markdown tag command, using the editor library's command child-panel mechanism.
+It must neither hard-wire EH point semantics into the Markdown component nor
+require a fork of the underlying editor.
 
 ## Derived design state
 
@@ -127,7 +181,7 @@ state is derived from its contents and existing results:
 - **Complete and locked:** pupil results exist, so structure, point maxima,
   bonus status, and criterion identities may no longer change.
 
-The EH tab represents these states with a pen, tick, and lock respectively.
+The EH tab represents these states with an hourglass, tick, and lock respectively.
 
 ## Validation presentation
 
@@ -142,6 +196,12 @@ designer.
   one expands, scrolls to, and briefly emphasizes the affected requirement.
 - Missing allocations are warnings. Excess allocations and malformed values are
   errors.
+- A requirement with criterion validation findings shows the first finding
+  inline immediately before its `Max. Punkte` control. This uses the same
+  validator result as the status tray, without repeating the requirement label.
+  Warnings use yellow and errors use red. The message updates while either the
+  criterion definitions or the requirement maximum changes. Criterion-free
+  requirements do not show this message.
 - An empty tray remains compact when activated.
 
 ## Bonus points

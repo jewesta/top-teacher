@@ -2,7 +2,8 @@ package de.westarps.vaadin.markdown;
 
 import java.util.regex.Pattern;
 
-public record MarkdownTag(String namespace, String toolbarLabel, MarkdownTagIdGenerator idGenerator) {
+public record MarkdownTag(String namespace, String toolbarLabel, MarkdownTagIdGenerator idGenerator,
+		MarkdownTagValueSelector valueSelector) {
 
 	private static final Pattern NAMESPACE_PATTERN = Pattern.compile("[A-Za-z][A-Za-z0-9+.-]*");
 	private static final String DEFAULT_TOOLBAR_LABEL = "Tag markieren";
@@ -16,7 +17,16 @@ public record MarkdownTag(String namespace, String toolbarLabel, MarkdownTagIdGe
 		idGenerator = idGenerator == null ? MarkdownTagIdGenerator.NEXT_NUMBER : idGenerator;
 	}
 
+	public MarkdownTag(final String namespace, final String toolbarLabel, final MarkdownTagIdGenerator idGenerator) {
+		this(namespace, toolbarLabel, idGenerator, null);
+	}
+
 	public static MarkdownTag nextNumber(final String namespace, final String toolbarLabel) {
 		return new MarkdownTag(namespace, toolbarLabel, MarkdownTagIdGenerator.NEXT_NUMBER);
+	}
+
+	public static MarkdownTag nextNumber(final String namespace, final String toolbarLabel,
+			final MarkdownTagValueSelector valueSelector) {
+		return new MarkdownTag(namespace, toolbarLabel, MarkdownTagIdGenerator.NEXT_NUMBER, valueSelector);
 	}
 }

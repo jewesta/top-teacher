@@ -49,16 +49,36 @@ public final class LoeValidator {
 	private static void validateRequirement(final LoeRequirement requirement,
 			final ValidationResults.Builder<LoeValidationTarget> results) {
 		Objects.requireNonNull(requirement, "requirement must not be null");
-		final int criterionPoints = LoeCriterionParser
-				.parse(requirement.id() == null ? 0 : requirement.id(), requirement.descriptionMarkdown()).size();
-		final int difference = requirement.maxPoints() - criterionPoints;
+		final LoeCriterionParseResult parseResult = LoeCriterionParser
+				.analyze(requirement.id() == null ? 0 : requirement.id(), requirement.descriptionMarkdown());
+		if (!parseResult.hasTags()) {
+			return;
+		}
+		if (!parseResult.issues().isEmpty()) {
+			parseResult.issues().forEach(issue -> results.add(ValidationResult.error(
+					LoeValidationTarget.requirementCriteria(requirement.id()), criterionIssueMessage(issue))));
+			return;
+		}
+
+		final int criterionPointUnits = parseResult.criteria().stream().mapToInt(LoeCriterion::pointUnits).sum();
+		final int difference = LoePointUnits.fromWholePoints(requirement.maxPoints()) - criterionPointUnits;
 		if (difference > 0) {
 			results.add(ValidationResult.warning(LoeValidationTarget.requirementCriteria(requirement.id()),
-					assignMoreCriterionPoints(difference)));
+					assignMoreCriterionPointUnits(difference)));
 		} else if (difference < 0) {
 			results.add(ValidationResult.error(LoeValidationTarget.requirementCriteria(requirement.id()),
-					assignFewerCriterionPoints(-difference)));
+					assignFewerCriterionPointUnits(-difference)));
 		}
+	}
+
+	private static String criterionIssueMessage(final LoeCriterionIssue issue) {
+		final String criterion = issue.label().isBlank() ? "Kriterium" : "Kriterium „" + issue.label() + "“";
+		return switch (issue.kind()) {
+			case INVALID_POINTS -> criterion + ": Ordne eine gültige Punktzahl zu.";
+			case DUPLICATE_KEY -> criterion + ": Entferne die doppelte Markierung und markiere es erneut.";
+			case INVALID_KEY -> criterion + ": Entferne die ungültige Markierung und markiere es erneut.";
+			case INVALID_LABEL -> "Kriterium: Markiere einen aussagekräftigen Text.";
+		};
 	}
 
 	private static String assignMorePoints(final int points) {
@@ -69,13 +89,13 @@ public final class LoeValidator {
 		return points == 1 ? "Ordne einen Punkt weniger zu." : "Ordne " + points + " Punkte weniger zu.";
 	}
 
-	private static String assignMoreCriterionPoints(final int points) {
-		return points == 1 ? "Ordne einen weiteren Kriterienpunkt zu."
-				: "Ordne weitere " + points + " Kriterienpunkte zu.";
+	private static String assignMoreCriterionPointUnits(final int pointUnits) {
+		return pointUnits == LoePointUnits.UNITS_PER_POINT ? "Ordne einen weiteren Kriterienpunkt zu."
+				: "Ordne weitere " + LoePointUnits.formatGerman(pointUnits) + " Kriterienpunkte zu.";
 	}
 
-	private static String assignFewerCriterionPoints(final int points) {
-		return points == 1 ? "Ordne einen Kriterienpunkt weniger zu."
-				: "Ordne " + points + " Kriterienpunkte weniger zu.";
+	private static String assignFewerCriterionPointUnits(final int pointUnits) {
+		return pointUnits == LoePointUnits.UNITS_PER_POINT ? "Ordne einen Kriterienpunkt weniger zu."
+				: "Ordne " + LoePointUnits.formatGerman(pointUnits) + " Kriterienpunkte weniger zu.";
 	}
 }

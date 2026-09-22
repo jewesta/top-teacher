@@ -691,11 +691,11 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 
 		final String statusLabel = switch (state) {
 			case INCOMPLETE -> "Unvollständig";
-			case COMPLETE -> "Vollständig und bearbeitbar";
-			case LOCKED -> "Vollständig, Ergebnisse vorhanden";
+			case COMPLETE -> "Vollständig";
+			case LOCKED -> "Eingeschränkt bearbeitbar (Korrekturmodus)";
 		};
 		final VaadinIcon statusIcon = switch (state) {
-			case INCOMPLETE -> VaadinIcon.PENCIL;
+			case INCOMPLETE -> VaadinIcon.HOURGLASS;
 			case COMPLETE -> VaadinIcon.CHECK;
 			case LOCKED -> VaadinIcon.LOCK;
 		};

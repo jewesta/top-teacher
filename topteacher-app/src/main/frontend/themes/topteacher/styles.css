@@ -841,6 +841,7 @@ vaadin-app-layout::part(navbar) {
 
 .tt-eh-requirement {
 	background: var(--lumo-contrast-5pct);
+	border-left: 3px solid var(--lumo-contrast-10pct);
 	border-radius: var(--lumo-border-radius-m);
 	box-sizing: border-box;
 	gap: var(--lumo-space-m);
@@ -861,6 +862,31 @@ vaadin-app-layout::part(navbar) {
 .tt-eh-requirement-points-control {
 	align-items: center;
 	gap: var(--lumo-space-s);
+}
+
+.tt-eh-requirement-allocation-message {
+	align-items: center;
+	background-color: var(--tt-eh-allocation-background);
+	border-inline-start: 0.25rem solid var(--tt-eh-allocation-color);
+	border-radius: var(--lumo-border-radius-m);
+	box-sizing: border-box;
+	color: var(--lumo-body-text-color);
+	display: inline-flex;
+	font-size: var(--lumo-font-size-s);
+	min-height: 2.5rem;
+	overflow-wrap: anywhere;
+	padding: var(--lumo-space-s);
+	white-space: normal;
+}
+
+.tt-eh-requirement-allocation-message[data-severity="warning"] {
+	--tt-eh-allocation-background: var(--lumo-warning-color-10pct, hsla(43, 100%, 50%, 0.1));
+	--tt-eh-allocation-color: var(--lumo-warning-color, hsl(43, 100%, 40%));
+}
+
+.tt-eh-requirement-allocation-message[data-severity="error"] {
+	--tt-eh-allocation-background: var(--lumo-error-color-10pct);
+	--tt-eh-allocation-color: var(--lumo-error-color);
 }
 
 .tt-eh-bonus-toggle {

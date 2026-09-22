@@ -76,13 +76,19 @@ public class Sanitizer {
 	}
 
 	private static void wrapCriterionLink(final Link link, final Function<String, Boolean> criterionStatusByKey) {
-		final String criterionKey = link.getDestination().substring(CRITERION_DESTINATION_PREFIX.length()).trim();
+		final String criterionTarget = link.getDestination().substring(CRITERION_DESTINATION_PREFIX.length()).trim();
+		final String criterionKey = criterionKey(criterionTarget);
 		final boolean achieved = Boolean.TRUE.equals(criterionStatusByKey.apply(criterionKey));
 		link.insertBefore(html("<span class=\"tt-criterion\"><mark class=\"tt-criterion-highlight\">"));
 		moveChildrenBefore(link);
 		link.insertBefore(html("</mark><span class=\"tt-criterion-badge\">" + escapeHtml(criterionKey) + "</span>"
 				+ criterionMarker(achieved) + "</span>"));
 		link.unlink();
+	}
+
+	private static String criterionKey(final String criterionTarget) {
+		final int valueSeparator = criterionTarget.indexOf('/');
+		return valueSeparator < 0 ? criterionTarget : criterionTarget.substring(0, valueSeparator);
 	}
 
 	private static String criterionMarker(final boolean achieved) {

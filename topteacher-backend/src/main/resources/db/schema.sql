@@ -166,12 +166,17 @@ create table if not exists eh_criterion (
     requirement_id integer not null,
     criterion_key varchar(100) not null,
     label varchar(1000) not null,
+    point_units integer default 2 not null,
     sort_order integer not null,
     active boolean default true not null,
     constraint eh_criterion_requirement_fk foreign key (requirement_id) references eh_requirement(id) on delete cascade,
+    constraint eh_criterion_point_units_check check (point_units > 0),
     constraint eh_criterion_sort_order_check check (sort_order >= 0),
     constraint eh_criterion_unique unique (requirement_id, criterion_key)
 );
+
+alter table eh_criterion add column if not exists point_units integer default 2 not null;
+alter table eh_criterion add constraint if not exists eh_criterion_point_units_check check (point_units > 0);
 
 create table if not exists eh_criterion_result (
     criterion_id integer not null,

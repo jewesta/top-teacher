@@ -7,7 +7,6 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-import com.vaadin.flow.component.ClickNotifier;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.html.Anchor;
@@ -32,14 +31,14 @@ public class StatusTray extends Tray<TestResult> implements StatusTrayController
 	private record LinkTarget<T>(int index, T target) {
 	}
 
-	private static final class StatusLink extends Anchor implements ClickNotifier<StatusLink> {
+	private static final class StatusLink extends Anchor {
 
 		private StatusLink(final String href, final String text, final SerializableRunnable action) {
 			super(href, text);
 			setRouterIgnore(true);
 			addClassName("ws-status-tray-entry-link");
 			getElement().setAttribute("title", "Zum betroffenen Abschnitt springen");
-			addClickListener(event -> action.run());
+			getElement().addEventListener("click", event -> action.run()).preventDefault();
 		}
 	}
 

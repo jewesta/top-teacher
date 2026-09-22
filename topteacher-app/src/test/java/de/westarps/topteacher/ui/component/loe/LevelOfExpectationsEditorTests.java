@@ -34,7 +34,11 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
+import com.vaadin.flow.dom.DomEvent;
+import com.vaadin.flow.internal.nodefeature.ElementListenerMap;
 import com.vaadin.flow.server.VaadinSession;
+
+import tools.jackson.databind.node.JsonNodeFactory;
 
 import de.westarps.topteacher.backend.repo.GradingScaleRepository;
 import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
@@ -72,7 +76,9 @@ class LevelOfExpectationsEditorTests {
 
 	@Test
 	void showsAllocationWarningsInTheStatusTray() {
-		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repositoryWithHierarchy());
+		final LoeRequirement underallocatedRequirement = requirementWithCriteria(REQUIREMENT, 5, 1);
+		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(
+				repositoryWithHierarchy(underallocatedRequirement));
 
 		editor.setExam(EXAM);
 
@@ -81,14 +87,16 @@ class LevelOfExpectationsEditorTests {
 			assertThat(tray.getState()).isEqualTo(TrayState.PEEK);
 			assertThat(tray.getItems()).singleElement()
 					.satisfies(result -> assertThat(result.message())
-							.isEqualTo("Aufgabe 1 · Anforderung 1: Ordne weitere 5 Kriterienpunkte zu."));
+							.isEqualTo("Aufgabe 1 · Anforderung 1: Ordne weitere 4 Kriterienpunkte zu."));
 		});
 		assertThat(editor.getDesignState()).isEqualTo(DesignState.INCOMPLETE);
 	}
 
 	@Test
 	void opensAndEmphasizesTheRequirementFromItsStatusEntry() {
-		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repositoryWithHierarchy());
+		final LoeRequirement underallocatedRequirement = requirementWithCriteria(REQUIREMENT, 5, 1);
+		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(
+				repositoryWithHierarchy(underallocatedRequirement));
 		editor.setExam(EXAM);
 		final StatusTray tray = components(editor, StatusTray.class).getFirst();
 		collapseButtons(editor).getFirst().click();
@@ -98,7 +106,8 @@ class LevelOfExpectationsEditorTests {
 				.filter(anchor -> anchor.getText().startsWith("Aufgabe 1 · Anforderung 1:"))
 				.findFirst().orElseThrow();
 		assertThat(link.getHref()).isEqualTo("exams#tt-eh-requirement-" + REQUIREMENT.id());
-		ComponentUtil.fireEvent(link, new com.vaadin.flow.component.ClickEvent<>(link));
+		link.getElement().getNode().getFeature(ElementListenerMap.class)
+				.fireEvent(new DomEvent(link.getElement(), "click", JsonNodeFactory.instance.objectNode()));
 
 		assertThat(tray.getState()).isEqualTo(TrayState.PEEK);
 		assertThat(components(editor, Details.class)).extracting(Details::isOpened).containsOnly(true);
@@ -531,6 +540,63 @@ class LevelOfExpectationsEditorTests {
 	}
 
 	@Test
+	void showsCriterionPointMismatchBesideRequirementMaximumAndUpdatesLive() {
+		final String underAllocatedDescription = "[Erster Aspekt](eh:1/0,5)";
+		final LoeRequirement underAllocatedRequirement = new LoeRequirement(REQUIREMENT.id(), REQUIREMENT.taskId(),
+				underAllocatedDescription, 2, REQUIREMENT.bonus(), REQUIREMENT.sortOrder());
+		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(
+				repositoryWithHierarchy(underAllocatedRequirement));
+		editor.setExam(EXAM);
+		final Span message = components(editor, Span.class).stream()
+				.filter(span -> span.getClassNames().contains("tt-eh-requirement-allocation-message")).findFirst()
+				.orElseThrow();
+
+		assertThat(message.isVisible()).isTrue();
+		assertThat(message.getText()).isEqualTo("Ordne weitere 1,5 Kriterienpunkte zu.");
+		assertThat(message.getElement().getAttribute("data-severity")).isEqualTo("warning");
+		assertThat(components(editor, StatusTray.class).getFirst().getItems()).singleElement()
+				.satisfies(result -> assertThat(result.message())
+						.isEqualTo("Aufgabe 1 · Anforderung 1: " + message.getText()));
+
+		final MarkdownEditor description = markdownEditor(editor, underAllocatedDescription);
+		description.setValue("[Erster Aspekt](eh:1/0,5) [Zweiter Aspekt](eh:2/1,5)");
+
+		assertThat(message.isVisible()).isFalse();
+
+		final IntegerField maxPoints = components(editor, IntegerField.class).getFirst();
+		maxPoints.setValue(1);
+
+		assertThat(message.isVisible()).isTrue();
+		assertThat(message.getText()).isEqualTo("Ordne einen Kriterienpunkt weniger zu.");
+		assertThat(message.getElement().getAttribute("data-severity")).isEqualTo("error");
+		assertThat(components(editor, StatusTray.class).getFirst().getItems()).singleElement()
+				.satisfies(result -> assertThat(result.message())
+						.isEqualTo("Aufgabe 1 · Anforderung 1: " + message.getText()));
+
+		description.setValue("[Erster Aspekt](eh:1/0,5) [Zweiter Aspekt](eh:2/1)");
+
+		assertThat(message.getText()).isEqualTo("Ordne 0,5 Kriterienpunkte weniger zu.");
+		assertThat(message.getElement().getAttribute("data-severity")).isEqualTo("error");
+
+		maxPoints.setValue(3);
+
+		assertThat(message.isVisible()).isTrue();
+		assertThat(message.getText()).isEqualTo("Ordne weitere 1,5 Kriterienpunkte zu.");
+		assertThat(message.getElement().getAttribute("data-severity")).isEqualTo("warning");
+
+		description.setValue("[Erster Aspekt](eh:1/?)");
+
+		assertThat(message.getText()).isEqualTo("Kriterium „Erster Aspekt“: Ordne eine gültige Punktzahl zu.");
+		assertThat(message.getElement().getAttribute("data-severity")).isEqualTo("error");
+		assertThat(components(editor, StatusTray.class).getFirst().getItems()).singleElement()
+				.satisfies(result -> assertThat(result.message())
+						.isEqualTo("Aufgabe 1 · Anforderung 1: " + message.getText()));
+
+		description.setValue("Keine Kriterien");
+		assertThat(message.isVisible()).isFalse();
+	}
+
+	@Test
 	void placesMaxPointsFieldInRequirementSummary() {
 		final LevelOfExpectationsRepository repository = repositoryWithHierarchy();
 		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repository);
@@ -549,8 +615,15 @@ class LevelOfExpectationsEditorTests {
 		assertThat(maxPoints.getWidth()).isNull();
 		assertThat(parent).isInstanceOf(HorizontalLayout.class);
 		assertThat(parent.getClassNames()).contains("tt-eh-requirement-points-control");
-		assertThat(parent.getChildren().filter(Span.class::isInstance).map(Span.class::cast).map(Span::getText))
-				.containsExactly("Max. Punkte");
+		final List<Component> pointControlChildren = parent.getChildren().toList();
+		assertThat(pointControlChildren).hasSize(3);
+		assertThat(pointControlChildren.get(0)).isInstanceOf(Span.class)
+				.satisfies(component -> assertThat(component.getClassNames())
+						.contains("tt-eh-requirement-allocation-message"));
+		assertThat(pointControlChildren.get(0).isVisible()).isFalse();
+		assertThat(pointControlChildren.get(1)).isInstanceOf(Span.class)
+				.satisfies(component -> assertThat(((Span) component).getText()).isEqualTo("Max. Punkte"));
+		assertThat(pointControlChildren.get(2)).isSameAs(maxPoints);
 		assertThat(bonus.getElement().getAttribute("aria-label")).isEqualTo("Sternchen-Aufgabe");
 		assertThat(bonus.getElement().getAttribute("aria-pressed")).isEqualTo("false");
 		assertThat(bonus.getIcon().getElement().getAttribute("icon")).isEqualTo("vaadin:star");

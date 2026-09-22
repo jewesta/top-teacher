@@ -103,12 +103,36 @@ class MarkdownViewerElement extends ReactAdapterElement {
     const [tagNamespace] = hooks.useState<string>('tagNamespace', '');
     const [tagToolbarLabel] = hooks.useState<string>('tagToolbarLabel', '');
     const [tagIdGenerator] = hooks.useState<string>('tagIdGenerator', '');
+    const [tagValueOptionValues] = hooks.useState<string[]>('tagValueOptionValues', []);
+    const [tagValueOptionLabels] = hooks.useState<string[]>('tagValueOptionLabels', []);
+    const [tagValueDefault] = hooks.useState<string>('tagValueDefault', '');
+    const [tagValueSeparator] = hooks.useState<string>('tagValueSeparator', '');
+    const [tagValueToolbarIconText] = hooks.useState<string>('tagValueToolbarIconText', '');
+    const [tagValueCustomOptionLabel] = hooks.useState<string>('tagValueCustomOptionLabel', '');
+    const [tagValueCustomOptionAriaLabel] = hooks.useState<string>('tagValueCustomOptionAriaLabel', '');
+    const [tagValueCustomPlaceholder] = hooks.useState<string>('tagValueCustomPlaceholder', '');
+    const [tagValueCustomPattern] = hooks.useState<string>('tagValueCustomPattern', '');
+    const [tagValueRemoveLabel] = hooks.useState<string>('tagValueRemoveLabel', '');
     const [tagRenderMode] = hooks.useState<string>('tagRenderMode', 'DEFAULT');
     const [checkedTagKeys] = hooks.useState<string[]>('checkedTagKeys', []);
     const dispatchRenderComplete = hooks.useCustomEvent('render-complete');
     const tagCheckedChanged = hooks.useCustomEvent<{ key: string; checked: boolean }>('tag-checked-changed');
     const markdownOptions = {
-      tag: markdownTagOptions(tagNamespace, tagToolbarLabel, tagIdGenerator),
+      tag: markdownTagOptions(
+        tagNamespace,
+        tagToolbarLabel,
+        tagIdGenerator,
+        tagValueOptionValues,
+        tagValueOptionLabels,
+        tagValueDefault,
+        tagValueSeparator,
+        tagValueToolbarIconText,
+        tagValueCustomOptionLabel,
+        tagValueCustomOptionAriaLabel,
+        tagValueCustomPlaceholder,
+        tagValueCustomPattern,
+        tagValueRemoveLabel,
+      ),
       tagRenderMode: markdownTagRenderMode(tagRenderMode),
       checkedTagKeys,
     };

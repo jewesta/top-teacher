@@ -58,6 +58,37 @@ class LoeValidatorTests {
 		assertThat(results.getTargets()).containsExactly(LoeValidationTarget.requirementCriteria(bonus.id()));
 	}
 
+	@Test
+	void acceptsCriterionFreeRequirements() {
+		final LoeRequirement requirement = requirement(1, "Ganzheitlich bewerten.", 8, false);
+
+		assertThat(LoeValidator.validateRequirements(List.of(requirement)).getTestResults()).isEmpty();
+	}
+
+	@Test
+	void acceptsHalfPointCriteriaWhoseUnitsMatchTheRequirement() {
+		final LoeRequirement requirement = requirement(1, "[Halb](eh:1/0,5) [Anderthalb](eh:2/1.5)", 2,
+				false);
+
+		assertThat(LoeValidator.validateRequirements(List.of(requirement)).getTestResults()).isEmpty();
+	}
+
+	@Test
+	void reportsHalfPointAllocationDifferences() {
+		final LoeRequirement requirement = requirement(1, "[Anderthalb](eh:1/1,5)", 2, false);
+
+		assertThat(LoeValidator.validateRequirements(List.of(requirement)).messages(ValidationSeverity.WARNING))
+				.containsExactly("Ordne weitere 0,5 Kriterienpunkte zu.");
+	}
+
+	@Test
+	void rejectsMalformedPointPlaceholdersWithoutTreatingTheRequirementAsCriterionFree() {
+		final LoeRequirement requirement = requirement(1, "[Begründung](eh:1/?)", 2, false);
+
+		assertThat(LoeValidator.validateRequirements(List.of(requirement)).messages(ValidationSeverity.ERROR))
+				.containsExactly("Kriterium „Begründung“: Ordne eine gültige Punktzahl zu.");
+	}
+
 	private static LoeRequirement requirement(final int id, final String description, final int maxPoints,
 			final boolean bonus) {
 		return new LoeRequirement(id, 10, description, maxPoints, bonus, 0);

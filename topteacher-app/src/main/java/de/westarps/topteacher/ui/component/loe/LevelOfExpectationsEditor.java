@@ -687,6 +687,12 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 			final ValidationResults<LoeValidationTarget> allocationResults = gradingScaleMaxPoints == null
 					? LoeValidator.validateRequirements(pendingRequirements)
 					: LoeValidator.validate(gradingScaleMaxPoints, pendingRequirements);
+			requirementSections.forEach(section -> section.setCriterionValidation(section.hasValidMaxPoints()
+					? allocationResults.getResults().stream()
+							.filter(result -> result.getTarget().equals(
+									LoeValidationTarget.requirementCriteria(section.requirement().id())))
+							.flatMap(result -> result.getResults().stream()).toList()
+					: List.of()));
 			final ValidationResults.Builder<LoeValidationTarget> results = ValidationResults.builder();
 			results.addAll(allocationResults.getResults());
 			requirementSections.stream().filter(section -> !section.hasValidMaxPoints())

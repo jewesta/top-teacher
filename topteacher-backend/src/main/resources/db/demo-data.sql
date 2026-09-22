@@ -372,8 +372,8 @@ where not exists (
       and requirement.sort_order = demo.sort_order
 );
 
-insert into eh_criterion (requirement_id, criterion_key, label, sort_order, active)
-select requirement.id, demo.criterion_key, demo.label, demo.criterion_sort_order, true
+insert into eh_criterion (requirement_id, criterion_key, label, point_units, sort_order, active)
+select requirement.id, demo.criterion_key, demo.label, 2, demo.criterion_sort_order, true
 from (
     values
         ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Inhaltliche Leistung', 'Teilaufgabe 1 (Comprehension)', 0, '1', 'Aspekte für Shakespeares ungebrochene Popularität', 0),
