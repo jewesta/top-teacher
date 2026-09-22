@@ -443,6 +443,25 @@ function tagNode(
   const reference = tagReference(target, tag);
   const award = awards.get(reference.key);
   const displayValue = tagRenderMode === 'CHECKBOX' ? formatPointUnits(award?.awardedUnits ?? 0) : reference.displayValue;
+  const badgeNode: MarkdownNode = {
+    type: 'ttCriterionBadge',
+    data: {
+      hName: tagRenderMode === 'CHECKBOX' ? 'button' : 'span',
+      hProperties: {
+        className: tagRenderMode === 'CHECKBOX'
+          ? ['tt-criterion-badge', 'tt-criterion-point-button']
+          : ['tt-criterion-badge'],
+        ...(tagRenderMode === 'CHECKBOX' ? { type: 'button', dataCriterionKey: reference.key } : {}),
+        ...(tag.valueSelector
+          ? { ariaLabel: tagRenderMode === 'CHECKBOX'
+            ? `${award?.label ?? reference.key}: ${displayValue} von ${formatPointUnits(award?.pointUnits ?? 0)} ${award?.pointUnits === 2 ? 'Punkt' : 'Punkten'}`
+            : `${reference.key}: ${reference.displayValue}` }
+          : {}),
+      },
+    },
+    children: [{ type: 'text', value: displayValue }],
+  };
+  const checkboxNode = tagRenderMode === 'CHECKBOX' ? tagCheckboxNode(reference.key, award) : null;
   return {
     type: 'ttCriterion',
     data: {
@@ -461,27 +480,9 @@ function tagNode(
             className: ['tt-criterion-highlight'],
           },
         },
-        children,
+        children: checkboxNode ? [...children, badgeNode, checkboxNode] : children,
       },
-      {
-        type: 'ttCriterionBadge',
-        data: {
-          hName: tagRenderMode === 'CHECKBOX' ? 'button' : 'span',
-          hProperties: {
-            className: tagRenderMode === 'CHECKBOX'
-              ? ['tt-criterion-badge', 'tt-criterion-point-button']
-              : ['tt-criterion-badge'],
-            ...(tagRenderMode === 'CHECKBOX' ? { type: 'button', dataCriterionKey: reference.key } : {}),
-            ...(tag.valueSelector
-              ? { ariaLabel: tagRenderMode === 'CHECKBOX'
-                ? `${award?.label ?? reference.key}: ${displayValue} von ${formatPointUnits(award?.pointUnits ?? 0)} ${award?.pointUnits === 2 ? 'Punkt' : 'Punkten'}`
-                : `${reference.key}: ${reference.displayValue}` }
-              : {}),
-          },
-        },
-        children: [{ type: 'text', value: displayValue }],
-      },
-      ...(tagRenderMode === 'CHECKBOX' ? [tagCheckboxNode(reference.key, award)] : []),
+      ...(!checkboxNode ? [badgeNode] : []),
     ],
   };
 }

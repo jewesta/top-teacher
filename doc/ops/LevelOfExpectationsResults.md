@@ -60,6 +60,7 @@ text.
   steps and the criterion value as its upper bound.
 - The pill, checkbox, popover control, and quick-marking control always display
   the same pending value.
+- The inline highlight spans the criterion text, pill, and checkbox together.
 
 ## Quick-marking column
 
@@ -121,7 +122,7 @@ to match visible numbers between the requirement text and the quick-marking
 column.
 
 - Hovering any control in a quick-marking row highlights the corresponding
-  inline criterion text and pill.
+  inline criterion text, pill, and checkbox.
 - Keyboard focus anywhere within the row keeps the same highlight active while
   focus moves between its controls.
 - Hovering or focusing an inline criterion highlights its quick-marking row.
