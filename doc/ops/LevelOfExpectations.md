@@ -114,6 +114,8 @@ eh:<key>[/<points>]
 
 The UI displays a criterion's point value in its pill rather than the internal
 key. Accessible text retains the criterion identity as well as its value.
+In the Markdown preview, the criterion highlight encloses both the text and
+its point pill.
 
 All criterion values are represented internally as integer half-point units.
 Floating-point arithmetic must not be used for point calculations.

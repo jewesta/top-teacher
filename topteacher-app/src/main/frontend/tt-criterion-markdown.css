@@ -139,8 +139,7 @@
 	padding: 0 0.15em;
 }
 
-.tt-criterion-badge,
-.tt-criterion > .tt-criterion-highlight + span:not(.tt-criterion-point-slot) {
+.tt-criterion-badge {
 	align-items: center;
 	background: var(--lumo-contrast-70pct);
 	border-radius: 999px;
@@ -163,6 +162,11 @@
 	display: inline-flex;
 	font-size: 0.72em;
 	vertical-align: middle;
+}
+
+.tt-criterion-highlight > .tt-criterion-point-slot,
+.tt-criterion-highlight > .tt-criterion-checkbox {
+	transform: translateY(-0.1rem);
 }
 
 .tt-criterion-point-slot > .tt-criterion-badge {
