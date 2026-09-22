@@ -559,6 +559,8 @@ class LevelOfExpectationsEditorTests {
 						.isEqualTo("Aufgabe 1 · Anforderung 1: " + message.getText()));
 
 		final MarkdownEditor description = markdownEditor(editor, underAllocatedDescription);
+		assertThat(description).isInstanceOf(CriterionMarkdownEditor.class);
+		assertThat(description.getExtensionIds()).containsExactly(CriterionMarkdownEditor.EXTENSION_ID);
 		description.setValue("[Erster Aspekt](eh:1/0,5) [Zweiter Aspekt](eh:2/1,5)");
 
 		assertThat(message.isVisible()).isFalse();

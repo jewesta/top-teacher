@@ -49,8 +49,6 @@ import de.westarps.topteacher.ui.component.DesignerViewport;
 import de.westarps.topteacher.ui.component.FullscreenButton;
 import de.westarps.topteacher.ui.component.StepperComboBox;
 import de.westarps.topteacher.ui.component.TopTeacherDialogs;
-import de.westarps.vaadin.markdown.MarkdownTagRenderMode;
-import de.westarps.vaadin.markdown.MarkdownViewer;
 
 public class ExamResultsEditor extends AbstractDesigner {
 
@@ -76,7 +74,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private final Map<Integer, IntegerField> requirementPointFields = new HashMap<>();
 	private final Map<Integer, Span> requirementPointTexts = new HashMap<>();
 	private final Map<Integer, TextArea> requirementCommentFields = new HashMap<>();
-	private final Map<Integer, MarkdownViewer> requirementDescriptions = new HashMap<>();
+	private final Map<Integer, CriterionMarkdownViewer> requirementDescriptions = new HashMap<>();
 	private final Map<Integer, Span> requirementCriterionIndicators = new HashMap<>();
 	private final Map<Integer, Checkbox> criterionCheckboxes = new HashMap<>();
 	private final Map<Integer, Boolean> editedCriterionResults = new HashMap<>();
@@ -453,12 +451,10 @@ public class ExamResultsEditor extends AbstractDesigner {
 		descriptionMain.setSpacing(false);
 		descriptionMain.setWidthFull();
 		if (!descriptionMarkdown.isBlank()) {
-			final MarkdownViewer description = new MarkdownViewer(descriptionMarkdown);
-			description.setTag(LoeSectionComponents.CRITERION_TAG);
-			description.setTagRenderMode(MarkdownTagRenderMode.CHECKBOX);
-			description.setCheckedTagKeys(requirementCriteria.stream().filter(this::currentCriterionAchieved)
+			final CriterionMarkdownViewer description = new CriterionMarkdownViewer(descriptionMarkdown);
+			description.setCheckedCriterionKeys(requirementCriteria.stream().filter(this::currentCriterionAchieved)
 					.map(LoeCriterion::criterionKey).toList());
-			description.addTagCheckedChangeListener(change -> {
+			description.addCriterionCheckedChangeListener(change -> {
 				if (applyingResultState || (selectedPupil == null)) {
 					return;
 				}
@@ -526,9 +522,9 @@ public class ExamResultsEditor extends AbstractDesigner {
 			final List<LoeCriterion> requirementCriteria = criteriaFor(requirement);
 			final List<String> checkedKeys = requirementCriteria.stream().filter(this::currentCriterionAchieved)
 					.map(LoeCriterion::criterionKey).toList();
-			final MarkdownViewer description = requirementDescriptions.get(requirement.id());
+			final CriterionMarkdownViewer description = requirementDescriptions.get(requirement.id());
 			if (description != null) {
-				description.setCheckedTagKeys(checkedKeys);
+				description.setCheckedCriterionKeys(checkedKeys);
 			}
 			requirementCriteria.forEach(criterion -> {
 				final Checkbox checkbox = criterionCheckboxes.get(criterion.id());
@@ -652,7 +648,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 		criterionCheckboxes.put(criterion.id(), checkbox);
 
 		final Span badge = new Span(criterion.criterionKey());
-		badge.addClassNames("ws-markdown-tag-badge", "tt-results-criterion-badge");
+		badge.addClassNames("tt-criterion-badge", "tt-results-criterion-badge");
 		badge.getElement().setAttribute("aria-hidden", "true");
 
 		final HorizontalLayout row = new HorizontalLayout(badge, checkbox);

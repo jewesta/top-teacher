@@ -1,0 +1,142 @@
+.tt-criterion-command-icon {
+	align-items: center;
+	border: 1px solid currentColor;
+	border-radius: 999px;
+	box-sizing: border-box;
+	display: inline-flex;
+	font-size: 10px;
+	font-weight: 700;
+	height: 14px;
+	justify-content: center;
+	line-height: 1;
+	min-width: 16px;
+	padding: 0 3px;
+	transform: translateY(-2px);
+}
+
+.tt-criterion-value-selector {
+	box-sizing: border-box;
+	min-width: 7rem;
+	padding: 0.3rem;
+}
+
+.tt-criterion-value-options {
+	display: grid;
+	gap: 0.2rem;
+	grid-template-columns: repeat(2, minmax(2.75rem, 1fr));
+}
+
+.tt-criterion-value-options button,
+.tt-criterion-remove {
+	background: transparent;
+	border: 0;
+	border-radius: var(--lumo-border-radius-s, 0.25em);
+	box-sizing: border-box;
+	color: var(--color-fg-default);
+	cursor: pointer;
+	font: inherit;
+	line-height: 1.4;
+	padding: 0.25rem 0.45rem;
+}
+
+.tt-criterion-value-options button:hover,
+.tt-criterion-value-options button:focus-visible,
+.tt-criterion-remove:hover,
+.tt-criterion-remove:focus-visible,
+.tt-criterion-value-options button[aria-pressed="true"] {
+	background: var(--color-neutral-muted);
+	color: var(--color-accent-fg);
+	outline: none;
+}
+
+.tt-criterion-value-options button:disabled {
+	color: var(--md-editor-box-shadow-color);
+	cursor: not-allowed;
+}
+
+.tt-criterion-selection-hint {
+	color: var(--lumo-secondary-text-color, #6f6f6f);
+	display: block;
+	font-size: 0.75rem;
+	padding: 0.3rem 0.25rem 0;
+	white-space: nowrap;
+}
+
+.tt-criterion-remove {
+	border-top: 1px solid var(--md-editor-box-shadow-color);
+	border-radius: 0;
+	display: block;
+	margin-top: 0.3rem;
+	padding-top: 0.45rem;
+	text-align: left;
+	width: 100%;
+}
+
+
+.tt-criterion {
+	display: inline;
+}
+
+.wmde-markdown .tt-criterion-checkbox {
+	appearance: none;
+	background: var(--lumo-base-color, #fff);
+	border: 1px solid var(--lumo-contrast-40pct, #a8a8a8);
+	border-radius: var(--lumo-border-radius-s, 0.25em);
+	box-sizing: border-box;
+	cursor: pointer;
+	display: inline-grid;
+	height: 1em;
+	margin: 0 0.15em 0 0.3em;
+	place-content: center;
+	pointer-events: auto;
+	vertical-align: 0.12em;
+	width: 1em;
+}
+
+.wmde-markdown .tt-criterion-checkbox::before {
+	border: solid var(--lumo-primary-contrast-color, #fff);
+	border-width: 0 0.12em 0.12em 0;
+	content: "";
+	height: 0.5em;
+	margin-top: -0.08em;
+	transform: rotate(45deg) scale(0);
+	width: 0.25em;
+}
+
+.wmde-markdown .tt-criterion-checkbox:checked {
+	background: var(--lumo-primary-color);
+	border-color: var(--lumo-primary-color);
+}
+
+.wmde-markdown .tt-criterion-checkbox:checked::before {
+	transform: rotate(45deg) scale(1);
+}
+
+.wmde-markdown .tt-criterion-checkbox:focus-visible {
+	outline: 2px solid var(--lumo-primary-color-50pct, var(--lumo-primary-color));
+	outline-offset: 2px;
+}
+
+.tt-criterion-highlight {
+	background: var(--tt-criterion-highlight-color, #fff3bf);
+	border-radius: var(--lumo-border-radius-s);
+	padding: 0 0.15em;
+}
+
+.tt-criterion-badge,
+.tt-criterion > .tt-criterion-highlight + span {
+	align-items: center;
+	background: var(--lumo-contrast-70pct);
+	border-radius: 999px;
+	color: var(--lumo-base-color);
+	display: inline-flex;
+	font-size: 0.72em;
+	font-weight: 600;
+	height: 1.35em;
+	justify-content: center;
+	line-height: 1;
+	margin-left: 0.18em;
+	min-width: 1.35em;
+	padding: 0 0.25em;
+	vertical-align: 0.12em;
+}

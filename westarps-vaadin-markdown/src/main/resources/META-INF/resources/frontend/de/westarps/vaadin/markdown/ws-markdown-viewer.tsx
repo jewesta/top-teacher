@@ -1,95 +1,34 @@
-import { type InputHTMLAttributes, type ReactElement } from 'react';
+import { type ReactElement } from 'react';
 import React from 'react';
 import MDEditor from '@uiw/react-md-editor';
 import { ReactAdapterElement, type RenderHooks } from 'Frontend/generated/flow/ReactAdapter';
 import '@uiw/react-md-editor/markdown-editor.css';
 import '@uiw/react-markdown-preview/markdown.css';
-import {
-  type MarkdownOptions,
-  markdownPreviewOptions,
-  markdownTagRenderMode,
-  markdownTagOptions,
-} from './ws-markdown-support';
-
-type TagCheckedChanged = (detail: { key: string; checked: boolean }) => void;
-type RenderComplete = () => void;
-type MarkdownViewerOptions = Pick<MarkdownOptions, 'tag' | 'tagRenderMode' | 'checkedTagKeys'>;
-type MarkdownInputProps = InputHTMLAttributes<HTMLInputElement> & { node?: unknown };
+import { markdownPreviewOptions } from './ws-markdown-support';
+import { markdownExtensions, type MarkdownExtensionContext } from './ws-markdown-extensions';
 
 type MarkdownViewerContentProps = {
-  checkedTagKeys: string[];
   content: string;
-  markdownOptions: MarkdownViewerOptions;
-  renderComplete: RenderComplete;
-  tagCheckedChanged: TagCheckedChanged;
+  extensionIds: string[];
+  context: MarkdownExtensionContext;
+  renderComplete: () => void;
 };
 
 function MarkdownViewerContent({
-  checkedTagKeys,
   content,
-  markdownOptions,
+  extensionIds,
+  context,
   renderComplete,
-  tagCheckedChanged,
 }: MarkdownViewerContentProps): ReactElement {
-  const [localCheckedTagKeys, setLocalCheckedTagKeys] = React.useState<string[]>(checkedTagKeys);
-  const checkedTagKeySignature = checkedTagKeys.join('\u001f');
-
-  React.useEffect(() => {
-    setLocalCheckedTagKeys(checkedTagKeys);
-  }, [checkedTagKeySignature]);
-
-  const checkedTagKeySet = React.useMemo(() => new Set(localCheckedTagKeys), [localCheckedTagKeys]);
-
   React.useLayoutEffect(() => {
     renderComplete();
   });
 
-  const changeTagChecked = (key: string, checked: boolean) => {
-    setLocalCheckedTagKeys((currentKeys) => {
-      const nextKeys = new Set(currentKeys);
-      if (checked) {
-        nextKeys.add(key);
-      } else {
-        nextKeys.delete(key);
-      }
-      return [...nextKeys];
-    });
-    tagCheckedChanged({ key, checked });
-  };
-
-  const tagCheckbox = (props: MarkdownInputProps) => {
-    const { className, value } = props;
-    if (!className?.split(' ').includes('ws-markdown-tag-checkbox')) {
-      return <input {...props} />;
-    }
-
-    const inputProps = { ...props };
-    delete inputProps.checked;
-    delete inputProps.defaultChecked;
-    delete inputProps.disabled;
-    delete inputProps.node;
-    delete inputProps.onChange;
-    delete inputProps.type;
-
-    const key = String(value ?? '');
-    return (
-      <input
-        {...inputProps}
-        className={className}
-        type="checkbox"
-        value={key}
-        checked={checkedTagKeySet.has(key)}
-        onChange={(event) => changeTagChecked(key, event.currentTarget.checked)}
-      />
-    );
-  };
-
   return (
     <MDEditor.Markdown
-      key={`${content}:${markdownOptions.tag?.namespace ?? ''}:${markdownOptions.tag?.idGenerator ?? ''}:${markdownOptions.tagRenderMode}`}
+      key={`${content}:${extensionIds.join(',')}`}
       source={content}
-      {...markdownPreviewOptions({ ...markdownOptions, checkedTagKeys: localCheckedTagKeys })}
-      components={{ input: tagCheckbox }}
+      {...markdownPreviewOptions(markdownExtensions(extensionIds), context)}
     />
   );
 }
@@ -100,53 +39,23 @@ class MarkdownViewerElement extends ReactAdapterElement {
   protected override render(hooks: RenderHooks): ReactElement | null {
     this.hasRendered = false;
     const [content] = hooks.useState<string>('content', '');
-    const [tagNamespace] = hooks.useState<string>('tagNamespace', '');
-    const [tagToolbarLabel] = hooks.useState<string>('tagToolbarLabel', '');
-    const [tagIdGenerator] = hooks.useState<string>('tagIdGenerator', '');
-    const [tagValueOptionValues] = hooks.useState<string[]>('tagValueOptionValues', []);
-    const [tagValueOptionLabels] = hooks.useState<string[]>('tagValueOptionLabels', []);
-    const [tagValueDefault] = hooks.useState<string>('tagValueDefault', '');
-    const [tagValueSeparator] = hooks.useState<string>('tagValueSeparator', '');
-    const [tagValueToolbarIconText] = hooks.useState<string>('tagValueToolbarIconText', '');
-    const [tagValueCustomOptionLabel] = hooks.useState<string>('tagValueCustomOptionLabel', '');
-    const [tagValueCustomOptionAriaLabel] = hooks.useState<string>('tagValueCustomOptionAriaLabel', '');
-    const [tagValueCustomPlaceholder] = hooks.useState<string>('tagValueCustomPlaceholder', '');
-    const [tagValueCustomPattern] = hooks.useState<string>('tagValueCustomPattern', '');
-    const [tagValueRemoveLabel] = hooks.useState<string>('tagValueRemoveLabel', '');
-    const [tagRenderMode] = hooks.useState<string>('tagRenderMode', 'DEFAULT');
-    const [checkedTagKeys] = hooks.useState<string[]>('checkedTagKeys', []);
+    const [extensionIds] = hooks.useState<string[]>('extensionIds', []);
+    const [extensionState] = hooks.useState<Record<string, unknown>>('extensionState', {});
     const dispatchRenderComplete = hooks.useCustomEvent('render-complete');
-    const tagCheckedChanged = hooks.useCustomEvent<{ key: string; checked: boolean }>('tag-checked-changed');
-    const markdownOptions = {
-      tag: markdownTagOptions(
-        tagNamespace,
-        tagToolbarLabel,
-        tagIdGenerator,
-        tagValueOptionValues,
-        tagValueOptionLabels,
-        tagValueDefault,
-        tagValueSeparator,
-        tagValueToolbarIconText,
-        tagValueCustomOptionLabel,
-        tagValueCustomOptionAriaLabel,
-        tagValueCustomPlaceholder,
-        tagValueCustomPattern,
-        tagValueRemoveLabel,
-      ),
-      tagRenderMode: markdownTagRenderMode(tagRenderMode),
-      checkedTagKeys,
-    };
+    const dispatchExtensionEvent = hooks.useCustomEvent<Record<string, unknown>>('markdown-extension-event');
 
     return (
       <MarkdownViewerContent
-        checkedTagKeys={checkedTagKeys}
         content={content}
-        markdownOptions={markdownOptions}
+        extensionIds={extensionIds}
+        context={{
+          state: extensionState,
+          emit: (name, detail) => dispatchExtensionEvent({ name, ...detail }),
+        }}
         renderComplete={() => {
           this.hasRendered = true;
           dispatchRenderComplete();
         }}
-        tagCheckedChanged={tagCheckedChanged}
       />
     );
   }

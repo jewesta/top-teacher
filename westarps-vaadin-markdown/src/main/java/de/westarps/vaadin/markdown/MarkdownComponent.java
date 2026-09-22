@@ -1,5 +1,10 @@
 package de.westarps.vaadin.markdown;
 
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Objects;
+
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.HasSize;
 import com.vaadin.flow.component.dependency.CssImport;
@@ -16,7 +21,7 @@ abstract class MarkdownComponent extends ReactAdapterComponent implements HasSiz
 	private static final String CANVAS_COLOR_PROPERTY = "--ws-markdown-canvas-color";
 
 	private String content;
-	private MarkdownTag tag;
+	private List<String> extensionIds = List.of();
 
 	protected MarkdownComponent() {
 		this("");
@@ -52,29 +57,18 @@ abstract class MarkdownComponent extends ReactAdapterComponent implements HasSiz
 		getElement().getStyle().set(CANVAS_COLOR_PROPERTY, canvasColor);
 	}
 
-	MarkdownTag getTag() {
-		return tag;
+	List<String> getExtensionIds() {
+		return extensionIds;
 	}
 
-	void setTag(final MarkdownTag tag) {
-		this.tag = tag;
-		setState("tagNamespace", tag == null ? "" : tag.namespace());
-		setState("tagToolbarLabel", tag == null ? "" : tag.toolbarLabel());
-		setState("tagIdGenerator", tag == null ? "" : tag.idGenerator().name());
-		final MarkdownTagValueSelector valueSelector = tag == null ? null : tag.valueSelector();
-		setState("tagValueOptionValues", valueSelector == null ? java.util.List.of()
-				: valueSelector.options().stream().map(MarkdownTagValueOption::value).toList());
-		setState("tagValueOptionLabels", valueSelector == null ? java.util.List.of()
-				: valueSelector.options().stream().map(MarkdownTagValueOption::label).toList());
-		setState("tagValueDefault", valueSelector == null ? "" : valueSelector.defaultValue());
-		setState("tagValueSeparator", valueSelector == null ? "" : valueSelector.separator());
-		setState("tagValueToolbarIconText", valueSelector == null ? "" : valueSelector.toolbarIconText());
-		setState("tagValueCustomOptionLabel", valueSelector == null ? "" : valueSelector.customOptionLabel());
-		setState("tagValueCustomOptionAriaLabel",
-				valueSelector == null ? "" : valueSelector.customOptionAriaLabel());
-		setState("tagValueCustomPlaceholder", valueSelector == null ? "" : valueSelector.customPlaceholder());
-		setState("tagValueCustomPattern", valueSelector == null ? "" : valueSelector.customValuePattern());
-		setState("tagValueRemoveLabel", valueSelector == null ? "" : valueSelector.removeLabel());
+	void setExtensionIds(final Collection<String> extensionIds) {
+		final LinkedHashSet<String> normalized = new LinkedHashSet<>();
+		if (extensionIds != null) {
+			extensionIds.stream().filter(Objects::nonNull).map(String::trim).filter(id -> !id.isEmpty())
+					.forEach(normalized::add);
+		}
+		this.extensionIds = List.copyOf(normalized);
+		setState("extensionIds", this.extensionIds);
 	}
 
 	@Override

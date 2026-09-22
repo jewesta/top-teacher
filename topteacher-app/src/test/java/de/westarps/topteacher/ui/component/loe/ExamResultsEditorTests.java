@@ -56,7 +56,6 @@ import de.westarps.topteacher.model.loe.LoeRequirementResult;
 import de.westarps.topteacher.model.loe.LoeTask;
 import de.westarps.topteacher.ui.component.FullscreenButton;
 import de.westarps.topteacher.ui.component.StepperComboBox;
-import de.westarps.vaadin.markdown.MarkdownViewer;
 import de.westarps.vaadin.tray.StatusTray;
 import de.westarps.vaadin.tray.TrayState;
 
@@ -187,15 +186,17 @@ class ExamResultsEditorTests {
 
 		final Button saveButton = saveButton(editor);
 		final Checkbox criterionCheckbox = criterionCheckboxes(editor).getFirst();
-		final MarkdownViewer description = components(editor, MarkdownViewer.class).getFirst();
+		final CriterionMarkdownViewer description = components(editor, CriterionMarkdownViewer.class).getFirst();
+		assertThat(description.getExtensionIds()).containsExactly(CriterionMarkdownEditor.EXTENSION_ID);
+		assertThat(description.getExtensionState().get("criterionCheckboxes")).isEqualTo(true);
 		assertThat(criterionCheckbox.getValue()).isFalse();
-		assertThat(description.getCheckedTagKeys()).isEmpty();
+		assertThat(description.getCheckedCriterionKeys()).isEmpty();
 		assertThat(criterionIndicatorTexts(editor)).containsExactly("0 von 1 Kriterien erfüllt");
 
 		criterionCheckbox.setValue(true);
 
 		assertThat(saveButton.isEnabled()).isTrue();
-		assertThat(description.getCheckedTagKeys()).containsExactly("1");
+		assertThat(description.getCheckedCriterionKeys()).containsExactly("1");
 		assertThat(criterionIndicatorTexts(editor)).containsExactly("1 von 1 Kriterien erfüllt");
 		verify(levelOfExpectationsRepository, never()).saveCriterionResult(any(LoeCriterionResult.class));
 

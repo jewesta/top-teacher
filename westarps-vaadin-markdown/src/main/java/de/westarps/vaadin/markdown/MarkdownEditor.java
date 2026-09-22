@@ -46,16 +46,12 @@ public class MarkdownEditor extends AbstractCompositeField<MarkdownEditorCompone
 		getEditor().setMaxLength(maxLength);
 	}
 
-	public MarkdownTag getTag() {
-		return getEditor().getTag();
+	public Collection<String> getExtensionIds() {
+		return getEditor().getExtensionIds();
 	}
 
-	public void setTag(final MarkdownTag tag) {
-		getEditor().setTag(tag);
-	}
-
-	public void clearTag() {
-		setTag(null);
+	public void setExtensionIds(final Collection<String> extensionIds) {
+		getEditor().setExtensionIds(extensionIds);
 	}
 
 	public String getCanvasColor() {

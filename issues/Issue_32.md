@@ -61,9 +61,10 @@ This issue note records the implementation sequence and current status only.
 - Added integer half-point units to the criterion model and persistence schema.
 - Extended criterion tags to `eh:<key>[/<points>]`, including comma and dot
   parsing, default one-point values, malformed-tag reporting, and stable keys.
-- Added the reusable Markdown tag value-selector extension and configured the
-  EH `P` control with the agreed 0,5-through-4 presets, `4+` placeholder, and
-  a maximum valid custom value of 999 points.
+- Added a Markdown extension seam and a TT-owned criterion extension with the
+  agreed `P` control, 0,5-through-4 presets, `4+` placeholder, and a maximum
+  valid custom value of 999 points. Criterion rendering and Results checkboxes
+  also belong to TT, not the reusable Markdown module.
 - Changed criterion pills from internal keys to point values.
 - Made criterion-free requirements valid while retaining exact allocation when
   at least one criterion exists.

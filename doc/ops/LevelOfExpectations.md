@@ -164,10 +164,10 @@ the point value and preserves the criterion text and stable key. Removing the
 criterion is a separate, explicit action in the selector rather than an
 implicit toggle of the toolbar button.
 
-The selector must be implemented as an optional extension of the reusable
-Markdown tag command, using the editor library's command child-panel mechanism.
-It must neither hard-wire EH point semantics into the Markdown component nor
-require a fork of the underlying editor.
+The criterion command is a TopTeacher-owned Markdown extension, using the
+editor library's command child-panel mechanism. The reusable Markdown component
+provides extension hooks but must not contain EH point semantics or criterion
+presentation rules; no fork of the underlying editor is required.
 
 ## Derived design state
 
