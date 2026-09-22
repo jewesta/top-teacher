@@ -15,6 +15,7 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.combobox.ComboBoxVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.contextmenu.MenuItem;
 import com.vaadin.flow.component.html.Div;
@@ -170,6 +171,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 	}
 
 	private void configurePupilSelector() {
+		pupilSelector.addThemeVariants(ComboBoxVariant.LUMO_SMALL);
 		pupilSelector.setItemLabelGenerator(this::pupilLabel);
 		pupilSelector.setWidth("16rem");
 		pupilSelector.setMaxWidth("100%");
