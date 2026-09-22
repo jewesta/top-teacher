@@ -703,10 +703,6 @@ vaadin-app-layout::part(navbar) {
 	margin: 0;
 }
 
-.tt-results-requirement-total[role="button"] {
-	cursor: pointer;
-}
-
 .tt-results-point-stepper {
 	color: var(--lumo-secondary-text-color);
 	margin: 0;

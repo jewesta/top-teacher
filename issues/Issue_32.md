@@ -88,12 +88,17 @@ This issue note records the implementation sequence and current status only.
   to their checkboxes. The inline checkbox frame stays aligned with the point
   pill across unchecked, checked, and partial states. Inline controls are
   aligned with the text, and the EH preview highlight includes the point pill.
+  The inline point popover points back to its pill.
 - Give Results aggregates, requirement totals, criterion controls, and
-  adjustment steppers a shared points-cell structure, with centered values,
+  freely awarded point steppers a shared points-cell structure, with centered values,
   consistent dimensions, symbolic aggregate captions, and visible partial
   inline checkboxes.
-- Add requirement-local adjustment budgeting, direct marking for requirements
+- Add requirement-local free-point budgeting, marking for requirements
   without criteria, and bidirectional hover/focus highlighting.
+- Present both discretionary and criterion-free awards as `Frei vergebene Punkte`
+  in the same bottom-of-column position; requirement totals stay read-only.
+- Report full and partial criterion fulfilment in the requirement status line;
+  omit it when no criteria exist.
 - Preserve dirty-state save/discard behavior and expose raw values through MCP.
 - Give all context-tab contents one flush outer-layout contract, removing the
   assignment grid's extra padding in both the exam and course tabs.

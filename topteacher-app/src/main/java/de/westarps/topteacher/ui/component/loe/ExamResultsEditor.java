@@ -28,8 +28,6 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
-import com.vaadin.flow.component.popover.Popover;
-import com.vaadin.flow.component.popover.PopoverPosition;
 import com.vaadin.flow.data.value.ValueChangeMode;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
@@ -76,8 +74,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private final VerticalLayout results;
 	private final DesignerViewport viewport = new DesignerViewport(content());
 	private final List<ResultsAggregatePointCell> pointBadges = new ArrayList<>();
-	private final Map<Integer, LoePointStepper> directPointControls = new HashMap<>();
-	private final Map<Integer, LoePointStepper> adjustmentControls = new HashMap<>();
+	private final Map<Integer, LoePointStepper> freePointControls = new HashMap<>();
 	private final Map<Integer, LoePointStepper> criterionPointControls = new HashMap<>();
 	private final Map<Integer, ResultsRequirementPointCell> requirementResultBadges = new HashMap<>();
 	private final Map<Integer, Span> requirementPointTexts = new HashMap<>();
@@ -310,8 +307,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private void clearRenderedResults() {
 		results.removeAll();
 		pointBadges.clear();
-		directPointControls.clear();
-		adjustmentControls.clear();
+		freePointControls.clear();
 		criterionPointControls.clear();
 		requirementResultBadges.clear();
 		requirementPointTexts.clear();
@@ -511,7 +507,6 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private Span criterionIndicator(final LoeRequirement requirement) {
 		final Span indicator = new Span();
 		indicator.addClassName("tt-results-criteria-indicator");
-		indicator.getElement().setAttribute("aria-label", "Markierte Kriterien");
 		requirementCriterionIndicators.put(requirement.id(), indicator);
 		refreshCriterionIndicator(requirement);
 		return indicator;
@@ -528,9 +523,33 @@ public class ExamResultsEditor extends AbstractDesigner {
 		}
 
 		final List<LoeCriterion> requirementCriteria = criteriaFor(requirement);
-		final long achieved = requirementCriteria.stream()
+		final long fulfilled = requirementCriteria.stream()
 				.filter(criterion -> currentCriterionPointUnits(criterion) == criterion.pointUnits()).count();
-		indicator.setText(achieved + " von " + requirementCriteria.size() + " Kriterien erfüllt");
+		final long partial = requirementCriteria.stream()
+				.filter(criterion -> currentCriterionPointUnits(criterion) > 0
+						&& currentCriterionPointUnits(criterion) < criterion.pointUnits()).count();
+		indicator.setText(criterionIndicatorText(requirementCriteria.size(), fulfilled, partial));
+	}
+
+	private static String criterionIndicatorText(final int total, final long fulfilled, final long partial) {
+		if (total == 1) {
+			return fulfilled == 1 ? "Kriterium erfüllt"
+					: partial == 1 ? "Kriterium teilweise erfüllt" : "Kriterium nicht erfüllt";
+		}
+		if (fulfilled == total) {
+			return total + " Kriterien, alle voll erfüllt.";
+		}
+		if (partial == total) {
+			return total + " Kriterien, alle teilweise erfüllt.";
+		}
+		final String prefix = total + " Kriterien, ";
+		if (fulfilled > 0 && partial > 0) {
+			return prefix + fulfilled + " voll erfüllt und " + partial + " teilweise erfüllt.";
+		}
+		if (fulfilled > 0) {
+			return prefix + fulfilled + " voll erfüllt.";
+		}
+		return partial > 0 ? prefix + partial + " teilweise erfüllt." : prefix + "keines erfüllt.";
 	}
 
 	private void setCriterionPointUnits(final LoeRequirement requirement, final LoeCriterion criterion,
@@ -542,19 +561,15 @@ public class ExamResultsEditor extends AbstractDesigner {
 		refreshRequirementControls(requirement);
 	}
 
-	private void setAdjustmentPointUnits(final LoeRequirement requirement, final int pointUnits) {
-		if (selectedPupil == null || pointUnits < 0 || pointUnits > maximumAdjustmentPointUnits(requirement)) {
+	private void setFreePointUnits(final LoeRequirement requirement, final int pointUnits) {
+		if (selectedPupil == null || pointUnits < 0 || pointUnits > maximumFreePointUnits(requirement)) {
 			return;
 		}
-		editedAdjustments.put(requirement.id(), pointUnits);
-		refreshRequirementControls(requirement);
-	}
-
-	private void setDirectPointUnits(final LoeRequirement requirement, final int pointUnits) {
-		if (selectedPupil == null || pointUnits < 0 || pointUnits > LoePointUnits.fromWholePoints(requirement.maxPoints())) {
-			return;
+		if (criteriaFor(requirement).isEmpty()) {
+			editedRequirementResults.put(requirement.id(), pointUnits);
+		} else {
+			editedAdjustments.put(requirement.id(), pointUnits);
 		}
-		editedRequirementResults.put(requirement.id(), pointUnits);
 		refreshRequirementControls(requirement);
 	}
 
@@ -585,15 +600,10 @@ public class ExamResultsEditor extends AbstractDesigner {
 					control.setPointUnits(awardedUnits);
 				}
 			});
-			final LoePointStepper direct = directPointControls.get(requirement.id());
-			if (direct != null) {
-				direct.setMaximumPointUnits(LoePointUnits.fromWholePoints(requirement.maxPoints()));
-				direct.setPointUnits(currentRequirementRawUnits(requirement));
-			}
-			final LoePointStepper adjustment = adjustmentControls.get(requirement.id());
-			if (adjustment != null) {
-				adjustment.setMaximumPointUnits(maximumAdjustmentPointUnits(requirement));
-				adjustment.setPointUnits(currentAdjustmentPointUnits(requirement));
+			final LoePointStepper free = freePointControls.get(requirement.id());
+			if (free != null) {
+				free.setMaximumPointUnits(maximumFreePointUnits(requirement));
+				free.setPointUnits(currentFreePointUnits(requirement));
 			}
 		} finally {
 			updatingCriterionControls = false;
@@ -690,34 +700,19 @@ public class ExamResultsEditor extends AbstractDesigner {
 		control.setPadding(false);
 		control.setSpacing(false);
 		control.setWidthFull();
-		if (requirementCriteria.isEmpty()) {
-			final LoePointStepper direct = new LoePointStepper("Erreichte Punkte");
-			direct.setChangeHandler(units -> setDirectPointUnits(requirement, units));
-			directPointControls.put(requirement.id(), direct);
-			final Popover popover = new Popover(direct);
-			popover.setTarget(resultBadge);
-			popover.setPosition(PopoverPosition.BOTTOM);
-			popover.setOpenOnClick(true);
-			popover.setCloseOnOutsideClick(true);
-			resultBadge.getElement().setAttribute("role", "button");
-			resultBadge.getElement().setAttribute("tabindex", "0");
-			resultBadge.getElement().setAttribute("aria-label", "Erreichte Punkte bearbeiten");
-			resultBadge.getElement().addEventListener("keydown", event -> popover.open())
-					.setFilter("event.key === 'Enter' || event.key === ' '");
-			control.add(popover);
-		} else {
+		if (!requirementCriteria.isEmpty()) {
 			control.add(criteriaChecklist(requirement, requirementCriteria));
-			final LoePointStepper adjustment = new LoePointStepper("Zusatzpunkte");
-			adjustment.setChangeHandler(units -> setAdjustmentPointUnits(requirement, units));
-			adjustmentControls.put(requirement.id(), adjustment);
-			final Span adjustmentLabel = new Span("Zusatzpunkte");
-			adjustmentLabel.addClassName("tt-results-adjustment-label");
-			final VerticalLayout adjustmentArea = new VerticalLayout(adjustmentLabel, adjustment);
-			adjustmentArea.addClassName("tt-results-adjustment");
-			adjustmentArea.setPadding(false);
-			adjustmentArea.setSpacing(false);
-			control.add(adjustmentArea);
 		}
+		final LoePointStepper free = new LoePointStepper("Frei vergebene Punkte");
+		free.setChangeHandler(units -> setFreePointUnits(requirement, units));
+		freePointControls.put(requirement.id(), free);
+		final Span freeLabel = new Span("Frei vergebene Punkte");
+		freeLabel.addClassName("tt-results-adjustment-label");
+		final VerticalLayout freeArea = new VerticalLayout(freeLabel, free);
+		freeArea.addClassName("tt-results-adjustment");
+		freeArea.setPadding(false);
+		freeArea.setSpacing(false);
+		control.add(freeArea);
 		return control;
 	}
 
@@ -917,9 +912,14 @@ public class ExamResultsEditor extends AbstractDesigner {
 						- currentAdjustmentPointUnits(requirement) - otherAwards));
 	}
 
-	private int maximumAdjustmentPointUnits(final LoeRequirement requirement) {
+	private int maximumFreePointUnits(final LoeRequirement requirement) {
 		return Math.max(0, LoePointUnits.fromWholePoints(requirement.maxPoints())
 				- criterionSubtotalUnits(requirement));
+	}
+
+	private int currentFreePointUnits(final LoeRequirement requirement) {
+		return criteriaFor(requirement).isEmpty() ? currentRequirementRawUnits(requirement)
+				: currentAdjustmentPointUnits(requirement);
 	}
 
 	private int currentAdjustmentPointUnits(final LoeRequirement requirement) {

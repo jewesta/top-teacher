@@ -2,8 +2,8 @@
 
 The Results view records one pupil's performance against a level of
 expectations. Criteria support the marker's judgement, but they are not a hard
-gate: an adjustment can award points for valid work that does not match a
-predefined criterion.
+gate: freely awarded points can credit valid work that does not match a
+predefined criterion, or provide the entire result when no criteria exist.
 
 The underlying assessment structure and criterion syntax are specified in
 [LevelOfExpectations.md](LevelOfExpectations.md). PDF presentation is specified
@@ -16,17 +16,14 @@ totals. Its raw result may contain a half point, but the value is rounded
 half-up before it contributes to task, category, part, exam, grading, or export
 aggregates. No half point leaves its requirement.
 
-For a requirement with criteria:
-
 ```text
-raw requirement result = criterion subtotal + adjustment
+raw requirement result = criterion subtotal + freely awarded points
 aggregated result = round half-up(raw requirement result)
 ```
 
-The raw result may not exceed the requirement maximum.
-
-For a requirement without criteria, the marker enters its result directly in
-half-point steps. The result is subject to the same requirement-local rounding.
+The raw result may not exceed the requirement maximum. Without criteria, the
+criterion subtotal is zero; the marker enters the full result as freely
+awarded points in half-point steps.
 
 ## Criterion result
 
@@ -55,12 +52,22 @@ text.
   checkbox. Its width follows its current value.
 - Its accessible description includes the criterion identity, awarded value,
   and available value.
-- Clicking the pill opens a Vaadin popover below it.
+- Clicking the pill opens a Vaadin popover below it, with an arrow pointing up
+  to the pill.
 - The popover contains the familiar compact minus/plus control with half-point
   steps and the criterion value as its upper bound.
 - The pill, checkbox, popover control, and quick-marking control always display
   the same pending value.
 - The inline highlight spans the criterion text, pill, and checkbox together.
+
+The criterion-status line beneath the text reflects both full and partial
+awards. It is absent when there are no criteria. For a single criterion it says
+`Kriterium erfüllt`, `Kriterium teilweise erfüllt`, or `Kriterium nicht erfüllt`.
+When all of multiple criteria have the same nonzero status, it says
+`n Kriterien, alle voll erfüllt.` or `n Kriterien, alle teilweise erfüllt.`
+Otherwise it begins `n Kriterien,` and reports the counts that apply:
+`m voll erfüllt`, `p teilweise erfüllt`, both joined by `und`, or
+`keines erfüllt` when neither count is positive. It updates with pending edits.
 
 ## Quick-marking column
 
@@ -74,46 +81,44 @@ same criterion results.
   rounded values.
 - Every criterion row contains its three-state checkbox followed by an
   always-visible compact minus/plus control.
-- Aggregate badges, requirement totals, criterion controls, and adjustment
+- Aggregate badges, requirement totals, criterion controls, and freely awarded
   controls share one points-cell footprint and center their numeric value on
   the same vertical axis. Aggregate chips show `∑` or `∑∑` at the left while
   retaining their full labels for accessibility.
 - Only aggregate badges and requirement totals have a permanent red-tinted
   background. Point steppers are transparent at rest; hover, keyboard focus,
   or the linked criterion highlight adds the tint without a border.
-- The `Zusatzpunkte` label uses the same secondary text styling as the
+- The `Frei vergebene Punkte` label uses the same secondary text styling as the
   `n von m Punkten` label. Partial inline checkboxes show a dash.
 - Changes made in either the text or quick-marking column update the other
   representation immediately.
 
-### Adjustment
+### Freely awarded points
 
-A non-negative adjustment control appears at the bottom of the quick-marking
-column, aligned with the requirement comment field. The position associates a
-discretionary award with the comment that will usually explain it.
+A non-negative `Frei vergebene Punkte` control always appears at the bottom of
+the quick-marking column, aligned with the requirement comment field. It uses
+half-point steps. With criteria, it credits work outside those criteria; without
+criteria, it supplies the full requirement result. The rounded requirement
+total above it is read-only in both cases.
 
-Criterion awards and adjustment share the requirement's unrounded point
+Criterion awards and freely awarded points share the requirement's unrounded point
 budget:
 
 ```text
-criterion subtotal + adjustment <= requirement maximum
+criterion subtotal + freely awarded points <= requirement maximum
 ```
 
-A deliberate adjustment reserves its points. Criterion controls cannot consume
-that capacity until the adjustment is reduced. Conversely, fully awarded
-criteria leave no capacity for an adjustment. The available upper bounds must
-update immediately after either side changes; an existing adjustment must not
+A deliberate free award reserves its points. Criterion controls cannot consume
+that capacity until the free award is reduced. Conversely, fully awarded
+criteria leave no capacity for free points. The available upper bounds must
+update immediately after either side changes; an existing free award must not
 be silently reduced by a later criterion action.
-
-The adjustment is not available for a criterion-free requirement because there
-is no criterion subtotal to adjust.
 
 ### Criterion-free requirements
 
-A requirement without criteria shows neither a criterion list nor an
-adjustment. Its red result badge is directly editable: clicking it opens the
-same compact points popover, constrained to the requirement maximum and using
-half-point steps.
+A requirement without criteria shows no criterion list. Its freely awarded
+points control occupies the same bottom position as for a requirement with
+criteria, and can award up to the requirement maximum.
 
 ## Visual correspondence
 
@@ -136,8 +141,8 @@ column.
 ## Comments
 
 Every requirement may have a marker comment. Comments do not affect points.
-They remain visually associated with the adjustment because an adjustment will
-usually document work that does not map cleanly to the predefined criteria.
+They remain visually associated with freely awarded points because those
+points will usually need an explanation when criteria are defined.
 
 ## Regular and bonus aggregation
 
@@ -156,7 +161,7 @@ requirements.
 Result changes are collected for the selected pupil and saved together.
 
 - Save is enabled only while the selected pupil has pending valid changes.
-- Discard restores criterion values, adjustment or direct requirement values,
+- Discard restores criterion values, freely awarded points,
   and comments to their persisted state.
 - Switching or refreshing must not silently lose dirty edits.
 - Once any result exists for an exam, the corresponding level of expectations

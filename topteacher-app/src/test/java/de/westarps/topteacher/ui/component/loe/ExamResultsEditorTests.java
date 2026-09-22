@@ -31,6 +31,7 @@ import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.menubar.MenuBar;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.popover.Popover;
 import com.vaadin.flow.component.textfield.TextArea;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
@@ -212,13 +213,13 @@ class ExamResultsEditorTests {
 		assertThat(description.getExtensionState().get("criterionCheckboxes")).isEqualTo(true);
 		assertThat(criterionCheckbox.getValue()).isFalse();
 		assertThat(description.getCheckedCriterionKeys()).containsExactly("1");
-		assertThat(criterionIndicatorTexts(editor)).containsExactly("1 von 2 Kriterien erfüllt");
+		assertThat(criterionIndicatorTexts(editor)).containsExactly("2 Kriterien, 1 voll erfüllt.");
 
 		criterionCheckbox.setValue(true);
 
 		assertThat(saveButton.isEnabled()).isTrue();
 		assertThat(description.getCheckedCriterionKeys()).containsExactlyInAnyOrder("1", "2");
-		assertThat(criterionIndicatorTexts(editor)).containsExactly("2 von 2 Kriterien erfüllt");
+		assertThat(criterionIndicatorTexts(editor)).containsExactly("2 Kriterien, alle voll erfüllt.");
 		assertThat(pointsText(editor)).containsExactly("5 von 5 Punkten");
 		verify(levelOfExpectationsRepository, never()).saveCriterionResult(any(LoeCriterionResult.class));
 
@@ -257,6 +258,53 @@ class ExamResultsEditorTests {
 	}
 
 	@Test
+	void describesAllThreeStatesForOneCriterion() {
+		final LevelOfExpectationsRepository repository = levelOfExpectationsRepository(
+				List.of(REQUIREMENT), List.of(CRITERION), List.of(), List.of());
+		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository(), examRepository(), repository,
+				gradingScaleRepository());
+		editor.setExam(EXAM);
+		final LoePointStepper criterion = criterionStepper(editor, CRITERION.id());
+
+		assertThat(criterionIndicatorTexts(editor)).containsExactly("Kriterium nicht erfüllt");
+		increase(criterion);
+		assertThat(criterionIndicatorTexts(editor)).containsExactly("Kriterium teilweise erfüllt");
+		increase(criterion);
+		assertThat(criterionIndicatorTexts(editor)).containsExactly("Kriterium erfüllt");
+	}
+
+	@Test
+	void describesFullAndPartialAwardsForMultipleCriteria() {
+		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository(), examRepository(),
+				levelOfExpectationsRepository(), gradingScaleRepository());
+		editor.setExam(EXAM);
+		final LoePointStepper first = criterionStepper(editor, CRITERION.id());
+		final LoePointStepper second = criterionStepper(editor, SECOND_CRITERION.id());
+
+		assertThat(criterionIndicatorTexts(editor)).containsExactly("2 Kriterien, 1 voll erfüllt.");
+		increase(second);
+		assertThat(criterionIndicatorTexts(editor))
+				.containsExactly("2 Kriterien, 1 voll erfüllt und 1 teilweise erfüllt.");
+		decrease(first);
+		assertThat(criterionIndicatorTexts(editor)).containsExactly("2 Kriterien, alle teilweise erfüllt.");
+		decrease(first);
+		assertThat(criterionIndicatorTexts(editor)).containsExactly("2 Kriterien, 1 teilweise erfüllt.");
+		decrease(second);
+		assertThat(criterionIndicatorTexts(editor)).containsExactly("2 Kriterien, keines erfüllt.");
+	}
+
+	@Test
+	void omitsTheCriterionIndicatorWhenNoCriteriaExist() {
+		final LevelOfExpectationsRepository repository = levelOfExpectationsRepository(
+				List.of(BONUS_REQUIREMENT), List.of(), List.of());
+		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository(), examRepository(), repository,
+				gradingScaleRepository());
+		editor.setExam(EXAM);
+
+		assertThat(criterionIndicatorTexts(editor)).isEmpty();
+	}
+
+	@Test
 	void adjustmentReservesTheUnroundedRequirementBudget() {
 		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository(), examRepository(),
 				levelOfExpectationsRepository(), gradingScaleRepository());
@@ -282,22 +330,43 @@ class ExamResultsEditorTests {
 	}
 
 	@Test
-	void criterionFreeRequirementUsesDirectHalfPointAwardWithoutAdjustment() {
+	void criterionFreeRequirementUsesTheSameFreePointControlAndReadOnlyTotal() {
 		final LevelOfExpectationsRepository repository = levelOfExpectationsRepository(
 				List.of(REQUIREMENT, BONUS_REQUIREMENT), List.of(CRITERION, SECOND_CRITERION),
 				List.of(new LoeRequirementResult(REQUIREMENT.id(), PUPIL.id(), 1)));
 		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository(), examRepository(), repository,
 				gradingScaleRepository());
 		editor.setExam(EXAM);
-		final LoePointStepper direct = directStepper(editor);
+		final LoePointStepper free = freePointSteppers(editor).getLast();
 		assertThat(components(editor, LoePointStepper.class)).hasSize(4);
+		assertThat(freePointSteppers(editor)).hasSize(2);
+		assertThat(components(editor, Popover.class)).isEmpty();
+		assertThat(components(editor, ResultsRequirementPointCell.class))
+				.allSatisfy(cell -> assertThat(cell.getElement().getAttribute("role")).isNull());
+		assertThat(components(editor, Span.class).stream()
+				.filter(span -> span.getClassNames().contains("tt-results-adjustment-label"))
+				.map(Span::getText)).containsExactly("Frei vergebene Punkte", "Frei vergebene Punkte");
 
-		increase(direct);
-		assertThat(direct.getPointUnits()).isEqualTo(1);
+		increase(free);
+		assertThat(free.getPointUnits()).isEqualTo(1);
 		assertThat(pointsText(editor)).containsExactly("1 von 5 Punkten", "1 von 2 Punkten");
 		assertThat(badgeTexts(editor)).contains("Gesamt: 1 (+1)");
 		saveButton(editor).click();
 		verify(repository).saveRequirementResult(new LoeRequirementResult(BONUS_REQUIREMENT.id(), PUPIL.id(), 1, 0, ""));
+	}
+
+	@Test
+	void criterionFreeStoredResultAppearsInTheFreePointControl() {
+		final LevelOfExpectationsRepository repository = levelOfExpectationsRepository(
+				List.of(REQUIREMENT, BONUS_REQUIREMENT), List.of(CRITERION, SECOND_CRITERION),
+				List.of(new LoeRequirementResult(REQUIREMENT.id(), PUPIL.id(), 1),
+						new LoeRequirementResult(BONUS_REQUIREMENT.id(), PUPIL.id(), 1, 0, "")));
+		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository(), examRepository(), repository,
+				gradingScaleRepository());
+		editor.setExam(EXAM);
+
+		assertThat(freePointSteppers(editor).getLast().getPointUnits()).isEqualTo(1);
+		assertThat(saveButton(editor).isEnabled()).isFalse();
 	}
 
 	@Test
@@ -378,7 +447,7 @@ class ExamResultsEditorTests {
 		assertThat(breadcrumb(editor).getElement().getAttribute("data-tt-breadcrumb-root-label")).isEqualTo("EA");
 		assertThat(breadcrumb(editor).getElement().getAttribute("data-tt-breadcrumb-root-title"))
 				.isEqualTo("Ergebnis, Anna");
-		assertThat(criterionIndicatorTexts(editor)).containsExactly("1 von 2 Kriterien erfüllt");
+		assertThat(criterionIndicatorTexts(editor)).containsExactly("2 Kriterien, 1 voll erfüllt.");
 
 		pupilSelector(editor).setValue(SECOND_PUPIL);
 
@@ -389,7 +458,8 @@ class ExamResultsEditorTests {
 		assertThat(breadcrumb(editor).getElement().getAttribute("data-tt-breadcrumb-root-title"))
 				.isEqualTo("Ergebnis, Berta");
 		assertThat(pointsText(editor)).containsExactly("4 von 5 Punkten");
-		assertThat(criterionIndicatorTexts(editor)).containsExactly("1 von 2 Kriterien erfüllt");
+		assertThat(criterionIndicatorTexts(editor))
+				.containsExactly("2 Kriterien, 1 voll erfüllt und 1 teilweise erfüllt.");
 		assertThat(criterionCheckboxes(editor).get(1).isIndeterminate()).isTrue();
 		assertThat(criterionStepper(editor, SECOND_CRITERION.id())).isSameAs(points);
 		assertThat(components(editor, TextArea.class).getFirst()).isSameAs(comment);
@@ -487,7 +557,7 @@ class ExamResultsEditorTests {
 			assertThat(comment.getValue()).isEmpty();
 			assertThat(deleteButton.isEnabled()).isFalse();
 			assertThat(pointsText(editor)).containsExactly("0 von 5 Punkten");
-			assertThat(criterionIndicatorTexts(editor)).containsExactly("0 von 2 Kriterien erfüllt");
+			assertThat(criterionIndicatorTexts(editor)).containsExactly("2 Kriterien, keines erfüllt.");
 			assertThat(badgeTexts(editor)).contains("Gesamt: 0 (+0)", "Summe: 0 (+0)");
 		} finally {
 			UI.setCurrent(null);
@@ -528,9 +598,9 @@ class ExamResultsEditorTests {
 				levelOfExpectationsRepository, gradingScaleRepository());
 		editor.setExam(EXAM);
 
-		final LoePointStepper direct = directStepper(editor);
+		final LoePointStepper free = freePointSteppers(editor).getLast();
 		for (int index = 0; index < 4; index++) {
-			increase(direct);
+			increase(free);
 		}
 		saveButton(editor).click();
 
@@ -670,17 +740,14 @@ class ExamResultsEditorTests {
 	}
 
 	private static LoePointStepper adjustmentStepper(final Component root) {
+		return freePointSteppers(root).getFirst();
+	}
+
+	private static List<LoePointStepper> freePointSteppers(final Component root) {
 		return components(root, LoePointStepper.class).stream()
 				.filter(stepper -> stepper.getParent().map(parent -> parent.getClassNames()
 						.contains("tt-results-adjustment")).orElse(false))
-				.findFirst().orElseThrow();
-	}
-
-	private static LoePointStepper directStepper(final Component root) {
-		return components(root, LoePointStepper.class).stream()
-				.filter(stepper -> stepper.getParent().map(parent -> parent instanceof com.vaadin.flow.component.popover.Popover)
-						.orElse(false))
-				.findFirst().orElseThrow();
+				.toList();
 	}
 
 	private static void increase(final LoePointStepper stepper) {

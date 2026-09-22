@@ -673,7 +673,7 @@ function CriterionPointButton(props: CriterionButtonProps): ReactElement {
         {formatPointUnits(award?.awardedUnits ?? 0)}
       </button>
       {award && (
-        <Popover target={target ?? undefined} position="bottom" trigger={['click']}>
+        <Popover target={target ?? undefined} position="bottom" theme="arrow" trigger={['click']}>
           <div className="tt-criterion-award-popover" role="group" aria-label={`${award.label} Punkte`}>
             <button type="button" aria-label={`${award.label} Punkte verringern`}
               disabled={award.awardedUnits <= 0}
