@@ -14,7 +14,7 @@ import de.westarps.validate.ValidationSummary;
 import de.westarps.vaadin.tray.StatusTray;
 import de.westarps.vaadin.tray.StatusTrayController;
 
-public abstract class AbstractDesigner extends VerticalLayout {
+public abstract class AbstractDesigner extends ContextTabContent {
 
 	private final HorizontalLayout toolbar = new HorizontalLayout();
 	private final HorizontalLayout toolbarSummary = new HorizontalLayout();
@@ -23,9 +23,6 @@ public abstract class AbstractDesigner extends VerticalLayout {
 
 	protected AbstractDesigner(final String className) {
 		addClassNames("tt-designer", className);
-		setPadding(false);
-		setSpacing(false);
-		setSizeFull();
 
 		toolbar.addClassName("tt-designer-toolbar");
 		toolbar.setAlignItems(Alignment.CENTER);

@@ -291,6 +291,15 @@ vaadin-app-layout::part(navbar) {
 	width: 100%;
 }
 
+.tt-context-tab-content {
+	box-sizing: border-box;
+	height: 100%;
+	min-height: 0;
+	min-width: 0;
+	padding: 0;
+	width: 100%;
+}
+
 .tt-tab-status-icon {
 	color: var(--lumo-secondary-text-color);
 	height: var(--lumo-icon-size-xs);
@@ -311,12 +320,7 @@ vaadin-app-layout::part(navbar) {
 }
 
 .tt-split-editor-tab-content {
-	box-sizing: border-box;
 	gap: var(--lumo-space-m);
-	height: 100%;
-	min-height: 0;
-	padding: 0;
-	width: 100%;
 }
 
 .tt-editor {
@@ -325,11 +329,7 @@ vaadin-app-layout::part(navbar) {
 }
 
 .tt-course-assignments {
-	box-sizing: border-box;
 	gap: var(--lumo-space-m);
-	height: 100%;
-	padding: var(--lumo-space-m);
-	width: 100%;
 }
 
 .tt-assignment-grid {
@@ -341,12 +341,6 @@ vaadin-app-layout::part(navbar) {
 	color: var(--lumo-secondary-text-color);
 	height: var(--lumo-icon-size-s);
 	width: var(--lumo-icon-size-s);
-}
-
-.tt-designer {
-	box-sizing: border-box;
-	height: 100%;
-	width: 100%;
 }
 
 .tt-eh-editor,

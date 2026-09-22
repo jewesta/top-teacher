@@ -93,6 +93,8 @@ This issue note records the implementation sequence and current status only.
 - Add requirement-local adjustment budgeting, direct marking for requirements
   without criteria, and bidirectional hover/focus highlighting.
 - Preserve dirty-state save/discard behavior and expose raw values through MCP.
+- Give all context-tab contents one flush outer-layout contract, removing the
+  assignment grid's extra padding in both the exam and course tabs.
 
 ## Remaining implementation
 
