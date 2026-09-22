@@ -109,7 +109,7 @@ class LevelOfExpectationsExportModelFactoryTests {
 				List.of(new LoeRequirementResult(1, 1, 4, "Sauber"), new LoeRequirementResult(2, 1, 1, "")),
 				List.of(new LoeCriterion(10, 1, "1", "Zeitform", 0, true),
 						new LoeCriterion(11, 1, "2", "Wortwahl", 1, true)),
-				List.of(new LoeCriterionResult(10, 1, true), new LoeCriterionResult(11, 1, false)),
+				List.of(new LoeCriterionResult(10, 1, 2), new LoeCriterionResult(11, 1, 0)),
 				List.of(new ExamNoteSection(1, 1, "Hinweis", "*Notiz*", 0)));
 	}
 }

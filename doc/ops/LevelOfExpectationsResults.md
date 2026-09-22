@@ -51,6 +51,10 @@ text.
 
 - The criterion pill displays awarded points rather than the internal
   criterion key.
+- It uses the same visual styling as the EH pill. An invisible slot reserves
+  enough width for any value up to that criterion's configured maximum,
+  including half points; changing the award must not shift the surrounding
+  text.
 - Its accessible description includes the criterion identity, awarded value,
   and available value.
 - Clicking the pill opens a Vaadin popover below it.

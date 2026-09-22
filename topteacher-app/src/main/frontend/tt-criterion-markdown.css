@@ -124,10 +124,11 @@
 }
 
 .tt-criterion-badge,
-.tt-criterion > .tt-criterion-highlight + span {
+.tt-criterion > .tt-criterion-highlight + span:not(.tt-criterion-point-slot) {
 	align-items: center;
 	background: var(--lumo-contrast-70pct);
 	border-radius: 999px;
+	box-sizing: content-box;
 	color: var(--lumo-base-color);
 	display: inline-flex;
 	font-size: 0.72em;
@@ -139,4 +140,58 @@
 	min-width: 1.35em;
 	padding: 0 0.25em;
 	vertical-align: 0.12em;
+}
+
+.tt-criterion-point-slot {
+	align-items: center;
+	display: inline-flex;
+	font-size: 0.72em;
+	vertical-align: 0.12em;
+}
+
+.tt-criterion-point-slot > .tt-criterion-badge {
+	font-size: 1em;
+}
+
+.tt-criterion-point-button {
+	appearance: none;
+	border: 0;
+	cursor: pointer;
+	font-family: inherit;
+}
+
+.tt-criterion-active .tt-criterion-highlight {
+	background: var(--lumo-primary-color-10pct, #f5dfe4);
+}
+
+.tt-criterion-active .tt-criterion-point-button {
+	background: var(--lumo-primary-color);
+}
+
+.tt-criterion-award-popover {
+	align-items: center;
+	display: flex;
+	gap: var(--lumo-space-xs);
+	padding: var(--lumo-space-xs);
+}
+
+.tt-criterion-award-popover button {
+	background: transparent;
+	border: 0;
+	border-radius: var(--lumo-border-radius-s);
+	color: var(--lumo-primary-text-color);
+	cursor: pointer;
+	font: inherit;
+	min-width: 1.8rem;
+	padding: var(--lumo-space-xs);
+}
+
+.tt-criterion-award-popover button:disabled {
+	cursor: default;
+	opacity: 0.35;
+}
+
+.tt-criterion-award-popover span {
+	min-width: 2.5rem;
+	text-align: center;
 }

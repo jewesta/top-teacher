@@ -150,7 +150,8 @@ public class LevelOfExpectationsExportModelFactory {
 		final Map<String, Boolean> statusByKey = new HashMap<>();
 		criteria.forEach(criterion -> {
 			final LoeCriterionResult result = resultsByCriterionId.get(criterion.id());
-			statusByKey.put(criterion.criterionKey(), result != null && result.achieved());
+			statusByKey.put(criterion.criterionKey(), result != null
+					&& result.pointUnits() == criterion.pointUnits());
 		});
 		return key -> statusByKey.getOrDefault(key, false);
 	}

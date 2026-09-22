@@ -22,6 +22,13 @@ public final class LoePointUnits {
 		return Math.multiplyExact(points, UNITS_PER_POINT);
 	}
 
+	public static int roundedWholePoints(final int units) {
+		if (units < 0) {
+			throw new IllegalArgumentException("units must not be negative");
+		}
+		return (units + 1) / UNITS_PER_POINT;
+	}
+
 	public static OptionalInt parsePositive(final String value) {
 		if (value == null) {
 			return OptionalInt.empty();

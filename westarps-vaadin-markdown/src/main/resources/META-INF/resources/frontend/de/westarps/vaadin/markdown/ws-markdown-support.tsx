@@ -1,4 +1,5 @@
 import { commands, type ICommand } from '@uiw/react-md-editor/nohighlight';
+import type React from 'react';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import type { PluggableList } from 'unified';
 import {
@@ -34,6 +35,10 @@ export function markdownExtraCommands(hiddenToolbarCommands: MarkdownToolbarComm
 }
 
 export function markdownPreviewOptions(extensions: MarkdownExtension[], context: MarkdownExtensionContext) {
+  return markdownPreviewConfiguration(extensions, context).options;
+}
+
+export function markdownPreviewConfiguration(extensions: MarkdownExtension[], context: MarkdownExtensionContext) {
   const contributions: MarkdownPreviewContribution[] = extensions.flatMap((extension) =>
     extension.preview ? [extension.preview(context)] : [],
   );
@@ -42,12 +47,17 @@ export function markdownPreviewOptions(extensions: MarkdownExtension[], context:
     defaultSchema,
   );
   return {
-    remarkPlugins: contributions.flatMap((contribution) => contribution.remarkPlugins ?? []) as PluggableList,
-    rehypePlugins: [
-      ...contributions.flatMap((contribution) => contribution.rehypePlugins ?? []),
-      [rehypeSanitize, schema],
-    ] as PluggableList,
-    components: Object.assign({}, ...contributions.map((contribution) => contribution.components ?? {})),
+    options: {
+      remarkPlugins: contributions.flatMap((contribution) => contribution.remarkPlugins ?? []) as PluggableList,
+      rehypePlugins: [
+        ...contributions.flatMap((contribution) => contribution.rehypePlugins ?? []),
+        [rehypeSanitize, schema],
+      ] as PluggableList,
+      components: Object.assign({}, ...contributions.map((contribution) => contribution.components ?? {})),
+    },
+    wrap: (content: React.ReactElement): React.ReactElement => contributions.reduceRight(
+      (wrapped, contribution) => contribution.wrap?.(wrapped, context) ?? wrapped, content,
+    ),
   };
 }
 

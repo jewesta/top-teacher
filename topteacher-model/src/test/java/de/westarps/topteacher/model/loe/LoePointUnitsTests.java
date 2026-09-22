@@ -30,4 +30,12 @@ class LoePointUnitsTests {
 		assertThat(LoePointUnits.formatGerman(2)).isEqualTo("1");
 		assertThat(LoePointUnits.formatGerman(3)).isEqualTo("1,5");
 	}
+
+	@Test
+	void roundsHalfPointsUpOnlyAtTheRequirementBoundary() {
+		assertThat(LoePointUnits.roundedWholePoints(0)).isZero();
+		assertThat(LoePointUnits.roundedWholePoints(1)).isEqualTo(1);
+		assertThat(LoePointUnits.roundedWholePoints(2)).isEqualTo(1);
+		assertThat(LoePointUnits.roundedWholePoints(3)).isEqualTo(2);
+	}
 }

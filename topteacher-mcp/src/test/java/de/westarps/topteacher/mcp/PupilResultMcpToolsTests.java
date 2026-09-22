@@ -21,6 +21,8 @@ import de.westarps.topteacher.model.GradingScale;
 import de.westarps.topteacher.model.GradingScaleRange;
 import de.westarps.topteacher.model.Lifecycle;
 import de.westarps.topteacher.model.Pupil;
+import de.westarps.topteacher.model.loe.LoeCriterion;
+import de.westarps.topteacher.model.loe.LoeCriterionResult;
 import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeRequirementResult;
 
@@ -44,8 +46,12 @@ class PupilResultMcpToolsTests {
 		when(pupils.findById(pupil.id())).thenReturn(Optional.of(pupil));
 		when(levelOfExpectations.findRequirementsByExamId(exam.id())).thenReturn(List.of(regular, bonus));
 		when(levelOfExpectations.findRequirementResultsByExamAndPupil(exam.id(), pupil.id()))
-				.thenReturn(List.of(new LoeRequirementResult(regular.id(), pupil.id(), 4),
+				.thenReturn(List.of(new LoeRequirementResult(regular.id(), pupil.id(), 7, 1, ""),
 						new LoeRequirementResult(bonus.id(), pupil.id(), 2)));
+		final LoeCriterion criterion = new LoeCriterion(41, regular.id(), "1", "Zeitform", 3, 0, true);
+		when(levelOfExpectations.findActiveCriteriaByExamId(exam.id())).thenReturn(List.of(criterion));
+		when(levelOfExpectations.findCriterionResultsByExamAndPupil(exam.id(), pupil.id()))
+				.thenReturn(List.of(new LoeCriterionResult(criterion.id(), pupil.id(), 1)));
 		when(gradingScales.findById(9))
 				.thenReturn(Optional.of(new GradingScale(9, "Fünf Punkte", 5, Lifecycle.ACTIVE)));
 		when(gradingScales.findRangesByGradingScaleId(9))
@@ -58,5 +64,9 @@ class PupilResultMcpToolsTests {
 		assertThat(result.summary().effectivePoints()).isEqualTo(5);
 		assertThat(result.summary().grade()).isEqualTo("2");
 		assertThat(result.summary().gradingAvailable()).isTrue();
+		assertThat(result.requirements().getFirst().pointUnits()).isEqualTo(7);
+		assertThat(result.requirements().getFirst().adjustmentUnits()).isEqualTo(1);
+		assertThat(result.criteria().getFirst().awardedPointUnits()).isEqualTo(1);
+		assertThat(result.criteria().getFirst().availablePointUnits()).isEqualTo(3);
 	}
 }

@@ -77,14 +77,25 @@ This issue note records the implementation sequence and current status only.
 - Persisted criterion values, included them in correction-mode locking and MCP
   views, and retained teacher-export criterion identity matching.
 
+## Completed Results phase
+
+- Store awarded criterion values and requirement adjustments in half-point
+  units; migrate existing result rows and retain rounded whole-point caches.
+- Round each raw requirement result before higher-level aggregation.
+- Synchronize inline tri-state checkboxes, awarded-value pills with point
+  popovers, and compact quick-marking steppers without changing the tuned
+  aggregation-chip alignment. Results pills share EH styling and reserve
+  width for half-point values without shifting the surrounding text.
+- Add requirement-local adjustment budgeting, direct marking for requirements
+  without criteria, and bidirectional hover/focus highlighting.
+- Preserve dirty-state save/discard behavior and expose raw values through MCP.
+
 ## Remaining implementation
 
-- Implement Results criterion awards, adjustment budgeting, holistic marking,
-  synchronized controls, and bidirectional criterion highlighting.
 - Update PDF and spreadsheet exports and the remaining grading and evaluation
   paths for the Results-side half-point behavior.
 
 ## Status
 
-The reusable preparation, EH validation refactor, and EH half-point phase are
-complete. Results-side marking behavior and the final export work remain.
+The reusable preparation, EH validation refactor, EH half-point phase, and
+Results-side marking behavior are complete. PDF and other export work remains.

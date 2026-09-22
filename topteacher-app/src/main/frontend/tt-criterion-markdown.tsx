@@ -1,4 +1,5 @@
-import React, { type InputHTMLAttributes, type MouseEvent, type ReactElement } from 'react';
+import React, { type ButtonHTMLAttributes, type InputHTMLAttributes, type MouseEvent, type ReactElement } from 'react';
+import { Popover } from '@vaadin/react-components/Popover.js';
 import {
   executeCommand,
   getSurroundingWord,
@@ -54,6 +55,13 @@ type TagRange = {
   target: TextRange;
   key: TextRange;
   value?: TextRange;
+};
+
+type CriterionAward = {
+  label: string;
+  pointUnits: number;
+  awardedUnits: number;
+  maxAwardableUnits: number;
 };
 
 const criterionTag: MarkdownTagOptions = {
@@ -301,7 +309,7 @@ function equivalentValue(left: string, right: string): boolean {
 function tagSanitizeSchema(schema: typeof defaultSchema, tagRenderMode: MarkdownTagRenderMode): typeof defaultSchema {
   const tagNames = [...(schema.tagNames ?? []), 'mark', 'span'];
   if (tagRenderMode === 'CHECKBOX') {
-    tagNames.push('input');
+    tagNames.push('input', 'button');
   }
 
   return {
@@ -320,6 +328,14 @@ function tagSanitizeSchema(schema: typeof defaultSchema, tagRenderMode: Markdown
       span: [
         ...(schema.attributes?.span ?? []),
         ['className', 'tt-criterion', 'tt-criterion-badge'],
+        'dataCriterionKey',
+      ],
+      button: [
+        ...(schema.attributes?.button ?? []),
+        ['className', 'tt-criterion-badge', 'tt-criterion-point-button'],
+        ['type', 'button'],
+        'dataCriterionKey',
+        'ariaLabel',
       ],
     },
   };
@@ -382,10 +398,10 @@ function unwrapTag(markdown: string, api: TextAreaTextApi, tag: TagRange, origin
 function remarkTags(
   tag: MarkdownTagOptions,
   tagRenderMode: MarkdownTagRenderMode,
-  checkedTagKeys: Set<string>,
+  awards: Map<string, CriterionAward>,
 ) {
   return () => (tree: MarkdownNode) => {
-    transformTags(tree, tag, tagRenderMode, checkedTagKeys);
+    transformTags(tree, tag, tagRenderMode, awards);
   };
 }
 
@@ -393,7 +409,7 @@ function transformTags(
   node: MarkdownNode | undefined,
   tag: MarkdownTagOptions,
   tagRenderMode: MarkdownTagRenderMode,
-  checkedTagKeys: Set<string>,
+  awards: Map<string, CriterionAward>,
 ) {
   if (!node?.children || skippedNodeTypes.has(node.type)) {
     return;
@@ -402,9 +418,9 @@ function transformTags(
   node.children = node.children.flatMap((child) => {
     const tagTarget = tagTargetFromNode(child, tag);
     if (tagTarget) {
-      return [tagNode(tagTarget, child.children ?? [], tagRenderMode, checkedTagKeys, tag)];
+      return [tagNode(tagTarget, child.children ?? [], tagRenderMode, awards, tag)];
     }
-    transformTags(child, tag, tagRenderMode, checkedTagKeys);
+    transformTags(child, tag, tagRenderMode, awards);
     return [child];
   });
 }
@@ -421,16 +437,19 @@ function tagNode(
   target: string,
   children: MarkdownNode[],
   tagRenderMode: MarkdownTagRenderMode,
-  checkedTagKeys: Set<string>,
+  awards: Map<string, CriterionAward>,
   tag: MarkdownTagOptions,
 ): MarkdownNode {
   const reference = tagReference(target, tag);
+  const award = awards.get(reference.key);
+  const displayValue = tagRenderMode === 'CHECKBOX' ? formatPointUnits(award?.awardedUnits ?? 0) : reference.displayValue;
   return {
     type: 'ttCriterion',
     data: {
       hName: 'span',
       hProperties: {
         className: ['tt-criterion'],
+        dataCriterionKey: reference.key,
       },
     },
     children: [
@@ -447,17 +466,22 @@ function tagNode(
       {
         type: 'ttCriterionBadge',
         data: {
-          hName: 'span',
+          hName: tagRenderMode === 'CHECKBOX' ? 'button' : 'span',
           hProperties: {
-            className: ['tt-criterion-badge'],
+            className: tagRenderMode === 'CHECKBOX'
+              ? ['tt-criterion-badge', 'tt-criterion-point-button']
+              : ['tt-criterion-badge'],
+            ...(tagRenderMode === 'CHECKBOX' ? { type: 'button', dataCriterionKey: reference.key } : {}),
             ...(tag.valueSelector
-              ? { ariaLabel: `${reference.key}: ${reference.displayValue}` }
+              ? { ariaLabel: tagRenderMode === 'CHECKBOX'
+                ? `${award?.label ?? reference.key}: ${displayValue} von ${formatPointUnits(award?.pointUnits ?? 0)} ${award?.pointUnits === 2 ? 'Punkt' : 'Punkten'}`
+                : `${reference.key}: ${reference.displayValue}` }
               : {}),
           },
         },
-        children: [{ type: 'text', value: reference.displayValue }],
+        children: [{ type: 'text', value: displayValue }],
       },
-      ...(tagRenderMode === 'CHECKBOX' ? [tagCheckboxNode(reference.key, checkedTagKeys.has(reference.key))] : []),
+      ...(tagRenderMode === 'CHECKBOX' ? [tagCheckboxNode(reference.key, award)] : []),
     ],
   };
 }
@@ -487,7 +511,11 @@ function optionLabel(value: string, selector: MarkdownTagValueSelectorOptions): 
   return value.replace('.', ',');
 }
 
-function tagCheckboxNode(id: string, checked: boolean): MarkdownNode {
+function formatPointUnits(units: number): string {
+  return units % 2 === 0 ? String(units / 2) : `${Math.floor(units / 2)},5`;
+}
+
+function tagCheckboxNode(id: string, award: CriterionAward | undefined): MarkdownNode {
   return {
     type: 'ttCriterionCheckbox',
     data: {
@@ -495,7 +523,7 @@ function tagCheckboxNode(id: string, checked: boolean): MarkdownNode {
       hProperties: {
         className: ['tt-criterion-checkbox'],
         type: 'checkbox',
-        defaultChecked: checked,
+        defaultChecked: Boolean(award && award.awardedUnits === award.pointUnits),
         value: id,
       },
     },
@@ -548,54 +576,162 @@ function escapeRegExp(value: string): string {
 }
 
 type CriterionInputProps = InputHTMLAttributes<HTMLInputElement> & { node?: unknown };
+type CriterionButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { node?: unknown };
+type CriterionSpanProps = React.HTMLAttributes<HTMLSpanElement> & { node?: unknown };
+const CriterionContext = React.createContext<MarkdownExtensionContext | null>(null);
 
-function criterionInput(context: MarkdownExtensionContext, checkedKeys: Set<string>) {
-  function CriterionCheckbox(props: CriterionInputProps): ReactElement {
-    const key = String(props.value ?? '');
-    const shouldBeChecked = checkedKeys.has(key);
-    const [checked, setChecked] = React.useState(shouldBeChecked);
-    React.useEffect(() => setChecked(shouldBeChecked), [shouldBeChecked]);
+function useCriterionContext(): MarkdownExtensionContext {
+  const context = React.useContext(CriterionContext);
+  if (!context) throw new Error('Criterion preview context is missing');
+  return context;
+}
 
-    const inputProps = { ...props };
-    delete inputProps.checked;
-    delete inputProps.defaultChecked;
-    delete inputProps.disabled;
-    delete inputProps.node;
-    delete inputProps.onChange;
-    delete inputProps.type;
+function criterionAwards(context: MarkdownExtensionContext): Map<string, CriterionAward> {
+  return new Map<string, CriterionAward>(Object.entries(
+    context.state.criterionAwards && typeof context.state.criterionAwards === 'object'
+      ? context.state.criterionAwards as Record<string, CriterionAward>
+      : {},
+  ));
+}
 
-    return (
-      <input
-        {...inputProps}
-        type="checkbox"
-        checked={checked}
-        onChange={(event) => {
-          setChecked(event.currentTarget.checked);
-          context.emit('criterion-checked-changed', { key, checked: event.currentTarget.checked });
-        }}
-      />
-    );
+function criterionAward(context: MarkdownExtensionContext, key: string): CriterionAward | undefined {
+  const awards = context.state.criterionAwards;
+  return awards && typeof awards === 'object'
+    ? (awards as Record<string, CriterionAward>)[key]
+    : undefined;
+}
+
+function criterionPillWidth(pointUnits: number): string {
+  const largestPartialValue = formatPointUnits(Math.max(0, pointUnits - 1));
+  return `${Math.max(3, formatPointUnits(pointUnits).length, largestPartialValue.length)}ch`;
+}
+
+function criterionKey(props: Record<string, unknown>): string {
+  return String(props['data-criterion-key'] ?? props.dataCriterionKey ?? '');
+}
+
+function CriterionCheckbox(props: CriterionInputProps): ReactElement {
+  const context = useCriterionContext();
+  const key = String(props.value ?? '');
+  const award = criterionAward(context, key);
+  const [awardedUnits, setAwardedUnits] = React.useState(award?.awardedUnits ?? 0);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  React.useEffect(() => setAwardedUnits(award?.awardedUnits ?? 0), [award?.awardedUnits]);
+  React.useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.indeterminate = awardedUnits > 0 && awardedUnits < (award?.pointUnits ?? 0);
+    }
+  }, [awardedUnits, award?.pointUnits]);
+
+  const inputProps = { ...props };
+  delete inputProps.checked;
+  delete inputProps.defaultChecked;
+  delete inputProps.disabled;
+  delete inputProps.node;
+  delete inputProps.onChange;
+  delete inputProps.type;
+
+  const fullAvailable = awardedUnits === award?.pointUnits
+    || (award?.maxAwardableUnits ?? 0) >= (award?.pointUnits ?? 0);
+  return (
+    <input
+      {...inputProps}
+      ref={inputRef}
+      type="checkbox"
+      checked={Boolean(award && awardedUnits === award.pointUnits)}
+      disabled={!award || !fullAvailable}
+      aria-label={`${award?.label ?? key}: ${formatPointUnits(awardedUnits)} von ${formatPointUnits(award?.pointUnits ?? 0)} ${award?.pointUnits === 2 ? 'Punkt' : 'Punkten'}`}
+      onChange={() => {
+        if (!award) return;
+        const next = awardedUnits === award.pointUnits ? 0 : award.pointUnits;
+        setAwardedUnits(next);
+        context.emit('criterion-award-changed', { key, pointUnits: next });
+      }}
+    />
+  );
+}
+
+function criterionInput(props: CriterionInputProps): ReactElement {
+  return props.className?.split(' ').includes('tt-criterion-checkbox')
+    ? <CriterionCheckbox {...props} />
+    : <input {...props} />;
+}
+
+function CriterionPointButton(props: CriterionButtonProps): ReactElement {
+  const context = useCriterionContext();
+  const key = criterionKey(props as Record<string, unknown>);
+  const award = criterionAward(context, key);
+  const [target, setTarget] = React.useState<HTMLButtonElement | null>(null);
+  const buttonProps = { ...props };
+  delete buttonProps.node;
+  delete (buttonProps as Record<string, unknown>).dataCriterionKey;
+  delete (buttonProps as Record<string, unknown>)['data-criterion-key'];
+
+  return (
+    <span className="tt-criterion-point-slot">
+      <button {...buttonProps} ref={setTarget} type="button">
+        {formatPointUnits(award?.awardedUnits ?? 0)}
+      </button>
+      {award && (
+        <Popover target={target ?? undefined} position="bottom" trigger={['click']}>
+          <div className="tt-criterion-award-popover" role="group" aria-label={`${award.label} Punkte`}>
+            <button type="button" aria-label={`${award.label} Punkte verringern`}
+              disabled={award.awardedUnits <= 0}
+              onClick={() => context.emit('criterion-award-changed', { key, pointUnits: award.awardedUnits - 1 })}>−</button>
+            <span>{formatPointUnits(award.awardedUnits)}</span>
+            <button type="button" aria-label={`${award.label} Punkte erhöhen`}
+              disabled={award.awardedUnits >= award.maxAwardableUnits}
+              onClick={() => context.emit('criterion-award-changed', { key, pointUnits: award.awardedUnits + 1 })}>+</button>
+          </div>
+        </Popover>
+      )}
+    </span>
+  );
+}
+
+function criterionButton(props: CriterionButtonProps): ReactElement {
+  return props.className?.split(' ').includes('tt-criterion-point-button')
+    ? <CriterionPointButton {...props} />
+    : <button {...props} />;
+}
+
+function criterionSpan(props: CriterionSpanProps): ReactElement {
+  const context = useCriterionContext();
+  const spanProps = { ...props };
+  delete spanProps.node;
+  const key = criterionKey(props as Record<string, unknown>);
+  if (!props.className?.split(' ').includes('tt-criterion')) {
+    return <span {...spanProps} />;
   }
-
-  return (props: CriterionInputProps): ReactElement =>
-    props.className?.split(' ').includes('tt-criterion-checkbox')
-      ? <CriterionCheckbox {...props} />
-      : <input {...props} />;
+  const active = Array.isArray(context.state.highlightedCriterionKeys)
+    && context.state.highlightedCriterionKeys.includes(key);
+  return <span {...spanProps}
+    className={`${props.className ?? ''}${active ? ' tt-criterion-active' : ''}`}
+    onMouseEnter={() => context.emit('criterion-highlight-changed', { key, active: true })}
+    onMouseLeave={() => context.emit('criterion-highlight-changed', { key, active: false })}
+    onFocusCapture={() => context.emit('criterion-highlight-changed', { key, active: true })}
+    onBlurCapture={(event) => {
+      if (!event.currentTarget.contains(event.relatedTarget)) {
+        context.emit('criterion-highlight-changed', { key, active: false });
+      }
+    }} />;
 }
 
 registerMarkdownExtension('tt-criterion', {
   editorCommands: () => [tagValueSelectorCommand(criterionTag, criterionTag.valueSelector!)],
   preview: (context) => {
     const renderMode: MarkdownTagRenderMode = context.state.criterionCheckboxes === true ? 'CHECKBOX' : 'DEFAULT';
-    const checkedKeys = new Set(
-      Array.isArray(context.state.checkedCriterionKeys)
-        ? context.state.checkedCriterionKeys.filter((key): key is string => typeof key === 'string')
-        : [],
-    );
+    const awards = criterionAwards(context);
     return {
-      remarkPlugins: [remarkTags(criterionTag, renderMode, checkedKeys)],
+      remarkPlugins: [remarkTags(criterionTag, renderMode, awards)],
       sanitizeSchema: (schema) => tagSanitizeSchema(schema, renderMode),
-      components: renderMode === 'CHECKBOX' ? { input: criterionInput(context, checkedKeys) } : undefined,
+      wrap: (content, currentContext) =>
+        <CriterionContext.Provider value={currentContext}>{content}</CriterionContext.Provider>,
+      components: renderMode === 'CHECKBOX' ? {
+        input: criterionInput,
+        button: criterionButton,
+        span: criterionSpan,
+      } : undefined,
     };
   },
 });

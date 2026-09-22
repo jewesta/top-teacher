@@ -9,6 +9,7 @@ export type MarkdownPreviewContribution = {
   rehypePlugins?: PluggableList;
   sanitizeSchema?: (schema: typeof defaultSchema) => typeof defaultSchema;
   components?: React.ComponentProps<typeof MDEditor.Markdown>['components'];
+  wrap?: (content: React.ReactElement, context: MarkdownExtensionContext) => React.ReactElement;
 };
 
 export type MarkdownExtensionContext = {

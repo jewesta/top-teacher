@@ -4,7 +4,7 @@ import MDEditor from '@uiw/react-md-editor';
 import { ReactAdapterElement, type RenderHooks } from 'Frontend/generated/flow/ReactAdapter';
 import '@uiw/react-md-editor/markdown-editor.css';
 import '@uiw/react-markdown-preview/markdown.css';
-import { markdownPreviewOptions } from './ws-markdown-support';
+import { markdownPreviewConfiguration } from './ws-markdown-support';
 import { markdownExtensions, type MarkdownExtensionContext } from './ws-markdown-extensions';
 
 type MarkdownViewerContentProps = {
@@ -24,11 +24,13 @@ function MarkdownViewerContent({
     renderComplete();
   });
 
-  return (
+  const preview = markdownPreviewConfiguration(markdownExtensions(extensionIds), context);
+
+  return preview.wrap(
     <MDEditor.Markdown
       key={`${content}:${extensionIds.join(',')}`}
       source={content}
-      {...markdownPreviewOptions(markdownExtensions(extensionIds), context)}
+      {...preview.options}
     />
   );
 }

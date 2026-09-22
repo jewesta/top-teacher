@@ -662,8 +662,36 @@ vaadin-app-layout::part(navbar) {
 
 .tt-results-points-control {
 	align-items: stretch;
+	height: 100%;
 	min-width: 0;
 	width: 100%;
+}
+
+.tt-results-requirement-total {
+	cursor: default;
+	margin: 0;
+	width: 100%;
+}
+
+.tt-results-requirement-total[role="button"] {
+	cursor: pointer;
+}
+
+.tt-results-point-stepper {
+	justify-content: space-between;
+	width: 100%;
+}
+
+.tt-results-point-stepper-value {
+	flex: 1 1 auto;
+	font-variant-numeric: tabular-nums;
+	text-align: center;
+}
+
+.tt-results-adjustment {
+	font-size: var(--lumo-font-size-xs);
+	margin-top: auto;
+	padding-top: var(--lumo-space-s);
 }
 
 .tt-results-points-field {
@@ -690,6 +718,10 @@ vaadin-app-layout::part(navbar) {
 .tt-results-criterion-checkbox-row {
 	column-gap: var(--lumo-space-xs);
 	min-height: var(--lumo-size-s);
+}
+
+.tt-results-criterion-highlighted {
+	background: var(--lumo-primary-color-10pct);
 }
 
 .tt-results-criterion-badge {
