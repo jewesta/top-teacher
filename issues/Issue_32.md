@@ -65,6 +65,8 @@ This issue note records the implementation sequence and current status only.
   agreed `P` control, 0,5-through-4 presets, `4+` placeholder, and a maximum
   valid custom value of 999 points. Criterion rendering and Results checkboxes
   also belong to TT, not the reusable Markdown module.
+- Excluded app-specific Vaadin development metadata from the reusable Markdown
+  JAR so TT resolves its own frontend files after a clean server restart.
 - Changed criterion pills from internal keys to point values.
 - Made criterion-free requirements valid while retaining exact allocation when
   at least one criterion exists.
