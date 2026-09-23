@@ -10,7 +10,8 @@ final class LoePointBadge extends LoeBadge {
 	private final Supplier<LoePoints> pointsSupplier;
 
 	LoePointBadge(final String label, final Supplier<LoePoints> pointsSupplier) {
-		super("tt-eh-points");
+		super("tt-loe-points-cell");
+		getContent().addClassName("tt-loe-aggregate-points");
 		this.label = label;
 		this.pointsSupplier = pointsSupplier;
 		refreshBadges();
@@ -22,10 +23,13 @@ final class LoePointBadge extends LoeBadge {
 	}
 
 	private void setPointBadge(final LoePoints points) {
-		setBadgeComponents(label + ": " + points.regular() + " (+" + points.bonus() + ")", text(label + ": "),
-				number(String.valueOf(points.regular()), "tt-eh-point-regular"), text("\u00a0"), text("(+"),
-				number(String.valueOf(points.bonus()), "tt-eh-point-bonus"), text(")"));
-		getContent().addClassName("tt-eh-point-badge");
+		final Span caption = text(label + ": ");
+		caption.addClassName("tt-loe-aggregate-points-label");
+		final Span values = new Span();
+		values.addClassName("tt-loe-aggregate-points-values");
+		values.add(number(String.valueOf(points.regular()), "tt-loe-point-regular"), text("\u00a0"), text("(+"),
+				number(String.valueOf(points.bonus()), "tt-loe-point-bonus"), text(")"));
+		setBadgeComponents(label + ": " + points.regular() + " (+" + points.bonus() + ")", caption, values);
 	}
 
 	private static Span text(final String text) {
@@ -34,7 +38,7 @@ final class LoePointBadge extends LoeBadge {
 
 	private static Span number(final String text, final String widthClassName) {
 		final Span span = new Span(text);
-		span.addClassNames("tt-eh-point-number", widthClassName);
+		span.addClassNames("tt-loe-point-number", widthClassName);
 		return span;
 	}
 }

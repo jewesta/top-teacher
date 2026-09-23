@@ -532,10 +532,12 @@ class LevelOfExpectationsEditorTests {
 		editor.setExam(EXAM);
 
 		assertThat(badgeTexts(editor)).contains("Summe: 5 (+0)", "Gesamt: 5 (+0)");
+		assertThat(components(editor, LoePointBadge.class)).allSatisfy(badge ->
+				assertThat(badge.getClassNames()).contains("tt-loe-points-cell", "tt-loe-aggregate-points"));
 		assertThat(components(editor, Span.class).stream()
-				.filter(span -> span.getClassNames().contains("tt-eh-point-regular")).map(Span::getText)).contains("5");
+				.filter(span -> span.getClassNames().contains("tt-loe-point-regular")).map(Span::getText)).contains("5");
 		assertThat(components(editor, Span.class).stream()
-				.filter(span -> span.getClassNames().contains("tt-eh-point-bonus")).map(Span::getText)).contains("0");
+				.filter(span -> span.getClassNames().contains("tt-loe-point-bonus")).map(Span::getText)).contains("0");
 		assertThat(components(editor, Span.class).stream().map(Span::getText)).contains("\u00a0");
 	}
 

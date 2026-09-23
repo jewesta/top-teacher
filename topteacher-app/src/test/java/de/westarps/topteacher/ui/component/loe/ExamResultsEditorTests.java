@@ -96,22 +96,29 @@ class ExamResultsEditorTests {
 	}
 
 	@Test
-	void resultsPointCellsShareTheSameStructureAndKeepTheirValuesInTheMiddle() {
+	void aggregateBadgesShareEhRenderingAndPointControlsShareTheSameFootprint() {
 		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository(), examRepository(),
 				levelOfExpectationsRepository(), gradingScaleRepository());
 		editor.setExam(EXAM);
 
 		final List<ResultsPointsCell> cells = components(editor, ResultsPointsCell.class);
 		assertThat(cells).isNotEmpty().allSatisfy(cell -> {
-			assertThat(cell.getClassNames()).contains("tt-results-points-cell");
+			assertThat(cell.getClassNames()).contains("tt-loe-points-cell", "tt-results-points-cell");
 			assertThat(cell.getChildren().map(child -> child.getClassNames().iterator().next()))
 					.containsExactly("tt-results-points-cell-leading", "tt-results-points-cell-value",
 							"tt-results-points-cell-trailing");
 		});
-		assertThat(components(editor, ResultsAggregatePointCell.class)).hasSize(4)
-				.extracting(cell -> ((Span) cell.getChildren().findFirst().orElseThrow().getChildren()
-						.findFirst().orElseThrow()).getText())
-				.containsExactly("∑∑", "∑", "∑", "∑");
+		assertThat(components(editor, LoePointBadge.class)).hasSize(4).allSatisfy(badge ->
+				assertThat(badge.getClassNames()).contains("tt-loe-points-cell", "tt-loe-aggregate-points"));
+		assertThat(components(editor, Span.class).stream()
+				.filter(span -> span.getClassNames().contains("tt-loe-aggregate-points-label"))
+				.map(span -> span.getText().strip())).containsExactly("Gesamt:", "Summe:", "Summe:", "Summe:");
+		assertThat(components(editor, Span.class).stream()
+				.filter(span -> span.getClassNames().contains("tt-loe-point-regular"))
+				.map(Span::getText)).containsExactly("1", "1", "1", "1");
+		assertThat(components(editor, Span.class).stream()
+				.filter(span -> span.getClassNames().contains("tt-loe-point-bonus"))
+				.map(Span::getText)).containsExactly("0", "0", "0", "0");
 		assertThat(criterionCheckboxes(editor)).allSatisfy(checkbox -> assertThat(checkbox.getParent()
 				.orElseThrow().getParent().orElseThrow()).isInstanceOf(LoeCriterionPointStepper.class));
 	}
@@ -709,8 +716,7 @@ class ExamResultsEditorTests {
 	}
 
 	private static List<String> badgeTexts(final Component root) {
-		return components(root, ResultsAggregatePointCell.class).stream()
-				.map(ResultsAggregatePointCell::getBadgeText).toList();
+		return components(root, LoePointBadge.class).stream().map(LoePointBadge::getText).toList();
 	}
 
 	private static List<Icon> bonusIcons(final Component root) {

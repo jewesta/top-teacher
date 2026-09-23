@@ -79,12 +79,14 @@ same criterion results.
 - The badge shows the rounded requirement result.
 - When rounding changes the raw result, the badge tooltip explains the raw and
   rounded values.
-- Every criterion row contains its three-state checkbox followed by an
-  always-visible compact minus/plus control.
+- Every criterion row contains its three-state checkbox left-aligned with a
+  small inset, followed by an always-visible compact minus/plus control.
 - Aggregate badges, requirement totals, criterion controls, and freely awarded
-  controls share one points-cell footprint and center their numeric value on
-  the same vertical axis. Aggregate chips show `∑` or `∑∑` at the left while
-  retaining their full labels for accessibility.
+  controls share one points-cell width and height. EH and Results use the same
+  aggregate badge: `Summe` or `Gesamt` is left-aligned; regular points end at a
+  shared axis, and bonus points begin to its right. Requirement totals end at
+  the same axis. Compact control values remain centered between equally spaced
+  minus and plus buttons.
 - Only aggregate badges and requirement totals have a permanent red-tinted
   background. Point steppers are transparent at rest; hover, keyboard focus,
   or the linked criterion highlight adds the tint without a border.

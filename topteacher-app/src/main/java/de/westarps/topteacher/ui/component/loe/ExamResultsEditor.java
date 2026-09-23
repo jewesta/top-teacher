@@ -73,7 +73,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private final FullscreenButton fullscreenButton;
 	private final VerticalLayout results;
 	private final DesignerViewport viewport = new DesignerViewport(content());
-	private final List<ResultsAggregatePointCell> pointBadges = new ArrayList<>();
+	private final List<LoePointBadge> pointBadges = new ArrayList<>();
 	private final Map<Integer, LoePointStepper> freePointControls = new HashMap<>();
 	private final Map<Integer, LoePointStepper> criterionPointControls = new HashMap<>();
 	private final Map<Integer, ResultsRequirementPointCell> requirementResultBadges = new HashMap<>();
@@ -100,7 +100,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private List<LoeTask> tasks = List.of();
 	private List<LoeRequirement> requirements = List.of();
 	private List<LoeCriterion> criteria = List.of();
-	private ResultsAggregatePointCell examPointsBadge;
+	private LoePointBadge examPointsBadge;
 	private final Span breadcrumb = new Span();
 	private MenuItem pdfMenuItem;
 	private MenuItem pupilPdfItem;
@@ -257,7 +257,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 	}
 
 	private void configureToolbar() {
-		examPointsBadge = new ResultsAggregatePointCell("Gesamt", "∑∑", this::pointsForExam);
+		examPointsBadge = new LoePointBadge("Gesamt", this::pointsForExam);
 		breadcrumb.addClassName("tt-designer-breadcrumb");
 		toolbar().add(pupilSelector, saveButton, discardButton, deleteButton, pdfMenu, fullscreenButton,
 				discardConfirmation, deleteConfirmation, reloadButton);
@@ -792,17 +792,17 @@ public class ExamResultsEditor extends AbstractDesigner {
 		return header;
 	}
 
-	private ResultsAggregatePointCell pointBadge(final String label, final Supplier<LoePoints> pointsSupplier) {
-		final ResultsAggregatePointCell badge = new ResultsAggregatePointCell(label, "∑", pointsSupplier);
+	private LoePointBadge pointBadge(final String label, final Supplier<LoePoints> pointsSupplier) {
+		final LoePointBadge badge = new LoePointBadge(label, pointsSupplier);
 		pointBadges.add(badge);
 		return badge;
 	}
 
 	private void refreshPointBadges() {
 		if (examPointsBadge != null) {
-			examPointsBadge.refresh();
+			examPointsBadge.refreshBadges();
 		}
-		pointBadges.forEach(ResultsAggregatePointCell::refresh);
+		pointBadges.forEach(LoePointBadge::refreshBadges);
 	}
 
 	private void refreshRequirementPointTexts() {

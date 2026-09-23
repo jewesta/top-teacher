@@ -90,9 +90,11 @@ This issue note records the implementation sequence and current status only.
   aligned with the text, and the EH preview highlight includes the point pill.
   The inline point popover points back to its pill.
 - Give Results aggregates, requirement totals, criterion controls, and
-  freely awarded point steppers a shared points-cell structure, with centered values,
-  consistent dimensions, symbolic aggregate captions, and visible partial
-  inline checkboxes.
+  freely awarded point steppers a shared points-cell footprint, with centered
+  stepper values, consistent dimensions, and visible partial inline checkboxes.
+- Reuse the EH aggregate-points badge in Results, restoring `Summe` and `Gesamt`
+  captions and fixed regular/bonus number slots; align the caption left and
+  values right while matching the height of all points-column cells.
 - Add requirement-local free-point budgeting, marking for requirements
   without criteria, and bidirectional hover/focus highlighting.
 - Present both discretionary and criterion-free awards as `Frei vergebene Punkte`

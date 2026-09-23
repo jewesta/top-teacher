@@ -64,6 +64,11 @@ requirement points.
 - Bonus requirements do not count toward the grading-scale maximum.
 - Regular and bonus totals are displayed separately, for example
   `Summe: 98 (+ 2)`.
+- EH and Results use the same aggregate-points badge. Its label is left-aligned.
+  Regular points are right-aligned to a fixed axis, while bonus points are
+  left-aligned beyond it. Fixed-width number slots keep changing values from
+  shifting the badge layout.
+- The EH percentage chip matches the aggregate-points badge height.
 
 Changes to pending requirement maxima and bonus flags must update requirement,
 task, category, part, and exam totals immediately.

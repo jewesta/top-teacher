@@ -11,7 +11,7 @@ abstract class ResultsPointsCell extends Div {
 	private final Div trailing = new Div();
 
 	protected ResultsPointsCell() {
-		addClassName("tt-results-points-cell");
+		addClassNames("tt-loe-points-cell", "tt-results-points-cell");
 		leading.addClassName("tt-results-points-cell-leading");
 		value.addClassName("tt-results-points-cell-value");
 		trailing.addClassName("tt-results-points-cell-trailing");
