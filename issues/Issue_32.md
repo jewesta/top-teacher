@@ -106,6 +106,8 @@ This issue note records the implementation sequence and current status only.
 - Preserve dirty-state save/discard behavior and expose raw values through MCP.
 - Give all context-tab contents one flush outer-layout contract, removing the
   assignment grid's extra padding in both the exam and course tabs.
+- Keep criterion highlighting active while focus moves inside its point control
+  without raising a client-side error from the focus-leave filter.
 
 ## Completed export and evaluation phase
 

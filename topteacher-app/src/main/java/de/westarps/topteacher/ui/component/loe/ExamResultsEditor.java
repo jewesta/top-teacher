@@ -756,7 +756,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 				event -> setCriterionHighlight(criterion, highlightedQuickCriteria, true));
 		row.getElement().addEventListener("focusout",
 				event -> setCriterionHighlight(criterion, highlightedQuickCriteria, false))
-				.setFilter("!this.contains(event.relatedTarget)");
+				.setFilter("!event.currentTarget.contains(event.relatedTarget)");
 		criterionRows.put(criterion.id(), row);
 		return row;
 	}
