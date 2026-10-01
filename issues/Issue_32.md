@@ -122,6 +122,7 @@ This issue note records the implementation sequence and current status only.
   requirement before summing, including separate half-point requirements.
 - Updated demo criteria to allocate their requirement maxima exactly and added
   a real pair of half-point criteria to the fixture.
+- Raised the reactor and packaged application version to `1.2.0`.
 
 ## Status
 
