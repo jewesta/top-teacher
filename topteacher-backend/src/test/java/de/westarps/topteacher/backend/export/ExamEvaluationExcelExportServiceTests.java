@@ -79,8 +79,8 @@ class ExamEvaluationExcelExportServiceTests {
 		when(levelOfExpectationsRepository.findRequirementsByExamId(EXAM.id()))
 				.thenReturn(List.of(REQUIREMENT, SECOND_REQUIREMENT));
 		when(levelOfExpectationsRepository.findRequirementResultsByExamAndPupil(EXAM.id(), PUPIL.id()))
-				.thenReturn(List.of(new LoeRequirementResult(REQUIREMENT.id(), PUPIL.id(), 5),
-						new LoeRequirementResult(SECOND_REQUIREMENT.id(), PUPIL.id(), 2)));
+				.thenReturn(List.of(new LoeRequirementResult(REQUIREMENT.id(), PUPIL.id(), 9, 0, ""),
+						new LoeRequirementResult(SECOND_REQUIREMENT.id(), PUPIL.id(), 3, 0, "")));
 
 		final ExamEvaluationExcelExportService service = new ExamEvaluationExcelExportService(courseRepository,
 				examRepository, gradingScaleRepository, levelOfExpectationsRepository);

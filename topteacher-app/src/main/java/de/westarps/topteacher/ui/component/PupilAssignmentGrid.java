@@ -13,14 +13,13 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.shared.Tooltip;
 import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.data.provider.ListDataProvider;
 
 import de.westarps.topteacher.model.Pupil;
 
-public class PupilAssignmentGrid extends VerticalLayout {
+public class PupilAssignmentGrid extends ContextTabContent {
 
 	private static final Comparator<AssignmentRow> ASSIGNMENT_ROW_ORDER = Comparator
 			.comparing((final AssignmentRow row) -> row.pupil().surname(), String.CASE_INSENSITIVE_ORDER)
@@ -57,9 +56,6 @@ public class PupilAssignmentGrid extends VerticalLayout {
 		grid.setSizeFull();
 
 		addClassNames("tt-course-assignments", "tt-pupil-assignments");
-		setPadding(false);
-		setSpacing(false);
-		setSizeFull();
 		add(toolbar, grid);
 		expand(grid);
 	}

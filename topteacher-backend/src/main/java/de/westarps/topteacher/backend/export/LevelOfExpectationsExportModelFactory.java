@@ -11,6 +11,7 @@ import java.util.function.Function;
 
 import org.springframework.stereotype.Component;
 
+import de.westarps.topteacher.backend.export.Sanitizer.CriterionMark;
 import de.westarps.topteacher.backend.export.Sanitizer.MarkdownView;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.Exam;
@@ -23,6 +24,7 @@ import de.westarps.topteacher.model.loe.LoeCategory;
 import de.westarps.topteacher.model.loe.LoeCriterion;
 import de.westarps.topteacher.model.loe.LoeCriterionResult;
 import de.westarps.topteacher.model.loe.LoePart;
+import de.westarps.topteacher.model.loe.LoePointUnits;
 import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeRequirementResult;
 import de.westarps.topteacher.model.loe.LoeTask;
@@ -138,21 +140,23 @@ public class LevelOfExpectationsExportModelFactory {
 		final LoeRequirementResult result = resultsByRequirementId.get(requirement.id());
 		final int achievedPoints = result == null ? 0 : result.points();
 		final String comment = view == MarkdownView.TEACHER && result != null ? result.comment() : "";
+		final int adjustmentUnits = view == MarkdownView.TEACHER && result != null ? result.adjustmentUnits() : 0;
 		return new Requirement(number,
 				sanitizer.markdownToHtml(requirement.descriptionMarkdown(), view,
-						criterionStatusByKey(criteriaByRequirementId.getOrDefault(requirement.id(), List.of()),
+						criterionMarksByKey(criteriaByRequirementId.getOrDefault(requirement.id(), List.of()),
 								resultsByCriterionId)),
-				requirement.maxPoints(), requirement.bonus(), achievedPoints, comment);
+				requirement.maxPoints(), requirement.bonus(), achievedPoints, adjustmentUnits, comment);
 	}
 
-	private static Function<String, Boolean> criterionStatusByKey(final List<LoeCriterion> criteria,
+	private static Function<String, CriterionMark> criterionMarksByKey(final List<LoeCriterion> criteria,
 			final Map<Integer, LoeCriterionResult> resultsByCriterionId) {
-		final Map<String, Boolean> statusByKey = new HashMap<>();
+		final Map<String, CriterionMark> marksByKey = new HashMap<>();
 		criteria.forEach(criterion -> {
 			final LoeCriterionResult result = resultsByCriterionId.get(criterion.id());
-			statusByKey.put(criterion.criterionKey(), result != null && result.achieved());
+			marksByKey.put(criterion.criterionKey(),
+					new CriterionMark(result == null ? 0 : result.pointUnits(), criterion.pointUnits()));
 		});
-		return key -> statusByKey.getOrDefault(key, false);
+		return marksByKey::get;
 	}
 
 	private static <T> List<T> sorted(final List<T> items, final Comparator<T> comparator) {
@@ -327,7 +331,12 @@ public class LevelOfExpectationsExportModelFactory {
 	}
 
 	public record Requirement(int number, SafeHtml description, int maxPoints, boolean bonus, int achievedPoints,
-			String comment) {
+			int adjustmentUnits, String comment) {
+
+		public Requirement(final int number, final SafeHtml description, final int maxPoints, final boolean bonus,
+				final int achievedPoints, final String comment) {
+			this(number, description, maxPoints, bonus, achievedPoints, 0, comment);
+		}
 
 		public Requirement {
 			description = Objects.requireNonNull(description, "description must not be null");
@@ -337,8 +346,8 @@ public class LevelOfExpectationsExportModelFactory {
 			if (maxPoints < 0) {
 				throw new IllegalArgumentException("maxPoints must not be negative");
 			}
-			if (achievedPoints < 0) {
-				throw new IllegalArgumentException("achievedPoints must not be negative");
+			if (achievedPoints < 0 || adjustmentUnits < 0) {
+				throw new IllegalArgumentException("achieved points and adjustment units must not be negative");
 			}
 			comment = comment == null ? "" : comment;
 		}
@@ -360,6 +369,11 @@ public class LevelOfExpectationsExportModelFactory {
 				return String.valueOf(achievedPoints);
 			}
 			return "(" + achievedPoints + ")";
+		}
+
+		public String adjustmentDisplayName() {
+			return adjustmentUnits == 0 ? ""
+					: "Frei vergebene Punkte: +" + LoePointUnits.formatGerman(adjustmentUnits);
 		}
 	}
 

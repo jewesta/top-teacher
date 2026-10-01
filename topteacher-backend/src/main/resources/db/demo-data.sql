@@ -217,12 +217,17 @@ where not exists (
 );
 
 insert into eh_requirement (task_id, description_markdown, max_points, bonus, sort_order)
-select task.id, demo.description_markdown, demo.max_points, demo.bonus, demo.sort_order
+select task.id,
+       replace(demo.description_markdown, '(eh:1)',
+               '(eh:1/' || cast(demo.max_points as varchar) || ')'),
+       demo.max_points,
+       demo.bonus,
+       demo.sort_order
 from (
     values
-        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Inhaltliche Leistung', 'Teilaufgabe 1 (Comprehension)', 0, 4, false, 'nennt [Aspekte für Shakespeares ungebrochene Popularität](eh:1), etwa:
+        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Inhaltliche Leistung', 'Teilaufgabe 1 (Comprehension)', 0, 4, false, 'nennt [Aspekte für Shakespeares ungebrochene Popularität](eh:1/0,5), etwa:
 - Rang eines Nationalsymbols
-- Sprachkunst
+- [Sprachkunst](eh:2/3,5)
 - Fähigkeit zur Psychologisierung
 - tiefgehende Charakterdarstellungen
 - durch Shakespeare geprägte Redewendungen'),
@@ -339,7 +344,7 @@ from (
         ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 0, 1, false, '[Aufgabe 1a](eh:1): wählt c als Originaltitel.'),
         ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 1, 2, false, '[Aufgabe 1b](eh:1): formuliert eine individuelle, inhaltlich schlüssige Schülerlösung mit logischem Bezug zum Titel.'),
         ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 2, 4, false, '[Aufgabe 2](eh:1): nennt 30, 35, Madrid und Barcelona.'),
-        ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 3, 1, false, '[Aufgabe 3a](eh:1): nennt inspiración.'),
+        ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 3, 1, false, '[Aufgabe 3a](eh:1/0,5): nennt [inspiración](eh:2/0,5).'),
         ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 4, 1, false, '[Aufgabe 3b](eh:1): nennt de manera objetiva.'),
         ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 5, 2, false, '[Aufgabe 4](eh:1): nennt 30 años und en 2009.'),
         ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 6, 4, false, '[Aufgabe 5](eh:1): nennt, dass es ihrem damaligen Freund egal war und dass sie bereits deutsche Freunde hatte.'),
@@ -372,11 +377,30 @@ where not exists (
       and requirement.sort_order = demo.sort_order
 );
 
-insert into eh_criterion (requirement_id, criterion_key, label, sort_order, active)
-select requirement.id, demo.criterion_key, demo.label, demo.criterion_sort_order, true
+insert into eh_criterion (requirement_id, criterion_key, label, point_units, sort_order, active)
+select requirement.id,
+       demo.criterion_key,
+       demo.label,
+       case
+           when demo.subject_name = 'Englisch'
+               and demo.task_title = 'Teilaufgabe 1 (Comprehension)'
+               and demo.requirement_sort_order = 0
+               and demo.criterion_key = '1' then 1
+           when demo.subject_name = 'Englisch'
+               and demo.task_title = 'Teilaufgabe 1 (Comprehension)'
+               and demo.requirement_sort_order = 0
+               and demo.criterion_key = '2' then 7
+           when demo.subject_name = 'Spanisch'
+               and demo.task_title = 'Hörverstehen'
+               and demo.requirement_sort_order = 3 then 1
+           else requirement.max_points * 2
+       end,
+       demo.criterion_sort_order,
+       true
 from (
     values
         ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Inhaltliche Leistung', 'Teilaufgabe 1 (Comprehension)', 0, '1', 'Aspekte für Shakespeares ungebrochene Popularität', 0),
+        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Inhaltliche Leistung', 'Teilaufgabe 1 (Comprehension)', 0, '2', 'Sprachkunst', 1),
         ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Inhaltliche Leistung', 'Teilaufgabe 1 (Comprehension)', 1, '1', 'Gründe gegen Shakespeares Eignung für den Schulunterricht', 0),
         ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Inhaltliche Leistung', 'Teilaufgabe 1 (Comprehension)', 2, '1', 'Schlussfolgerungen des Autors', 0),
         ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Inhaltliche Leistung', 'Teilaufgabe 2 (Analysis)', 0, '1', 'Robshaws Gesamtargumentation', 0),
@@ -430,6 +454,7 @@ from (
         ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 1, '1', 'Aufgabe 1b', 0),
         ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 2, '1', 'Aufgabe 2', 0),
         ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 3, '1', 'Aufgabe 3a', 0),
+        ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 3, '2', 'inspiración', 1),
         ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 4, '1', 'Aufgabe 3b', 0),
         ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 5, '1', 'Aufgabe 4', 0),
         ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 6, '1', 'Aufgabe 5', 0),

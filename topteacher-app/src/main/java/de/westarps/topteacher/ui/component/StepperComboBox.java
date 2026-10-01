@@ -13,6 +13,7 @@ import com.vaadin.flow.component.ItemLabelGenerator;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.combobox.ComboBoxVariant;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -69,6 +70,10 @@ public class StepperComboBox<T> extends Composite<HorizontalLayout> implements H
 
 	public void setAriaLabel(final String ariaLabel) {
 		comboBox.getElement().setAttribute("aria-label", ariaLabel);
+	}
+
+	public void addThemeVariants(final ComboBoxVariant... themeVariants) {
+		comboBox.addThemeVariants(themeVariants);
 	}
 
 	@Override

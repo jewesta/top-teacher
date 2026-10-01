@@ -18,21 +18,31 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
 
-import de.westarps.topteacher.model.loe.LoeCriterionParser;
 import de.westarps.topteacher.ui.component.Buttons;
 import de.westarps.vaadin.markdown.MarkdownEditor;
-import de.westarps.vaadin.markdown.MarkdownTag;
 
 final class LoeSectionComponents {
 
-	static final MarkdownTag CRITERION_TAG = MarkdownTag.nextNumber(LoeCriterionParser.TAG_NAMESPACE,
-			"Kriterium markieren");
-	static final String CORRECTION_MODE_TOOLTIP = "Korrekturmodus: Ergebnisse vorhanden. Struktur, Punkte und Kriteriennummern sind gesperrt.";
+	static final String CORRECTION_MODE_TOOLTIP = "Korrekturmodus: Ergebnisse vorhanden. Struktur, Punkte und Kriterien sind gesperrt.";
 
 	private final LoeSaveController saveController;
+	private Runnable valueChangeHandler = () -> {
+	};
+	private Runnable pointsChangeHandler = () -> {
+	};
 
 	LoeSectionComponents(final LoeSaveController saveController) {
 		this.saveController = saveController;
+	}
+
+	void setValueChangeHandler(final Runnable valueChangeHandler) {
+		this.valueChangeHandler = valueChangeHandler == null ? () -> {
+		} : valueChangeHandler;
+	}
+
+	void setPointsChangeHandler(final Runnable pointsChangeHandler) {
+		this.pointsChangeHandler = pointsChangeHandler == null ? () -> {
+		} : pointsChangeHandler;
 	}
 
 	TextField summaryTitleField(final String value) {
@@ -50,7 +60,10 @@ final class LoeSectionComponents {
 	}
 
 	MarkdownEditor markdownEditor(final String value, final String placeholder) {
-		final MarkdownEditor editor = new MarkdownEditor(value == null ? "" : value);
+		return configureMarkdownEditor(new MarkdownEditor(value == null ? "" : value), placeholder);
+	}
+
+	private MarkdownEditor configureMarkdownEditor(final MarkdownEditor editor, final String placeholder) {
 		editor.addClassName("tt-markdown-editor");
 		editor.setPlaceholder(placeholder);
 		editor.setWidthFull();
@@ -65,9 +78,7 @@ final class LoeSectionComponents {
 	}
 
 	MarkdownEditor requirementDescriptionEditor(final String value, final String placeholder) {
-		final MarkdownEditor editor = markdownEditor(value, placeholder);
-		editor.setTag(CRITERION_TAG);
-		return editor;
+		return configureMarkdownEditor(new CriterionMarkdownEditor(value == null ? "" : value), placeholder);
 	}
 
 	Component markdownBlock(final String label, final MarkdownEditor editor) {
@@ -134,7 +145,7 @@ final class LoeSectionComponents {
 	Button saveButton() {
 		final Button button = Buttons.save(event -> saveController.save());
 		button.addThemeVariants(ButtonVariant.LUMO_SMALL);
-		return saveController.register(button);
+		return saveController.registerSave(button);
 	}
 
 	Button discardButton() {
@@ -236,10 +247,20 @@ final class LoeSectionComponents {
 	}
 
 	void trackDirty(final HasValue<?, ?> field) {
-		field.addValueChangeListener(event -> saveController.update());
+		field.addValueChangeListener(event -> updateDirty());
+	}
+
+	void trackPoints(final HasValue<?, ?> field) {
+		field.addValueChangeListener(event -> updatePoints());
+	}
+
+	void updatePoints() {
+		pointsChangeHandler.run();
+		updateDirty();
 	}
 
 	void updateDirty() {
+		valueChangeHandler.run();
 		saveController.update();
 	}
 }

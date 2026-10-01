@@ -46,7 +46,7 @@ public class PupilResultMcpTools {
 	}
 
 	@McpTool(name = "get_pupil_result", title = "Get one pupil's exam result",
-			description = "Get saved requirement points, comments, criterion states, totals, and grade for one pupil and exam.",
+				description = "Get saved requirement points, adjustments, criterion awards, totals, and grade for one pupil and exam.",
 			generateOutputSchema = true, annotations = @McpTool.McpAnnotations(readOnlyHint = true,
 					destructiveHint = false, idempotentHint = true, openWorldHint = false))
 	public PupilResultView getPupilResult(
@@ -114,13 +114,14 @@ public class PupilResultMcpTools {
 	private static RequirementResultView requirementResultView(final LoeRequirement requirement,
 			final LoeRequirementResult result) {
 		return new RequirementResultView(requirement.id(), result != null, result == null ? 0 : result.points(),
+				result == null ? 0 : result.pointUnits(), result == null ? 0 : result.adjustmentUnits(),
 				result == null ? "" : result.comment());
 	}
 
 	private static CriterionResultView criterionResultView(final LoeCriterion criterion,
 			final LoeCriterionResult result) {
 		return new CriterionResultView(criterion.id(), criterion.requirementId(), criterion.criterionKey(),
-				criterion.label(), result != null, result != null && result.achieved());
+				criterion.label(), result != null, result == null ? 0 : result.pointUnits(), criterion.pointUnits());
 	}
 
 	public record PupilResultView(int examId, PupilView pupil, ResultSummaryView summary,
@@ -138,10 +139,11 @@ public class PupilResultMcpTools {
 			boolean gradingAvailable) {
 	}
 
-	public record RequirementResultView(int requirementId, boolean saved, int points, String comment) {
+	public record RequirementResultView(int requirementId, boolean saved, int points, int pointUnits,
+			int adjustmentUnits, String comment) {
 	}
 
 	public record CriterionResultView(int criterionId, int requirementId, String key, String label, boolean saved,
-			boolean achieved) {
+			int awardedPointUnits, int availablePointUnits) {
 	}
 }

@@ -12,7 +12,9 @@ import static org.mockito.Mockito.when;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -24,6 +26,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.details.Details;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.internal.PendingJavaScriptInvocation;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -31,20 +34,31 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
+import com.vaadin.flow.dom.DomEvent;
+import com.vaadin.flow.internal.nodefeature.ElementListenerMap;
 import com.vaadin.flow.server.VaadinSession;
 
+import tools.jackson.databind.node.JsonNodeFactory;
+
+import de.westarps.topteacher.backend.repo.GradingScaleRepository;
 import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.model.Exam;
+import de.westarps.topteacher.model.GradingScale;
+import de.westarps.topteacher.model.Lifecycle;
 import de.westarps.topteacher.model.loe.LoeCategory;
 import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeTask;
 import de.westarps.topteacher.ui.component.FullscreenButton;
+import de.westarps.topteacher.ui.component.loe.LevelOfExpectationsEditor.DesignState;
 import de.westarps.vaadin.markdown.MarkdownEditor;
+import de.westarps.vaadin.tray.StatusTray;
+import de.westarps.vaadin.tray.TrayState;
 
 class LevelOfExpectationsEditorTests {
 
-	private static final Exam EXAM = new Exam(1, 10, "Klausur", LocalDate.of(2026, 9, 1));
+	private static final int GRADING_SCALE_ID = 30;
+	private static final Exam EXAM = new Exam(1, 10, "Klausur", LocalDate.of(2026, 9, 1), null, GRADING_SCALE_ID);
 	private static final LoePart PART = new LoePart(1, EXAM.id(), "Klausurteil A", 0);
 	private static final LoeCategory CATEGORY = new LoeCategory(2, PART.id(), "Inhalt", "Beschreibung", 0);
 	private static final LoeTask TASK = new LoeTask(3, CATEGORY.id(), "Teilaufgabe 1", 0);
@@ -59,6 +73,127 @@ class LevelOfExpectationsEditorTests {
 	private static final LoeRequirement BONUS_REQUIREMENT = new LoeRequirement(10, TASK.id(), "Bonus requirement", 4,
 			true, 1);
 	private static final LoeRequirement NEW_REQUIREMENT = new LoeRequirement(11, TASK.id(), "", 0, false, 1);
+
+	@Test
+	void showsAllocationWarningsInTheStatusTray() {
+		final LoeRequirement underallocatedRequirement = requirementWithCriteria(REQUIREMENT, 5, 1);
+		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(
+				repositoryWithHierarchy(underallocatedRequirement));
+
+		editor.setExam(EXAM);
+
+		assertThat(components(editor, StatusTray.class)).singleElement().satisfies(tray -> {
+			assertThat(tray.isVisible()).isTrue();
+			assertThat(tray.getState()).isEqualTo(TrayState.PEEK);
+			assertThat(tray.getItems()).singleElement()
+					.satisfies(result -> assertThat(result.message())
+							.isEqualTo("Aufgabe 1 · Anforderung 1: Ordne weitere 4 Kriterienpunkte zu."));
+		});
+		assertThat(editor.getDesignState()).isEqualTo(DesignState.INCOMPLETE);
+	}
+
+	@Test
+	void opensAndEmphasizesTheRequirementFromItsStatusEntry() {
+		final LoeRequirement underallocatedRequirement = requirementWithCriteria(REQUIREMENT, 5, 1);
+		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(
+				repositoryWithHierarchy(underallocatedRequirement));
+		editor.setExam(EXAM);
+		final StatusTray tray = components(editor, StatusTray.class).getFirst();
+		collapseButtons(editor).getFirst().click();
+		tray.show();
+
+		final Anchor link = components(tray, Anchor.class).stream()
+				.filter(anchor -> anchor.getText().startsWith("Aufgabe 1 · Anforderung 1:"))
+				.findFirst().orElseThrow();
+		assertThat(link.getHref()).isEqualTo("exams#tt-eh-requirement-" + REQUIREMENT.id());
+		link.getElement().getNode().getFeature(ElementListenerMap.class)
+				.fireEvent(new DomEvent(link.getElement(), "click", JsonNodeFactory.instance.objectNode()));
+
+		assertThat(tray.getState()).isEqualTo(TrayState.PEEK);
+		assertThat(components(editor, Details.class)).extracting(Details::isOpened).containsOnly(true);
+		assertThat(components(editor, VerticalLayout.class).stream()
+				.filter(layout -> layout.getClassNames().contains("tt-eh-requirement")).findFirst().orElseThrow()
+				.getClassNames()).contains("animate__animated", "animate__pulse", "animate__faster");
+	}
+
+	@Test
+	void marksAMatchingLevelOfExpectationsAsCompleteAndKeepsTheTrayPeeking() {
+		final LoeRequirement completeRequirement = requirementWithCriteria(REQUIREMENT, 2, 2);
+		final LevelOfExpectationsEditor editor = editorWithGradingScale(
+				repositoryWithHierarchy(completeRequirement), 2);
+
+		editor.setExam(EXAM);
+
+		assertThat(editor.getDesignState()).isEqualTo(DesignState.COMPLETE);
+		assertThat(components(editor, StatusTray.class)).singleElement().satisfies(tray -> {
+			assertThat(tray.getItems()).isEmpty();
+			assertThat(tray.getState()).isEqualTo(TrayState.PEEK);
+		});
+	}
+
+	@Test
+	void allowsSavingAnUnderAllocatedIntermediateDesign() {
+		final LoeRequirement completeRequirement = requirementWithCriteria(REQUIREMENT, 2, 2);
+		final LevelOfExpectationsRepository repository = repositoryWithHierarchy(completeRequirement);
+		final LevelOfExpectationsEditor editor = editorWithGradingScale(repository, 4);
+		editor.setExam(EXAM);
+
+		titleField(editor, PART.title()).setValue("Klausurteil Alpha");
+
+		assertThat(editor.getDesignState()).isEqualTo(DesignState.INCOMPLETE);
+		assertThat(saveButtons(editor)).extracting(Button::isEnabled).containsOnly(true);
+
+		saveButtons(editor).getFirst().click();
+
+		verify(repository).savePart(new LoePart(PART.id(), PART.examId(), "Klausurteil Alpha", PART.sortOrder()));
+	}
+
+	@Test
+	void blocksSavingWhenACriterionAllocationExceedsItsRequirement() {
+		final LoeRequirement completeRequirement = requirementWithCriteria(REQUIREMENT, 2, 2);
+		final LevelOfExpectationsRepository repository = repositoryWithHierarchy(completeRequirement);
+		final LevelOfExpectationsEditor editor = editorWithGradingScale(repository, 2);
+		editor.setExam(EXAM);
+
+		markdownEditor(editor, completeRequirement.descriptionMarkdown())
+				.setValue(completeRequirement.descriptionMarkdown() + " [Kriterium 3](eh:3)");
+
+		assertThat(saveButtons(editor)).extracting(Button::isEnabled).containsOnly(false);
+		assertThat(discardButtons(editor)).extracting(Button::isEnabled).containsOnly(true);
+		assertThat(components(editor, StatusTray.class).getFirst().getItems()).singleElement()
+				.satisfies(result -> assertThat(result.message())
+						.isEqualTo("Aufgabe 1 · Anforderung 1: Ordne einen Kriterienpunkt weniger zu."));
+		verify(repository, never()).saveRequirement(any());
+	}
+
+	@Test
+	void blocksSavingWhenRegularRequirementPointsExceedTheGradingScale() {
+		final LoeRequirement completeRequirement = requirementWithCriteria(REQUIREMENT, 2, 2);
+		final LevelOfExpectationsRepository repository = repositoryWithHierarchy(completeRequirement);
+		final LevelOfExpectationsEditor editor = editorWithGradingScale(repository, 2);
+		editor.setExam(EXAM);
+
+		components(editor, IntegerField.class).getFirst().setValue(3);
+
+		assertThat(saveButtons(editor)).extracting(Button::isEnabled).containsOnly(false);
+		assertThat(discardButtons(editor)).extracting(Button::isEnabled).containsOnly(true);
+		assertThat(components(editor, StatusTray.class).getFirst().getItems())
+				.anySatisfy(result -> assertThat(result.message())
+						.isEqualTo("Erwartungshorizont: Ordne einen Punkt weniger zu."));
+		verify(repository, never()).saveRequirement(any());
+	}
+
+	@Test
+	void derivesTheLockedStateWhenResultsExist() {
+		final LoeRequirement completeRequirement = requirementWithCriteria(REQUIREMENT, 2, 2);
+		final LevelOfExpectationsRepository repository = repositoryWithHierarchy(completeRequirement);
+		when(repository.hasResultsForExam(EXAM.id())).thenReturn(true);
+		final LevelOfExpectationsEditor editor = editorWithGradingScale(repository, 2);
+
+		editor.setExam(EXAM);
+
+		assertThat(editor.getDesignState()).isEqualTo(DesignState.LOCKED);
+	}
 
 	@Test
 	void preservesCollapsedDetailsWhenRefreshingSameExam() {
@@ -177,6 +312,10 @@ class LevelOfExpectationsEditorTests {
 		clearInvocations(repository);
 
 		components(editor, IntegerField.class).getFirst().setValue(7);
+
+		assertThat(badgeTexts(editor)).contains("Summe: 7 (+0)", "Gesamt: 7 (+0)", "100 %");
+		assertThat(components(editor, Details.class).getFirst()).isSameAs(partDetails);
+
 		final List<Button> saveButtons = saveButtons(editor);
 		assertThat(saveButtons).hasSize(1);
 		saveButtons.getFirst().click();
@@ -201,6 +340,10 @@ class LevelOfExpectationsEditorTests {
 
 		components(editor, IntegerField.class).getFirst().setValue(7);
 		bonusButtons(editor).getFirst().click();
+
+		assertThat(badgeTexts(editor)).contains("Summe: 0 (+7)", "Gesamt: 0 (+7)", "0 %");
+		assertThat(components(editor, Details.class).getFirst()).isSameAs(partDetails);
+
 		final List<Button> saveButtons = saveButtons(editor);
 		saveButtons.getFirst().click();
 
@@ -389,11 +532,72 @@ class LevelOfExpectationsEditorTests {
 		editor.setExam(EXAM);
 
 		assertThat(badgeTexts(editor)).contains("Summe: 5 (+0)", "Gesamt: 5 (+0)");
+		assertThat(components(editor, LoePointBadge.class)).allSatisfy(badge ->
+				assertThat(badge.getClassNames()).contains("tt-loe-points-cell", "tt-loe-aggregate-points"));
 		assertThat(components(editor, Span.class).stream()
-				.filter(span -> span.getClassNames().contains("tt-eh-point-regular")).map(Span::getText)).contains("5");
+				.filter(span -> span.getClassNames().contains("tt-loe-point-regular")).map(Span::getText)).contains("5");
 		assertThat(components(editor, Span.class).stream()
-				.filter(span -> span.getClassNames().contains("tt-eh-point-bonus")).map(Span::getText)).contains("0");
+				.filter(span -> span.getClassNames().contains("tt-loe-point-bonus")).map(Span::getText)).contains("0");
 		assertThat(components(editor, Span.class).stream().map(Span::getText)).contains("\u00a0");
+	}
+
+	@Test
+	void showsCriterionPointMismatchBesideRequirementMaximumAndUpdatesLive() {
+		final String underAllocatedDescription = "[Erster Aspekt](eh:1/0,5)";
+		final LoeRequirement underAllocatedRequirement = new LoeRequirement(REQUIREMENT.id(), REQUIREMENT.taskId(),
+				underAllocatedDescription, 2, REQUIREMENT.bonus(), REQUIREMENT.sortOrder());
+		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(
+				repositoryWithHierarchy(underAllocatedRequirement));
+		editor.setExam(EXAM);
+		final Span message = components(editor, Span.class).stream()
+				.filter(span -> span.getClassNames().contains("tt-eh-requirement-allocation-message")).findFirst()
+				.orElseThrow();
+
+		assertThat(message.isVisible()).isTrue();
+		assertThat(message.getText()).isEqualTo("Ordne weitere 1,5 Kriterienpunkte zu.");
+		assertThat(message.getElement().getAttribute("data-severity")).isEqualTo("warning");
+		assertThat(components(editor, StatusTray.class).getFirst().getItems()).singleElement()
+				.satisfies(result -> assertThat(result.message())
+						.isEqualTo("Aufgabe 1 · Anforderung 1: " + message.getText()));
+
+		final MarkdownEditor description = markdownEditor(editor, underAllocatedDescription);
+		assertThat(description).isInstanceOf(CriterionMarkdownEditor.class);
+		assertThat(description.getExtensionIds()).containsExactly(CriterionMarkdownEditor.EXTENSION_ID);
+		description.setValue("[Erster Aspekt](eh:1/0,5) [Zweiter Aspekt](eh:2/1,5)");
+
+		assertThat(message.isVisible()).isFalse();
+
+		final IntegerField maxPoints = components(editor, IntegerField.class).getFirst();
+		maxPoints.setValue(1);
+
+		assertThat(message.isVisible()).isTrue();
+		assertThat(message.getText()).isEqualTo("Ordne einen Kriterienpunkt weniger zu.");
+		assertThat(message.getElement().getAttribute("data-severity")).isEqualTo("error");
+		assertThat(components(editor, StatusTray.class).getFirst().getItems()).singleElement()
+				.satisfies(result -> assertThat(result.message())
+						.isEqualTo("Aufgabe 1 · Anforderung 1: " + message.getText()));
+
+		description.setValue("[Erster Aspekt](eh:1/0,5) [Zweiter Aspekt](eh:2/1)");
+
+		assertThat(message.getText()).isEqualTo("Ordne 0,5 Kriterienpunkte weniger zu.");
+		assertThat(message.getElement().getAttribute("data-severity")).isEqualTo("error");
+
+		maxPoints.setValue(3);
+
+		assertThat(message.isVisible()).isTrue();
+		assertThat(message.getText()).isEqualTo("Ordne weitere 1,5 Kriterienpunkte zu.");
+		assertThat(message.getElement().getAttribute("data-severity")).isEqualTo("warning");
+
+		description.setValue("[Erster Aspekt](eh:1/?)");
+
+		assertThat(message.getText()).isEqualTo("Kriterium „Erster Aspekt“: Ordne eine gültige Punktzahl zu.");
+		assertThat(message.getElement().getAttribute("data-severity")).isEqualTo("error");
+		assertThat(components(editor, StatusTray.class).getFirst().getItems()).singleElement()
+				.satisfies(result -> assertThat(result.message())
+						.isEqualTo("Aufgabe 1 · Anforderung 1: " + message.getText()));
+
+		description.setValue("Keine Kriterien");
+		assertThat(message.isVisible()).isFalse();
 	}
 
 	@Test
@@ -415,8 +619,15 @@ class LevelOfExpectationsEditorTests {
 		assertThat(maxPoints.getWidth()).isNull();
 		assertThat(parent).isInstanceOf(HorizontalLayout.class);
 		assertThat(parent.getClassNames()).contains("tt-eh-requirement-points-control");
-		assertThat(parent.getChildren().filter(Span.class::isInstance).map(Span.class::cast).map(Span::getText))
-				.containsExactly("Max. Punkte");
+		final List<Component> pointControlChildren = parent.getChildren().toList();
+		assertThat(pointControlChildren).hasSize(3);
+		assertThat(pointControlChildren.get(0)).isInstanceOf(Span.class)
+				.satisfies(component -> assertThat(component.getClassNames())
+						.contains("tt-eh-requirement-allocation-message"));
+		assertThat(pointControlChildren.get(0).isVisible()).isFalse();
+		assertThat(pointControlChildren.get(1)).isInstanceOf(Span.class)
+				.satisfies(component -> assertThat(((Span) component).getText()).isEqualTo("Max. Punkte"));
+		assertThat(pointControlChildren.get(2)).isSameAs(maxPoints);
 		assertThat(bonus.getElement().getAttribute("aria-label")).isEqualTo("Sternchen-Aufgabe");
 		assertThat(bonus.getElement().getAttribute("aria-pressed")).isEqualTo("false");
 		assertThat(bonus.getIcon().getElement().getAttribute("icon")).isEqualTo("vaadin:star");
@@ -615,6 +826,22 @@ class LevelOfExpectationsEditorTests {
 		when(repository.findTasksByExamId(EXAM.id())).thenReturn(List.of());
 		when(repository.findRequirementsByExamId(EXAM.id())).thenReturn(List.of());
 		return repository;
+	}
+
+	private static LevelOfExpectationsEditor editorWithGradingScale(
+			final LevelOfExpectationsRepository repository, final int maxPoints) {
+		final GradingScaleRepository gradingScaleRepository = mock(GradingScaleRepository.class);
+		when(gradingScaleRepository.findById(GRADING_SCALE_ID))
+				.thenReturn(Optional.of(new GradingScale(GRADING_SCALE_ID, "Test", maxPoints, Lifecycle.ACTIVE)));
+		return new LevelOfExpectationsEditor(repository, gradingScaleRepository);
+	}
+
+	private static LoeRequirement requirementWithCriteria(final LoeRequirement requirement, final int maxPoints,
+			final int criterionCount) {
+		final String description = IntStream.rangeClosed(1, criterionCount)
+				.mapToObj(index -> "[Kriterium " + index + "](eh:" + index + ")").collect(java.util.stream.Collectors.joining(" "));
+		return new LoeRequirement(requirement.id(), requirement.taskId(), description, maxPoints, requirement.bonus(),
+				requirement.sortOrder());
 	}
 
 	private static <T extends Component> List<T> components(final Component root, final Class<T> type) {

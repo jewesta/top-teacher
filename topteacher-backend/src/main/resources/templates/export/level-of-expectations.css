@@ -216,6 +216,19 @@ h4 {
     width: 15mm;
 }
 
+.tt-achieved-points,
+.tt-adjustment {
+    display: block;
+}
+
+.tt-adjustment {
+    color: #555;
+    font-size: 7pt;
+    line-height: 1.15;
+    margin-top: 0.45mm;
+    overflow-wrap: anywhere;
+}
+
 .tt-description-column {
     width: auto;
 }
@@ -287,7 +300,7 @@ h4 {
     width: 3mm;
 }
 
-.tt-criterion-marker-achieved {
+.tt-criterion-marker-full {
     border: solid #a3001b;
     border-width: 0 0.55mm 0.55mm 0;
     height: 2.6mm;
@@ -295,7 +308,15 @@ h4 {
     width: 1.35mm;
 }
 
-.tt-criterion-marker-missed {
+.tt-criterion-marker-partial {
+    border: 0.55mm solid #a3001b;
+    border-radius: 50%;
+    box-sizing: border-box;
+    height: 2.9mm;
+    width: 2.9mm;
+}
+
+.tt-criterion-marker-none {
     height: 3mm;
     width: 3mm;
 }

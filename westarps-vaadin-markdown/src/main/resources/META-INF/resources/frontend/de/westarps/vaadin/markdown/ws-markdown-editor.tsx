@@ -10,28 +10,24 @@ import {
   markdownExtraCommands,
   markdownPreviewOptions,
   markdownStateIds,
-  markdownTagOptions,
 } from './ws-markdown-support';
+import { markdownExtensions } from './ws-markdown-extensions';
 
 class MarkdownEditorElement extends ReactAdapterElement {
   protected override render(hooks: RenderHooks): ReactElement | null {
     const [content, setContent] = hooks.useState<string>('content', '');
     const [placeholder] = hooks.useState<string>('placeholder', '');
     const [maxLength] = hooks.useState<number>('maxLength', -1);
-    const [tagNamespace] = hooks.useState<string>('tagNamespace', '');
-    const [tagToolbarLabel] = hooks.useState<string>('tagToolbarLabel', '');
-    const [tagIdGenerator] = hooks.useState<string>('tagIdGenerator', '');
+    const [extensionIds] = hooks.useState<string[]>('extensionIds', []);
     const [hiddenToolbarCommandsState] = hooks.useState<string>('hiddenToolbarCommands', '');
-    const markdownOptions = {
-      tag: markdownTagOptions(tagNamespace, tagToolbarLabel, tagIdGenerator),
-      hiddenToolbarCommands: markdownStateIds<MarkdownToolbarCommandId>(hiddenToolbarCommandsState),
-    };
+    const extensions = markdownExtensions(extensionIds);
+    const hiddenCommands = markdownStateIds<MarkdownToolbarCommandId>(hiddenToolbarCommandsState);
 
     return (
       <MDEditor
-        commands={markdownCommands(markdownOptions)}
-        extraCommands={markdownExtraCommands(markdownOptions)}
-        previewOptions={markdownPreviewOptions(markdownOptions)}
+        commands={markdownCommands(extensions, hiddenCommands)}
+        extraCommands={markdownExtraCommands(hiddenCommands)}
+        previewOptions={markdownPreviewOptions(extensions, { state: {}, emit: () => {} })}
         textareaProps={{
           placeholder,
           maxLength: maxLength >= 0 ? maxLength : undefined,

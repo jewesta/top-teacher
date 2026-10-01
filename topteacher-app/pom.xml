@@ -7,7 +7,7 @@
     <parent>
         <groupId>de.westarps.topteacher</groupId>
         <artifactId>topteacher</artifactId>
-        <version>1.1.0</version>
+        <version>1.2.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -30,7 +30,19 @@
 
         <dependency>
             <groupId>de.westarps.vaadin</groupId>
+            <artifactId>westarps-vaadin-animate</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>de.westarps.vaadin</groupId>
             <artifactId>westarps-vaadin-markdown</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>de.westarps.vaadin</groupId>
+            <artifactId>westarps-vaadin-tray</artifactId>
             <version>${project.version}</version>
         </dependency>
 

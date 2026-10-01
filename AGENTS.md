@@ -14,7 +14,9 @@
 - Treat archived records as historical data throughout TopTeacher. Exclude them from default discovery, identity matching, duplicate detection, and new assignments; expose them only through explicitly requested archive views, and never reactivate them implicitly as a side effect of another operation.
 - Prefer Vaadin Binder for form validation instead of manual if/else validation in form editors.
 - Keep `db/schema.sql`, `db/base-data.sql`, and `db/demo-data.sql` in sync when persistence changes.
-- For issue branches, maintain a concise summary in `issues/Issue_<nr>.md`; derive the issue number from the branch name when possible.
+- Treat `doc/ops/` as the authoritative functional specification (the Lastenheft). Update the relevant operational document whenever user-visible or domain behavior changes.
+- Treat `doc/tech/` as reusable implementation guidance for architecture, components, technical constraints, and lessons learned. Do not use it as the source of functional requirements.
+- For issue branches, maintain a concise decision and implementation-status summary in `issues/Issue_<nr>.md`; derive the issue number from the branch name when possible. Once behavior is settled, link to the authoritative `doc/ops/` document instead of duplicating its detailed specification in the issue note.
 - Do not run smoke tests by default. Use them only when the issue warrants it, for example when investigating or verifying a UI-specific problem.
 - Run `mvn -pl topteacher-app -am test` and `git diff --check` before handing off code changes.
 - Do not revert user changes or clean unrelated worktree changes.

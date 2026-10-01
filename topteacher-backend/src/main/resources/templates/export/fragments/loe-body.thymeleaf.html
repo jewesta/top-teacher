@@ -40,7 +40,11 @@
                                  th:text="${requirement.comment()}"></div>
                         </td>
                         <td class="tt-points-column" th:text="${requirement.maxPointsDisplayName()}">6</td>
-                        <td class="tt-points-column" th:text="${requirement.achievedPointsDisplayName()}"></td>
+                        <td class="tt-points-column">
+                            <span class="tt-achieved-points" th:text="${requirement.achievedPointsDisplayName()}"></span>
+                            <span class="tt-adjustment" th:if="${!requirement.adjustmentDisplayName().isBlank()}"
+                                  th:text="${requirement.adjustmentDisplayName()}"></span>
+                        </td>
                     </tr>
                     <tr class="tt-sum-row">
                         <td></td>

@@ -3,6 +3,7 @@ package de.westarps.topteacher.ui.component.loe;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Consumer;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
@@ -11,19 +12,32 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 
+import de.westarps.topteacher.backend.repo.GradingScaleRepository;
 import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.loe.LoeCategory;
 import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeTask;
+import de.westarps.topteacher.model.loe.LoeValidationTarget;
+import de.westarps.topteacher.model.loe.LoeValidator;
 import de.westarps.topteacher.ui.component.AbstractDesigner;
 import de.westarps.topteacher.ui.component.DesignerViewport;
 import de.westarps.topteacher.ui.component.FullscreenButton;
+import de.westarps.validate.TestResult;
+import de.westarps.validate.ValidationResult;
+import de.westarps.validate.ValidationResults;
 
 public class LevelOfExpectationsEditor extends AbstractDesigner {
 
+	public enum DesignState {
+		INCOMPLETE,
+		COMPLETE,
+		LOCKED
+	}
+
 	private final LevelOfExpectationsRepository levelOfExpectationsRepository;
+	private final GradingScaleRepository gradingScaleRepository;
 	private final FullscreenButton fullscreenButton;
 	private final LoeSaveController saveController = new LoeSaveController();
 	private final LoeSectionComponents components = new LoeSectionComponents(saveController);
@@ -127,16 +141,32 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 	private LoePointBadge examPointsBadge;
 	private final Span breadcrumb = new Span();
 	private List<LoePartSection> partSections = List.of();
+	private List<LoeRequirementSection> requirementSections = List.of();
 	private boolean correctionMode;
+	private Integer gradingScaleMaxPoints;
+	private ValidationResults<LoeValidationTarget> validationResults = ValidationResults.pass();
+	private DesignState designState = DesignState.INCOMPLETE;
 	private Runnable changeHandler = () -> {
 	};
+	private Consumer<DesignState> designStateChangeHandler = state -> {
+	};
 
-	public LevelOfExpectationsEditor(final LevelOfExpectationsRepository levelOfExpectationsRepository) {
+	LevelOfExpectationsEditor(final LevelOfExpectationsRepository levelOfExpectationsRepository) {
+		this(levelOfExpectationsRepository, null);
+	}
+
+	public LevelOfExpectationsEditor(final LevelOfExpectationsRepository levelOfExpectationsRepository,
+			final GradingScaleRepository gradingScaleRepository) {
 		super("tt-eh-editor");
+		enableStatusTray();
 		this.levelOfExpectationsRepository = levelOfExpectationsRepository;
+		this.gradingScaleRepository = gradingScaleRepository;
 		fullscreenButton = new FullscreenButton(this);
 
+		components.setValueChangeHandler(this::updateValidation);
+		components.setPointsChangeHandler(this::refreshBadges);
 		saveController.setDirtySupplier(this::isDirty);
+		saveController.setSaveAllowedSupplier(this::isSaveAllowed);
 		saveController.setSaveAction(this::saveDirtySections);
 		saveController.setDiscardAction(this::discardDirtySections);
 	}
@@ -146,12 +176,23 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 			collapseState.clear();
 		}
 		this.exam = exam;
+		gradingScaleMaxPoints = gradingScaleMaxPoints(exam);
 		refresh();
 	}
 
 	public void setChangeHandler(final Runnable changeHandler) {
 		this.changeHandler = changeHandler == null ? () -> {
 		} : changeHandler;
+	}
+
+	public void setDesignStateChangeHandler(final Consumer<DesignState> designStateChangeHandler) {
+		this.designStateChangeHandler = designStateChangeHandler == null ? state -> {
+		} : designStateChangeHandler;
+		this.designStateChangeHandler.accept(designState);
+	}
+
+	public DesignState getDesignState() {
+		return designState;
 	}
 
 	public boolean focusRequirement(final LoeNavigationTarget target) {
@@ -168,9 +209,13 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 		collapseState.clearRenderedComponents();
 		examPointsBadge = null;
 		partSections = List.of();
+		requirementSections = new ArrayList<>();
 		resetDesigner();
 		if (exam == null) {
 			correctionMode = false;
+			validationResults = ValidationResults.pass();
+			setValidationResults(validationResults);
+			updateDesignState();
 			showDesignerMessage(new Span("Bitte wähle eine Klausur aus."));
 			return;
 		}
@@ -191,6 +236,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 
 		configureToolbar();
 		showDesigner();
+		updateValidation();
 		saveController.update();
 	}
 
@@ -287,6 +333,8 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 		final List<LoeRequirement> siblings = requirementsFor(taskFor(requirement));
 		final LoeRequirementSection section = new LoeRequirementSection(requirement, siblings, components,
 				requirementHandler, requirementNumber(siblings, requirement), correctionMode);
+		requirementSections.add(section);
+		section.setId(validationTargetId(requirement.id()));
 		DesignerViewport.mark(section, detailKey("requirement", requirement.id()),
 				requirementNumber(siblings, requirement));
 		return section;
@@ -371,8 +419,11 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 	}
 
 	private LoePoints pointsForRequirement(final LoeRequirement requirement) {
-		return requirement.bonus() ? new LoePoints(0, requirement.maxPoints())
-				: new LoePoints(requirement.maxPoints(), 0);
+		final LoeRequirement pendingRequirement = requirementSections.stream()
+				.filter(section -> section.requirement().id().equals(requirement.id()))
+				.map(LoeRequirementSection::pendingRequirement).findFirst().orElse(requirement);
+		return pendingRequirement.bonus() ? new LoePoints(0, pendingRequirement.maxPoints())
+				: new LoePoints(pendingRequirement.maxPoints(), 0);
 	}
 
 	private int percentageForPart(final LoePart part) {
@@ -583,6 +634,9 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 	}
 
 	private void saveDirtySections() {
+		if (!isSaveAllowed()) {
+			return;
+		}
 		try {
 			for (final LoePartSection partSection : partSections) {
 				if (!partSection.save()) {
@@ -594,6 +648,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 			return;
 		}
 		refreshBadges();
+		updateValidation();
 		notifyChanged();
 	}
 
@@ -616,7 +671,125 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 		changeHandler.run();
 	}
 
+	private Integer gradingScaleMaxPoints(final Exam exam) {
+		if (exam == null || exam.gradingScaleId() == null || gradingScaleRepository == null) {
+			return null;
+		}
+		return gradingScaleRepository.findById(exam.gradingScaleId()).map(scale -> scale.maxPoints()).orElse(null);
+	}
+
+	private void updateValidation() {
+		if (exam == null) {
+			validationResults = ValidationResults.pass();
+		} else {
+			final List<LoeRequirement> pendingRequirements = requirementSections.stream()
+					.map(LoeRequirementSection::pendingRequirement).toList();
+			final ValidationResults<LoeValidationTarget> allocationResults = gradingScaleMaxPoints == null
+					? LoeValidator.validateRequirements(pendingRequirements)
+					: LoeValidator.validate(gradingScaleMaxPoints, pendingRequirements);
+			requirementSections.forEach(section -> section.setCriterionValidation(section.hasValidMaxPoints()
+					? allocationResults.getResults().stream()
+							.filter(result -> result.getTarget().equals(
+									LoeValidationTarget.requirementCriteria(section.requirement().id())))
+							.flatMap(result -> result.getResults().stream()).toList()
+					: List.of()));
+			final ValidationResults.Builder<LoeValidationTarget> results = ValidationResults.builder();
+			results.addAll(allocationResults.getResults());
+			requirementSections.stream().filter(section -> !section.hasValidMaxPoints())
+					.map(section -> ValidationResult.error(
+							LoeValidationTarget.requirementCriteria(section.requirement().id()),
+							"Die maximale Punktzahl einer Anforderung muss 0 oder größer sein."))
+					.forEach(results::add);
+			validationResults = addRequirementLabels(results.build());
+		}
+		setValidationResults(validationResults,
+				target -> target.kind() == LoeValidationTarget.Kind.REQUIREMENT_CRITERIA,
+				this::validationTargetHref,
+				this::showValidationTarget);
+		updateDesignState();
+	}
+
+	private boolean isSaveAllowed() {
+		return !validationResults.hasFailed();
+	}
+
+	private ValidationResults<LoeValidationTarget> addRequirementLabels(
+			final ValidationResults<LoeValidationTarget> results) {
+		final ValidationResults.Builder<LoeValidationTarget> labeledResults = ValidationResults.builder();
+		results.forEach(result -> {
+			if (result.getTarget().kind() == LoeValidationTarget.Kind.TOTAL_POINTS) {
+				labeledResults.add(result);
+				return;
+			}
+			final String prefix = requirementLabel(result.getTarget().requirementId());
+			final ValidationResult.Builder<LoeValidationTarget> labeledResult = ValidationResult
+					.builder(result.getTarget());
+			result.getResults().stream()
+					.map(testResult -> new TestResult(testResult.severity(), prefix + ": " + testResult.message()))
+					.forEach(labeledResult::add);
+			labeledResults.add(labeledResult.build());
+		});
+		return labeledResults.build();
+	}
+
+	private String requirementLabel(final Integer requirementId) {
+		return requirements.stream().filter(requirement -> requirement.id().equals(requirementId)).findFirst()
+				.map(requirement -> {
+					final LoeTask task = taskFor(requirement);
+					final LoeCategory category = categoryFor(task);
+					return "Aufgabe " + taskNumber(tasksFor(category), task) + " · Anforderung "
+							+ requirementNumber(requirementsFor(task), requirement);
+				})
+				.orElse("Anforderung");
+	}
+
+	private String validationTargetHref(final LoeValidationTarget target) {
+		return "exams#" + validationTargetId(target.requirementId());
+	}
+
+	private String validationTargetId(final Integer requirementId) {
+		return "tt-eh-requirement-" + requirementId;
+	}
+
+	private void showValidationTarget(final LoeValidationTarget target) {
+		if (target.kind() != LoeValidationTarget.Kind.REQUIREMENT_CRITERIA) {
+			return;
+		}
+		requirementSections.stream()
+				.filter(section -> section.requirement().id().equals(target.requirementId())).findFirst()
+				.ifPresent(section -> {
+					final LoeRequirement requirement = section.requirement();
+					final LoeTask task = taskFor(requirement);
+					final LoeCategory category = categoryFor(task);
+					final LoePart part = partFor(category);
+					statusTray().peek();
+					collapseState.expand(List.of(detailKey("part", part.id()), detailKey("category", category.id()),
+							detailKey("task", task.id())));
+					viewport.scrollTo(detailKey("requirement", requirement.id()));
+					section.emphasize();
+				});
+	}
+
+	private void updateDesignState() {
+		final DesignState nextState = correctionMode ? DesignState.LOCKED
+				: validationResults.hasAny() ? DesignState.INCOMPLETE : DesignState.COMPLETE;
+		if (designState == nextState) {
+			return;
+		}
+		designState = nextState;
+		designStateChangeHandler.accept(designState);
+	}
+
 	private String partLetter(final int index) {
 		return String.valueOf((char) ('A' + Math.min(index, 25)));
+	}
+
+	private String taskNumber(final List<LoeTask> siblings, final LoeTask task) {
+		for (int index = 0; index < siblings.size(); index++) {
+			if (siblings.get(index).id().equals(task.id())) {
+				return String.valueOf(index + 1);
+			}
+		}
+		throw new IllegalStateException("Missing EH task: " + task.id());
 	}
 }

@@ -1,66 +1,131 @@
 # Issue 32: Support half points
 
-## Intent
+## Goal
 
-Support levels of expectations in which individual scoring units can be worth
-half a point. A half-point unit is either achieved or not achieved, just like a
-full-point unit. A full-point unit must not become partially achievable merely
-because the application supports half points elsewhere.
+Support criterion values in half-point increments while keeping requirements
+as the rounding boundary. A requirement may also be defined without criteria
+and marked holistically.
 
-## Current state
+Compatibility with existing level-of-expectations data is not required because
+no production data has been created yet.
 
-- TopTeacher currently represents maximum points, achieved points, grading
-  scale boundaries, aggregations, persistence values, exports, and MCP values
-  as integers.
-- The EH designer and result editor use integer-only point fields.
-- Allowing every result field to use increments of `0.5` would be incorrect: it
-  would also allow a declared full point to be awarded as half a point.
-- An integer maximum does not necessarily reveal the scoring units from which
-  it is composed. A maximum of four points could mean four full-point units,
-  eight half-point units, or a mixture of both.
+## Authoritative requirements
 
-## Design direction
+- [Level of Expectations](../doc/ops/LevelOfExpectations.md)
+- [Level of Expectations Results](../doc/ops/LevelOfExpectationsResults.md)
+- [Level of Expectations PDF Export](../doc/ops/LevelOfExpectationsPdfExport.md)
 
-- Store and aggregate exact half-point values without floating-point
-  arithmetic. One possible representation is an integer count of half-point
-  units, where one unit represents `0.5` points and two units represent one
-  point.
-- Preserve exact values throughout EH editing, result entry, aggregation, and
-  export. Any grading-related rounding should happen once at the grading
-  boundary, not in intermediate totals.
-- Add an explicit way to declare where half-point results are permitted. The
-  precise model is intentionally undecided. Candidates include a per-
-  requirement point increment, a count of half-point units, or individually
-  weighted scoring items.
-- Existing whole-point data must migrate losslessly.
+These operational documents are the authoritative functional specification.
+This issue note records the implementation sequence and current status only.
 
-## Open questions
+## Core decisions
 
-- Can a requirement with a whole-number maximum nevertheless contain one or
-  more half-point units?
-- Can one requirement mix full-point and half-point units?
-- Must TopTeacher remember which individual scoring unit was achieved, or is an
-  aggregate result for the requirement sufficient?
-- How should an exact half-point total be rounded when applying an integer
-  grading scale?
-- Should grading scales and their ranges remain integer-based, or must they
-  support half-point boundaries as well?
+- Point values are represented internally as integer half-point units.
+- Criterion definitions use `eh:<key>[/<points>]`; the point value defaults to
+  one and the key remains the stable identity.
+- Requirements retain an explicit integer maximum. If criteria exist, their
+  configured values must sum exactly to that maximum; zero criteria is valid.
+- The grading-scale maximum is authoritative for regular requirement maxima.
+- Under-allocation is a saveable incomplete design. Over-allocation may exist
+  in pending editor state but prevents saving.
+- During marking, criteria guide the marker but do not hard-gate the awarded
+  result. A requirement-level adjustment covers valid work outside predefined
+  criteria.
+- Raw half points are rounded half-up inside each requirement. No half point is
+  aggregated beyond the requirement.
 
-## Expected impact
+## Implementation sequence
 
-The change is cross-cutting and is expected to affect:
+1. Introduce reusable validation and tray infrastructure and repair EH
+   validation with whole points.
+2. Add half-point criterion values and optional criteria to EH design.
+3. Add awarded criterion values, adjustment, direct holistic marking, and the
+   revised Results interactions.
+4. Update PDF and other exports, integrations, fixture data, and tests.
 
-- the domain types for EH requirements, results, point summaries, and point
-  rules;
-- the database schema and migration of existing point values;
-- EH design and result-entry controls and validation;
-- bonus-point capping and all aggregate displays;
-- PDF and spreadsheet exports;
-- grading and evaluation;
-- MCP input and output schemas;
-- base data, demo data, and automated tests.
+## Completed preparation
+
+- Added the reusable `westarps-validate`, `westarps-vaadin-animate`,
+  `westarps-vaadin-badge`, and `westarps-vaadin-tray` modules.
+- Added common designer tray plumbing and the validation-aware `StatusTray`.
+- Implemented whole-point EH validation against the grading-scale and
+  requirement totals.
+- Added derived hourglass, tick, and lock tab states; live pending aggregates; concise
+  targeted tray messages; and the agreed tray interactions. Status links now
+  perform their in-page jump without navigating away from the selected exam.
+- Aligned EH and Results aggregate badges and applied the shared pointer-cursor
+  behavior to interactive controls.
+
+## Completed EH half-point phase
+
+- Added integer half-point units to the criterion model and persistence schema.
+- Extended criterion tags to `eh:<key>[/<points>]`, including comma and dot
+  parsing, default one-point values, malformed-tag reporting, and stable keys.
+- Added a Markdown extension seam and a TT-owned criterion extension with the
+  agreed `P` control, 0,5-through-4 presets, `4+` placeholder, and a maximum
+  valid custom value of 999 points. Criterion rendering and Results checkboxes
+  also belong to TT, not the reusable Markdown module.
+- Excluded app-specific Vaadin development metadata from the reusable Markdown
+  JAR so TT resolves its own frontend files after a clean server restart.
+- Changed criterion pills from internal keys to point values.
+- Made criterion-free requirements valid while retaining exact allocation when
+  at least one criterion exists.
+- Enforced save blocking for excess or malformed criterion allocations while
+  keeping under-allocation saveable.
+- Added a live inline warning or error beside each affected requirement maximum
+  from the same criterion validation result shown in the status tray.
+- Persisted criterion values, included them in correction-mode locking and MCP
+  views, and retained teacher-export criterion identity matching.
+
+## Completed Results phase
+
+- Store awarded criterion values and requirement adjustments in half-point
+  units; migrate existing result rows and retain rounded whole-point caches.
+- Round each raw requirement result before higher-level aggregation.
+- Synchronize inline tri-state checkboxes, awarded-value pills with point
+  popovers, and compact quick-marking steppers without changing the tuned
+  aggregation-chip alignment. Results pills share EH styling and stay adjacent
+  to their checkboxes. The inline checkbox frame stays aligned with the point
+  pill across unchecked, checked, and partial states. Inline controls are
+  aligned with the text, and the EH preview highlight includes the point pill.
+  The inline point popover points back to its pill.
+- Give Results aggregates, requirement totals, criterion controls, and
+  freely awarded point steppers a shared points-cell footprint, with centered
+  stepper values, consistent dimensions, and visible partial inline checkboxes.
+- Reuse the EH aggregate-points badge in Results, restoring `Summe` and `Gesamt`
+  captions and fixed regular/bonus number slots; align the caption left and
+  values right while matching the height of all points-column cells.
+- Add requirement-local free-point budgeting, marking for requirements
+  without criteria, and bidirectional hover/focus highlighting.
+- Present both discretionary and criterion-free awards as `Frei vergebene Punkte`
+  in the same bottom-of-column position; requirement totals stay read-only.
+- Report full and partial criterion fulfilment in the requirement status line;
+  omit it when no criteria exist.
+- Let result comments grow from a two-line minimum and remove the field's
+  extra host padding while retaining its gap above the field.
+- Preserve dirty-state save/discard behavior and expose raw values through MCP.
+- Give all context-tab contents one flush outer-layout contract, removing the
+  assignment grid's extra padding in both the exam and course tabs.
+- Keep criterion highlighting active while focus moves inside its point control
+  without raising a client-side error from the focus-leave filter.
+
+## Completed export and evaluation phase
+
+- Kept the pupil PDF free of marking annotations while exporting the rounded
+  requirement result.
+- Changed teacher-PDF criterion pills from internal keys to awarded values and
+  added distinct red tick, circle, and cross markers for full, partial, and
+  zero awards.
+- Added a compact `Frei vergebene Punkte` breakdown for non-zero adjustments
+  in the existing teacher-PDF achieved-points cell.
+- Verified that evaluation, grading, and spreadsheet aggregation round each
+  requirement before summing, including separate half-point requirements.
+- Updated demo criteria to allocate their requirement maxima exactly and added
+  a real pair of half-point criteria to the fixture.
+- Raised the reactor and packaged application version to `1.2.0`.
 
 ## Status
 
-Design discussion postponed. Implement this as a dedicated issue rather than
-as part of Issue 22.
+Implementation is complete. Half-point values now remain exact through design
+and marking, round at the requirement boundary, and produce consistent UI,
+grading, integration, spreadsheet, and PDF output.

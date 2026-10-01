@@ -19,4 +19,24 @@ class LoeCriterionParserTests {
 		assertThat(LoeCriterionParser.parse(7, "[erste Fassung](eh:1) und [zweite Fassung](eh:1)"))
 				.containsExactly(new LoeCriterion(null, 7, "1", "erste Fassung", 0, true));
 	}
+
+	@Test
+	void parsesDefaultCommaAndDotPointValuesIntoHalfPointUnits() {
+		assertThat(LoeCriterionParser.parse(7,
+				"[Standard](eh:1), [halb](eh:2/0,5), [anderthalb](eh:3/1.5)"))
+						.containsExactly(new LoeCriterion(null, 7, "1", "Standard", 2, 0, true),
+								new LoeCriterion(null, 7, "2", "halb", 1, 1, true),
+								new LoeCriterion(null, 7, "3", "anderthalb", 3, 2, true));
+	}
+
+	@Test
+	void reportsMalformedPointValuesAndReservesTheirKeys() {
+		final LoeCriterionParseResult result = LoeCriterionParser.analyze(7,
+				"[offen](eh:1/?) und [doppelt](eh:1)");
+
+		assertThat(result.criteria()).isEmpty();
+		assertThat(result.issues()).extracting(LoeCriterionIssue::kind)
+				.containsExactly(LoeCriterionIssue.Kind.INVALID_POINTS, LoeCriterionIssue.Kind.DUPLICATE_KEY);
+		assertThat(result.tagCount()).isEqualTo(2);
+	}
 }

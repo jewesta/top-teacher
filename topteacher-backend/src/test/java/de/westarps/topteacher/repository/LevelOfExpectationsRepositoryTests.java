@@ -6,10 +6,12 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.ExamRepository;
@@ -38,7 +40,7 @@ import de.westarps.topteacher.model.loe.LoeTask;
 @SpringBootTest
 class LevelOfExpectationsRepositoryTests {
 
-	private static final String CORRECTION_MODE_MESSAGE = "Der Erwartungshorizont ist im Korrekturmodus. Struktur, Punkte und Kriteriennummern können nicht geändert werden.";
+	private static final String CORRECTION_MODE_MESSAGE = "Der Erwartungshorizont ist im Korrekturmodus. Struktur, Punkte und Kriterien können nicht geändert werden.";
 
 	@Autowired
 	private CourseRepository courseRepository;
@@ -57,6 +59,9 @@ class LevelOfExpectationsRepositoryTests {
 
 	@Autowired
 	private SubjectRepository subjectRepository;
+
+	@Autowired
+	private NamedParameterJdbcTemplate jdbc;
 
 	@Test
 	void savesAndFindsLevelOfExpectationsHierarchy() {
@@ -143,35 +148,61 @@ class LevelOfExpectationsRepositoryTests {
 				.saveCategory(new LoeCategory(null, part.id(), "Sprache", "", 0));
 		final LoeTask task = levelOfExpectationsRepository
 				.saveTask(new LoeTask(null, category.id(), "Teilaufgabe 1", 0));
+		assertThatThrownBy(() -> levelOfExpectationsRepository.saveRequirement(
+				new LoeRequirement(null, task.id(), "[Zu viel](eh:1/1,5)", 1, false, 0)))
+					.isInstanceOf(IllegalArgumentException.class)
+					.hasMessage("Ordne 0,5 Kriterienpunkte weniger zu.");
+		assertThatThrownBy(() -> levelOfExpectationsRepository
+				.saveRequirement(new LoeRequirement(null, task.id(), "[Offen](eh:1/?)", 1, false, 0)))
+					.isInstanceOf(IllegalArgumentException.class)
+					.hasMessage("Kriterium „Offen“: Ordne eine gültige Punktzahl zu.");
 		final LoeRequirement requirement = levelOfExpectationsRepository.saveRequirement(new LoeRequirement(null,
-				task.id(), "Nutzt die [korrekte Zeitform](eh:1) und [präzise Wortwahl](eh:2).", 8, false, 0));
+				task.id(), "Nutzt die [korrekte Zeitform](eh:1/0,5) und [präzise Wortwahl](eh:2/1.5).", 8, false,
+				0));
 
 		assertThat(levelOfExpectationsRepository.findActiveCriteriaByExamId(exam.id())).extracting(
-				LoeCriterion::criterionKey, LoeCriterion::label, LoeCriterion::sortOrder, LoeCriterion::active)
-				.containsExactly(tuple("1", "korrekte Zeitform", 0, true), tuple("2", "präzise Wortwahl", 1, true));
+				LoeCriterion::criterionKey, LoeCriterion::label, LoeCriterion::pointUnits, LoeCriterion::sortOrder,
+				LoeCriterion::active)
+				.containsExactly(tuple("1", "korrekte Zeitform", 1, 0, true),
+						tuple("2", "präzise Wortwahl", 3, 1, true));
 
 		final LoeRequirement updatedRequirement = new LoeRequirement(requirement.id(), task.id(),
-				"Nutzt die [richtige Zeitform](eh:1) und [passende Konnektoren](eh:3).", 8, false, 0);
+				"Nutzt die [richtige Zeitform](eh:1/1,5) und [passende Konnektoren](eh:3).", 8, false, 0);
 		levelOfExpectationsRepository.saveRequirement(updatedRequirement);
 		final List<LoeCriterion> updatedCriteria = levelOfExpectationsRepository.findActiveCriteriaByExamId(exam.id());
 
-		assertThat(updatedCriteria).extracting(LoeCriterion::criterionKey, LoeCriterion::label)
-				.containsExactly(tuple("1", "richtige Zeitform"), tuple("3", "passende Konnektoren"));
+		assertThat(updatedCriteria).extracting(LoeCriterion::criterionKey, LoeCriterion::label,
+				LoeCriterion::pointUnits).containsExactly(tuple("1", "richtige Zeitform", 3),
+						tuple("3", "passende Konnektoren", 2));
 
 		final Pupil pupil = pupilRepository.save(new Pupil(null, "Test", "Ergebnis", Lifecycle.ACTIVE));
 		final LoeCriterion firstCriterion = updatedCriteria.getFirst();
 		levelOfExpectationsRepository
-				.saveCriterionResult(new LoeCriterionResult(firstCriterion.id(), pupil.id(), true));
+				.saveCriterionResult(new LoeCriterionResult(firstCriterion.id(), pupil.id(), 1));
+		assertThat(jdbc.queryForObject("""
+			select achieved from eh_criterion_result where criterion_id = :criterionId and pupil_id = :pupilId
+			""", Map.of("criterionId", firstCriterion.id(), "pupilId", pupil.id()), Boolean.class)).isFalse();
+		levelOfExpectationsRepository
+				.saveCriterionResult(new LoeCriterionResult(firstCriterion.id(), pupil.id(), 3));
+		assertThat(jdbc.queryForObject("""
+			select achieved from eh_criterion_result where criterion_id = :criterionId and pupil_id = :pupilId
+			""", Map.of("criterionId", firstCriterion.id(), "pupilId", pupil.id()), Boolean.class)).isTrue();
+		assertThatThrownBy(() -> levelOfExpectationsRepository
+				.saveCriterionResult(new LoeCriterionResult(firstCriterion.id(), pupil.id(), 4)))
+					.isInstanceOf(IllegalArgumentException.class);
 
 		assertThat(levelOfExpectationsRepository.findCriterionResultsByExamAndPupil(exam.id(), pupil.id()))
-				.containsExactly(new LoeCriterionResult(firstCriterion.id(), pupil.id(), true));
+				.containsExactly(new LoeCriterionResult(firstCriterion.id(), pupil.id(), 3));
+		assertThatThrownBy(() -> levelOfExpectationsRepository.saveRequirement(new LoeRequirement(requirement.id(),
+				task.id(), "Nutzt die [richtige Zeitform](eh:1/2) und [passende Konnektoren](eh:3).", 8, false,
+				0))).isInstanceOf(IllegalStateException.class).hasMessage(CORRECTION_MODE_MESSAGE);
 		assertThatThrownBy(() -> levelOfExpectationsRepository.deleteRequirement(requirement.id()))
 				.isInstanceOf(IllegalStateException.class).hasMessage(CORRECTION_MODE_MESSAGE);
 
 		levelOfExpectationsRepository
-				.saveCriterionResult(new LoeCriterionResult(firstCriterion.id(), pupil.id(), false));
+				.saveCriterionResult(new LoeCriterionResult(firstCriterion.id(), pupil.id(), 0));
 		assertThat(levelOfExpectationsRepository.findCriterionResultsByExamAndPupil(exam.id(), pupil.id()))
-				.containsExactly(new LoeCriterionResult(firstCriterion.id(), pupil.id(), false));
+				.containsExactly(new LoeCriterionResult(firstCriterion.id(), pupil.id(), 0));
 	}
 
 	@Test
@@ -198,6 +229,13 @@ class LevelOfExpectationsRepositoryTests {
 				.saveRequirementResult(new LoeRequirementResult(requirement.id(), pupil.id(), 4, "Noch besser."));
 		assertThat(levelOfExpectationsRepository.findRequirementResultsByExamAndPupil(exam.id(), pupil.id()))
 				.containsExactly(new LoeRequirementResult(requirement.id(), pupil.id(), 4, "Noch besser."));
+
+		final LoeRequirementResult partialResult = new LoeRequirementResult(requirement.id(), pupil.id(), 7, 1,
+				"Ein halber Zusatzpunkt.");
+		levelOfExpectationsRepository.saveRequirementResult(partialResult);
+		assertThat(levelOfExpectationsRepository.findRequirementResultsByExamAndPupil(exam.id(), pupil.id()))
+				.containsExactly(partialResult);
+		assertThat(partialResult.points()).isEqualTo(4);
 	}
 
 	@Test
@@ -214,7 +252,7 @@ class LevelOfExpectationsRepositoryTests {
 		final LoeCriterion criterion = levelOfExpectationsRepository.findActiveCriteriaByExamId(exam.id()).getFirst();
 		assertThat(levelOfExpectationsRepository.hasResultsForExam(exam.id())).isFalse();
 
-		levelOfExpectationsRepository.saveCriterionResult(new LoeCriterionResult(criterion.id(), pupil.id(), true));
+		levelOfExpectationsRepository.saveCriterionResult(new LoeCriterionResult(criterion.id(), pupil.id(), 2));
 		levelOfExpectationsRepository
 				.saveRequirementResult(new LoeRequirementResult(requirement.id(), pupil.id(), 6, "Schon bewertet."));
 
@@ -262,11 +300,11 @@ class LevelOfExpectationsRepositoryTests {
 		final Pupil pupil = pupilRepository.save(new Pupil(null, "Test", "Löschen", Lifecycle.ACTIVE));
 		final Pupil otherPupil = pupilRepository.save(new Pupil(null, "Test", "Bleibt", Lifecycle.ACTIVE));
 
-		levelOfExpectationsRepository.saveCriterionResult(new LoeCriterionResult(criterion.id(), pupil.id(), true));
+		levelOfExpectationsRepository.saveCriterionResult(new LoeCriterionResult(criterion.id(), pupil.id(), 2));
 		levelOfExpectationsRepository
 				.saveRequirementResult(new LoeRequirementResult(requirement.id(), pupil.id(), 3, "Wird gelöscht."));
 		levelOfExpectationsRepository
-				.saveCriterionResult(new LoeCriterionResult(criterion.id(), otherPupil.id(), true));
+				.saveCriterionResult(new LoeCriterionResult(criterion.id(), otherPupil.id(), 2));
 		levelOfExpectationsRepository.saveRequirementResult(
 				new LoeRequirementResult(requirement.id(), otherPupil.id(), 4, "Bleibt bestehen."));
 
@@ -275,7 +313,7 @@ class LevelOfExpectationsRepositoryTests {
 		assertThat(levelOfExpectationsRepository.findCriterionResultsByExamAndPupil(exam.id(), pupil.id())).isEmpty();
 		assertThat(levelOfExpectationsRepository.findRequirementResultsByExamAndPupil(exam.id(), pupil.id())).isEmpty();
 		assertThat(levelOfExpectationsRepository.findCriterionResultsByExamAndPupil(exam.id(), otherPupil.id()))
-				.containsExactly(new LoeCriterionResult(criterion.id(), otherPupil.id(), true));
+				.containsExactly(new LoeCriterionResult(criterion.id(), otherPupil.id(), 2));
 		assertThat(levelOfExpectationsRepository.findRequirementResultsByExamAndPupil(exam.id(), otherPupil.id()))
 				.containsExactly(new LoeRequirementResult(requirement.id(), otherPupil.id(), 4, "Bleibt bestehen."));
 	}
@@ -297,7 +335,7 @@ class LevelOfExpectationsRepositoryTests {
 		final LoeCriterion criterion = levelOfExpectationsRepository.findActiveCriteriaByExamId(sourceExam.id())
 				.getFirst();
 		final Pupil pupil = pupilRepository.save(new Pupil(null, "Test", "Kopie", Lifecycle.ACTIVE));
-		levelOfExpectationsRepository.saveCriterionResult(new LoeCriterionResult(criterion.id(), pupil.id(), true));
+		levelOfExpectationsRepository.saveCriterionResult(new LoeCriterionResult(criterion.id(), pupil.id(), 2));
 		levelOfExpectationsRepository
 				.saveRequirementResult(new LoeRequirementResult(requirement.id(), pupil.id(), 4, "Schon erfasst."));
 
@@ -332,7 +370,7 @@ class LevelOfExpectationsRepositoryTests {
 		assertThat(levelOfExpectationsRepository.findRequirementResultsByExamAndPupil(targetExam.id(), pupil.id()))
 				.isEmpty();
 		assertThat(levelOfExpectationsRepository.findCriterionResultsByExamAndPupil(sourceExam.id(), pupil.id()))
-				.containsExactly(new LoeCriterionResult(criterion.id(), pupil.id(), true));
+				.containsExactly(new LoeCriterionResult(criterion.id(), pupil.id(), 2));
 	}
 
 	private Exam createExam(final int calendarYear, final String title) {
