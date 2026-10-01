@@ -109,9 +109,9 @@ eh:<key>[/<points>]
 - Omitting the point value defaults it to one, so `eh:1` and `eh:1/1` are
   equivalent.
 - A criterion value must be positive and use half-point increments.
-- Criterion values have no artificial upper limit. Values through four points
-  are convenient presets; larger values remain available as an explicit custom
-  entry.
+- Criterion values are not limited to the convenient presets through four
+  points. Larger half-point values up to and including 999 remain available as
+  an explicit custom entry.
 - Both comma and dot are accepted as decimal separators. The editor generates
   commas and the UI always displays values with the German comma form.
 - Malformed definitions and duplicate keys are validation issues; they must not
