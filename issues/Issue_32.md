@@ -107,12 +107,22 @@ This issue note records the implementation sequence and current status only.
 - Give all context-tab contents one flush outer-layout contract, removing the
   assignment grid's extra padding in both the exam and course tabs.
 
-## Remaining implementation
+## Completed export and evaluation phase
 
-- Update PDF and spreadsheet exports and the remaining grading and evaluation
-  paths for the Results-side half-point behavior.
+- Kept the pupil PDF free of marking annotations while exporting the rounded
+  requirement result.
+- Changed teacher-PDF criterion pills from internal keys to awarded values and
+  added distinct red tick, circle, and cross markers for full, partial, and
+  zero awards.
+- Added a compact `Frei vergebene Punkte` breakdown for non-zero adjustments
+  in the existing teacher-PDF achieved-points cell.
+- Verified that evaluation, grading, and spreadsheet aggregation round each
+  requirement before summing, including separate half-point requirements.
+- Updated demo criteria to allocate their requirement maxima exactly and added
+  a real pair of half-point criteria to the fixture.
 
 ## Status
 
-The reusable preparation, EH validation refactor, EH half-point phase, and
-Results-side marking behavior are complete. PDF and other export work remains.
+Implementation is complete. Half-point values now remain exact through design
+and marking, round at the requirement boundary, and produce consistent UI,
+grading, integration, spreadsheet, and PDF output.

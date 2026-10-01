@@ -65,6 +65,9 @@ introducing another table column.
 - The rounded requirement result remains the primary value in the existing
   achieved-result cell.
 - A non-zero adjustment is shown as a small secondary line in that same cell.
+  It uses the label `Frei vergebene Punkte`, a leading plus sign, and the
+  German comma form for a half point, for example
+  `Frei vergebene Punkte: +0,5`.
 - The requirement comment remains in the neighboring requirement-text cell.
 - Existing teacher-only note sections and the optional watermark remain
   available.

@@ -17,6 +17,7 @@ import org.springframework.test.context.jdbc.Sql;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.ExamRepository;
+import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.backend.repo.PupilRepository;
 import de.westarps.topteacher.backend.repo.SettingsRepository;
 import de.westarps.topteacher.backend.settings.AppSettings;
@@ -24,6 +25,7 @@ import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.Pupil;
 import de.westarps.topteacher.model.SchoolClass;
+import de.westarps.topteacher.model.loe.LoeValidator;
 
 @SpringBootTest
 @Sql("/db/demo-data.sql")
@@ -45,6 +47,9 @@ class LevelOfExpectationsExportServiceTests {
 	private PupilRepository pupilRepository;
 
 	@Autowired
+	private LevelOfExpectationsRepository levelOfExpectationsRepository;
+
+	@Autowired
 	private SettingsRepository settingsRepository;
 
 	@Test
@@ -64,6 +69,17 @@ class LevelOfExpectationsExportServiceTests {
 		assertThat(html).contains("ungenügend");
 		assertThat(html).doesNotContain("eh:", "tt-criterion", "tt-criterion-badge");
 		assertThat(html).doesNotContain("Klares Fazit", "Notiz: ");
+	}
+
+	@Test
+	void demoLevelOfExpectationsHasCompleteCriterionAllocationsIncludingHalfPoints() {
+		final DemoSelection demo = findDemoSelection();
+
+		assertThat(LoeValidator
+				.validateRequirements(levelOfExpectationsRepository.findRequirementsByExamId(demo.exam().id()))
+				.getTestResults()).isEmpty();
+		assertThat(levelOfExpectationsRepository.findActiveCriteriaByExamId(demo.exam().id()))
+				.anyMatch(criterion -> criterion.pointUnits() == 1);
 	}
 
 	@Test

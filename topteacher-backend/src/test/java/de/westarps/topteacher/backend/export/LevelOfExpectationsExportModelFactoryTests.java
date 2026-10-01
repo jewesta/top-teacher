@@ -55,8 +55,10 @@ class LevelOfExpectationsExportModelFactoryTests {
 		final var firstRequirement = model.parts().getFirst().categories().getFirst().tasks().getFirst().requirements()
 				.getFirst();
 		assertThat(firstRequirement.description().value()).contains("<strong>Zeitform</strong>");
-		assertThat(firstRequirement.description().value()).doesNotContain("eh:1", "tt-criterion", "mark");
+		assertThat(firstRequirement.description().value()).doesNotContain("eh:", "tt-criterion", "mark");
 		assertThat(firstRequirement.comment()).isEmpty();
+		assertThat(firstRequirement.adjustmentDisplayName()).isEmpty();
+		assertThat(firstRequirement.achievedPoints()).isEqualTo(4);
 
 		final var bonusRequirement = model.parts().getFirst().categories().getFirst().tasks().getFirst().requirements()
 				.get(1);
@@ -64,6 +66,8 @@ class LevelOfExpectationsExportModelFactoryTests {
 		assertThat(bonusRequirement.achievedPointsDisplayName()).isEqualTo("(1)");
 
 		assertThat(model.noteSections()).isEmpty();
+		assertThat(new HtmlRenderer().renderModel("export/level-of-expectations-pupil.thymeleaf.html", model))
+				.doesNotContain("tt-adjustment", "Frei vergebene Punkte");
 	}
 
 	@Test
@@ -87,8 +91,17 @@ class LevelOfExpectationsExportModelFactoryTests {
 		assertThat(firstRequirement.comment()).isEqualTo("Sauber");
 		assertThat(firstRequirement.description().value()).contains("tt-criterion");
 		assertThat(firstRequirement.description().value()).contains("tt-criterion-badge");
-		assertThat(firstRequirement.description().value()).contains("tt-criterion-marker");
+		assertThat(firstRequirement.description().value()).contains("tt-criterion-marker-full");
+		assertThat(firstRequirement.description().value()).contains("tt-criterion-marker-partial");
+		assertThat(firstRequirement.description().value()).contains("tt-criterion-marker-none");
+		assertThat(firstRequirement.description().value()).contains("tt-criterion-badge\">1,5</span>");
+		assertThat(firstRequirement.description().value()).contains("tt-criterion-badge\">0</span>");
+		assertThat(firstRequirement.description().value()).doesNotContain("eh:");
+		assertThat(firstRequirement.adjustmentDisplayName()).isEqualTo("Frei vergebene Punkte: +0,5");
 		assertThat(model.noteSections().getFirst().description().value()).contains("<em>Notiz</em>");
+
+		final String html = new HtmlRenderer().renderModel("export/level-of-expectations-teacher.thymeleaf.html", model);
+		assertThat(html).contains("class=\"tt-adjustment\"").contains("Frei vergebene Punkte: +0,5");
 	}
 
 	private static LevelOfExpectationsExportData data() {
@@ -104,12 +117,17 @@ class LevelOfExpectationsExportModelFactoryTests {
 				List.of(new LoePart(1, 1, "Klausurteil A", 0)),
 				List.of(new LoeCategory(1, 1, "Inhaltliche Leistung", "", 0)),
 				List.of(new LoeTask(1, 1, "Teilaufgabe 1", 0)),
-				List.of(new LoeRequirement(1, 1, "**[Zeitform](eh:1)** und [Wortwahl](eh:2) nutzen", 6, false, 0),
+				List.of(new LoeRequirement(1, 1,
+						"**[Zeitform](eh:criterion-a/1,5)**, [Wortwahl](eh:criterion-b) und [Belege](eh:criterion-c/3,5) nutzen",
+						6, false, 0),
 						new LoeRequirement(2, 1, "Bonuspunkt", 2, true, 1)),
-				List.of(new LoeRequirementResult(1, 1, 4, "Sauber"), new LoeRequirementResult(2, 1, 1, "")),
-				List.of(new LoeCriterion(10, 1, "1", "Zeitform", 0, true),
-						new LoeCriterion(11, 1, "2", "Wortwahl", 1, true)),
-				List.of(new LoeCriterionResult(10, 1, 2), new LoeCriterionResult(11, 1, 0)),
+				List.of(new LoeRequirementResult(1, 1, 7, 1, "Sauber"),
+						new LoeRequirementResult(2, 1, 1, "")),
+				List.of(new LoeCriterion(10, 1, "criterion-a", "Zeitform", 3, 0, true),
+						new LoeCriterion(11, 1, "criterion-b", "Wortwahl", 2, 1, true),
+						new LoeCriterion(12, 1, "criterion-c", "Belege", 7, 2, true)),
+				List.of(new LoeCriterionResult(10, 1, 3), new LoeCriterionResult(11, 1, 0),
+						new LoeCriterionResult(12, 1, 3)),
 				List.of(new ExamNoteSection(1, 1, "Hinweis", "*Notiz*", 0)));
 	}
 }

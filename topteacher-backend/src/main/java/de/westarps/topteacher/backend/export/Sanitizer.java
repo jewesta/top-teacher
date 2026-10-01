@@ -15,6 +15,7 @@ import org.jsoup.safety.Safelist;
 import org.springframework.stereotype.Component;
 
 import de.westarps.topteacher.model.loe.LoeCriterionParser;
+import de.westarps.topteacher.model.loe.LoePointUnits;
 
 @Component
 public class Sanitizer {
@@ -30,19 +31,19 @@ public class Sanitizer {
 			.builder().build();
 
 	public SafeHtml markdownToHtml(final String markdown, final MarkdownView view) {
-		return markdownToHtml(markdown, view, ignored -> false);
+		return markdownToHtml(markdown, view, ignored -> CriterionMark.NONE);
 	}
 
 	public SafeHtml markdownToHtml(final String markdown, final MarkdownView view,
-			final Function<String, Boolean> criterionStatusByKey) {
+			final Function<String, CriterionMark> criterionMarkByKey) {
 		final Node document = parser.parse(markdown == null ? "" : markdown);
 		transformCriterionLinks(document, view == null ? MarkdownView.PUPIL : view,
-				criterionStatusByKey == null ? ignored -> false : criterionStatusByKey);
+				criterionMarkByKey == null ? ignored -> CriterionMark.NONE : criterionMarkByKey);
 		return new SafeHtml(Jsoup.clean(markdownRenderer.render(document), "", SAFE_HTML, OUTPUT_SETTINGS));
 	}
 
 	private void transformCriterionLinks(final Node document, final MarkdownView view,
-			final Function<String, Boolean> criterionStatusByKey) {
+			final Function<String, CriterionMark> criterionMarkByKey) {
 		final List<Link> criterionLinks = new ArrayList<>();
 		document.accept(new AbstractVisitor() {
 
@@ -54,13 +55,13 @@ public class Sanitizer {
 				visitChildren(link);
 			}
 		});
-		criterionLinks.forEach(link -> transformCriterionLink(link, view, criterionStatusByKey));
+		criterionLinks.forEach(link -> transformCriterionLink(link, view, criterionMarkByKey));
 	}
 
 	private void transformCriterionLink(final Link link, final MarkdownView view,
-			final Function<String, Boolean> criterionStatusByKey) {
+			final Function<String, CriterionMark> criterionMarkByKey) {
 		if (view == MarkdownView.TEACHER) {
-			wrapCriterionLink(link, criterionStatusByKey);
+			wrapCriterionLink(link, criterionMarkByKey);
 		} else {
 			unwrapLink(link);
 		}
@@ -75,14 +76,16 @@ public class Sanitizer {
 		link.unlink();
 	}
 
-	private static void wrapCriterionLink(final Link link, final Function<String, Boolean> criterionStatusByKey) {
+	private static void wrapCriterionLink(final Link link, final Function<String, CriterionMark> criterionMarkByKey) {
 		final String criterionTarget = link.getDestination().substring(CRITERION_DESTINATION_PREFIX.length()).trim();
 		final String criterionKey = criterionKey(criterionTarget);
-		final boolean achieved = Boolean.TRUE.equals(criterionStatusByKey.apply(criterionKey));
+		final CriterionMark providedMark = criterionMarkByKey.apply(criterionKey);
+		final CriterionMark mark = providedMark == null ? CriterionMark.NONE : providedMark;
 		link.insertBefore(html("<span class=\"tt-criterion\"><mark class=\"tt-criterion-highlight\">"));
 		moveChildrenBefore(link);
-		link.insertBefore(html("</mark><span class=\"tt-criterion-badge\">" + escapeHtml(criterionKey) + "</span>"
-				+ criterionMarker(achieved) + "</span>"));
+		link.insertBefore(html("</mark><span class=\"tt-criterion-badge\">"
+				+ escapeHtml(LoePointUnits.formatGerman(mark.awardedPointUnits())) + "</span>"
+				+ criterionMarker(mark.state()) + "</span>"));
 		link.unlink();
 	}
 
@@ -91,16 +94,17 @@ public class Sanitizer {
 		return valueSeparator < 0 ? criterionTarget : criterionTarget.substring(0, valueSeparator);
 	}
 
-	private static String criterionMarker(final boolean achieved) {
-		if (achieved) {
-			return "<span class=\"tt-criterion-marker tt-criterion-marker-achieved\">&nbsp;</span>";
-		}
-		return """
-			<span class="tt-criterion-marker tt-criterion-marker-missed">\
-			<span class="tt-criterion-marker-line tt-criterion-marker-line-a">&nbsp;</span>\
-			<span class="tt-criterion-marker-line tt-criterion-marker-line-b">&nbsp;</span>\
-			</span>\
-			""";
+	private static String criterionMarker(final CriterionState state) {
+		return switch (state) {
+			case FULL -> "<span class=\"tt-criterion-marker tt-criterion-marker-full\">&nbsp;</span>";
+			case PARTIAL -> "<span class=\"tt-criterion-marker tt-criterion-marker-partial\">&nbsp;</span>";
+			case NONE -> """
+				<span class="tt-criterion-marker tt-criterion-marker-none">\
+				<span class="tt-criterion-marker-line tt-criterion-marker-line-a">&nbsp;</span>\
+				<span class="tt-criterion-marker-line tt-criterion-marker-line-b">&nbsp;</span>\
+				</span>\
+				""";
+		};
 	}
 
 	private static HtmlInline html(final String literal) {
@@ -123,6 +127,36 @@ public class Sanitizer {
 		return value == null ? ""
 				: value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;")
 						.replace("'", "&#39;");
+	}
+
+	public record CriterionMark(int awardedPointUnits, int availablePointUnits) {
+
+		private static final CriterionMark NONE = new CriterionMark(0, 0);
+
+		public CriterionMark {
+			if (awardedPointUnits < 0) {
+				throw new IllegalArgumentException("awardedPointUnits must not be negative");
+			}
+			if (availablePointUnits < 0) {
+				throw new IllegalArgumentException("availablePointUnits must not be negative");
+			}
+			if (awardedPointUnits > availablePointUnits) {
+				throw new IllegalArgumentException("awardedPointUnits must not exceed availablePointUnits");
+			}
+		}
+
+		private CriterionState state() {
+			if (awardedPointUnits == 0) {
+				return CriterionState.NONE;
+			}
+			return awardedPointUnits == availablePointUnits ? CriterionState.FULL : CriterionState.PARTIAL;
+		}
+	}
+
+	private enum CriterionState {
+		NONE,
+		PARTIAL,
+		FULL
 	}
 
 	public enum MarkdownView {
