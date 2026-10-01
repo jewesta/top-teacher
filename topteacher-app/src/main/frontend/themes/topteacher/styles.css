@@ -716,7 +716,6 @@ vaadin-app-layout::part(navbar) {
 
 .tt-results-points-cell-leading {
 	justify-content: flex-end;
-	padding-left: var(--lumo-space-xs);
 	padding-right: var(--lumo-space-m);
 }
 
@@ -792,7 +791,6 @@ vaadin-app-layout::part(navbar) {
 
 .tt-results-criterion-checkbox-row .tt-results-points-cell-leading {
 	justify-content: space-between;
-	padding-left: var(--lumo-space-s);
 }
 
 .tt-results-criterion-badge {
