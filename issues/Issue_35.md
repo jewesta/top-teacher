@@ -240,6 +240,8 @@ exports, and MCP result summaries.
 
 ## Reimplementation status
 
+The reactor and packaged application version for this branch is `1.3.0`.
+
 The first implementation pass reached the scope described below and is
 preserved on `codex/issue35-pre-rebuild` at commit `2d484a2`. On 10 October
 2026, `issues/Issue_35` was deliberately restarted from the current `main`
