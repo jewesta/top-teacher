@@ -2,8 +2,16 @@
 
 `westarps-vaadin-markdown` owns the reusable editor and viewer. TopTeacher owns
 the criterion feature, including the `P` toolbar command, point selector,
-`eh:` tag parsing and preview, pills, and Results checkboxes. The reusable
+`crit:` tag parsing and preview, pills, and Results checkboxes. The reusable
 module does not import or encode any of those concepts.
+
+Criterion URLs use `crit:<key>[?points=<value>]`. The small
+`tt-criterion-reference.ts` helper handles query decoding and source ranges for
+the editor, including custom-value selection; the domain parser validates the
+same parameter rules. The URL payload is consumed before HTML sanitization,
+not enabled as a browser protocol. Future image support can use its own `img:`
+extension without introducing application-specific behavior in the reusable
+Markdown module.
 
 An extension is a TypeScript module registered by ID. It may contribute toolbar
 commands and preview processing (remark/rehype plugins, sanitization additions,

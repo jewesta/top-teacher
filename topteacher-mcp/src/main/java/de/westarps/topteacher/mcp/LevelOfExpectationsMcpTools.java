@@ -80,7 +80,7 @@ public class LevelOfExpectationsMcpTools {
 
 	@Transactional
 	@McpTool(name = "create_level_of_expectations", title = "Create a level of expectations",
-			description = "Create a complete nested exam design with task Markdown, task point budgets, materials, and a level of expectations for a blank exam. Existing designs are never overwritten. List order becomes display order. Use [label](eh:key[/points]) Markdown links to define criteria; an omitted value means one point, and comma or dot half-point values are accepted.",
+			description = "Create a complete nested exam design with task Markdown, task point budgets, materials, and a level of expectations for a blank exam. Existing designs are never overwritten. List order becomes display order. Use [label](crit:key?points=value) Markdown links to define criteria; omitting the points query means one point, and comma or dot half-point values are accepted.",
 			generateOutputSchema = true, annotations = @McpTool.McpAnnotations(readOnlyHint = false,
 					destructiveHint = false, idempotentHint = false, openWorldHint = false))
 	public LevelOfExpectationsView createLevelOfExpectations(@McpToolParam(

@@ -177,7 +177,7 @@ class LevelOfExpectationsEditorTests {
 		editor.setExam(EXAM);
 
 		markdownEditor(editor, completeRequirement.descriptionMarkdown())
-				.setValue(completeRequirement.descriptionMarkdown() + " [Kriterium 3](eh:3)");
+				.setValue(completeRequirement.descriptionMarkdown() + " [Kriterium 3](crit:3)");
 
 		assertThat(saveButtons(editor)).extracting(Button::isEnabled).containsOnly(false);
 		assertThat(discardButtons(editor)).extracting(Button::isEnabled).containsOnly(true);
@@ -481,7 +481,7 @@ class LevelOfExpectationsEditorTests {
 
 	@Test
 	void discardRestoresSavedLevelOfExpectationsAfterBlockedCorrectionModeEdit() {
-		final String savedDescription = "Nutzt die [korrekte Zeitform](eh:1) und [präzise Wortwahl](eh:2).";
+		final String savedDescription = "Nutzt die [korrekte Zeitform](crit:1) und [präzise Wortwahl](crit:2).";
 		final LoeRequirement taggedRequirement = new LoeRequirement(REQUIREMENT.id(), REQUIREMENT.taskId(),
 				savedDescription, REQUIREMENT.maxPoints(), REQUIREMENT.bonus(), REQUIREMENT.sortOrder());
 		final LevelOfExpectationsRepository repository = repositoryWithHierarchy(taggedRequirement);
@@ -636,7 +636,7 @@ class LevelOfExpectationsEditorTests {
 
 	@Test
 	void showsCriterionPointMismatchBesideRequirementMaximumAndUpdatesLive() {
-		final String underAllocatedDescription = "[Erster Aspekt](eh:1/0,5)";
+		final String underAllocatedDescription = "[Erster Aspekt](crit:1?points=0,5)";
 		final LoeRequirement underAllocatedRequirement = new LoeRequirement(REQUIREMENT.id(), REQUIREMENT.taskId(),
 				underAllocatedDescription, 2, REQUIREMENT.bonus(), REQUIREMENT.sortOrder());
 		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(
@@ -656,7 +656,7 @@ class LevelOfExpectationsEditorTests {
 		final MarkdownEditor description = markdownEditor(editor, underAllocatedDescription);
 		assertThat(description).isInstanceOf(CriterionMarkdownEditor.class);
 		assertThat(description.getExtensionIds()).containsExactly(CriterionMarkdownEditor.EXTENSION_ID);
-		description.setValue("[Erster Aspekt](eh:1/0,5) [Zweiter Aspekt](eh:2/1,5)");
+		description.setValue("[Erster Aspekt](crit:1?points=0,5) [Zweiter Aspekt](crit:2?points=1,5)");
 
 		assertThat(message.isVisible()).isFalse();
 
@@ -669,7 +669,7 @@ class LevelOfExpectationsEditorTests {
 				.anySatisfy(result -> assertThat(result.message())
 						.isEqualTo("Aufgabe 1 · Anforderung 1: " + message.getText()));
 
-		description.setValue("[Erster Aspekt](eh:1/0,5) [Zweiter Aspekt](eh:2/1)");
+		description.setValue("[Erster Aspekt](crit:1?points=0,5) [Zweiter Aspekt](crit:2?points=1)");
 
 		assertThat(message.getText()).isEqualTo("Ordne 0,5 Kriterienpunkte weniger zu.");
 		assertThat(message.getElement().getAttribute("data-severity")).isEqualTo("error");
@@ -680,7 +680,7 @@ class LevelOfExpectationsEditorTests {
 		assertThat(message.getText()).isEqualTo("Ordne weitere 1,5 Kriterienpunkte zu.");
 		assertThat(message.getElement().getAttribute("data-severity")).isEqualTo("warning");
 
-		description.setValue("[Erster Aspekt](eh:1/?)");
+		description.setValue("[Erster Aspekt](crit:1?points=?)");
 
 		assertThat(message.getText()).isEqualTo("Kriterium „Erster Aspekt“: Ordne eine gültige Punktzahl zu.");
 		assertThat(message.getElement().getAttribute("data-severity")).isEqualTo("error");
@@ -990,7 +990,7 @@ class LevelOfExpectationsEditorTests {
 	private static LoeRequirement requirementWithCriteria(final LoeRequirement requirement, final int maxPoints,
 			final int criterionCount) {
 		final String description = IntStream.rangeClosed(1, criterionCount)
-				.mapToObj(index -> "[Kriterium " + index + "](eh:" + index + ")").collect(java.util.stream.Collectors.joining(" "));
+				.mapToObj(index -> "[Kriterium " + index + "](crit:" + index + ")").collect(java.util.stream.Collectors.joining(" "));
 		return new LoeRequirement(requirement.id(), requirement.taskId(), description, maxPoints, requirement.bonus(),
 				requirement.sortOrder());
 	}

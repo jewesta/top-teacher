@@ -132,6 +132,7 @@ public final class LoeValidator {
 		final String criterion = issue.label().isBlank() ? "Kriterium" : "Kriterium „" + issue.label() + "“";
 		return switch (issue.kind()) {
 			case INVALID_POINTS -> criterion + ": Ordne eine gültige Punktzahl zu.";
+			case INVALID_PARAMETERS -> criterion + ": Entferne die ungültige Markierung und markiere es erneut.";
 			case DUPLICATE_KEY -> criterion + ": Entferne die doppelte Markierung und markiere es erneut.";
 			case INVALID_KEY -> criterion + ": Entferne die ungültige Markierung und markiere es erneut.";
 			case INVALID_LABEL -> "Kriterium: Markiere einen aussagekräftigen Text.";

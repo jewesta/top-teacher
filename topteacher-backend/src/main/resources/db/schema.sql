@@ -178,6 +178,25 @@ create table if not exists eh_requirement (
     constraint eh_requirement_sort_order_check check (sort_order >= 0)
 );
 
+update eh_requirement
+set description_markdown = regexp_replace(
+    regexp_replace(description_markdown, '\(eh:([^\s/)]+)/([^\s)]*)\)', '(crit:$1?points=$2)'),
+    '\(eh:([^\s/)]+)\)', '(crit:$1)'
+)
+where description_markdown like '%(eh:%'
+  and not exists (
+    select 1
+    from app_setting setting
+    where setting.setting_key = 'tt.database.migration.issue35.criterion-urls'
+);
+insert into app_setting (setting_key, setting_value)
+select 'tt.database.migration.issue35.criterion-urls', 'completed'
+where not exists (
+    select 1
+    from app_setting setting
+    where setting.setting_key = 'tt.database.migration.issue35.criterion-urls'
+);
+
 update eh_task task
 set max_points = (
     select coalesce(sum(requirement.max_points), 0)

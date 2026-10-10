@@ -358,4 +358,19 @@ The combined review pass is intended to provide the following end state:
 - The accidental legacy Notes feature has been removed end-to-end, including
   its persistence, export, and MCP surfaces.
 
+## Criterion URL declarations
+
+- Criteria now use `crit:<key>[?points=<value>]`, retaining stable keys, half-point
+  values, and the omitted one-point default. The editor generates the new form,
+  and previews, validation, results, PDFs, MCP descriptions, and demo data agree
+  on it. Existing stored requirement declarations are converted once without
+  changing criterion identities or scores. See
+  [criterion syntax](../doc/ops/LevelOfExpectations.md#tag-syntax).
+- The editor remains the primary interface; users do not need to learn URI
+  syntax. Future Material image declarations will follow the same named-query
+  convention: `img:<id>?width=75`, with unitless width meaning percentage of
+  available content width and omitted width meaning automatic sizing. Explicit
+  physical units can follow with print support. Image upload/storage is not
+  implemented in this step.
+
 Print/export layout, uploads, footnotes, and line numbering remain deferred.

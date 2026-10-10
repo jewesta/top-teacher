@@ -66,9 +66,9 @@ class LevelOfExpectationsMcpToolsTests {
 		when(levelOfExpectations.saveTask(any()))
 				.thenReturn(new LoeTask(13, 12, "Aufgabe 1", "Aufgabentext", 5, 0));
 		when(levelOfExpectations.saveRequirement(any()))
-				.thenReturn(new LoeRequirement(14, 13, "Erreicht [das Ziel](eh:1).", 5, false, 0));
+				.thenReturn(new LoeRequirement(14, 13, "Erreicht [das Ziel](crit:1).", 5, false, 0));
 
-		final RequirementDraft requirement = new RequirementDraft("Erreicht [das Ziel](eh:1).", 5, false);
+		final RequirementDraft requirement = new RequirementDraft("Erreicht [das Ziel](crit:1).", 5, false);
 		final List<PartDraft> parts = List.of(new PartDraft("Teil A", List.of(new MaterialDraft("Quelle 1", "Text")),
 				List.of(new CategoryDraft("Inhalt", "Beschreibung",
 						List.of(new TaskDraft("Aufgabe 1", "Aufgabentext", 5, List.of(requirement)))))));
@@ -81,7 +81,7 @@ class LevelOfExpectationsMcpToolsTests {
 		verify(levelOfExpectations).saveCategory(new LoeCategory(null, 11, "Inhalt", "Beschreibung", 0));
 		verify(levelOfExpectations).saveTask(new LoeTask(null, 12, "Aufgabe 1", "Aufgabentext", 5, 0));
 		verify(levelOfExpectations)
-				.saveRequirement(new LoeRequirement(null, 13, "Erreicht [das Ziel](eh:1).", 5, false, 0));
+				.saveRequirement(new LoeRequirement(null, 13, "Erreicht [das Ziel](crit:1).", 5, false, 0));
 	}
 
 	@Test
@@ -90,7 +90,7 @@ class LevelOfExpectationsMcpToolsTests {
 		final LoeMaterial material = new LoeMaterial(15, part.id(), "Quelle 1", "**Quellentext**", 0);
 		final LoeCategory category = new LoeCategory(12, part.id(), "Inhalt", "Beschreibung", 0);
 		final LoeTask task = new LoeTask(13, category.id(), "Aufgabe 1", "**Aufgabentext**", 5, 0);
-		final LoeRequirement requirement = new LoeRequirement(14, task.id(), "Erreicht [das Ziel](eh:1).", 5,
+		final LoeRequirement requirement = new LoeRequirement(14, task.id(), "Erreicht [das Ziel](crit:1).", 5,
 				false, 0);
 		when(levelOfExpectations.findPartsByExamId(exam.id())).thenReturn(List.of(part));
 		when(levelOfExpectations.findMaterialsByExamId(exam.id())).thenReturn(List.of(material));

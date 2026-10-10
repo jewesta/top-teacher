@@ -67,7 +67,7 @@ class LevelOfExpectationsExportServiceTests {
 		assertThat(html).contains("GESAMTPUNKTZAHL KLAUSUR");
 		assertThat(html).doesNotContain("16 (+ 4)", "14 (+ 2)", "105 (+ 6)", "150 (+ 6)");
 		assertThat(html).contains("ungenügend");
-		assertThat(html).doesNotContain("eh:", "tt-criterion", "tt-criterion-badge");
+		assertThat(html).doesNotContain("crit:", "tt-criterion", "tt-criterion-badge");
 	}
 
 	@Test

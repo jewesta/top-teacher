@@ -101,6 +101,43 @@ class DatabaseInitializationServiceTests {
 	}
 
 	@Test
+	void migratesCriterionDeclarationsOnceWithoutChangingCriteriaOrScores() {
+		initializationService.initialize(DatabaseInitializationMode.DEMO);
+		final int requirementId = jdbc.queryForObject("select min(id) from eh_requirement", Integer.class);
+		final int criterionId = jdbc.queryForObject("select min(id) from eh_criterion where requirement_id = ?",
+				Integer.class, requirementId);
+		final int pupilId = jdbc.queryForObject("select min(id) from pupil", Integer.class);
+		jdbc.update("insert into eh_criterion_result (criterion_id, pupil_id, achieved, point_units) values (?, ?, true, 1)",
+				criterionId, pupilId);
+		jdbc.update("insert into eh_requirement_result (requirement_id, pupil_id, points, point_units, comment_text) values (?, ?, 1, 1, 'Keep this comment')",
+				requirementId, pupilId);
+		final var criteriaBefore = jdbc.queryForList("select * from eh_criterion order by id");
+		final var resultsBefore = jdbc.queryForList("select * from eh_criterion_result order by criterion_id, pupil_id");
+		final var requirementResultsBefore = jdbc
+				.queryForList("select * from eh_requirement_result order by requirement_id, pupil_id");
+		jdbc.update("update eh_requirement set description_markdown = ? where id = ?",
+				"[eins](eh:1) [halb](eh:2/0,5) [anderthalb](eh:3/1.5) [offen](eh:4/?) [neu](crit:5?points=2)",
+				requirementId);
+		jdbc.update("delete from app_setting where setting_key = 'tt.database.migration.issue35.criterion-urls'");
+
+		new ResourceDatabasePopulator(new ClassPathResource("db/schema.sql")).execute(dataSource);
+
+		assertThat(jdbc.queryForObject("select description_markdown from eh_requirement where id = ?", String.class,
+				requirementId)).isEqualTo(
+						"[eins](crit:1) [halb](crit:2?points=0,5) [anderthalb](crit:3?points=1.5) [offen](crit:4?points=?) [neu](crit:5?points=2)");
+		assertThat(jdbc.queryForList("select * from eh_criterion order by id")).isEqualTo(criteriaBefore);
+		assertThat(jdbc.queryForList("select * from eh_criterion_result order by criterion_id, pupil_id"))
+				.isEqualTo(resultsBefore);
+		assertThat(jdbc.queryForList("select * from eh_requirement_result order by requirement_id, pupil_id"))
+				.isEqualTo(requirementResultsBefore);
+
+		jdbc.update("update eh_requirement set description_markdown = '[alt](eh:1)' where id = ?", requirementId);
+		new ResourceDatabasePopulator(new ClassPathResource("db/schema.sql")).execute(dataSource);
+		assertThat(jdbc.queryForObject("select description_markdown from eh_requirement where id = ?", String.class,
+				requirementId)).isEqualTo("[alt](eh:1)");
+	}
+
+	@Test
 	void skipsFirstStartPromptWhenHiddenPropertyDisablesIt() {
 		environment.setProperty("tt.database.initialization.prompt-on-first-start", "false");
 

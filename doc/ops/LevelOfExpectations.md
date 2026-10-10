@@ -134,22 +134,24 @@ over-allocated set may be displayed while editing but must not be saved.
 
 ### Tag syntax
 
-Criteria are declared with markdown links in the `eh:` namespace:
+Criteria are declared with markdown links using the document-local `crit:`
+scheme. The stable criterion key is the target; its optional point value is a
+named query parameter:
 
 ```markdown
-[correct tense](eh:1)
-[complete explanation](eh:2/2)
-[supporting detail](eh:3/0,5)
+[correct tense](crit:1)
+[complete explanation](crit:2?points=2)
+[supporting detail](crit:3?points=0,5)
 ```
 
 The canonical syntax is:
 
 ```text
-eh:<key>[/<points>]
+crit:<key>[?points=<value>]
 ```
 
-- The key is stable and unique inside its requirement.
-- Omitting the point value defaults it to one, so `eh:1` and `eh:1/1` are
+- The key is a positive integer, stable and unique inside its requirement.
+- Omitting the points query defaults it to one, so `crit:1` and `crit:1?points=1` are
   equivalent.
 - A criterion value must be positive and use half-point increments.
 - Criterion values are not limited to the convenient presets through four
@@ -157,8 +159,18 @@ eh:<key>[/<points>]
   an explicit custom entry.
 - Both comma and dot are accepted as decimal separators. The editor generates
   commas and the UI always displays values with the German comma form.
+- Standard URL-encoded query names and values are decoded before validation.
+  Only one `points` parameter is supported. Empty queries, unknown or duplicate
+  parameters, fragments, and malformed encodings are invalid, not an implicit
+  one-point default. Invalid parameter sets remain visible as `?` in preview.
 - Malformed definitions and duplicate keys are validation issues; they must not
   silently turn a requirement into a valid criterion-free requirement.
+
+Existing stored requirement Markdown is converted once from `eh:<key>[/<points>]`
+to this form at database startup, preserving criterion keys, identities, point
+values, and recorded results. New declarations use only `crit:`; the old scheme
+is not retained as a parallel supported syntax. Criterion declarations are
+interpreted by TT rather than passed to the browser as navigable URLs.
 
 The UI displays a criterion's point value in its pill rather than the internal
 key. Accessible text retains the criterion identity as well as its value.
@@ -171,7 +183,7 @@ Floating-point arithmetic must not be used for point calculations.
 ### Markdown editor interaction
 
 The Markdown toolbar provides a criterion command rather than requiring the
-user to construct an `eh:` URL manually. Its icon is a compact pill containing
+user to construct a `crit:` URL manually. Its icon is a compact pill containing
 `P`, representing points without implying either a fixed value or a visible
 criterion number. The button is labelled `Kriterium mit Punkten markieren`.
 
@@ -189,13 +201,13 @@ whole- and half-point values:
 The eight numeric entries are ordinary choices. Selecting one wraps the
 selected criterion text with the next stable key and the chosen value. If no
 text is selected, the command uses the word under the cursor. The one-point
-choice omits the redundant value, so it generates `eh:<key>` rather than
-`eh:<key>/1`. Decimal presets use a comma.
+choice omits the redundant value, so it generates `crit:<key>` rather than
+`crit:<key>?points=1`. Decimal presets use a comma.
 
 `4+` is labelled accessibly as `Andere Punktzahl eingeben`. It is an escape
 hatch rather than a point value:
 
-- it inserts `eh:<key>/?`;
+- it inserts `crit:<key>?points=?`;
 - it immediately selects only the `?` and returns focus to the editor so the
   user can replace it by typing;
 - the parser accepts a comma or dot in the entered value;

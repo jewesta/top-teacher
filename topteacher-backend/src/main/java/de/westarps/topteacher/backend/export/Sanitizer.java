@@ -90,7 +90,7 @@ public class Sanitizer {
 	}
 
 	private static String criterionKey(final String criterionTarget) {
-		final int valueSeparator = criterionTarget.indexOf('/');
+		final int valueSeparator = criterionTarget.indexOf('?');
 		return valueSeparator < 0 ? criterionTarget : criterionTarget.substring(0, valueSeparator);
 	}
 

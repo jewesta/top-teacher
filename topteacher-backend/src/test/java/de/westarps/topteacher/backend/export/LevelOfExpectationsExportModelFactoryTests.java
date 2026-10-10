@@ -54,7 +54,7 @@ class LevelOfExpectationsExportModelFactoryTests {
 		final var firstRequirement = model.parts().getFirst().categories().getFirst().tasks().getFirst().requirements()
 				.getFirst();
 		assertThat(firstRequirement.description().value()).contains("<strong>Zeitform</strong>");
-		assertThat(firstRequirement.description().value()).doesNotContain("eh:", "tt-criterion", "mark");
+		assertThat(firstRequirement.description().value()).doesNotContain("crit:", "tt-criterion", "mark");
 		assertThat(firstRequirement.comment()).isEmpty();
 		assertThat(firstRequirement.adjustmentDisplayName()).isEmpty();
 		assertThat(firstRequirement.achievedPoints()).isEqualTo(4);
@@ -94,7 +94,7 @@ class LevelOfExpectationsExportModelFactoryTests {
 		assertThat(firstRequirement.description().value()).contains("tt-criterion-marker-none");
 		assertThat(firstRequirement.description().value()).contains("tt-criterion-badge\">1,5</span>");
 		assertThat(firstRequirement.description().value()).contains("tt-criterion-badge\">0</span>");
-		assertThat(firstRequirement.description().value()).doesNotContain("eh:");
+		assertThat(firstRequirement.description().value()).doesNotContain("crit:");
 		assertThat(firstRequirement.adjustmentDisplayName()).isEqualTo("Frei vergebene Punkte: +0,5");
 
 		final String html = new HtmlRenderer().renderModel("export/level-of-expectations-teacher.thymeleaf.html", model);
@@ -142,7 +142,7 @@ class LevelOfExpectationsExportModelFactoryTests {
 				List.of(new LoeCategory(1, 1, "Inhaltliche Leistung", "", 0)),
 				List.of(new LoeTask(1, 1, "Teilaufgabe 1", "", 6, 0)),
 				List.of(new LoeRequirement(1, 1,
-						"**[Zeitform](eh:criterion-a/1,5)**, [Wortwahl](eh:criterion-b) und [Belege](eh:criterion-c/3,5) nutzen",
+						"**[Zeitform](crit:criterion-a?points=1,5)**, [Wortwahl](crit:criterion-b) und [Belege](crit:criterion-c?points=3,5) nutzen",
 						6, false, 0),
 						new LoeRequirement(2, 1, "Bonuspunkt", 2, true, 1)),
 				List.of(new LoeRequirementResult(1, 1, 7, 1, "Sauber"),
