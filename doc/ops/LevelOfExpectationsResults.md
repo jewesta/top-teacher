@@ -50,8 +50,8 @@ text.
 
 - The criterion pill displays awarded points rather than the internal
   criterion key.
-- It uses the same visual styling as the EH pill and stays adjacent to its
-  checkbox. Its width follows its current value.
+- It uses the same visual styling as the EH pill. Inline order is criterion
+  text, checkbox, points pill; the pill's width follows its current value.
 - Its accessible description includes the criterion identity, awarded value,
   and available value.
 - Clicking the pill opens a Vaadin popover below it, with an arrow pointing up
@@ -80,22 +80,21 @@ The Results content uses the same right inset as `Aufgaben`, `Material`, and
 EH. Its exam total, aggregate badges, requirement totals, and point controls
 align with the points column in those views when switching tabs.
 
-- Its top element is the familiar red aggregate badge rather than an editable
+- Its top element is the shared blue aggregate badge rather than an editable
   points field.
 - The badge shows the rounded requirement result.
 - When rounding changes the raw result, the badge tooltip explains the raw and
   rounded values.
 - Every criterion row contains its three-state checkbox left-aligned with a
   small inset, followed by an always-visible compact minus/plus control.
-- Aggregate badges, requirement totals, criterion controls, and freely awarded
-  controls share one points-cell width and height. EH and Results use the same
-  aggregate badge: `Summe` or `Gesamt` is left-aligned; regular points end at a
-  shared axis, and bonus points begin to its right. Requirement totals end at
-  the same axis. Compact control values remain centered between equally spaced
-  minus and plus buttons.
-- Only aggregate badges and requirement totals have a permanent red-tinted
+- Aggregate badges and requirement totals share the narrower fixed badge width,
+  a centered plain number, and the existing right edge. They show no visible
+  labels, ratios, or separate bonus totals. Criterion and freely awarded
+  controls retain their wider footprint and existing value placement; all point
+  cells share the same height.
+- Only aggregate badges and requirement totals have a permanent blue-tinted
   background. Point steppers are transparent at rest; hover, keyboard focus,
-  or the linked criterion highlight adds the tint without a border.
+  or the linked criterion highlight adds the existing red tint without a border.
 - The `Frei vergebene Punkte` label uses the same secondary text styling as the
   `n von m Punkten` label. Partial inline checkboxes show a dash.
 - Changes made in either the text or quick-marking column update the other
@@ -155,11 +154,12 @@ field starts at two lines and grows with its content without a row limit.
 
 ## Regular and bonus aggregation
 
-Rounded requirement results are aggregated separately for regular and bonus
-requirements.
+Rounded regular and bonus requirement results are combined only within their
+own task before contributing to higher-level aggregates.
 
 - Regular results contribute to the result of their task.
-- Bonus results remain visible separately.
+- Bonus requirements show their achieved points normally and retain the bonus
+  star. Their points are not shown as a separate subtotal in aggregate badges.
 - Within each task, regular and bonus results are combined only after every
   requirement has applied its own half-up rounding. The effective task result
   is then capped at the task's explicit maximum:
@@ -177,8 +177,10 @@ requirements.
 
 For example, if a 60-point task receives 58 regular plus five bonus points, it
 contributes 60 points. A separate 40-point task with 35 points contributes 35,
-so the effective exam result is 95. The entered regular and bonus totals remain
-visible even though the first task is capped.
+so the effective exam result is 95. The task badges display 60 and 35, and the
+exam badge displays 95; individual requirement awards remain visible. This
+display uses the existing calculation rules, including requirement-local
+rounding, without changing result limits or grading.
 
 ## Editing and saving
 

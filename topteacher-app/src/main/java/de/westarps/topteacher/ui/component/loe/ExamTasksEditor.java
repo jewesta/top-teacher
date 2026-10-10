@@ -109,6 +109,7 @@ public class ExamTasksEditor extends AbstractDesigner {
 
 	public ExamTasksEditor(final LevelOfExpectationsRepository repository) {
 		super("tt-eh-editor");
+		addClassName("tt-exam-tasks-editor");
 		this.repository = repository;
 		fullscreenButton = new FullscreenButton(this);
 		components.setPointsChangeHandler(this::refreshBadges);

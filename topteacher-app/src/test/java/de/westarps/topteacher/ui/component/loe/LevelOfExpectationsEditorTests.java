@@ -334,8 +334,8 @@ class LevelOfExpectationsEditorTests {
 
 		setRequirementMaxPoints(editor, 4);
 
-		assertThat(badgeTexts(editor)).contains("Summe: 5 (+0)", "Gesamt: 5 (+0)", "100 %",
-				"Verteilt: 4 / 5 (+0)");
+		assertThat(badgeTexts(editor)).contains("4", "100 %");
+		assertThat(components(editor, LoePointBadge.class)).extracting(LoePointBadge::getText).containsOnly("4");
 		assertThat(components(editor, Details.class).getFirst()).isSameAs(partDetails);
 
 		final List<Button> saveButtons = saveButtons(editor);
@@ -349,7 +349,7 @@ class LevelOfExpectationsEditorTests {
 		verify(repository, never()).findTasksByExamId(anyInt());
 		verify(repository, never()).findRequirementsByExamId(anyInt());
 		assertThat(components(editor, Details.class).getFirst()).isSameAs(partDetails);
-		assertThat(badgeTexts(editor)).contains("Gesamt: 5 (+0)", "100 %");
+		assertThat(badgeTexts(editor)).contains("4", "100 %");
 	}
 
 	@Test
@@ -363,7 +363,9 @@ class LevelOfExpectationsEditorTests {
 		setRequirementMaxPoints(editor, 7);
 		bonusButtons(editor).getFirst().click();
 
-		assertThat(badgeTexts(editor)).contains("Summe: 5 (+7)", "Gesamt: 5 (+7)", "100 %");
+		assertThat(badgeTexts(editor)).contains("0", "100 %");
+		assertThat(components(editor, LoeWholePointStepper.class)).extracting(LoeWholePointStepper::getValue)
+				.containsExactly(7);
 		assertThat(components(editor, Details.class).getFirst()).isSameAs(partDetails);
 
 		final List<Button> saveButtons = saveButtons(editor);
@@ -376,7 +378,7 @@ class LevelOfExpectationsEditorTests {
 		verify(repository, never()).findTasksByExamId(anyInt());
 		verify(repository, never()).findRequirementsByExamId(anyInt());
 		assertThat(components(editor, Details.class).getFirst()).isSameAs(partDetails);
-		assertThat(badgeTexts(editor)).contains("Gesamt: 5 (+7)");
+		assertThat(components(editor, LoePointBadge.class)).extracting(LoePointBadge::getText).containsOnly("0");
 	}
 
 	@Test
@@ -526,21 +528,21 @@ class LevelOfExpectationsEditorTests {
 	}
 
 	@Test
-	void aggregatesBonusPointsWithoutAddingThemToRegularTotal() {
+	void showsAssignedRegularPointsWithoutBonusTotals() {
 		final LevelOfExpectationsRepository repository = repositoryWithRegularAndBonusRequirement();
 		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repository);
 
 		editor.setExam(EXAM);
 
-		assertThat(badgeTexts(editor)).contains("Summe: 5 (+4)", "Gesamt: 5 (+4)", "100 %",
-				"Verteilt: 5 / 5 (+4)");
+		assertThat(badgeTexts(editor)).contains("5", "100 %");
+		assertThat(components(editor, LoePointBadge.class)).extracting(LoePointBadge::getText).containsOnly("5");
 		assertThat(components(editor, LoeAllocationMessage.class).stream()
 				.filter(message -> message.getClassNames().contains("tt-eh-task-allocation-message")))
 				.allSatisfy(message -> assertThat(message.isVisible()).isFalse());
 	}
 
 	@Test
-	void showsTaskPointMismatchBesideDistributionBadgeAndUpdatesLive() {
+	void showsTaskPointMismatchBesidePlainBadgeAndUpdatesLive() {
 		final LoeRequirement openRequirement = new LoeRequirement(REQUIREMENT.id(), REQUIREMENT.taskId(),
 				REQUIREMENT.descriptionMarkdown(), 3, false, REQUIREMENT.sortOrder());
 		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(
@@ -549,8 +551,8 @@ class LevelOfExpectationsEditorTests {
 		final LoeAllocationMessage message = components(editor, LoeAllocationMessage.class).stream()
 				.filter(component -> component.getClassNames().contains("tt-eh-task-allocation-message"))
 				.findFirst().orElseThrow();
-		final LoePointDistributionBadge badge = components(editor, LoePointDistributionBadge.class).getFirst();
 		final Details taskDetails = components(editor, Details.class).getLast();
+		final LoePointBadge badge = components(taskDetails.getSummary(), LoePointBadge.class).getFirst();
 		final Component summary = badge.getParent().orElseThrow();
 		final List<Component> summaryChildren = summary.getChildren().toList();
 
@@ -560,7 +562,7 @@ class LevelOfExpectationsEditorTests {
 		assertThat(message.isVisible()).isTrue();
 		assertThat(message.getText()).isEqualTo("Ordne Anforderungen weitere 2 Punkte zu.");
 		assertThat(message.getElement().getAttribute("data-severity")).isEqualTo("warning");
-		assertThat(badge.getText()).isEqualTo("Verteilt: 3 / 5 (+0)");
+		assertThat(badge.getText()).isEqualTo("3");
 		assertThat(components(editor, StatusTray.class).getFirst().getItems())
 				.anySatisfy(result -> assertThat(result.message()).isEqualTo("Aufgabe 1: " + message.getText()));
 
@@ -570,21 +572,21 @@ class LevelOfExpectationsEditorTests {
 		assertThat(components(editor, StatusTray.class).getFirst().getItems())
 				.anySatisfy(result -> assertThat(result.message())
 						.isEqualTo("Aufgabe 1: Ordne Anforderungen einen weiteren Punkt zu."));
-		assertThat(badge.getText()).isEqualTo("Verteilt: 4 / 5 (+0)");
+		assertThat(badge.getText()).isEqualTo("4");
 
 		setRequirementMaxPoints(editor, 5);
 
 		assertThat(message.isVisible()).isFalse();
 		assertThat(message.getText()).isEmpty();
 		assertThat(message.getElement().getAttribute("data-severity")).isNull();
-		assertThat(badge.getText()).isEqualTo("Verteilt: 5 / 5 (+0)");
+		assertThat(badge.getText()).isEqualTo("5");
 
 		setRequirementMaxPoints(editor, 7);
 
 		assertThat(message.isVisible()).isTrue();
 		assertThat(message.getText()).isEqualTo("Ordne Anforderungen 2 Punkte weniger zu.");
 		assertThat(message.getElement().getAttribute("data-severity")).isEqualTo("error");
-		assertThat(badge.getText()).isEqualTo("Verteilt: 7 / 5 (+0)");
+		assertThat(badge.getText()).isEqualTo("7");
 		assertThat(saveButtons(editor)).allSatisfy(button -> assertThat(button.isEnabled()).isFalse());
 		assertThat(components(editor, StatusTray.class).getFirst().getItems())
 				.anySatisfy(result -> assertThat(result.message()).isEqualTo("Aufgabe 1: " + message.getText()));
@@ -593,11 +595,11 @@ class LevelOfExpectationsEditorTests {
 
 		assertThat(message.getText()).isEqualTo("Ordne Anforderungen weitere 5 Punkte zu.");
 		assertThat(message.getElement().getAttribute("data-severity")).isEqualTo("warning");
-		assertThat(badge.getText()).isEqualTo("Verteilt: 0 / 5 (+7)");
+		assertThat(badge.getText()).isEqualTo("0");
 		assertThat(saveButtons(editor)).allSatisfy(button -> assertThat(button.isEnabled()).isTrue());
 		assertThat(components(editor, Details.class).getLast()).isSameAs(taskDetails);
 		assertThat(taskDetails.isOpened()).isTrue();
-		assertThat(components(editor, LoePointDistributionBadge.class).getFirst()).isSameAs(badge);
+		assertThat(components(taskDetails.getSummary(), LoePointBadge.class).getFirst()).isSameAs(badge);
 	}
 
 	@Test
@@ -617,20 +619,19 @@ class LevelOfExpectationsEditorTests {
 	}
 
 	@Test
-	void pointBadgesReserveSpaceForRegularAndBonusPoints() {
+	void pointBadgesUseSharedPlainNumberRenderingWithoutLabelsOrBonusSlots() {
 		final LevelOfExpectationsRepository repository = repositoryWithHierarchy();
 		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repository);
 
 		editor.setExam(EXAM);
 
-		assertThat(badgeTexts(editor)).contains("Summe: 5 (+0)", "Gesamt: 5 (+0)");
+		assertThat(components(editor, LoePointBadge.class)).extracting(LoePointBadge::getText).containsOnly("5");
 		assertThat(components(editor, LoePointBadge.class)).allSatisfy(badge ->
 				assertThat(badge.getClassNames()).contains("tt-loe-points-cell", "tt-loe-aggregate-points"));
-		assertThat(components(editor, Span.class).stream()
-				.filter(span -> span.getClassNames().contains("tt-loe-point-regular")).map(Span::getText)).contains("5");
-		assertThat(components(editor, Span.class).stream()
-				.filter(span -> span.getClassNames().contains("tt-loe-point-bonus")).map(Span::getText)).contains("0");
-		assertThat(components(editor, Span.class).stream().map(Span::getText)).contains("\u00a0");
+		assertThat(components(editor, LoePointBadge.class)).allSatisfy(badge -> {
+			assertThat(badge.getContent().getText()).isEqualTo("5");
+			assertThat(badge.getContent().getChildren()).isEmpty();
+		});
 	}
 
 	@Test

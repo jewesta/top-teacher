@@ -168,11 +168,6 @@ final class LoeSectionComponents {
 		return new LoePointBadge(label, pointsSupplier);
 	}
 
-	LoePointDistributionBadge pointDistributionBadge(final int taskMaxPoints,
-			final Supplier<LoePoints> distributedPointsSupplier) {
-		return new LoePointDistributionBadge(taskMaxPoints, distributedPointsSupplier);
-	}
-
 	LoePercentageBadge percentageBadge(final Supplier<Integer> percentageSupplier) {
 		return new LoePercentageBadge(percentageSupplier);
 	}

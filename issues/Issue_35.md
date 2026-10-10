@@ -179,9 +179,9 @@ points.
 - The effective result for the exam is the sum of the individually capped task
   results. Bonus points from one task cannot compensate for missing points in
   another task.
-- EH shows both the points assigned to the task and the points currently
-  distributed across its requirements, including a visible remaining or
-  excess amount while the EH is incomplete.
+- EH badges show the regular points currently assigned to requirements;
+  existing inline validation messages describe missing or excess allocation
+  against the task budget while the EH is incomplete.
 - A temporary mismatch must be allowed while the EH is being authored; an
   aggregate database constraint cannot represent that editing workflow.
 - Results must not be recorded until every task's requirement-point
@@ -331,8 +331,18 @@ The combined review pass is intended to provide the following end state:
 - Section headers use the adjacent self/subtree controls, header clicks no
   longer toggle a section, and mixed scopes continue to offer expansion until
   every child is expanded.
-- Point-distribution indicators use the concise numeric relationship and do not
-  add the redundant `passend` text. Missing/excess task allocations use the same
+- Point badges in Aufgaben, EH, and Ergebnisse now show centered plain numbers
+  without labels, ratios, or bonus brackets, with a shared narrower blue badge
+  and the existing right alignment. EH totals show assigned regular requirement
+  points; Ergebnisse totals use individually capped task scores. Whole-point
+  controls share badge width and a permanent blue background without a hover
+  tint, while
+  the wider result steppers keep their layout. Inline criteria place the
+  checkbox before the points pill. New badge warning/error styling and PDF
+  layout changes are deferred. See
+  [point presentation](../doc/ops/LevelOfExpectations.md#authoritative-budgets-and-distributions)
+  and [result layout](../doc/ops/LevelOfExpectationsResults.md#quick-marking-column).
+  Missing/excess task allocations use the same
   inline yellow/red message bars as requirement validation instead of trailing
   `offen`/`zu viel` text. Task messages explicitly ask for requirement-point
   allocation; location labels appear only in Status, not in the task header. See

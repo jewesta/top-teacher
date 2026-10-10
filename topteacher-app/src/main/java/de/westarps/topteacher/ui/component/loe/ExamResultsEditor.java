@@ -865,29 +865,24 @@ public class ExamResultsEditor extends AbstractDesigner {
 	}
 
 	private LoePoints pointsForPart(final LoePart part) {
-		return sum(categoriesFor(part).stream().flatMap(category -> tasksFor(category).stream())
-				.flatMap(task -> requirementsFor(task).stream()).toList());
+		return sumTaskPoints(categoriesFor(part).stream().flatMap(category -> tasksFor(category).stream()).toList());
 	}
 
 	private LoePoints pointsForCategory(final LoeCategory category) {
-		return sum(tasksFor(category).stream().flatMap(task -> requirementsFor(task).stream()).toList());
+		return sumTaskPoints(tasksFor(category));
 	}
 
 	private LoePoints pointsForTask(final LoeTask task) {
-		return sum(requirementsFor(task));
+		return new LoePoints(pointRules.cappedAchievedTotal(List.of(task), requirementsFor(task),
+				this::currentRequirementPoints), 0);
 	}
 
 	private LoePoints pointsForExam() {
-		return sum(requirements);
+		return sumTaskPoints(tasks);
 	}
 
-	private LoePoints pointsForRequirement(final LoeRequirement requirement) {
-		return requirement.bonus() ? new LoePoints(0, currentRequirementPoints(requirement))
-				: new LoePoints(currentRequirementPoints(requirement), 0);
-	}
-
-	private LoePoints sum(final List<LoeRequirement> requirements) {
-		return requirements.stream().map(this::pointsForRequirement).reduce(new LoePoints(0, 0), LoePoints::plus);
+	private LoePoints sumTaskPoints(final List<LoeTask> includedTasks) {
+		return includedTasks.stream().map(this::pointsForTask).reduce(new LoePoints(0, 0), LoePoints::plus);
 	}
 
 	private int currentCriterionPointUnits(final LoeCriterion criterion) {

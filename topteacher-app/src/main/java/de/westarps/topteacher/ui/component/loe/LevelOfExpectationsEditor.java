@@ -250,8 +250,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 	private LoeReadOnlySection<LoeTask> createTaskSection(final LoeTask task) {
 		final List<LoeRequirementSection> requirementSections = requirementsFor(task).stream()
 				.map(this::createRequirementSection).toList();
-		final LoePointDistributionBadge pointBadge = components.pointDistributionBadge(task.maxPoints(),
-				() -> distributedPointsForTask(task));
+		final LoePointBadge pointBadge = components.pointBadge("Zugeordnete Punkte", () -> pointsForTask(task));
 		final LoeAllocationMessage allocationMessage = new LoeAllocationMessage("tt-eh-task-allocation-message");
 		taskAllocationMessages.put(task.id(), allocationMessage);
 		final Button addRequirement = components.commandButton("Anforderung hinzufügen", VaadinIcon.PLUS,
@@ -342,10 +341,6 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 	}
 
 	private LoePoints pointsForTask(final LoeTask task) {
-		return new LoePoints(task.maxPoints(), distributedPointsForTask(task).bonus());
-	}
-
-	private LoePoints distributedPointsForTask(final LoeTask task) {
 		return sum(requirementsFor(task));
 	}
 
@@ -353,16 +348,18 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 		final LoeRequirement pendingRequirement = requirementSections.stream()
 				.filter(section -> section.requirement().id().equals(requirement.id()))
 				.map(LoeRequirementSection::pendingRequirement).findFirst().orElse(requirement);
-		return pendingRequirement.bonus() ? new LoePoints(0, pendingRequirement.maxPoints())
+		return pendingRequirement.bonus() ? new LoePoints(0, 0)
 				: new LoePoints(pendingRequirement.maxPoints(), 0);
 	}
 
 	private int percentageForPart(final LoePart part) {
-		final int totalPoints = pointsForExam().total();
+		final int totalPoints = tasks.stream().mapToInt(LoeTask::maxPoints).sum();
 		if (totalPoints == 0) {
 			return 0;
 		}
-		return Math.round(pointsForPart(part).total() * 100.0f / totalPoints);
+		final int partPoints = categoriesFor(part).stream().flatMap(category -> tasksFor(category).stream())
+				.mapToInt(LoeTask::maxPoints).sum();
+		return Math.round(partPoints * 100.0f / totalPoints);
 	}
 
 	private LoePoints sum(final List<LoeRequirement> requirements) {

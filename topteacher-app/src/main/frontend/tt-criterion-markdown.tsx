@@ -480,7 +480,7 @@ function tagNode(
             className: ['tt-criterion-highlight'],
           },
         },
-        children: [...children, badgeNode, ...(checkboxNode ? [checkboxNode] : [])],
+        children: [...children, ...(checkboxNode ? [checkboxNode] : []), badgeNode],
       },
     ],
   };

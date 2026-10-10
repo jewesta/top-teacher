@@ -96,7 +96,7 @@ class ExamResultsEditorTests {
 	}
 
 	@Test
-	void aggregateBadgesShareEhRenderingAndPointControlsShareTheSameFootprint() {
+	void aggregateBadgesSharePlainNumberRenderingAndPointControlsKeepTheirStructure() {
 		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository(), examRepository(),
 				levelOfExpectationsRepository(), gradingScaleRepository());
 		editor.setExam(EXAM);
@@ -110,15 +110,12 @@ class ExamResultsEditorTests {
 		});
 		assertThat(components(editor, LoePointBadge.class)).hasSize(4).allSatisfy(badge ->
 				assertThat(badge.getClassNames()).contains("tt-loe-points-cell", "tt-loe-aggregate-points"));
-		assertThat(components(editor, Span.class).stream()
-				.filter(span -> span.getClassNames().contains("tt-loe-aggregate-points-label"))
-				.map(span -> span.getText().strip())).containsExactly("Gesamt:", "Summe:", "Summe:", "Summe:");
-		assertThat(components(editor, Span.class).stream()
-				.filter(span -> span.getClassNames().contains("tt-loe-point-regular"))
-				.map(Span::getText)).containsExactly("1", "1", "1", "1");
-		assertThat(components(editor, Span.class).stream()
-				.filter(span -> span.getClassNames().contains("tt-loe-point-bonus"))
-				.map(Span::getText)).containsExactly("0", "0", "0", "0");
+		assertThat(badgeTexts(editor)).containsExactly("1", "1", "1", "1");
+		assertThat(components(editor, LoePointBadge.class)).allSatisfy(badge -> {
+			assertThat(badge.getContent().getText()).isEqualTo("1");
+			assertThat(badge.getElement().getAttribute("aria-label")).endsWith("1 Punkte");
+			assertThat(badge.getContent().getChildren()).isEmpty();
+		});
 		assertThat(criterionCheckboxes(editor)).allSatisfy(checkbox -> assertThat(checkbox.getParent()
 				.orElseThrow().getParent().orElseThrow()).isInstanceOf(LoeCriterionPointStepper.class));
 	}
@@ -158,7 +155,7 @@ class ExamResultsEditorTests {
 		assertThat(criterionCheckboxes(editor)).hasSize(2);
 		assertThat(criterionCheckboxes(editor).getFirst().getAriaLabel())
 				.contains("korrekte Zeitform: volle Punktzahl");
-		assertThat(badgeTexts(editor)).contains("Gesamt: 1 (+0)", "Summe: 1 (+0)");
+		assertThat(badgeTexts(editor)).containsOnly("1");
 		assertThat(requirementNumberTexts(editor)).containsExactly("1");
 		assertThat(components(editor, FullscreenButton.class)).hasSize(1);
 
@@ -168,7 +165,7 @@ class ExamResultsEditorTests {
 		assertThat(discardButton.isEnabled()).isTrue();
 		assertThat(pdfMenu.isEnabled()).isFalse();
 		assertThat(pointsText(editor)).containsExactly("2 von 5 Punkten");
-		assertThat(badgeTexts(editor)).contains("Gesamt: 2 (+0)", "Summe: 2 (+0)");
+		assertThat(badgeTexts(editor)).containsOnly("2");
 		verify(levelOfExpectationsRepository, never()).saveRequirementResult(any());
 		verify(levelOfExpectationsRepository, never()).saveCriterionResult(any());
 
@@ -186,7 +183,7 @@ class ExamResultsEditorTests {
 		assertThat(discardConfirmation.isOpened()).isFalse();
 		assertThat(adjustment.getPointUnits()).isZero();
 		assertThat(pointsText(editor)).containsExactly("1 von 5 Punkten");
-		assertThat(badgeTexts(editor)).contains("Gesamt: 1 (+0)", "Summe: 1 (+0)");
+		assertThat(badgeTexts(editor)).containsOnly("1");
 		assertThat(saveButton.isEnabled()).isFalse();
 		assertThat(discardButton.isEnabled()).isFalse();
 		assertThat(pdfMenu.isEnabled()).isTrue();
@@ -255,7 +252,7 @@ class ExamResultsEditorTests {
 		assertThat(checkbox.getValue()).isFalse();
 		assertThat(checkbox.isIndeterminate()).isTrue();
 		assertThat(pointsText(editor)).containsExactly("2 von 5 Punkten");
-		assertThat(badgeTexts(editor)).contains("Gesamt: 2 (+0)", "Summe: 2 (+0)");
+		assertThat(badgeTexts(editor)).containsOnly("2");
 
 		checkbox.setValue(true);
 		assertThat(criterion.getPointUnits()).isEqualTo(8);
@@ -359,7 +356,7 @@ class ExamResultsEditorTests {
 		increase(free);
 		assertThat(free.getPointUnits()).isEqualTo(1);
 		assertThat(pointsText(editor)).containsExactly("1 von 5 Punkten", "1 von 2 Punkten");
-		assertThat(badgeTexts(editor)).contains("Gesamt: 1 (+1)");
+		assertThat(badgeTexts(editor)).containsOnly("2");
 		saveButton(editor).click();
 		verify(repository).saveRequirementResult(new LoeRequirementResult(BONUS_REQUIREMENT.id(), PUPIL.id(), 1, 0, ""));
 	}
@@ -473,7 +470,7 @@ class ExamResultsEditorTests {
 		assertThat(criterionStepper(editor, SECOND_CRITERION.id())).isSameAs(points);
 		assertThat(components(editor, TextArea.class).getFirst()).isSameAs(comment);
 		assertThat(criterionCheckboxes(editor).getFirst()).isSameAs(criterionCheckbox);
-		assertThat(badgeTexts(editor)).contains("Gesamt: 4 (+0)", "Summe: 4 (+0)");
+		assertThat(badgeTexts(editor)).containsOnly("4");
 		verify(levelOfExpectationsRepository, times(1)).syncCriteriaForExam(EXAM.id());
 		verify(levelOfExpectationsRepository, times(1)).findPartsByExamId(EXAM.id());
 		verify(levelOfExpectationsRepository, times(1)).findCategoriesByExamId(EXAM.id());
@@ -567,7 +564,7 @@ class ExamResultsEditorTests {
 			assertThat(deleteButton.isEnabled()).isFalse();
 			assertThat(pointsText(editor)).containsExactly("0 von 5 Punkten");
 			assertThat(criterionIndicatorTexts(editor)).containsExactly("2 Kriterien, keines erfüllt.");
-			assertThat(badgeTexts(editor)).contains("Gesamt: 0 (+0)", "Summe: 0 (+0)");
+			assertThat(badgeTexts(editor)).containsOnly("0");
 		} finally {
 			UI.setCurrent(null);
 		}
@@ -592,6 +589,45 @@ class ExamResultsEditorTests {
 		} finally {
 			UI.setCurrent(null);
 		}
+	}
+
+	@Test
+	void aggregateBadgesIncludeEffectiveBonusPointsAndStopAtTheTaskMaximum() {
+		for (final int regularPoints : List.of(2, 3, 5)) {
+			final LevelOfExpectationsRepository repository = levelOfExpectationsRepository(
+					List.of(REQUIREMENT, BONUS_REQUIREMENT), List.of(),
+					List.of(new LoeRequirementResult(REQUIREMENT.id(), PUPIL.id(), regularPoints),
+							new LoeRequirementResult(BONUS_REQUIREMENT.id(), PUPIL.id(), 2)));
+			final ExamResultsEditor editor = new ExamResultsEditor(courseRepository(), examRepository(), repository,
+					gradingScaleRepository());
+			editor.setExam(EXAM);
+
+			assertThat(badgeTexts(editor)).containsOnly(String.valueOf(Math.min(5, regularPoints + 2)));
+			assertThat(components(editor, ResultsRequirementPointCell.class))
+					.extracting(cell -> cell.value().getText()).containsExactly(String.valueOf(regularPoints), "2");
+			assertThat(bonusIcons(editor)).hasSize(1);
+
+			decrease(freePointSteppers(editor).getLast());
+			decrease(freePointSteppers(editor).getLast());
+
+			assertThat(badgeTexts(editor)).containsOnly(String.valueOf(Math.min(5, regularPoints + 1)));
+		}
+	}
+
+	@Test
+	void aggregateBadgesCannotCarrySurplusBonusPointsIntoAnotherTask() {
+		final LoeTask secondTask = new LoeTask(30, CATEGORY.id(), "Teilaufgabe 2", "", 5, 1);
+		final LoeRequirement secondRequirement = new LoeRequirement(31, secondTask.id(), "Weitere Aufgabe", 5, false, 0);
+		final LevelOfExpectationsRepository repository = levelOfExpectationsRepository(
+				List.of(REQUIREMENT, BONUS_REQUIREMENT, secondRequirement), List.of(),
+				List.of(new LoeRequirementResult(REQUIREMENT.id(), PUPIL.id(), 5),
+						new LoeRequirementResult(BONUS_REQUIREMENT.id(), PUPIL.id(), 2)));
+		when(repository.findTasksByExamId(EXAM.id())).thenReturn(List.of(TASK, secondTask));
+		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository(), examRepository(), repository,
+				gradingScaleRepository(10));
+		editor.setExam(EXAM);
+
+		assertThat(badgeTexts(editor)).containsExactly("5", "5", "5", "5", "0");
 	}
 
 	@Test

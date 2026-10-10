@@ -25,16 +25,14 @@ The assessment structure is hierarchical:
 A part is the top-level subject-specific section inside an exam, for example
 "Klausurteil A: Schreiben mit Leseverstehen". It has a title and sort order.
 Its regular point budget is aggregated from the explicit maxima of its tasks.
-The EH additionally shows the regular and bonus requirement points distributed
-below it.
+The EH shows the regular requirement points currently assigned below it.
 
 ### Performance category
 
 A performance category groups tasks by assessment area, for example content or
 language performance. It has a title, optional markdown description, and sort
 order. Its regular point budget is aggregated from the explicit maxima of its
-tasks. The EH additionally shows the regular and bonus requirement points
-distributed below it.
+tasks. The EH shows the regular requirement points currently assigned below it.
 
 ### Task
 
@@ -75,9 +73,10 @@ and the regular requirements of its task must together distribute that task's
 explicit maximum.
 
 Requirement maxima use the same compact whole-point minus/value/plus control
-as task maxima in `Aufgaben`, with a permanent background and no visible
-`Max. Punkte` label. The controls retain descriptive accessibility labels and
-become read-only in correction mode.
+as task maxima in `Aufgaben`, with no visible `Max. Punkte` label. Both controls
+have a permanent blue background that does not change on hover or keyboard focus.
+The controls retain descriptive accessibility labels and become read-only in
+correction mode.
 
 ## Authoritative budgets and distributions
 
@@ -97,16 +96,20 @@ sum(regular requirement maxima for a task) = that task's maximum
   editor may temporarily display the pending over-allocation, but it must not
   save it.
 - Bonus requirements do not count toward either equality.
-- Regular and bonus totals are displayed separately, for example
-  `Summe: 98 (+ 2)`.
-- A task's distribution indicator uses the concise `n / m` relationship,
-  with bonus points in parentheses. Allocation warnings and errors appear in
-  a separate inline message bar, not as trailing text inside the badge. An exact
-  match does not add a redundant `passend` label.
-- EH and Results use the same aggregate-points badge. Its label is left-aligned.
-  Regular points are right-aligned to a fixed axis, while bonus points are
-  left-aligned beyond it. Fixed-width number slots keep changing values from
-  shifting the badge layout.
+- `Aufgaben`, EH, and Results use the same fixed-width, blue-tinted aggregate
+  badge with a single centered number. No visible `Gesamt`, `Summe`, ratio,
+  or separate bonus total is shown; descriptive tooltips and accessible labels
+  remain. The shared right edge stays aligned with the Markdown content.
+- `Aufgaben` badges sum task budgets. EH badges sum the currently assigned
+  regular requirement maxima at task, category, part, and exam level; bonus
+  requirements do not contribute. Part percentages continue to represent the
+  authoritative task budgets rather than an incomplete requirement allocation.
+- Whole-point controls share the narrower badge width and center their number
+  between minus and plus. Task and EH requirement controls share a permanent
+  blue background without a hover tint. Result-entry controls retain their
+  existing red interaction highlighting.
+- Existing allocation warnings and errors remain in separate inline message
+  bars. New warning/error colors or icons inside badges are deferred.
 - The EH percentage chip matches the aggregate-points badge height.
 
 Changes to pending task maxima, requirement maxima, and bonus flags must update
@@ -324,21 +327,23 @@ designer.
 
 ## Bonus points
 
-Regular and bonus points are aggregated independently.
+Bonus requirements are distinguished by their star, not by a separate badge
+total or a parenthesized point value.
 
 - Regular requirements distribute their task's maximum.
-- Bonus requirements are shown in parentheses.
+- Bonus requirements show their own maximum as a plain number, like regular
+  requirements, but do not count toward regular design allocations.
 - After every raw requirement result has been rounded locally, awarded regular
   and bonus points are combined within their task. The effective task result is
   capped at that task's explicit maximum.
 - The effective exam result is the sum of those individually capped task
   results. Surplus bonus points from one task cannot compensate for missing
   points in another task.
-- The UI continues to show entered regular and bonus points separately even
-  when the effective total is capped.
+- Results badges show effective capped scores. Bonus awards remain visible in
+  their own requirements and are not shown as separate higher-level totals.
 
 For example, suppose a 100-point exam has a 60-point task and a 40-point task.
 If the first task receives 58 regular plus five bonus points, its effective
 result is capped at 60. If the second task receives 35 points, the effective
-exam result is 95, not 98. The entered regular and bonus values remain visible
-for assessment transparency.
+exam result is 95, not 98. The task badges show 60 and 35; the exam badge shows
+95. Individual requirement values remain visible for assessment transparency.

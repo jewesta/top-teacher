@@ -402,6 +402,9 @@ vaadin-app-layout::part(navbar) {
 .tt-eh-editor,
 .tt-exam-results-editor {
 	--tt-points-column-width: 10rem;
+	--tt-points-badge-width: 6rem;
+	--tt-points-badge-background: hsla(214, 90%, 52%, 0.12);
+	--tt-points-badge-color: hsl(214, 65%, 40%);
 	--tt-loe-content-right-inset: calc(var(--lumo-space-m) + 3px);
 }
 
@@ -725,7 +728,7 @@ vaadin-app-layout::part(navbar) {
 	height: var(--lumo-size-s);
 	margin-left: auto;
 	margin-right: var(--lumo-space-s);
-	width: var(--tt-points-column-width, 10rem);
+	width: var(--tt-points-badge-width, 6rem);
 }
 
 .tt-results-points-cell {
@@ -735,57 +738,15 @@ vaadin-app-layout::part(navbar) {
 
 .tt-loe-aggregate-points,
 .tt-results-requirement-total {
-	background: var(--lumo-primary-color-10pct);
-	color: var(--lumo-primary-text-color);
+	background: var(--tt-points-badge-background);
+	color: var(--tt-points-badge-color);
 }
 
 .tt-loe-aggregate-points {
 	display: inline-flex;
-	justify-content: space-between;
-	padding: 0 var(--lumo-space-xs);
-}
-
-.tt-loe-aggregate-points-label {
-	flex: 0 0 auto;
-}
-
-.tt-loe-aggregate-points-values {
-	align-items: center;
-	display: inline-flex;
 	font-variant-numeric: tabular-nums;
-	justify-content: flex-end;
-	white-space: nowrap;
-}
-
-.tt-loe-distribution-points {
-	gap: var(--lumo-space-xs);
-}
-
-.tt-loe-distribution-points .tt-loe-aggregate-points-values {
-	font-size: var(--lumo-font-size-xs);
-}
-
-.tt-loe-distribution-regular {
-	width: 3ch;
-}
-
-.tt-loe-distribution-bonus {
-	width: 2ch;
-}
-
-.tt-loe-point-number {
-	display: inline-block;
-	text-align: right;
-}
-
-.tt-loe-point-regular {
-	margin-right: var(--lumo-space-s);
-	width: 3ch;
-}
-
-.tt-loe-point-bonus {
-	text-align: left;
-	width: 2ch;
+	justify-content: center;
+	padding: 0 var(--lumo-space-xs);
 }
 
 .tt-results-points-cell-leading,
@@ -814,22 +775,35 @@ vaadin-app-layout::part(navbar) {
 
 .tt-results-requirement-total {
 	cursor: default;
-	margin: 0;
+	grid-template-columns: 1fr;
+	margin: 0 0 0 auto;
 }
 
-.tt-results-requirement-total .tt-results-points-cell-value {
-	justify-self: end;
-	margin-right: var(--lumo-space-s);
+.tt-results-requirement-total .tt-results-points-cell-leading,
+.tt-results-requirement-total .tt-results-points-cell-trailing {
+	display: none;
 }
 
 .tt-loe-point-stepper {
 	color: var(--lumo-secondary-text-color);
 	margin: 0;
+	width: var(--tt-points-column-width, 10rem);
 }
 
-.tt-loe-point-stepper:is(:hover, :focus-within, .tt-results-criterion-highlighted),
-.tt-loe-whole-point-stepper {
+.tt-loe-point-stepper:not(.tt-loe-whole-point-stepper):is(:hover, :focus-within, .tt-results-criterion-highlighted) {
 	background: var(--lumo-primary-color-10pct);
+}
+
+.tt-loe-whole-point-stepper {
+	background: var(--tt-points-badge-background);
+	grid-template-columns: minmax(0, 1fr) 3ch minmax(0, 1fr);
+	width: var(--tt-points-badge-width, 6rem);
+}
+
+.tt-loe-whole-point-stepper .tt-results-points-cell-leading,
+.tt-loe-whole-point-stepper .tt-results-points-cell-trailing {
+	justify-content: center;
+	padding: 0;
 }
 
 .tt-loe-point-stepper vaadin-button {

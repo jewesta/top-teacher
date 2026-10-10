@@ -127,7 +127,7 @@ class ExamTasksEditorTests {
 		increase.click();
 		assertThat(taskDetails.isOpened()).isTrue();
 		assertThat(points.getValue()).isEqualTo(8);
-		assertThat(badgeTexts(editor)).contains("Gesamt: 8 (+0)", "Summe: 8 (+0)")
+		assertThat(badgeTexts(editor)).contains("8")
 				.noneMatch(text -> text.startsWith("Max.:"));
 		saveButton(editor).click();
 
@@ -137,7 +137,7 @@ class ExamTasksEditorTests {
 		verify(repository, never()).findCategoriesByExamId(anyInt());
 		verify(repository, never()).findTasksByExamId(anyInt());
 		assertThat(components(editor, Details.class).getFirst()).isSameAs(partDetails);
-		assertThat(badgeTexts(editor)).contains("Gesamt: 8 (+0)", "Summe: 8 (+0)")
+		assertThat(badgeTexts(editor)).contains("8")
 				.noneMatch(text -> text.startsWith("Max.:"));
 		assertThat(saveButton(editor).isEnabled()).isFalse();
 	}
@@ -180,16 +180,14 @@ class ExamTasksEditorTests {
 	}
 
 	@Test
-	void distributionBadgeKeepsThreeDigitAxesAndBonusAxis() {
-		final LoePointDistributionBadge badge = new LoePointDistributionBadge(100, () -> new LoePoints(100, 12));
+	void pointBadgeShowsOnlyItsNumberAndRetainsAnAccessibleDescription() {
+		final LoePointBadge badge = new LoePointBadge("Zugeordnete Punkte", () -> new LoePoints(100, 12));
 
-		assertThat(badge.getText()).isEqualTo("Verteilt: 100 / 100 (+12)");
-		assertThat(components(badge, Span.class).stream()
-				.filter(span -> span.getClassNames().contains("tt-loe-distribution-regular")))
-				.extracting(Span::getText).containsExactly("100", "100");
-		assertThat(components(badge, Span.class).stream()
-				.filter(span -> span.getClassNames().contains("tt-loe-distribution-bonus")))
-				.extracting(Span::getText).containsExactly("12");
+		assertThat(badge.getText()).isEqualTo("100");
+		assertThat(badge.getContent().getText()).isEqualTo("100");
+		assertThat(badge.getElement().getAttribute("aria-label")).isEqualTo("Zugeordnete Punkte: 100 Punkte");
+		assertThat(badge.getElement().getAttribute("title")).isEqualTo("Zugeordnete Punkte: 100 Punkte");
+		assertThat(badge.getContent().getChildren()).isEmpty();
 	}
 
 	@Test
