@@ -82,7 +82,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private final Map<Integer, CriterionMarkdownViewer> requirementDescriptions = new HashMap<>();
 	private final Map<Integer, Span> requirementCriterionIndicators = new HashMap<>();
 	private final Map<Integer, Checkbox> criterionCheckboxes = new HashMap<>();
-	private final Map<Integer, LoeCriterionPointStepper> criterionRows = new HashMap<>();
+	private final Map<Integer, ResultsPointsRow> criterionRows = new HashMap<>();
 	private final Set<Integer> highlightedQuickCriteria = new HashSet<>();
 	private final Set<Integer> highlightedInlineCriteria = new HashSet<>();
 	private final Map<Integer, Integer> editedCriterionResults = new HashMap<>();
@@ -630,7 +630,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 		}
 		final boolean highlighted = highlightedQuickCriteria.contains(criterion.id())
 				|| highlightedInlineCriteria.contains(criterion.id());
-		final LoeCriterionPointStepper row = criterionRows.get(criterion.id());
+		final ResultsPointsRow row = criterionRows.get(criterion.id());
 		if (row != null) {
 			row.getElement().getClassList().set("tt-results-criterion-highlighted", highlighted);
 		}
@@ -702,7 +702,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 		requirementPointTexts.put(requirement.id(), pointsText);
 		refreshRequirementPointText(requirement);
 
-		final VerticalLayout control = new VerticalLayout(resultBadge, pointsText);
+		final VerticalLayout control = new VerticalLayout(new ResultsPointsRow(resultBadge), pointsText);
 		control.addClassName("tt-results-points-control");
 		control.setPadding(false);
 		control.setSpacing(false);
@@ -713,9 +713,11 @@ public class ExamResultsEditor extends AbstractDesigner {
 		final LoePointStepper free = new LoePointStepper("Frei vergebene Punkte");
 		free.setChangeHandler(units -> setFreePointUnits(requirement, units));
 		freePointControls.put(requirement.id(), free);
-		final Span freeLabel = new Span("Frei vergebene Punkte");
+		final Span freeLabel = new Span("Frei vergebene Pkt.");
 		freeLabel.addClassName("tt-results-adjustment-label");
-		final VerticalLayout freeArea = new VerticalLayout(freeLabel, free);
+		freeLabel.getElement().setAttribute("aria-label", "Frei vergebene Punkte");
+		freeLabel.getElement().setAttribute("title", "Frei vergebene Punkte");
+		final VerticalLayout freeArea = new VerticalLayout(freeLabel, new ResultsPointsRow(free));
 		freeArea.addClassName("tt-results-adjustment");
 		freeArea.setPadding(false);
 		freeArea.setSpacing(false);
@@ -747,24 +749,25 @@ public class ExamResultsEditor extends AbstractDesigner {
 		});
 		criterionCheckboxes.put(criterion.id(), checkbox);
 
-		final LoeCriterionPointStepper points = new LoeCriterionPointStepper(criterion.label() + " Punkte",
-				checkbox);
+		final LoePointStepper points = new LoePointStepper(criterion.label() + " Punkte");
 		points.setChangeHandler(units -> setCriterionPointUnits(requirement, criterion, units));
 		criterionPointControls.put(criterion.id(), points);
 
-		final LoeCriterionPointStepper row = points;
+		final ResultsPointsRow row = new ResultsPointsRow(checkbox, points);
+		row.addClassName("tt-results-criterion-checkbox-row");
 		row.getElement().setAttribute("aria-label", criterion.label() + ": "
 				+ LoePointUnits.formatGerman(criterion.pointUnits())
 				+ (criterion.pointUnits() == LoePointUnits.UNITS_PER_POINT ? " Punkt" : " Punkte") + " möglich");
 		row.getElement().addEventListener("mouseenter",
 				event -> setCriterionHighlight(criterion, highlightedQuickCriteria, true));
 		row.getElement().addEventListener("mouseleave",
-				event -> setCriterionHighlight(criterion, highlightedQuickCriteria, false));
+				event -> setCriterionHighlight(criterion, highlightedQuickCriteria, false))
+				.setFilter("!event.currentTarget.matches(':focus-within')");
 		row.getElement().addEventListener("focusin",
 				event -> setCriterionHighlight(criterion, highlightedQuickCriteria, true));
 		row.getElement().addEventListener("focusout",
 				event -> setCriterionHighlight(criterion, highlightedQuickCriteria, false))
-				.setFilter("!event.currentTarget.contains(event.relatedTarget)");
+				.setFilter("!event.currentTarget.contains(event.relatedTarget) && !event.currentTarget.matches(':hover')");
 		criterionRows.put(criterion.id(), row);
 		return row;
 	}
@@ -820,7 +823,10 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private void refreshRequirementPointText(final LoeRequirement requirement) {
 		final Span pointsText = requirementPointTexts.get(requirement.id());
 		if (pointsText != null) {
-			pointsText.setText(currentRequirementPoints(requirement) + " von " + requirement.maxPoints() + " Punkten");
+			final String pointSummary = currentRequirementPoints(requirement) + " von " + requirement.maxPoints();
+			pointsText.setText(pointSummary + " Pkt.");
+			pointsText.getElement().setAttribute("aria-label", pointSummary + " Punkten");
+			pointsText.getElement().setAttribute("title", pointSummary + " Punkten");
 		}
 		final ResultsRequirementPointCell badge = requirementResultBadges.get(requirement.id());
 		if (badge != null) {

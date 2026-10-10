@@ -333,13 +333,19 @@ The combined review pass is intended to provide the following end state:
   every child is expanded.
 - Point badges in Aufgaben, EH, and Ergebnisse now show centered plain numbers
   without labels, ratios, or bonus brackets, with a shared narrower blue badge
-  and the existing right alignment. EH totals show assigned regular requirement
+  and the existing right alignment. Part percentage chips share the same blue
+  styling. EH totals show assigned regular requirement
   points; Ergebnisse totals use individually capped task scores. Whole-point
   controls share badge width and a permanent blue background without a hover
-  tint, while
-  the wider result steppers keep their layout. Inline criteria place the
-  checkbox before the points pill. New badge warning/error styling and PDF
-  layout changes are deferred. See
+  tint. Ergebnisse uses a two-column checkbox/status and points layout, with
+  lighter blue badge-width controls and the existing translucent red highlight
+  across both columns only for criteria linked to text, not freely awarded points.
+  Empty status slots remain empty until the deferred status-icon work.
+  The checkbox/status slot is compact with a small breathing margin;
+  the points width and right edge remain unchanged. Labels use `n von m Pkt.`
+  and `Frei vergebene Pkt.` with full tooltip/accessibility wording. Inline
+  criteria place the checkbox before the points pill. New badge warning/error
+  styling and PDF layout changes are deferred. See
   [point presentation](../doc/ops/LevelOfExpectations.md#authoritative-budgets-and-distributions)
   and [result layout](../doc/ops/LevelOfExpectationsResults.md#quick-marking-column).
   Missing/excess task allocations use the same

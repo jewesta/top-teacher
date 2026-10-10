@@ -22,10 +22,6 @@ abstract class ResultsPointsCell extends Div {
 		leading.add(component);
 	}
 
-	protected void addLeadingFirst(final Component component) {
-		leading.addComponentAsFirst(component);
-	}
-
 	protected void addTrailing(final Component component) {
 		trailing.add(component);
 	}

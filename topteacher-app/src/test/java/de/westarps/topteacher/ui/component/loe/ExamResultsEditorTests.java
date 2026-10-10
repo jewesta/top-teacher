@@ -117,7 +117,14 @@ class ExamResultsEditorTests {
 			assertThat(badge.getContent().getChildren()).isEmpty();
 		});
 		assertThat(criterionCheckboxes(editor)).allSatisfy(checkbox -> assertThat(checkbox.getParent()
-				.orElseThrow().getParent().orElseThrow()).isInstanceOf(LoeCriterionPointStepper.class));
+				.orElseThrow().getParent().orElseThrow()).isInstanceOf(ResultsPointsRow.class));
+		assertThat(components(editor, ResultsPointsRow.class)).hasSize(4).allSatisfy(row -> {
+			final List<Component> columns = row.getChildren().toList();
+			assertThat(columns).hasSize(2);
+			assertThat(columns.getFirst().getClassNames()).contains("tt-results-points-status");
+			assertThat(columns.getLast()).isInstanceOf(ResultsPointsCell.class);
+			assertThat(components(columns.getLast(), Checkbox.class)).isEmpty();
+		});
 	}
 
 	@Test
@@ -150,7 +157,7 @@ class ExamResultsEditorTests {
 		assertThat(pdfMenuItem.getSubMenu().getItems().stream().map(MenuItem::getText))
 				.containsExactly("Ergebnisbogen (Schüler:innen-Version)", "Ergebnisbogen (Lehrer:innen-Version)");
 		assertThat(pdfMenuItem.getSubMenu().getItems()).allMatch(item -> item.getChildren().findAny().isEmpty());
-		assertThat(pointsText(editor)).containsExactly("1 von 5 Punkten");
+		assertThat(pointsText(editor)).containsExactly("1 von 5 Pkt.");
 		assertThat(adjustment.getPointUnits()).isZero();
 		assertThat(criterionCheckboxes(editor)).hasSize(2);
 		assertThat(criterionCheckboxes(editor).getFirst().getAriaLabel())
@@ -164,7 +171,7 @@ class ExamResultsEditorTests {
 		assertThat(saveButton.isEnabled()).isTrue();
 		assertThat(discardButton.isEnabled()).isTrue();
 		assertThat(pdfMenu.isEnabled()).isFalse();
-		assertThat(pointsText(editor)).containsExactly("2 von 5 Punkten");
+		assertThat(pointsText(editor)).containsExactly("2 von 5 Pkt.");
 		assertThat(badgeTexts(editor)).containsOnly("2");
 		verify(levelOfExpectationsRepository, never()).saveRequirementResult(any());
 		verify(levelOfExpectationsRepository, never()).saveCriterionResult(any());
@@ -182,7 +189,7 @@ class ExamResultsEditorTests {
 
 		assertThat(discardConfirmation.isOpened()).isFalse();
 		assertThat(adjustment.getPointUnits()).isZero();
-		assertThat(pointsText(editor)).containsExactly("1 von 5 Punkten");
+		assertThat(pointsText(editor)).containsExactly("1 von 5 Pkt.");
 		assertThat(badgeTexts(editor)).containsOnly("1");
 		assertThat(saveButton.isEnabled()).isFalse();
 		assertThat(discardButton.isEnabled()).isFalse();
@@ -226,7 +233,7 @@ class ExamResultsEditorTests {
 		assertThat(saveButton.isEnabled()).isTrue();
 		assertThat(description.getCheckedCriterionKeys()).containsExactlyInAnyOrder("1", "2");
 		assertThat(criterionIndicatorTexts(editor)).containsExactly("2 Kriterien, alle voll erfüllt.");
-		assertThat(pointsText(editor)).containsExactly("5 von 5 Punkten");
+		assertThat(pointsText(editor)).containsExactly("5 von 5 Pkt.");
 		verify(levelOfExpectationsRepository, never()).saveCriterionResult(any(LoeCriterionResult.class));
 
 		saveButton.click();
@@ -251,16 +258,16 @@ class ExamResultsEditorTests {
 		assertThat(criterion.getPointUnits()).isEqualTo(1);
 		assertThat(checkbox.getValue()).isFalse();
 		assertThat(checkbox.isIndeterminate()).isTrue();
-		assertThat(pointsText(editor)).containsExactly("2 von 5 Punkten");
+		assertThat(pointsText(editor)).containsExactly("2 von 5 Pkt.");
 		assertThat(badgeTexts(editor)).containsOnly("2");
 
 		checkbox.setValue(true);
 		assertThat(criterion.getPointUnits()).isEqualTo(8);
 		assertThat(checkbox.isIndeterminate()).isFalse();
-		assertThat(pointsText(editor)).containsExactly("5 von 5 Punkten");
+		assertThat(pointsText(editor)).containsExactly("5 von 5 Pkt.");
 		checkbox.setValue(false);
 		assertThat(criterion.getPointUnits()).isZero();
-		assertThat(pointsText(editor)).containsExactly("1 von 5 Punkten");
+		assertThat(pointsText(editor)).containsExactly("1 von 5 Pkt.");
 	}
 
 	@Test
@@ -325,7 +332,7 @@ class ExamResultsEditorTests {
 		assertThat(criterion.getMaximumPointUnits()).isZero();
 		assertThat(increaseButton(criterion).isEnabled()).isFalse();
 		assertThat(criterionCheckboxes(editor).get(1).isEnabled()).isFalse();
-		assertThat(pointsText(editor)).containsExactly("5 von 5 Punkten");
+		assertThat(pointsText(editor)).containsExactly("5 von 5 Pkt.");
 
 		decrease(adjustment);
 		increase(criterion);
@@ -351,11 +358,17 @@ class ExamResultsEditorTests {
 				.allSatisfy(cell -> assertThat(cell.getElement().getAttribute("role")).isNull());
 		assertThat(components(editor, Span.class).stream()
 				.filter(span -> span.getClassNames().contains("tt-results-adjustment-label"))
-				.map(Span::getText)).containsExactly("Frei vergebene Punkte", "Frei vergebene Punkte");
+				.map(Span::getText)).containsExactly("Frei vergebene Pkt.", "Frei vergebene Pkt.");
+		assertThat(components(editor, Span.class).stream()
+				.filter(span -> span.getClassNames().contains("tt-results-adjustment-label")))
+				.allSatisfy(span -> {
+					assertThat(span.getElement().getAttribute("aria-label")).isEqualTo("Frei vergebene Punkte");
+					assertThat(span.getElement().getAttribute("title")).isEqualTo("Frei vergebene Punkte");
+				});
 
 		increase(free);
 		assertThat(free.getPointUnits()).isEqualTo(1);
-		assertThat(pointsText(editor)).containsExactly("1 von 5 Punkten", "1 von 2 Punkten");
+		assertThat(pointsText(editor)).containsExactly("1 von 5 Pkt.", "1 von 2 Pkt.");
 		assertThat(badgeTexts(editor)).containsOnly("2");
 		saveButton(editor).click();
 		verify(repository).saveRequirementResult(new LoeRequirementResult(BONUS_REQUIREMENT.id(), PUPIL.id(), 1, 0, ""));
@@ -463,7 +476,7 @@ class ExamResultsEditorTests {
 		assertThat(breadcrumb(editor).getElement().getAttribute("data-tt-breadcrumb-root-label")).isEqualTo("EB");
 		assertThat(breadcrumb(editor).getElement().getAttribute("data-tt-breadcrumb-root-title"))
 				.isEqualTo("Ergebnis, Berta");
-		assertThat(pointsText(editor)).containsExactly("4 von 5 Punkten");
+		assertThat(pointsText(editor)).containsExactly("4 von 5 Pkt.");
 		assertThat(criterionIndicatorTexts(editor))
 				.containsExactly("2 Kriterien, 1 voll erfüllt und 1 teilweise erfüllt.");
 		assertThat(criterionCheckboxes(editor).get(1).isIndeterminate()).isTrue();
@@ -562,7 +575,7 @@ class ExamResultsEditorTests {
 			assertThat(points.getPointUnits()).isZero();
 			assertThat(comment.getValue()).isEmpty();
 			assertThat(deleteButton.isEnabled()).isFalse();
-			assertThat(pointsText(editor)).containsExactly("0 von 5 Punkten");
+			assertThat(pointsText(editor)).containsExactly("0 von 5 Pkt.");
 			assertThat(criterionIndicatorTexts(editor)).containsExactly("2 Kriterien, keines erfüllt.");
 			assertThat(badgeTexts(editor)).containsOnly("0");
 		} finally {
@@ -790,7 +803,7 @@ class ExamResultsEditorTests {
 
 	private static List<LoePointStepper> freePointSteppers(final Component root) {
 		return components(root, LoePointStepper.class).stream()
-				.filter(stepper -> stepper.getParent().map(parent -> parent.getClassNames()
+				.filter(stepper -> stepper.getParent().flatMap(Component::getParent).map(parent -> parent.getClassNames()
 						.contains("tt-results-adjustment")).orElse(false))
 				.toList();
 	}

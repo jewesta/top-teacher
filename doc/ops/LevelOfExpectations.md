@@ -110,7 +110,8 @@ sum(regular requirement maxima for a task) = that task's maximum
   existing red interaction highlighting.
 - Existing allocation warnings and errors remain in separate inline message
   bars. New warning/error colors or icons inside badges are deferred.
-- The EH percentage chip matches the aggregate-points badge height.
+- Part percentage chips in Aufgaben and EH match the aggregate-points badge
+  height and share its blue-tinted background and blue text color.
 
 Changes to pending task maxima, requirement maxima, and bonus flags must update
 the affected task, category, part, and exam information immediately.

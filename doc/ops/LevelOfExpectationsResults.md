@@ -85,18 +85,29 @@ align with the points column in those views when switching tabs.
 - The badge shows the rounded requirement result.
 - When rounding changes the raw result, the badge tooltip explains the raw and
   rounded values.
-- Every criterion row contains its three-state checkbox left-aligned with a
-  small inset, followed by an always-visible compact minus/plus control.
+- Each requirement total, criterion row, and freely awarded points row uses two
+  columns: a checkbox/status slot followed by the points badge or control.
+  The first column is checkbox-sized with a small breathing margin; it contains
+  the criterion's three-state checkbox where applicable and remains empty
+  otherwise. No new status icons are shown yet.
 - Aggregate badges and requirement totals share the narrower fixed badge width,
   a centered plain number, and the existing right edge. They show no visible
   labels, ratios, or separate bonus totals. Criterion and freely awarded
-  controls retain their wider footprint and existing value placement; all point
-  cells share the same height.
-- Only aggregate badges and requirement totals have a permanent blue-tinted
-  background. Point steppers are transparent at rest; hover, keyboard focus,
-  or the linked criterion highlight adds the existing red tint without a border.
-- The `Frei vergebene Punkte` label uses the same secondary text styling as the
-  `n von m Punkten` label. Partial inline checkboxes show a dash.
+  controls use that same points width and center their value between minus and
+  plus, like task and requirement controls in Aufgaben/EH. The overall marking
+  column follows the compact status slot plus gap and points width; its right
+  edge remains fixed. All point cells share the same height.
+- Badges and point controls have a permanent blue-tinted background. Criterion
+  and freely awarded points controls use a lighter tint than aggregate badges
+  and the task/requirement controls in Aufgaben/EH. On criterion rows only,
+  hover, keyboard focus, or the linked criterion highlight adds the
+  existing translucent red tint across the whole row, including its checkbox
+  slot. The points control retains its translucent blue layer over that row
+  highlight. Read-only totals and freely awarded points have no row highlight
+  because they have no corresponding criterion text.
+- Labels use `n von m Pkt.` and `Frei vergebene Pkt.` in the same secondary
+  text styling to fit the compact column. Their tooltips and accessible labels
+  retain the full wording. Partial inline checkboxes show a dash.
 - Changes made in either the text or quick-marking column update the other
   representation immediately.
 
