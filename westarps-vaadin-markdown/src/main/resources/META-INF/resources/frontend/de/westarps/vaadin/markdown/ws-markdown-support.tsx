@@ -8,10 +8,32 @@ import {
   type MarkdownPreviewContribution,
 } from './ws-markdown-extensions';
 
-export type MarkdownToolbarCommandId = 'IMAGE';
+export type MarkdownToolbarCommandId = 'IMAGE' | 'FOOTNOTE';
 
 const toolbarCommandNames: Record<MarkdownToolbarCommandId, string[]> = {
   IMAGE: ['image'],
+  FOOTNOTE: ['footnote'],
+};
+
+const footnoteCommand: ICommand = {
+  name: 'footnote',
+  keyCommand: 'footnote',
+  buttonProps: {
+    'aria-label': 'Fußnote einfügen...',
+    title: 'Fußnote einfügen...',
+  },
+  icon: <span aria-hidden="true" style={{ fontSize: '1rem', fontWeight: 600 }}>¹</span>,
+  execute: (_state, api) => {
+    const selectionEnd = api.textArea.selectionEnd;
+    api.textArea.dispatchEvent(new CustomEvent('markdown-extension-event', {
+      bubbles: true,
+      composed: true,
+      detail: {
+        name: 'footnote-requested',
+        selectionEnd,
+      },
+    }));
+  },
 };
 
 export function markdownStateIds<T extends string>(stateValue: string): T[] {
@@ -25,7 +47,10 @@ export function markdownCommands(
   extensions: MarkdownExtension[],
   hiddenToolbarCommands: MarkdownToolbarCommandId[],
 ): ICommand[] {
-  const extensionCommands = extensions.flatMap((extension) => extension.editorCommands?.() ?? []);
+  const extensionCommands = [
+    ...extensions.flatMap((extension) => extension.editorCommands?.() ?? []),
+    footnoteCommand,
+  ];
   const commandsWithExtensions = extensionCommands.reduceRight(insertBeforeFirstDivider, commands.getCommands());
   return filterCommands(commandsWithExtensions, hiddenCommandNames(hiddenToolbarCommands));
 }
@@ -54,6 +79,10 @@ export function markdownPreviewConfiguration(extensions: MarkdownExtension[], co
         [rehypeSanitize, schema],
       ] as PluggableList,
       components: Object.assign({}, ...contributions.map((contribution) => contribution.components ?? {})),
+      remarkRehypeOptions: {
+        footnoteLabel: 'Fußnoten',
+        footnoteBackLabel: 'Zurück zum Text',
+      },
     },
     wrap: (content: React.ReactElement): React.ReactElement => contributions.reduceRight(
       (wrapped, contribution) => contribution.wrap?.(wrapped, context) ?? wrapped, content,

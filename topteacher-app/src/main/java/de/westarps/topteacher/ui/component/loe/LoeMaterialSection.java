@@ -19,6 +19,7 @@ import com.vaadin.flow.component.upload.Upload;
 import de.westarps.topteacher.model.loe.LoeMaterial;
 import de.westarps.topteacher.model.loe.LoeMaterialImage;
 import de.westarps.topteacher.model.loe.LoeMaterialImageReferences;
+import de.westarps.vaadin.markdown.MarkdownEditor;
 
 final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 
@@ -69,6 +70,7 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 		} else {
 			dropUpload = createDropUpload();
 			description.addImageRequestListener(point -> openImageDialog(point, null));
+			description.addFootnoteRequestListener(point -> openFootnoteDialog(point));
 			description.addFileDropListener(drop -> handleFileDrop(drop, dropUpload));
 			descriptionBlock = components.markdownBlock("Inhalt", description);
 		}
@@ -178,6 +180,10 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 			description.setImages(allImages());
 			description.insertImage(replacementPoint, declaration(result));
 		}).open();
+	}
+
+	private void openFootnoteDialog(final MarkdownEditor.InsertionPoint insertionPoint) {
+		new FootnoteDialog(text -> description.insertFootnote(insertionPoint, text)).open();
 	}
 
 	private Optional<LoeMaterialImage> findImageById(final String id) {

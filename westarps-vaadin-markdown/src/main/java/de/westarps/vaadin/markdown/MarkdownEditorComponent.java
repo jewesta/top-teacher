@@ -15,7 +15,8 @@ import com.vaadin.flow.component.dependency.JsModule;
 final class MarkdownEditorComponent extends MarkdownComponent {
 
 	private static final int UNLIMITED = -1;
-	private Set<MarkdownToolbarCommand> hiddenToolbarCommands = EnumSet.of(MarkdownToolbarCommand.IMAGE);
+	private Set<MarkdownToolbarCommand> hiddenToolbarCommands = EnumSet.of(MarkdownToolbarCommand.IMAGE,
+			MarkdownToolbarCommand.FOOTNOTE);
 	private Map<String, ?> extensionState = Map.of();
 
 	MarkdownEditorComponent() {

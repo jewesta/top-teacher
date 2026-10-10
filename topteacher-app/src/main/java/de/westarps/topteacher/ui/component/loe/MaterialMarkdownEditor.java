@@ -12,6 +12,7 @@ import com.vaadin.flow.shared.Registration;
 
 import de.westarps.topteacher.model.loe.LoeMaterialImage;
 import de.westarps.vaadin.markdown.MarkdownEditor;
+import de.westarps.vaadin.markdown.MarkdownToolbarCommand;
 import tools.jackson.databind.JsonNode;
 
 @SuppressWarnings("serial")
@@ -23,6 +24,7 @@ final class MaterialMarkdownEditor extends MarkdownEditor {
 
 	MaterialMarkdownEditor(final String value, final Collection<LoeMaterialImage> images) {
 		super(value);
+		showToolbarCommand(MarkdownToolbarCommand.FOOTNOTE);
 		setExtensionIds(List.of(EXTENSION_ID));
 		setImages(images);
 	}

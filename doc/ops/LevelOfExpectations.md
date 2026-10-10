@@ -56,6 +56,31 @@ diagrams, data, and similar material handed out with the exam.
 - It is authored in the dedicated `Material` tab.
 - Tasks refer to material in their wording; they do not own or duplicate it.
 
+#### Footnotes
+
+Editable Material Markdown provides a footnote toolbar command. It opens a
+dialog for the footnote text, inserts a simple numeric reference at the current
+cursor position, and appends the corresponding definition to the bottom of the
+same Markdown source:
+
+```markdown
+Eine Aussage mit Fußnote.[^1]
+
+[^1]: Der Fußnotentext.
+```
+
+The generated identifier is the next number after the highest numeric
+footnote identifier already present in that Material. Definitions written by
+hand may occur anywhere in the source; the Markdown renderer collects them and
+shows the local footnote list at the bottom of that Material's preview or
+read-only rendering. Numbering in this editor-local rendering is provisional
+for a future composed exam output, which may collect and renumber footnotes
+across several Markdown sources.
+
+The shared Markdown editor exposes the footnote command as an optional
+capability, but it is hidden in Aufgaben, EH, and other Markdown editors for
+now.
+
 #### Managed images
 
 Only Material Markdown supports managed images. Its image toolbar command opens

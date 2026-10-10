@@ -433,18 +433,25 @@ URL query parameters, matching the new criterion convention:
 
 ### Implementation status
 
-The criterion change and managed-image follow-up are implemented. Material now
-has the image command and shared upload dialog, direct file-drop handling,
-cursor insertion, content-relative width choices, session-scoped preview and
-inspection rendering, immutable deduplicated database storage, reference-aware
-cleanup, duplication reuse, save/discard behavior, and repository-enforced
-first-result locking. Existing declarations can be reopened at the cursor,
-edited with their description and width prefilled, and replaced through
-`Bild bearbeiten` / `Übernehmen`; the insert dialog presents its dashed drop
-target, `oder`, and file chooser as separate horizontal elements. Only the
-dashed area accepts dragged files. All other
-editable and rendered Markdown surfaces safely
-intercept file drops and explain the supported Material workflow.
+The criterion change, Material footnotes, and managed-image follow-up are
+implemented. Material now has the image command and shared upload dialog,
+direct file-drop handling, cursor insertion, content-relative width choices,
+session-scoped preview and inspection rendering, immutable deduplicated
+database storage, reference-aware cleanup, duplication reuse, save/discard
+behavior, and repository-enforced first-result locking. Existing declarations
+can be reopened at the cursor, edited with their description and width
+prefilled, and replaced through `Bild bearbeiten` / `Übernehmen`; the insert
+dialog presents its dashed drop target, `oder`, and file chooser as separate
+horizontal elements. Only the dashed area accepts dragged files. All other
+editable and rendered Markdown surfaces safely intercept file drops and explain
+the supported Material workflow.
+
+Editable Material Markdown also enables the shared editor's optional footnote
+command. The dialog inserts a numeric reference at the remembered cursor and
+appends its definition to the Material source; preview and locked rendering use
+the renderer's local footnote list. See the
+[operational specification](../doc/ops/LevelOfExpectations.md#footnotes) for the
+settled behavior.
 
 The settled processing policy is a 10 MiB upload limit, a 40-megapixel decoded
 limit, proportional resizing above 3,000 pixels on the longest side, JPEG
@@ -452,5 +459,5 @@ orientation correction, metadata removal through re-encoding, PNG transparency
 preservation, and 90% JPEG quality. Public image endpoints are deliberately not
 used; previews use active-session resources. See the
 [operational specification](../doc/ops/LevelOfExpectations.md#managed-images)
-for the authoritative behavior. Footnotes, line numbering, and exam-sheet
-print/export layout remain separate follow-up work.
+for the authoritative behavior. Cross-editor footnote collection, line
+numbering, and exam-sheet print/export layout remain separate follow-up work.
