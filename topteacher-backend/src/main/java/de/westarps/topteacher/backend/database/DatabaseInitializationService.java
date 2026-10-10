@@ -59,7 +59,7 @@ public class DatabaseInitializationService {
 		""";
 	private static final List<String> BUSINESS_TABLES = List.of("pupil", "course", "course_pupil", "exam", "exam_pupil",
 			"eh_part", "eh_category", "eh_task", "eh_requirement", "eh_criterion", "eh_criterion_result",
-			"eh_requirement_result", "exam_note_section");
+			"eh_requirement_result");
 
 	private final AppSettings appSettings;
 	private final DataSource dataSource;

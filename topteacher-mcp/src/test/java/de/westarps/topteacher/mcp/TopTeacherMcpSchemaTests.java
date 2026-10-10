@@ -49,7 +49,7 @@ class TopTeacherMcpSchemaTests {
 		assertThat(tool(LevelOfExpectationsMcpTools.class, "getLevelOfExpectations", int.class).annotations()
 				.readOnlyHint()).isTrue();
 		final McpTool creation = tool(LevelOfExpectationsMcpTools.class, "createLevelOfExpectations", int.class,
-				List.class, List.class);
+				List.class);
 		assertThat(creation.annotations().readOnlyHint()).isFalse();
 		assertThat(creation.annotations().destructiveHint()).isFalse();
 		assertThat(creation.annotations().openWorldHint()).isFalse();
@@ -95,8 +95,9 @@ class TopTeacherMcpSchemaTests {
 		});
 
 		final Map<String, Object> createProperties = properties(specifications, "create_level_of_expectations");
-		assertThat(createProperties).containsKeys("examId", "parts", "noteSections");
+		assertThat(createProperties).containsKeys("examId", "parts").doesNotContainKey("noteSections");
 		assertThat(map(createProperties.get("parts"))).containsEntry("type", "array");
+		assertThat(outputProperties(specifications, "get_level_of_expectations")).doesNotContainKey("noteSections");
 
 		final Map<String, Object> createCourseProperties = properties(specifications, "create_course_with_pupils");
 		assertThat(createCourseProperties).containsKeys("course", "roster", "resolutions").doesNotContainKey("context");

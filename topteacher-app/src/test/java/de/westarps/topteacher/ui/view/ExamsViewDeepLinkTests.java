@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -100,6 +101,8 @@ class ExamsViewDeepLinkTests {
 
 		assertThat(selectedExams()).containsExactly(EXAM);
 		assertThat(tabSheet().getSelectedTab().getLabel()).isEqualTo("Klausur");
+		assertThat(tabLabels()).containsExactly("Klausur", "Schüler:innen", "EH", "Ergebnisse", "Auswertung",
+				"Notenschlüssel");
 	}
 
 	@Test
@@ -180,6 +183,11 @@ class ExamsViewDeepLinkTests {
 
 	private TabSheet tabSheet() {
 		return components(view, TabSheet.class).getFirst();
+	}
+
+	private List<String> tabLabels() {
+		final TabSheet tabSheet = tabSheet();
+		return IntStream.range(0, tabSheet.getTabCount()).mapToObj(index -> tabSheet.getTabAt(index).getLabel()).toList();
 	}
 
 	private String levelOfExpectationsStatusIcon() {

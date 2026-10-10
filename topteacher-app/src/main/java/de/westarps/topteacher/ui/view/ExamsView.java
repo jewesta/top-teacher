@@ -51,7 +51,6 @@ import de.westarps.topteacher.ui.component.MultiSelectionGrid;
 import de.westarps.topteacher.ui.component.PupilAssignmentGrid;
 import de.westarps.topteacher.ui.component.RefreshRegistry;
 import de.westarps.topteacher.ui.component.loe.ExamEvaluationViewer;
-import de.westarps.topteacher.ui.component.loe.ExamNotesEditor;
 import de.westarps.topteacher.ui.component.loe.ExamResultsEditor;
 import de.westarps.topteacher.ui.component.loe.LevelOfExpectationsEditor;
 import de.westarps.topteacher.ui.component.loe.LevelOfExpectationsEditor.DesignState;
@@ -98,7 +97,6 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 	private final LevelOfExpectationsRepository levelOfExpectationsRepository;
 	private final GradingScaleRepository gradingScaleRepository;
 	private final LevelOfExpectationsEditor levelOfExpectationsEditor;
-	private final ExamNotesEditor examNotesEditor;
 	private final ExamResultsEditor examResultsEditor;
 	private final ExamEvaluationViewer examEvaluationViewer;
 	private final GradingScaleViewer gradingScaleViewer;
@@ -130,7 +128,6 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 	private Set<Integer> originalCreationPupilIds = Set.of();
 	private Tab pupilsTab;
 	private Tab levelOfExpectationsTab;
-	private Tab notesTab;
 	private Tab resultsTab;
 	private Tab evaluationTab;
 	private Tab gradingScaleTab;
@@ -145,7 +142,6 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 		this.gradingScaleRepository = gradingScaleRepository;
 		this.levelOfExpectationsEditor = new LevelOfExpectationsEditor(levelOfExpectationsRepository,
 				gradingScaleRepository);
-		this.examNotesEditor = new ExamNotesEditor(levelOfExpectationsRepository);
 		this.examResultsEditor = new ExamResultsEditor(courseRepository, examRepository, levelOfExpectationsRepository,
 				gradingScaleRepository);
 		this.examEvaluationViewer = new ExamEvaluationViewer(courseRepository, examRepository,
@@ -548,7 +544,7 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 		final String duplicateExamTitle = nextAvailableTitle(formData.getCourse().id(), formData.getTitle());
 		final Exam duplicatedExam = examRepository.save(new Exam(null, formData.getCourse().id(), duplicateExamTitle,
 				formData.getDate(), null, selectedExam.gradingScaleId()));
-		levelOfExpectationsRepository.copyDesignAndNotes(selectedExam.id(), duplicatedExam.id());
+		levelOfExpectationsRepository.copyDesign(selectedExam.id(), duplicatedExam.id());
 
 		duplicateDialog.close();
 		if (!formData.getCourse().id().equals(selectedCourse.id())) {
@@ -604,7 +600,6 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 		if (levelOfExpectationsTab == null) {
 			pupilsTab = getContextTabs().add("Schüler:innen", pupilAssignmentGrid);
 			levelOfExpectationsTab = getContextTabs().add(new Span("EH"), levelOfExpectationsEditor);
-			notesTab = getContextTabs().add("Notizen", examNotesEditor);
 			resultsTab = getContextTabs().add("Ergebnisse", examResultsEditor);
 			evaluationTab = getContextTabs().add("Auswertung", examEvaluationViewer);
 			gradingScaleTab = getContextTabs().add("Notenschlüssel", gradingScaleViewer);
@@ -613,7 +608,6 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 		refreshPupilAssignments();
 		levelOfExpectationsEditor.setExam(exam);
 		updateLevelOfExpectationsTabLabel(exam);
-		examNotesEditor.setExam(exam);
 		examResultsEditor.setExam(exam);
 		examEvaluationViewer.setExam(exam);
 		gradingScaleViewer.setExam(exam);
@@ -624,7 +618,6 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 		if (pupilsTab == null) {
 			pupilAssignmentGrid.setRows(List.of(), List.of());
 			levelOfExpectationsEditor.setExam(null);
-			examNotesEditor.setExam(null);
 			examResultsEditor.setExam(null);
 			examEvaluationViewer.setExam(null);
 			gradingScaleViewer.setExam(null);
@@ -634,26 +627,23 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 
 		if (getContextTabs().getSelectedTab() == pupilsTab
 				|| getContextTabs().getSelectedTab() == levelOfExpectationsTab
-				|| getContextTabs().getSelectedTab() == notesTab || getContextTabs().getSelectedTab() == resultsTab
+				|| getContextTabs().getSelectedTab() == resultsTab
 				|| getContextTabs().getSelectedTab() == evaluationTab
 				|| getContextTabs().getSelectedTab() == gradingScaleTab) {
 			getContextTabs().setSelectedIndex(0);
 		}
 		getContextTabs().remove(pupilsTab);
 		getContextTabs().remove(levelOfExpectationsTab);
-		getContextTabs().remove(notesTab);
 		getContextTabs().remove(resultsTab);
 		getContextTabs().remove(evaluationTab);
 		getContextTabs().remove(gradingScaleTab);
 		pupilsTab = null;
 		levelOfExpectationsTab = null;
-		notesTab = null;
 		resultsTab = null;
 		evaluationTab = null;
 		gradingScaleTab = null;
 		pupilAssignmentGrid.setRows(List.of(), List.of());
 		levelOfExpectationsEditor.setExam(null);
-		examNotesEditor.setExam(null);
 		examResultsEditor.setExam(null);
 		examEvaluationViewer.setExam(null);
 		gradingScaleViewer.setExam(null);

@@ -224,9 +224,3 @@ Regular and bonus points are aggregated independently.
 
 For example, with a grading-scale maximum of 100, 99 regular points and four
 bonus points remain visible as `99 (+ 4)`, while the effective result is 100.
-
-## Notes
-
-An exam may contain several free-form note sections. Each section has a title,
-markdown description, and sort order. Notes are not fixed assessment categories
-and do not contribute points.

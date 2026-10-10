@@ -19,7 +19,6 @@ hierarchy and show the rounded achieved result for every requirement.
 | Criterion result indicators | No | Yes |
 | Adjustment breakdown | No | Yes, when non-zero |
 | Requirement comments | No | Yes |
-| Exam notes | No | Yes |
 | Grading scale | Yes | Yes |
 | Draft or teacher watermark | No | Optional |
 
@@ -50,7 +49,7 @@ the marker controls.
 - Criterion annotations are removed while their text remains in the document.
 - No criterion identity, point pill, checkbox state, or status symbol is shown.
 - The existing achieved-result cell contains the rounded requirement result.
-- Adjustment details, requirement comments, and teacher notes are omitted.
+- Adjustment details and requirement comments are omitted.
 
 ## Teacher version
 
@@ -69,8 +68,7 @@ introducing another table column.
   German comma form for a half point, for example
   `Frei vergebene Punkte: +0,5`.
 - The requirement comment remains in the neighboring requirement-text cell.
-- Existing teacher-only note sections and the optional watermark remain
-  available.
+- The optional watermark remains available.
 
 The status symbol and awarded-value pill are explanatory output only. They must
 not resemble interactive checkboxes or controls.

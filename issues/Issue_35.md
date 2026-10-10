@@ -251,6 +251,9 @@ The Issue 35 work will be reapplied in reviewable stages:
 7. retain the concise point-distribution label without the redundant
    `passend` text.
 
+Current progress: the current-main foundation and stage 1 (complete removal of
+the accidental Notes feature) are complete. Stages 2 through 7 remain pending.
+
 The preserved first pass demonstrated the intended end state:
 
 - `Aufgaben`, `Material`, and `EH` are separate tabs in workflow order and use

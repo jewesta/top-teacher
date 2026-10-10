@@ -21,7 +21,6 @@ import de.westarps.topteacher.backend.repo.GradingScaleRepository;
 import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.mcp.LevelOfExpectationsMcpTools.CategoryDraft;
 import de.westarps.topteacher.mcp.LevelOfExpectationsMcpTools.LevelOfExpectationsView;
-import de.westarps.topteacher.mcp.LevelOfExpectationsMcpTools.NoteSectionDraft;
 import de.westarps.topteacher.mcp.LevelOfExpectationsMcpTools.PartDraft;
 import de.westarps.topteacher.mcp.LevelOfExpectationsMcpTools.RequirementDraft;
 import de.westarps.topteacher.mcp.LevelOfExpectationsMcpTools.TaskDraft;
@@ -32,7 +31,6 @@ import de.westarps.topteacher.model.Lifecycle;
 import de.westarps.topteacher.model.SchoolClass;
 import de.westarps.topteacher.model.SchoolYear;
 import de.westarps.topteacher.model.Subject;
-import de.westarps.topteacher.model.loe.ExamNoteSection;
 import de.westarps.topteacher.model.loe.LoeCategory;
 import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoeRequirement;
@@ -64,15 +62,12 @@ class LevelOfExpectationsMcpToolsTests {
 		when(levelOfExpectations.saveTask(any())).thenReturn(new LoeTask(13, 12, "Aufgabe 1", 0));
 		when(levelOfExpectations.saveRequirement(any()))
 				.thenReturn(new LoeRequirement(14, 13, "Erreicht [das Ziel](eh:1).", 5, false, 0));
-		when(levelOfExpectations.saveNoteSection(any()))
-				.thenReturn(new ExamNoteSection(15, exam.id(), "Hinweis", "Notiz", 0));
 
 		final RequirementDraft requirement = new RequirementDraft("Erreicht [das Ziel](eh:1).", 5, false);
 		final List<PartDraft> parts = List.of(new PartDraft("Teil A", List.of(new CategoryDraft("Inhalt",
 				"Beschreibung", List.of(new TaskDraft("Aufgabe 1", List.of(requirement)))))));
 
-		final LevelOfExpectationsView result = tools.createLevelOfExpectations(exam.id(), parts,
-				List.of(new NoteSectionDraft("Hinweis", "Notiz")));
+		final LevelOfExpectationsView result = tools.createLevelOfExpectations(exam.id(), parts);
 
 		assertThat(result.exam().id()).isEqualTo(exam.id());
 		verify(levelOfExpectations).savePart(new LoePart(null, exam.id(), "Teil A", 0));
@@ -80,7 +75,6 @@ class LevelOfExpectationsMcpToolsTests {
 		verify(levelOfExpectations).saveTask(new LoeTask(null, 12, "Aufgabe 1", 0));
 		verify(levelOfExpectations)
 				.saveRequirement(new LoeRequirement(null, 13, "Erreicht [das Ziel](eh:1).", 5, false, 0));
-		verify(levelOfExpectations).saveNoteSection(new ExamNoteSection(null, exam.id(), "Hinweis", "Notiz", 0));
 	}
 
 	@Test
@@ -88,8 +82,7 @@ class LevelOfExpectationsMcpToolsTests {
 		when(levelOfExpectations.findPartsByExamId(exam.id()))
 				.thenReturn(List.of(new LoePart(11, exam.id(), "Vorhanden", 0)));
 
-		assertThatThrownBy(
-				() -> tools.createLevelOfExpectations(exam.id(), List.of(new PartDraft("Neu", List.of())), List.of()))
+		assertThatThrownBy(() -> tools.createLevelOfExpectations(exam.id(), List.of(new PartDraft("Neu", List.of()))))
 						.isInstanceOf(IllegalStateException.class)
 						.hasMessageContaining("already has a level of expectations");
 
@@ -101,7 +94,7 @@ class LevelOfExpectationsMcpToolsTests {
 		final String oversizedTitle = "x".repeat(501);
 
 		assertThatThrownBy(() -> tools.createLevelOfExpectations(exam.id(),
-				List.of(new PartDraft(oversizedTitle, List.of())), List.of()))
+				List.of(new PartDraft(oversizedTitle, List.of()))))
 						.isInstanceOf(IllegalArgumentException.class).hasMessageContaining("part title");
 
 		verify(levelOfExpectations, never()).savePart(any());

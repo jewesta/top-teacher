@@ -109,7 +109,6 @@ body {
 .tt-export-info-box,
 .tt-eh-table,
 .tt-summary-table,
-.tt-notes,
 .tt-grade-scale {
     -fs-table-paginate: paginate;
     border: 1px solid #111;
@@ -168,7 +167,6 @@ h4 {
 
 .tt-eh-table tr,
 .tt-summary-table tr,
-.tt-notes tr,
 .tt-grade-scale tr {
     page-break-inside: avoid;
 }
@@ -176,8 +174,6 @@ h4 {
 .tt-eh-table th,
 .tt-eh-table td,
 .tt-summary-table td,
-.tt-notes th,
-.tt-notes td,
 .tt-grade-scale th,
 .tt-grade-scale td {
     border: 1px solid #111;
@@ -186,7 +182,6 @@ h4 {
 }
 
 .tt-eh-table th,
-.tt-notes th,
 .tt-grade-scale th {
     font-weight: 700;
     text-align: left;
@@ -256,11 +251,6 @@ h4 {
     font-family: "Kalam", "Frugal Sans", sans-serif;
     font-weight: 400;
     margin-top: 1.2mm;
-}
-
-.tt-notes td {
-    font-family: "Kalam", "Frugal Sans", sans-serif;
-    font-weight: 400;
 }
 
 .tt-criterion {
@@ -374,14 +364,6 @@ h4 {
 
 .tt-summary-table .tt-total-grade-value {
     text-align: center;
-}
-
-.tt-notes-section {
-    margin-top: 5mm;
-}
-
-.tt-notes td {
-    min-height: 14mm;
 }
 
 .tt-grade-scale-section {

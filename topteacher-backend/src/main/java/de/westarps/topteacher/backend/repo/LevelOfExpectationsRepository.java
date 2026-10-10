@@ -14,7 +14,6 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import de.westarps.topteacher.model.loe.ExamNoteSection;
 import de.westarps.topteacher.model.loe.LoeCategory;
 import de.westarps.topteacher.model.loe.LoeCriterion;
 import de.westarps.topteacher.model.loe.LoeCriterionParser;
@@ -38,7 +37,6 @@ public class LevelOfExpectationsRepository {
 	private final RowMapper<LoeCriterion> criterionRowMapper = this::mapCriterion;
 	private final RowMapper<LoeCriterionResult> criterionResultRowMapper = this::mapCriterionResult;
 	private final RowMapper<LoeRequirementResult> requirementResultRowMapper = this::mapRequirementResult;
-	private final RowMapper<ExamNoteSection> noteSectionRowMapper = this::mapNoteSection;
 
 	public LevelOfExpectationsRepository(final NamedParameterJdbcTemplate jdbc) {
 		this.jdbc = jdbc;
@@ -128,15 +126,6 @@ public class LevelOfExpectationsRepository {
 			""", Map.of("examId", examId, "pupilId", pupilId), requirementResultRowMapper);
 	}
 
-	public List<ExamNoteSection> findNoteSectionsByExamId(final int examId) {
-		return jdbc.query("""
-			select id, exam_id, title, description_markdown, sort_order
-			from exam_note_section
-			where exam_id = :examId
-			order by sort_order, id
-			""", Map.of("examId", examId), noteSectionRowMapper);
-	}
-
 	public boolean hasResultsForExam(final int examId) {
 		final Integer count = jdbc.queryForObject("""
 			select count(*)
@@ -163,7 +152,7 @@ public class LevelOfExpectationsRepository {
 	}
 
 	@Transactional
-	public void copyDesignAndNotes(final int sourceExamId, final int targetExamId) {
+	public void copyDesign(final int sourceExamId, final int targetExamId) {
 		final Map<Integer, Integer> partIds = new HashMap<>();
 		final Map<Integer, Integer> categoryIds = new HashMap<>();
 		final Map<Integer, Integer> taskIds = new HashMap<>();
@@ -189,11 +178,6 @@ public class LevelOfExpectationsRepository {
 			saveRequirement(
 					new LoeRequirement(null, taskIds.get(requirement.taskId()), requirement.descriptionMarkdown(),
 							requirement.maxPoints(), requirement.bonus(), requirement.sortOrder()));
-		}
-
-		for (final ExamNoteSection noteSection : findNoteSectionsByExamId(sourceExamId)) {
-			saveNoteSection(new ExamNoteSection(null, targetExamId, noteSection.title(),
-					noteSection.descriptionMarkdown(), noteSection.sortOrder()));
 		}
 	}
 
@@ -344,23 +328,6 @@ public class LevelOfExpectationsRepository {
 			""", parameters);
 	}
 
-	public ExamNoteSection saveNoteSection(final ExamNoteSection noteSection) {
-		if (noteSection.id() == null) {
-			return insertNoteSection(noteSection);
-		}
-		jdbc.update("""
-			update exam_note_section
-			set title = :title,
-			    description_markdown = :descriptionMarkdown,
-			    sort_order = :sortOrder
-			where id = :id
-			""",
-				new MapSqlParameterSource().addValue("id", noteSection.id()).addValue("title", noteSection.title())
-						.addValue("descriptionMarkdown", noteSection.descriptionMarkdown())
-						.addValue("sortOrder", noteSection.sortOrder()));
-		return noteSection;
-	}
-
 	public void deletePart(final int id) {
 		assertNoResultsForExam(examIdForPart(id));
 		assertNoCriterionResultsForPart(id);
@@ -387,10 +354,6 @@ public class LevelOfExpectationsRepository {
 		assertNoCriterionResultsForRequirement(id);
 		assertNoRequirementResultsForRequirement(id);
 		deleteById("eh_requirement", id);
-	}
-
-	public void deleteNoteSection(final int id) {
-		deleteById("exam_note_section", id);
 	}
 
 	public int nextPartSortOrder(final int examId) {
@@ -425,14 +388,6 @@ public class LevelOfExpectationsRepository {
 			""", taskId);
 	}
 
-	public int nextNoteSectionSortOrder(final int examId) {
-		return nextSortOrder("""
-			select coalesce(max(sort_order), -1) + 1
-			from exam_note_section
-			where exam_id = :parentId
-			""", examId);
-	}
-
 	public void movePart(final LoePart part, final int offset) {
 		assertNoResultsForExam(part.examId());
 		final List<LoePart> siblings = findPartsByExamId(part.examId());
@@ -453,12 +408,6 @@ public class LevelOfExpectationsRepository {
 			final int offset) {
 		assertNoResultsForExam(examIdForRequirement(requirement.id()));
 		move("eh_requirement", siblings.stream().map(SortableItem::fromRequirement).toList(), requirement.id(), offset);
-	}
-
-	public void moveNoteSection(final ExamNoteSection noteSection, final int offset) {
-		final List<ExamNoteSection> siblings = findNoteSectionsByExamId(noteSection.examId());
-		move("exam_note_section", siblings.stream().map(SortableItem::fromNoteSection).toList(), noteSection.id(),
-				offset);
 	}
 
 	private void validatePartCorrectionMode(final LoePart part) {
@@ -702,23 +651,6 @@ public class LevelOfExpectationsRepository {
 				.addValue("active", criterion.active());
 	}
 
-	private ExamNoteSection insertNoteSection(final ExamNoteSection noteSection) {
-		final KeyHolder keyHolder = new GeneratedKeyHolder();
-		jdbc.update("""
-			insert into exam_note_section (exam_id, title, description_markdown, sort_order)
-			values (:examId, :title, :descriptionMarkdown, :sortOrder)
-			""",
-				new MapSqlParameterSource().addValue("examId", noteSection.examId())
-						.addValue("title", noteSection.title())
-						.addValue("descriptionMarkdown", noteSection.descriptionMarkdown())
-						.addValue("sortOrder", noteSection.sortOrder()),
-				keyHolder, new String[] {
-						"id"
-				});
-		return new ExamNoteSection(generatedId(keyHolder, "note section"), noteSection.examId(), noteSection.title(),
-				noteSection.descriptionMarkdown(), noteSection.sortOrder());
-	}
-
 	private void deleteById(final String table, final int id) {
 		jdbc.update("delete from " + table + " where id = :id", Map.of("id", id));
 	}
@@ -894,11 +826,6 @@ public class LevelOfExpectationsRepository {
 				resultSet.getString("comment_text"));
 	}
 
-	private ExamNoteSection mapNoteSection(final ResultSet resultSet, final int rowNumber) throws SQLException {
-		return new ExamNoteSection(resultSet.getInt("id"), resultSet.getInt("exam_id"), resultSet.getString("title"),
-				resultSet.getString("description_markdown"), resultSet.getInt("sort_order"));
-	}
-
 	private record SortableItem(Integer id, int sortOrder) {
 
 		static SortableItem fromPart(final LoePart part) {
@@ -915,10 +842,6 @@ public class LevelOfExpectationsRepository {
 
 		static SortableItem fromRequirement(final LoeRequirement requirement) {
 			return new SortableItem(requirement.id(), requirement.sortOrder());
-		}
-
-		static SortableItem fromNoteSection(final ExamNoteSection noteSection) {
-			return new SortableItem(noteSection.id(), noteSection.sortOrder());
 		}
 	}
 }

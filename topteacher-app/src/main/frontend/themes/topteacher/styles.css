@@ -513,10 +513,6 @@ vaadin-app-layout::part(navbar) {
 	padding-right: 0;
 }
 
-.tt-exam-note-section::part(content) {
-	padding-right: 0;
-}
-
 .tt-stepper-combo-box {
 	gap: var(--lumo-space-xs);
 }

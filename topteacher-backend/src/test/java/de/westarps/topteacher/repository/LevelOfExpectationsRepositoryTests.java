@@ -28,7 +28,6 @@ import de.westarps.topteacher.model.Pupil;
 import de.westarps.topteacher.model.SchoolClass;
 import de.westarps.topteacher.model.SchoolYear;
 import de.westarps.topteacher.model.Subject;
-import de.westarps.topteacher.model.loe.ExamNoteSection;
 import de.westarps.topteacher.model.loe.LoeCategory;
 import de.westarps.topteacher.model.loe.LoeCriterion;
 import de.westarps.topteacher.model.loe.LoeCriterionResult;
@@ -119,25 +118,6 @@ class LevelOfExpectationsRepositoryTests {
 				.containsExactly("B", "A");
 		assertThat(levelOfExpectationsRepository.nextPartSortOrder(exam.id())).isEqualTo(2);
 		assertThat(first.id()).isNotNull();
-	}
-
-	@Test
-	void savesMovesAndDeletesNoteSections() {
-		final Exam exam = createExam(2038, "EH Notes");
-		final ExamNoteSection first = levelOfExpectationsRepository
-				.saveNoteSection(new ExamNoteSection(null, exam.id(), "Hinweise", "Lies genau.", 0));
-		final ExamNoteSection second = levelOfExpectationsRepository
-				.saveNoteSection(new ExamNoteSection(null, exam.id(), "Notenschluessel", "15 Punkte = 1", 1));
-
-		levelOfExpectationsRepository.moveNoteSection(second, -1);
-
-		assertThat(levelOfExpectationsRepository.findNoteSectionsByExamId(exam.id())).extracting(ExamNoteSection::title)
-				.containsExactly("Notenschluessel", "Hinweise");
-
-		levelOfExpectationsRepository.deleteNoteSection(first.id());
-
-		assertThat(levelOfExpectationsRepository.findNoteSectionsByExamId(exam.id()))
-				.containsExactly(new ExamNoteSection(second.id(), exam.id(), "Notenschluessel", "15 Punkte = 1", 0));
 	}
 
 	@Test
@@ -319,7 +299,7 @@ class LevelOfExpectationsRepositoryTests {
 	}
 
 	@Test
-	void copiesDesignAndNotesWithoutResults() {
+	void copiesDesignWithoutResults() {
 		final Exam sourceExam = createExam(2042, "EH Copy Source");
 		final Exam targetExam = createExam(2043, "EH Copy Target");
 		final LoePart part = levelOfExpectationsRepository
@@ -330,8 +310,6 @@ class LevelOfExpectationsRepositoryTests {
 				.saveTask(new LoeTask(null, category.id(), "Teilaufgabe 1", 0));
 		final LoeRequirement requirement = levelOfExpectationsRepository.saveRequirement(
 				new LoeRequirement(null, task.id(), "Nutzt die [korrekte Zeitform](eh:1).", 5, true, 0));
-		final ExamNoteSection noteSection = levelOfExpectationsRepository
-				.saveNoteSection(new ExamNoteSection(null, sourceExam.id(), "Hinweis", "Bitte sauber lesen.", 0));
 		final LoeCriterion criterion = levelOfExpectationsRepository.findActiveCriteriaByExamId(sourceExam.id())
 				.getFirst();
 		final Pupil pupil = pupilRepository.save(new Pupil(null, "Test", "Kopie", Lifecycle.ACTIVE));
@@ -339,7 +317,7 @@ class LevelOfExpectationsRepositoryTests {
 		levelOfExpectationsRepository
 				.saveRequirementResult(new LoeRequirementResult(requirement.id(), pupil.id(), 4, "Schon erfasst."));
 
-		levelOfExpectationsRepository.copyDesignAndNotes(sourceExam.id(), targetExam.id());
+		levelOfExpectationsRepository.copyDesign(sourceExam.id(), targetExam.id());
 
 		final LoePart copiedPart = levelOfExpectationsRepository.findPartsByExamId(targetExam.id()).getFirst();
 		final LoeCategory copiedCategory = levelOfExpectationsRepository.findCategoriesByExamId(targetExam.id())
@@ -360,11 +338,6 @@ class LevelOfExpectationsRepositoryTests {
 		assertThat(levelOfExpectationsRepository.findActiveCriteriaByExamId(targetExam.id()))
 				.extracting(LoeCriterion::criterionKey, LoeCriterion::label)
 				.containsExactly(tuple("1", "korrekte Zeitform"));
-		final ExamNoteSection copiedNoteSection = levelOfExpectationsRepository
-				.findNoteSectionsByExamId(targetExam.id()).getFirst();
-		assertThat(copiedNoteSection).isEqualTo(new ExamNoteSection(copiedNoteSection.id(), targetExam.id(),
-				noteSection.title(), noteSection.descriptionMarkdown(), noteSection.sortOrder()));
-		assertThat(copiedNoteSection.id()).isNotEqualTo(noteSection.id());
 		assertThat(levelOfExpectationsRepository.findCriterionResultsByExamAndPupil(targetExam.id(), pupil.id()))
 				.isEmpty();
 		assertThat(levelOfExpectationsRepository.findRequirementResultsByExamAndPupil(targetExam.id(), pupil.id()))

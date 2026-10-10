@@ -19,7 +19,6 @@ import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.GradingScale;
 import de.westarps.topteacher.model.GradingScaleRange;
-import de.westarps.topteacher.model.loe.ExamNoteSection;
 import de.westarps.topteacher.model.loe.LoeCategory;
 import de.westarps.topteacher.model.loe.LoeCriterion;
 import de.westarps.topteacher.model.loe.LoePart;
@@ -38,7 +37,6 @@ public class LevelOfExpectationsMcpTools {
 	private static final int MAXIMUM_TASKS_PER_CATEGORY = 100;
 	private static final int MAXIMUM_REQUIREMENTS_PER_TASK = 200;
 	private static final int MAXIMUM_TOTAL_REQUIREMENTS = 1_000;
-	private static final int MAXIMUM_NOTE_SECTIONS = 50;
 	private static final int MAXIMUM_TITLE_LENGTH = 500;
 	private static final int MAXIMUM_MARKDOWN_LENGTH = 50_000;
 
@@ -56,7 +54,7 @@ public class LevelOfExpectationsMcpTools {
 	}
 
 	@McpTool(name = "get_level_of_expectations", title = "Get a level of expectations",
-			description = "Get an exam's complete level-of-expectations design, criteria, notes, point totals, and grading scale.",
+			description = "Get an exam's complete level-of-expectations design, criteria, point totals, and grading scale.",
 			generateOutputSchema = true, annotations = @McpTool.McpAnnotations(readOnlyHint = true,
 					destructiveHint = false, idempotentHint = true, openWorldHint = false))
 	public LevelOfExpectationsView getLevelOfExpectations(
@@ -70,29 +68,25 @@ public class LevelOfExpectationsMcpTools {
 		final List<LoeCriterion> criteria = levelOfExpectations.findActiveCriteriaByExamId(examId);
 		final List<PartView> partViews = parts.stream()
 				.map(part -> partView(part, categories, tasks, requirements, criteria)).toList();
-		final List<NoteSectionView> noteViews = levelOfExpectations.findNoteSectionsByExamId(examId).stream()
-				.map(LevelOfExpectationsMcpTools::noteView).toList();
 		final GradingScaleView gradingScale = gradingScaleView(exam.gradingScaleId());
 		final boolean correctionMode = levelOfExpectations.hasResultsForExam(examId);
 		return new LevelOfExpectationsView(CourseMcpTools.courseView(course),
 				ExamMcpTools.examView(exam, exams.findNumberById(examId).orElse(null), correctionMode), gradingScale,
-				pointSummary(requirements, gradingScale), correctionMode, partViews, noteViews);
+				pointSummary(requirements, gradingScale), correctionMode, partViews);
 	}
 
 	@Transactional
 	@McpTool(name = "create_level_of_expectations", title = "Create a level of expectations",
-			description = "Create a complete nested level of expectations and optional notes for a blank exam. Existing designs or notes are never overwritten. List order becomes display order. Use [label](eh:key[/points]) Markdown links to define criteria; an omitted value means one point, and comma or dot half-point values are accepted.",
+			description = "Create a complete nested level of expectations for a blank exam. Existing designs are never overwritten. List order becomes display order. Use [label](eh:key[/points]) Markdown links to define criteria; an omitted value means one point, and comma or dot half-point values are accepted.",
 			generateOutputSchema = true, annotations = @McpTool.McpAnnotations(readOnlyHint = false,
 					destructiveHint = false, idempotentHint = false, openWorldHint = false))
 	public LevelOfExpectationsView createLevelOfExpectations(@McpToolParam(
 			description = "Exam ID returned by list_exams. The exam must have a blank design.") final int examId,
 			@McpToolParam(
-					description = "Ordered nested parts, categories, tasks, and requirements.") final List<PartDraft> parts,
-			@McpToolParam(required = false,
-					description = "Optional ordered note sections. Omit for no notes.") final List<NoteSectionDraft> noteSections) {
+					description = "Ordered nested parts, categories, tasks, and requirements.") final List<PartDraft> parts) {
 		requireExam(examId);
 		assertBlankDesign(examId);
-		validateDraft(parts, noteSections);
+		validateDraft(parts);
 
 		for (int partIndex = 0; partIndex < parts.size(); partIndex++) {
 			final PartDraft partDraft = parts.get(partIndex);
@@ -115,33 +109,20 @@ public class LevelOfExpectationsMcpTools {
 				}
 			}
 		}
-
-		final List<NoteSectionDraft> notes = noteSections == null ? List.of() : noteSections;
-		for (int noteIndex = 0; noteIndex < notes.size(); noteIndex++) {
-			final NoteSectionDraft note = notes.get(noteIndex);
-			levelOfExpectations.saveNoteSection(
-					new ExamNoteSection(null, examId, note.title(), markdown(note.descriptionMarkdown()), noteIndex));
-		}
 		return getLevelOfExpectations(examId);
 	}
 
 	private void assertBlankDesign(final int examId) {
-		if (!levelOfExpectations.findPartsByExamId(examId).isEmpty()
-				|| !levelOfExpectations.findNoteSectionsByExamId(examId).isEmpty()
-				|| levelOfExpectations.hasResultsForExam(examId)) {
-			throw new IllegalStateException(
-					"Exam " + examId + " already has a level of expectations, notes, or saved results.");
+		if (!levelOfExpectations.findPartsByExamId(examId).isEmpty() || levelOfExpectations.hasResultsForExam(examId)) {
+			throw new IllegalStateException("Exam " + examId + " already has a level of expectations or saved results.");
 		}
 	}
 
-	private static void validateDraft(final List<PartDraft> parts, final List<NoteSectionDraft> noteSections) {
+	private static void validateDraft(final List<PartDraft> parts) {
 		boundedList(parts, "parts", MAXIMUM_PARTS);
 		if (parts.isEmpty()) {
 			throw new IllegalArgumentException("parts must not be empty");
 		}
-		final List<NoteSectionDraft> notes = noteSections == null ? List.of() : noteSections;
-		boundedList(notes, "noteSections", MAXIMUM_NOTE_SECTIONS);
-
 		int requirementCount = 0;
 		for (final PartDraft part : parts) {
 			boundedText(part.title(), "part title", MAXIMUM_TITLE_LENGTH, false);
@@ -168,10 +149,6 @@ public class LevelOfExpectationsMcpTools {
 		if (requirementCount > MAXIMUM_TOTAL_REQUIREMENTS) {
 			throw new IllegalArgumentException(
 					"level of expectations must not contain more than " + MAXIMUM_TOTAL_REQUIREMENTS + " requirements");
-		}
-		for (final NoteSectionDraft note : notes) {
-			boundedText(note.title(), "note section title", MAXIMUM_TITLE_LENGTH, false);
-			boundedText(note.descriptionMarkdown(), "note section descriptionMarkdown", MAXIMUM_MARKDOWN_LENGTH, true);
 		}
 	}
 
@@ -274,23 +251,18 @@ public class LevelOfExpectationsMcpTools {
 				criterion.sortOrder());
 	}
 
-	private static NoteSectionView noteView(final ExamNoteSection note) {
-		return new NoteSectionView(note.id(), note.title(), note.descriptionMarkdown(), note.sortOrder());
-	}
-
 	private static String markdown(final String value) {
 		return value == null ? "" : value;
 	}
 
 	public record LevelOfExpectationsView(CourseView course, ExamView exam, GradingScaleView gradingScale,
-			PointSummaryView points, boolean correctionMode, List<PartView> parts, List<NoteSectionView> noteSections) {
+			PointSummaryView points, boolean correctionMode, List<PartView> parts) {
 
 		public LevelOfExpectationsView {
 			Objects.requireNonNull(course, "course");
 			Objects.requireNonNull(exam, "exam");
 			Objects.requireNonNull(points, "points");
 			parts = List.copyOf(Objects.requireNonNull(parts, "parts"));
-			noteSections = List.copyOf(Objects.requireNonNull(noteSections, "noteSections"));
 		}
 	}
 
@@ -342,9 +314,6 @@ public class LevelOfExpectationsMcpTools {
 	public record CriterionView(int id, String key, String label, int pointUnits, int sortOrder) {
 	}
 
-	public record NoteSectionView(int id, String title, String descriptionMarkdown, int sortOrder) {
-	}
-
 	public record PartDraft(String title, List<CategoryDraft> categories) {
 
 		public PartDraft {
@@ -367,8 +336,5 @@ public class LevelOfExpectationsMcpTools {
 	}
 
 	public record RequirementDraft(String descriptionMarkdown, int maxPoints, boolean bonus) {
-	}
-
-	public record NoteSectionDraft(String title, String descriptionMarkdown) {
 	}
 }

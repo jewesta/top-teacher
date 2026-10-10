@@ -55,6 +55,16 @@ class DatabaseInitializationServiceTests {
 	}
 
 	@Test
+	void dropsTheLegacyExamNoteSectionTableWhenTheSchemaIsReapplied() {
+		jdbc.execute("create table exam_note_section (id integer primary key)");
+		assertThat(legacyNoteTableCount()).isOne();
+
+		new ResourceDatabasePopulator(new ClassPathResource("db/schema.sql")).execute(dataSource);
+
+		assertThat(legacyNoteTableCount()).isZero();
+	}
+
+	@Test
 	void skipsFirstStartPromptWhenDatabaseAlreadyContainsBusinessData() {
 		jdbc.update("""
 			insert into pupil (name, surname, lifecycle)
@@ -253,6 +263,14 @@ class DatabaseInitializationServiceTests {
 
 	private int countRows(final String table) {
 		return count("select count(*) from " + table);
+	}
+
+	private int legacyNoteTableCount() {
+		return count("""
+			select count(*)
+			from information_schema.tables
+			where table_name = 'EXAM_NOTE_SECTION'
+			""");
 	}
 
 	private int count(final String sql) {

@@ -21,7 +21,6 @@ import de.westarps.topteacher.model.Pupil;
 import de.westarps.topteacher.model.SchoolClass;
 import de.westarps.topteacher.model.SchoolYear;
 import de.westarps.topteacher.model.Subject;
-import de.westarps.topteacher.model.loe.ExamNoteSection;
 import de.westarps.topteacher.model.loe.LoeCategory;
 import de.westarps.topteacher.model.loe.LoeCriterion;
 import de.westarps.topteacher.model.loe.LoeCriterionResult;
@@ -65,7 +64,6 @@ class LevelOfExpectationsExportModelFactoryTests {
 		assertThat(bonusRequirement.maxPointsDisplayName()).isEqualTo("(2)");
 		assertThat(bonusRequirement.achievedPointsDisplayName()).isEqualTo("(1)");
 
-		assertThat(model.noteSections()).isEmpty();
 		assertThat(new HtmlRenderer().renderModel("export/level-of-expectations-pupil.thymeleaf.html", model))
 				.doesNotContain("tt-adjustment", "Frei vergebene Punkte");
 	}
@@ -98,7 +96,6 @@ class LevelOfExpectationsExportModelFactoryTests {
 		assertThat(firstRequirement.description().value()).contains("tt-criterion-badge\">0</span>");
 		assertThat(firstRequirement.description().value()).doesNotContain("eh:");
 		assertThat(firstRequirement.adjustmentDisplayName()).isEqualTo("Frei vergebene Punkte: +0,5");
-		assertThat(model.noteSections().getFirst().description().value()).contains("<em>Notiz</em>");
 
 		final String html = new HtmlRenderer().renderModel("export/level-of-expectations-teacher.thymeleaf.html", model);
 		assertThat(html).contains("class=\"tt-adjustment\"").contains("Frei vergebene Punkte: +0,5");
@@ -127,7 +124,6 @@ class LevelOfExpectationsExportModelFactoryTests {
 						new LoeCriterion(11, 1, "criterion-b", "Wortwahl", 2, 1, true),
 						new LoeCriterion(12, 1, "criterion-c", "Belege", 7, 2, true)),
 				List.of(new LoeCriterionResult(10, 1, 3), new LoeCriterionResult(11, 1, 0),
-						new LoeCriterionResult(12, 1, 3)),
-				List.of(new ExamNoteSection(1, 1, "Hinweis", "*Notiz*", 0)));
+						new LoeCriterionResult(12, 1, 3)));
 	}
 }

@@ -3,7 +3,7 @@
 The original Kalam TTF files are kept in this folder together with the SIL Open Font License file.
 The `*-subset.ttf` files are generated from those originals for the PDF export.
 
-The subsets remove glyphs that are not needed for TopTeacher's teacher notes, mainly large writing
+The subsets remove glyphs that are not needed for TopTeacher's teacher comments, mainly large writing
 systems outside the Latin script. This keeps generated PDFs much smaller while preserving the
 characters expected for German, English, and Spanish text.
 
