@@ -56,6 +56,46 @@ diagrams, data, and similar material handed out with the exam.
 - It is authored in the dedicated `Material` tab.
 - Tasks refer to material in their wording; they do not own or duplicate it.
 
+#### Managed images
+
+Only Material Markdown supports managed images. Its image toolbar command opens
+one dialog for choosing a PNG or JPEG image, entering the required description
+or alternative text, and selecting automatic, 25%, 50%, 75%, or 100% content
+width. Confirmation inserts the declaration at the remembered cursor position:
+
+```markdown
+![Diagramm 1](img:4n8k2p7c?width=75)
+```
+
+The width is relative to the available content width and belongs to that
+occurrence, not to the stored image. An omitted width uses automatic sizing.
+Images preserve their aspect ratio, never exceed the available preview width,
+and can be opened in a larger inspection view. The future pupil printout must
+apply the same content-relative sizing contract.
+
+Dropped files are intercepted in every editable or rendered Markdown surface
+so the browser cannot navigate away. A single PNG or JPEG dropped into editable
+Material opens the same dialog with the uploaded image fixed. Other Markdown
+surfaces explain that images can be added only in Material; locked Material
+explains that it can no longer be changed.
+
+Image data is immutable and stored separately from Markdown in the database.
+The visible reference uses an eight-character lowercase letter/digit ID; a
+unique SHA-256 hash is stored internally for deduplication. The database
+enforces both identities; a short-ID collision is assigned a new random ID and
+the Markdown reference is updated during the same save. Duplicated exams may
+therefore reuse the same immutable bytes, while cleanup removes an image only
+after its last Material reference disappears. Pending uploads remain transient
+until their Material is saved, so cancel and discard do not leave unused blobs.
+
+Uploads are limited to 10 MiB and 40 decoded megapixels. TopTeacher validates
+the actual PNG/JPEG contents, applies JPEG orientation, removes metadata by
+re-encoding, preserves PNG transparency, and proportionally reduces images
+whose longest side exceeds 3,000 pixels. JPEG normalization uses 90% quality.
+Preview resources are scoped to the active Vaadin session rather than exposed
+through a public image URL. Image insertion and persistence obey Material's
+first-result lock.
+
 ### Requirement
 
 A requirement is the deepest structural level and the boundary at which
@@ -270,7 +310,8 @@ while the editor is clean.
 
 - `Aufgaben` is the sole editor for parts, performance categories, task titles,
   task Markdown, task maxima, and their order.
-- `Material` edits ordered material below read-only part headings.
+- `Material` edits ordered material and its managed images below read-only part
+  headings.
 - EH renders part, category, and task data as read-only context and edits only
   requirements.
 - Each section header has an explicit control for that section and, when the

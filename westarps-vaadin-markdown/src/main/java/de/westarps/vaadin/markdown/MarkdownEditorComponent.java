@@ -2,6 +2,7 @@ package de.westarps.vaadin.markdown;
 
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -15,6 +16,7 @@ final class MarkdownEditorComponent extends MarkdownComponent {
 
 	private static final int UNLIMITED = -1;
 	private Set<MarkdownToolbarCommand> hiddenToolbarCommands = EnumSet.of(MarkdownToolbarCommand.IMAGE);
+	private Map<String, ?> extensionState = Map.of();
 
 	MarkdownEditorComponent() {
 		super("");
@@ -57,6 +59,15 @@ final class MarkdownEditorComponent extends MarkdownComponent {
 		final Set<MarkdownToolbarCommand> updatedCommands = enumSetOf(hiddenToolbarCommands);
 		updatedCommands.remove(command);
 		setHiddenToolbarCommands(updatedCommands);
+	}
+
+	Map<String, ?> getExtensionState() {
+		return extensionState;
+	}
+
+	void setExtensionState(final Map<String, ?> extensionState) {
+		this.extensionState = extensionState == null ? Map.of() : Map.copyOf(extensionState);
+		setState("extensionState", this.extensionState);
 	}
 
 	private static Set<MarkdownToolbarCommand> enumSetOf(final Collection<MarkdownToolbarCommand> values) {

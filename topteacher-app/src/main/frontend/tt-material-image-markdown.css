@@ -1,0 +1,52 @@
+.tt-material-image-open {
+  display: block;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+
+.tt-material-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.tt-material-image-missing {
+  display: block;
+  padding: var(--lumo-space-s);
+  border: 1px solid var(--lumo-error-color-50pct);
+  color: var(--lumo-error-text-color);
+}
+
+.tt-material-image-overlay {
+  position: fixed;
+  z-index: 10000;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--lumo-space-xl);
+  background: rgb(0 0 0 / 75%);
+}
+
+.tt-material-image-expanded {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.tt-material-image-close {
+  position: absolute;
+  top: var(--lumo-space-m);
+  right: var(--lumo-space-m);
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 0;
+  border-radius: 50%;
+  background: var(--lumo-base-color);
+  color: var(--lumo-body-text-color);
+  font-size: var(--lumo-font-size-xl);
+  cursor: pointer;
+}

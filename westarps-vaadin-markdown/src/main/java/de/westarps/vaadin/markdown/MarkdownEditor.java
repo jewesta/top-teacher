@@ -2,6 +2,7 @@ package de.westarps.vaadin.markdown;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 
 import com.vaadin.flow.component.AbstractCompositeField;
@@ -52,6 +53,14 @@ public class MarkdownEditor extends AbstractCompositeField<MarkdownEditorCompone
 
 	public void setExtensionIds(final Collection<String> extensionIds) {
 		getEditor().setExtensionIds(extensionIds);
+	}
+
+	public Map<String, ?> getExtensionState() {
+		return getEditor().getExtensionState();
+	}
+
+	public void setExtensionState(final Map<String, ?> extensionState) {
+		getEditor().setExtensionState(extensionState);
 	}
 
 	public String getCanvasColor() {

@@ -23,6 +23,7 @@ import com.vaadin.flow.data.value.ValueChangeMode;
 import de.westarps.topteacher.ui.component.ActionToolbar;
 import de.westarps.topteacher.ui.component.Buttons;
 import de.westarps.topteacher.ui.component.TopTeacherDialogs;
+import de.westarps.topteacher.model.loe.LoeMaterialImage;
 import de.westarps.vaadin.markdown.MarkdownEditor;
 import de.westarps.vaadin.markdown.MarkdownViewer;
 
@@ -76,7 +77,17 @@ final class LoeSectionComponents {
 	}
 
 	MarkdownEditor markdownEditor(final String value, final String placeholder) {
-		return configureMarkdownEditor(new MarkdownEditor(value == null ? "" : value), placeholder);
+		final MarkdownEditor editor = configureMarkdownEditor(new MarkdownEditor(value == null ? "" : value), placeholder);
+		addFileDropNotification(editor, "Hier können keine Dateien eingefügt werden. Bilder kannst Du im Material hinzufügen.");
+		return editor;
+	}
+
+	MaterialMarkdownEditor materialMarkdownEditor(final String value, final String placeholder,
+			final Collection<LoeMaterialImage> images) {
+		final MaterialMarkdownEditor editor = (MaterialMarkdownEditor) configureMarkdownEditor(
+				new MaterialMarkdownEditor(value == null ? "" : value, images), placeholder);
+		editor.setHeight("24rem");
+		return editor;
 	}
 
 	private MarkdownEditor configureMarkdownEditor(final MarkdownEditor editor, final String placeholder) {
@@ -94,7 +105,10 @@ final class LoeSectionComponents {
 	}
 
 	MarkdownEditor requirementDescriptionEditor(final String value, final String placeholder) {
-		return configureMarkdownEditor(new CriterionMarkdownEditor(value == null ? "" : value), placeholder);
+		final MarkdownEditor editor = configureMarkdownEditor(
+				new CriterionMarkdownEditor(value == null ? "" : value), placeholder);
+		addFileDropNotification(editor, "Hier können keine Dateien eingefügt werden. Bilder kannst Du im Material hinzufügen.");
+		return editor;
 	}
 
 	Component markdownBlock(final String label, final MarkdownEditor editor) {
@@ -118,6 +132,18 @@ final class LoeSectionComponents {
 
 	Component markdownViewBlock(final String label, final String value) {
 		final MarkdownViewer viewer = new MarkdownViewer(value == null ? "" : value);
+		addFileDropNotification(viewer, "Hier können keine Dateien eingefügt werden. Bilder kannst Du im Material hinzufügen.");
+		return markdownViewerBlock(label, viewer);
+	}
+
+	Component materialMarkdownViewBlock(final String label, final String value,
+			final Collection<LoeMaterialImage> images) {
+		final MarkdownViewer viewer = new MaterialMarkdownViewer(value == null ? "" : value, images);
+		addFileDropNotification(viewer, "Material ist gesperrt und kann nicht mehr geändert werden.");
+		return markdownViewerBlock(label, viewer);
+	}
+
+	private Component markdownViewerBlock(final String label, final MarkdownViewer viewer) {
 		viewer.addClassName("tt-markdown-viewer");
 		viewer.setWidthFull();
 		final Span viewerLabel = new Span(label);
@@ -127,6 +153,14 @@ final class LoeSectionComponents {
 		block.setPadding(false);
 		block.setWidthFull();
 		return block;
+	}
+
+	private static void addFileDropNotification(final Component component, final String message) {
+		component.getElement().addEventListener("markdown-extension-event", event -> {
+			if ("file-drop".equals(event.getEventData().path("event.detail.name").asString(""))) {
+				com.vaadin.flow.component.notification.Notification.show(message);
+			}
+		}).addEventData("event.detail.name");
 	}
 
 	Component summary(final String type, final Component title, final Component... controls) {

@@ -1,6 +1,7 @@
 package de.westarps.topteacher.ui.component.loe;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
@@ -73,7 +74,7 @@ class ExamMaterialEditorTests {
 		assertThat(confirmation.isOpened()).isFalse();
 		assertThat(editor.hasUnsavedChanges()).isFalse();
 		assertThat(components(editor, TextField.class).getFirst().getValue()).isEqualTo(MATERIAL.title());
-		verify(repository, never()).saveMaterial(org.mockito.ArgumentMatchers.any());
+		verify(repository, never()).saveMaterialWithImages(any(), any());
 	}
 
 	@Test
@@ -88,8 +89,8 @@ class ExamMaterialEditorTests {
 		components(editor, MarkdownEditor.class).getFirst().setValue("Ein **wichtiger** Quellentext");
 		buttonsByAriaLabel(editor, "Speichern").getFirst().click();
 
-		verify(repository).saveMaterial(new LoeMaterial(MATERIAL.id(), MATERIAL.partId(), "Quelle A",
-				"Ein **wichtiger** Quellentext", MATERIAL.sortOrder()));
+		verify(repository).saveMaterialWithImages(new LoeMaterial(MATERIAL.id(), MATERIAL.partId(), "Quelle A",
+				"Ein **wichtiger** Quellentext", MATERIAL.sortOrder()), List.of());
 		verify(repository, never()).findPartsByExamId(anyInt());
 		verify(repository, never()).findMaterialsByExamId(anyInt());
 		assertThat(components(editor, Details.class).getFirst()).isSameAs(partDetails);
@@ -166,6 +167,8 @@ class ExamMaterialEditorTests {
 		when(repository.hasResultsForExam(EXAM.id())).thenReturn(locked);
 		when(repository.findPartsByExamId(EXAM.id())).thenReturn(List.of(PART));
 		when(repository.findMaterialsByExamId(EXAM.id())).thenReturn(List.of(MATERIAL));
+		when(repository.findMaterialImagesByIds(any())).thenReturn(List.of());
+		when(repository.saveMaterialWithImages(any(), any())).thenAnswer(invocation -> invocation.getArgument(0));
 		return repository;
 	}
 

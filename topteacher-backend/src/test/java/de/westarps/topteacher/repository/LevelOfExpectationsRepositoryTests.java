@@ -32,6 +32,8 @@ import de.westarps.topteacher.model.loe.LoeCategory;
 import de.westarps.topteacher.model.loe.LoeCriterion;
 import de.westarps.topteacher.model.loe.LoeCriterionResult;
 import de.westarps.topteacher.model.loe.LoeMaterial;
+import de.westarps.topteacher.model.loe.LoeMaterialImage;
+import de.westarps.topteacher.model.loe.LoeMaterialImageReferences;
 import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeRequirementResult;
@@ -376,6 +378,59 @@ class LevelOfExpectationsRepositoryTests {
 	}
 
 	@Test
+	void deduplicatesMaterialImagesAndRemovesThemAfterTheLastReference() {
+		final Exam exam = createExam(2048, "Material Images");
+		final LoePart part = levelOfExpectationsRepository
+				.savePart(new LoePart(null, exam.id(), "Klausurteil A", 0));
+		final LoeMaterial first = levelOfExpectationsRepository
+				.saveMaterial(new LoeMaterial(null, part.id(), "Quelle 1", "", 0));
+		final LoeMaterial second = levelOfExpectationsRepository
+				.saveMaterial(new LoeMaterial(null, part.id(), "Quelle 2", "", 1));
+		final LoeMaterialImage firstUpload = image("4n8k2p7c", "a".repeat(64));
+		final LoeMaterialImage duplicateUpload = image("abcdefgh", firstUpload.contentHash());
+
+		final LoeMaterial savedFirst = levelOfExpectationsRepository.saveMaterialWithImages(
+				new LoeMaterial(first.id(), first.partId(), first.title(), "![Diagramm](img:4n8k2p7c?width=75)", 0),
+				List.of(firstUpload));
+		final LoeMaterial savedSecond = levelOfExpectationsRepository.saveMaterialWithImages(
+				new LoeMaterial(second.id(), second.partId(), second.title(), "![Diagramm](img:abcdefgh)", 1),
+				List.of(duplicateUpload));
+
+		assertThat(savedFirst.descriptionMarkdown()).contains("img:4n8k2p7c");
+		assertThat(savedSecond.descriptionMarkdown()).contains("img:4n8k2p7c").doesNotContain("img:abcdefgh");
+		assertThat(levelOfExpectationsRepository.findMaterialImagesByIds(List.of("4n8k2p7c", "abcdefgh")))
+				.extracting(LoeMaterialImage::id).containsExactly("4n8k2p7c");
+
+		levelOfExpectationsRepository.deleteMaterial(first.id());
+		assertThat(levelOfExpectationsRepository.findReferencedMaterialImageById("4n8k2p7c")).isPresent();
+		levelOfExpectationsRepository.deleteMaterial(second.id());
+		assertThat(levelOfExpectationsRepository.findReferencedMaterialImageById("4n8k2p7c")).isEmpty();
+	}
+
+	@Test
+	void retriesMaterialImageIdentifiersThatCollideInTheDatabase() {
+		final Exam exam = createExam(2049, "Material Image ID Collision");
+		final LoePart part = levelOfExpectationsRepository
+				.savePart(new LoePart(null, exam.id(), "Klausurteil A", 0));
+		final LoeMaterial first = levelOfExpectationsRepository
+				.saveMaterial(new LoeMaterial(null, part.id(), "Quelle 1", "", 0));
+		final LoeMaterial second = levelOfExpectationsRepository
+				.saveMaterial(new LoeMaterial(null, part.id(), "Quelle 2", "", 1));
+		levelOfExpectationsRepository.saveMaterialWithImages(
+				new LoeMaterial(first.id(), first.partId(), first.title(), "![Erstes](img:sameid01)", 0),
+				List.of(image("sameid01", "c".repeat(64))));
+
+		final LoeMaterial savedSecond = levelOfExpectationsRepository.saveMaterialWithImages(
+				new LoeMaterial(second.id(), second.partId(), second.title(), "![Zweites](img:sameid01)", 1),
+				List.of(image("sameid01", "d".repeat(64))));
+		final String replacementId = LoeMaterialImageReferences.ids(savedSecond.descriptionMarkdown()).iterator().next();
+
+		assertThat(replacementId).matches("[a-z0-9]{8}").isNotEqualTo("sameid01");
+		assertThat(levelOfExpectationsRepository.findMaterialImagesByIds(List.of("sameid01", replacementId)))
+				.extracting(LoeMaterialImage::id).containsExactlyInAnyOrder("sameid01", replacementId);
+	}
+
+	@Test
 	void copiesDesignWithoutResults() {
 		final Exam sourceExam = createExam(2042, "EH Copy Source");
 		final Exam targetExam = createExam(2043, "EH Copy Target");
@@ -387,6 +442,10 @@ class LevelOfExpectationsRepositoryTests {
 				.saveTask(new LoeTask(null, category.id(), "Teilaufgabe 1", "Aufgabentext", 100, 0));
 		final LoeMaterial material = levelOfExpectationsRepository
 				.saveMaterial(new LoeMaterial(null, part.id(), "Quelle 1", "Quellentext", 0));
+		final LoeMaterial materialWithImage = levelOfExpectationsRepository.saveMaterialWithImages(
+				new LoeMaterial(material.id(), material.partId(), material.title(),
+						"Quellentext\n\n![Diagramm](img:copyimg1?width=75)", material.sortOrder()),
+				List.of(image("copyimg1", "b".repeat(64))));
 		final LoeRequirement requirement = levelOfExpectationsRepository.saveRequirement(
 				new LoeRequirement(null, task.id(), "Nutzt die [korrekte Zeitform](crit:1).", 100, false, 0));
 		final LoeCriterion criterion = levelOfExpectationsRepository.findActiveCriteriaByExamId(sourceExam.id())
@@ -415,7 +474,8 @@ class LevelOfExpectationsRepositoryTests {
 				.isEqualTo(new LoeTask(copiedTask.id(), copiedCategory.id(), task.title(), task.descriptionMarkdown(),
 						task.maxPoints(), task.sortOrder()));
 		assertThat(copiedMaterial).isEqualTo(new LoeMaterial(copiedMaterial.id(), copiedPart.id(), material.title(),
-				material.descriptionMarkdown(), material.sortOrder()));
+				materialWithImage.descriptionMarkdown(), material.sortOrder()));
+		assertThat(levelOfExpectationsRepository.findMaterialImagesByIds(List.of("copyimg1"))).hasSize(1);
 		assertThat(copiedRequirement).isEqualTo(
 				new LoeRequirement(copiedRequirement.id(), copiedTask.id(), requirement.descriptionMarkdown(),
 						requirement.maxPoints(), requirement.bonus(), requirement.sortOrder()));
@@ -428,6 +488,12 @@ class LevelOfExpectationsRepositoryTests {
 				.isEmpty();
 		assertThat(levelOfExpectationsRepository.findCriterionResultsByExamAndPupil(sourceExam.id(), pupil.id()))
 				.containsExactly(new LoeCriterionResult(criterion.id(), pupil.id(), 2));
+	}
+
+	private static LoeMaterialImage image(final String id, final String contentHash) {
+		return new LoeMaterialImage(id, contentHash, "image/png", 2, 1, 3, new byte[] {
+				1, 2, 3
+		});
 	}
 
 	private Exam createExam(final int calendarYear, final String title) {

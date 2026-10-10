@@ -1,8 +1,10 @@
 package de.westarps.topteacher.ui.component.loe;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
@@ -13,6 +15,8 @@ import com.vaadin.flow.component.notification.Notification;
 import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.loe.LoeMaterial;
+import de.westarps.topteacher.model.loe.LoeMaterialImage;
+import de.westarps.topteacher.model.loe.LoeMaterialImageReferences;
 import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.ui.component.AbstractDesigner;
 import de.westarps.topteacher.ui.component.DesignerViewport;
@@ -30,8 +34,19 @@ public class ExamMaterialEditor extends AbstractDesigner {
 	private final LoeMaterialSection.Handler materialHandler = new LoeMaterialSection.Handler() {
 
 		@Override
-		public void save(final LoeMaterial material, final String title, final String descriptionMarkdown) {
-			ExamMaterialEditor.this.save(material, title, descriptionMarkdown);
+		public LoeMaterial save(final LoeMaterial material, final String title, final String descriptionMarkdown,
+				final Collection<LoeMaterialImage> pendingImages) {
+			return ExamMaterialEditor.this.save(material, title, descriptionMarkdown, pendingImages);
+		}
+
+		@Override
+		public Optional<LoeMaterialImage> findImageByContentHash(final String contentHash) {
+			return repository.findMaterialImageByContentHash(contentHash);
+		}
+
+		@Override
+		public boolean imageIdExists(final String id) {
+			return repository.materialImageIdExists(id);
 		}
 
 		@Override
@@ -48,6 +63,7 @@ public class ExamMaterialEditor extends AbstractDesigner {
 	private Exam exam;
 	private List<LoePart> parts = List.of();
 	private List<LoeMaterial> materials = List.of();
+	private List<LoeMaterialImage> materialImages = List.of();
 	private List<LoeReadOnlySection<LoePart>> partSections = List.of();
 	private boolean locked;
 	private Runnable changeHandler = () -> {
@@ -91,6 +107,7 @@ public class ExamMaterialEditor extends AbstractDesigner {
 		saveController.clearButtons();
 		collapseState.clearRenderedComponents();
 		partSections = List.of();
+		materialImages = List.of();
 		resetDesigner();
 		if (exam == null) {
 			showDesignerMessage(new Span("Bitte wähle eine Klausur aus."));
@@ -99,6 +116,9 @@ public class ExamMaterialEditor extends AbstractDesigner {
 		locked = repository.hasResultsForExam(exam.id());
 		parts = repository.findPartsByExamId(exam.id());
 		materials = repository.findMaterialsByExamId(exam.id());
+		final List<LoeMaterialImage> loadedImages = repository.findMaterialImagesByIds(materials.stream()
+				.flatMap(material -> LoeMaterialImageReferences.ids(material.descriptionMarkdown()).stream()).toList());
+		materialImages = loadedImages == null ? List.of() : loadedImages;
 		if (parts.isEmpty()) {
 			content().add(emptyState("Lege zuerst im Reiter Aufgaben einen Klausurteil an."));
 		} else {
@@ -143,7 +163,7 @@ public class ExamMaterialEditor extends AbstractDesigner {
 
 	private LoeMaterialSection createMaterialSection(final LoeMaterial material) {
 		final LoeMaterialSection section = new LoeMaterialSection(material, materialsFor(partFor(material)), components,
-				materialHandler, locked);
+				materialHandler, imagesFor(material), locked);
 		collapseState.configure(section.getContent(), detailKey("material", material.id()),
 				detailKey("part", material.partId()), List.of(), "Material", material.title());
 		DesignerViewport.mark(section, detailKey("material", material.id()), material.title());
@@ -159,12 +179,17 @@ public class ExamMaterialEditor extends AbstractDesigner {
 		notifyChanged();
 	}
 
-	private void save(final LoeMaterial material, final String title, final String descriptionMarkdown) {
+	private LoeMaterial save(final LoeMaterial material, final String title, final String descriptionMarkdown,
+			final Collection<LoeMaterialImage> pendingImages) {
 		final LoeMaterial updated = new LoeMaterial(material.id(), material.partId(), title, descriptionMarkdown,
 				material.sortOrder());
-		repository.saveMaterial(updated);
-		materials = materials.stream().map(current -> current.id().equals(updated.id()) ? updated : current).toList();
+		final LoeMaterial saved = repository.saveMaterialWithImages(updated, List.copyOf(pendingImages));
+		materials = materials.stream().map(current -> current.id().equals(saved.id()) ? saved : current).toList();
+		final List<LoeMaterialImage> loadedImages = repository.findMaterialImagesByIds(materials.stream()
+				.flatMap(current -> LoeMaterialImageReferences.ids(current.descriptionMarkdown()).stream()).toList());
+		materialImages = loadedImages == null ? List.of() : loadedImages;
 		viewport.updateBreadcrumbSegment(detailKey("material", material.id()), title);
+		return saved;
 	}
 
 	private void move(final LoeMaterial material, final int offset) {
@@ -190,6 +215,11 @@ public class ExamMaterialEditor extends AbstractDesigner {
 
 	private LoePart partFor(final LoeMaterial material) {
 		return parts.stream().filter(part -> part.id().equals(material.partId())).findFirst().orElseThrow();
+	}
+
+	private List<LoeMaterialImage> imagesFor(final LoeMaterial material) {
+		final var ids = LoeMaterialImageReferences.ids(material.descriptionMarkdown());
+		return materialImages.stream().filter(image -> ids.contains(image.id())).toList();
 	}
 
 	private List<String> allDetailKeys() {

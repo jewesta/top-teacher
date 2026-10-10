@@ -2,10 +2,16 @@ package de.westarps.topteacher.backend.repo;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.security.SecureRandom;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -19,6 +25,8 @@ import de.westarps.topteacher.model.loe.LoeCriterion;
 import de.westarps.topteacher.model.loe.LoeCriterionParser;
 import de.westarps.topteacher.model.loe.LoeCriterionResult;
 import de.westarps.topteacher.model.loe.LoeMaterial;
+import de.westarps.topteacher.model.loe.LoeMaterialImage;
+import de.westarps.topteacher.model.loe.LoeMaterialImageReferences;
 import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeRequirementResult;
@@ -30,12 +38,15 @@ public class LevelOfExpectationsRepository {
 
 	private static final String CORRECTION_MODE_MESSAGE = "Der Erwartungshorizont ist im Korrekturmodus. Struktur, Punkte und Kriterien können nicht geändert werden.";
 	private static final String RESULTS_BLOCKED_MESSAGE = "Ergebnisse können erst erfasst werden, wenn die regulären Anforderungspunkte jeder Aufgabe genau den Aufgabenpunkten entsprechen und die Aufgabensumme zur Notenskala passt.";
+	private static final String MATERIAL_IMAGE_ID_ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789";
 
 	private final NamedParameterJdbcTemplate jdbc;
+	private final SecureRandom random = new SecureRandom();
 	private final RowMapper<LoePart> partRowMapper = this::mapPart;
 	private final RowMapper<LoeCategory> categoryRowMapper = this::mapCategory;
 	private final RowMapper<LoeTask> taskRowMapper = this::mapTask;
 	private final RowMapper<LoeMaterial> materialRowMapper = this::mapMaterial;
+	private final RowMapper<LoeMaterialImage> materialImageRowMapper = this::mapMaterialImage;
 	private final RowMapper<LoeRequirement> requirementRowMapper = this::mapRequirement;
 	private final RowMapper<LoeCriterion> criterionRowMapper = this::mapCriterion;
 	private final RowMapper<LoeCriterionResult> criterionResultRowMapper = this::mapCriterionResult;
@@ -83,6 +94,42 @@ public class LevelOfExpectationsRepository {
 			where part.exam_id = :examId
 			order by part.sort_order, part.id, material.sort_order, material.id
 			""", Map.of("examId", examId), materialRowMapper);
+	}
+
+	public List<LoeMaterialImage> findMaterialImagesByIds(final Collection<String> ids) {
+		if (ids == null || ids.isEmpty()) {
+			return List.of();
+		}
+		return jdbc.query("""
+			select id, content_hash, media_type, pixel_width, pixel_height, byte_size, image_data
+			from loe_material_image
+			where id in (:ids)
+			order by id
+			""", Map.of("ids", Set.copyOf(ids)), materialImageRowMapper);
+	}
+
+	public Optional<LoeMaterialImage> findMaterialImageByContentHash(final String contentHash) {
+		return jdbc.query("""
+			select id, content_hash, media_type, pixel_width, pixel_height, byte_size, image_data
+			from loe_material_image
+			where content_hash = :contentHash
+			""", Map.of("contentHash", contentHash), materialImageRowMapper).stream().findFirst();
+	}
+
+	public Optional<LoeMaterialImage> findReferencedMaterialImageById(final String id) {
+		final Optional<LoeMaterialImage> image = findMaterialImageById(id);
+		if (image.isEmpty()) {
+			return Optional.empty();
+		}
+		final boolean referenced = jdbc.queryForList("select description_markdown from loe_material", Map.of(),
+				String.class).stream().map(LoeMaterialImageReferences::ids).anyMatch(ids -> ids.contains(id));
+		return referenced ? image : Optional.empty();
+	}
+
+	public boolean materialImageIdExists(final String id) {
+		final Integer count = jdbc.queryForObject("select count(*) from loe_material_image where id = :id",
+				Map.of("id", id), Integer.class);
+		return count != null && count > 0;
 	}
 
 	public List<LoeRequirement> findRequirementsByExamId(final int examId) {
@@ -279,6 +326,19 @@ public class LevelOfExpectationsRepository {
 		return material;
 	}
 
+	@Transactional
+	public LoeMaterial saveMaterialWithImages(final LoeMaterial material,
+			final Collection<LoeMaterialImage> pendingImages) {
+		LoeMaterial canonicalMaterial = material;
+		for (final LoeMaterialImage image : pendingImages == null ? List.<LoeMaterialImage>of() : pendingImages) {
+			canonicalMaterial = savePendingMaterialImage(canonicalMaterial, image);
+		}
+		final LoeMaterial saved = saveMaterial(canonicalMaterial);
+		assertMaterialImagesExist(saved.descriptionMarkdown());
+		cleanupUnreferencedMaterialImages();
+		return saved;
+	}
+
 	public LoeRequirement saveRequirement(final LoeRequirement requirement) {
 		if (requirement.id() == null) {
 			assertCriterionAllocationSaveable(requirement);
@@ -377,11 +437,13 @@ public class LevelOfExpectationsRepository {
 			""", parameters);
 	}
 
+	@Transactional
 	public void deletePart(final int id) {
 		assertNoResultsForExam(examIdForPart(id));
 		assertNoCriterionResultsForPart(id);
 		assertNoRequirementResultsForPart(id);
 		deleteById("eh_part", id);
+		cleanupUnreferencedMaterialImages();
 	}
 
 	public void deleteCategory(final int id) {
@@ -405,10 +467,12 @@ public class LevelOfExpectationsRepository {
 		deleteById("eh_requirement", id);
 	}
 
+	@Transactional
 	public void deleteMaterial(final int id) {
 		final LoeMaterial material = findMaterialById(id);
 		assertNoResultsForExam(examIdForPart(material.partId()));
 		deleteById("loe_material", id);
+		cleanupUnreferencedMaterialImages();
 	}
 
 	public int nextPartSortOrder(final int examId) {
@@ -607,6 +671,14 @@ public class LevelOfExpectationsRepository {
 			""", Map.of("id", id), materialRowMapper);
 	}
 
+	private Optional<LoeMaterialImage> findMaterialImageById(final String id) {
+		return jdbc.query("""
+			select id, content_hash, media_type, pixel_width, pixel_height, byte_size, image_data
+			from loe_material_image
+			where id = :id
+			""", Map.of("id", id), materialImageRowMapper).stream().findFirst();
+	}
+
 	private LoeRequirement findRequirementById(final int id) {
 		return jdbc.queryForObject("""
 			select id, task_id, description_markdown, max_points, bonus, sort_order
@@ -721,6 +793,93 @@ public class LevelOfExpectationsRepository {
 			});
 		return new LoeMaterial(generatedId(keyHolder, "material"), material.partId(), material.title(),
 				material.descriptionMarkdown(), material.sortOrder());
+	}
+
+	private void insertMaterialImage(final LoeMaterialImage image) {
+		jdbc.update("""
+			insert into loe_material_image
+			    (id, content_hash, media_type, pixel_width, pixel_height, byte_size, image_data)
+			values
+			    (:id, :contentHash, :mediaType, :pixelWidth, :pixelHeight, :byteSize, :imageData)
+			""", new MapSqlParameterSource().addValue("id", image.id()).addValue("contentHash", image.contentHash())
+				.addValue("mediaType", image.mediaType()).addValue("pixelWidth", image.pixelWidth())
+				.addValue("pixelHeight", image.pixelHeight()).addValue("byteSize", image.byteSize())
+				.addValue("imageData", image.data()));
+	}
+
+	private LoeMaterial savePendingMaterialImage(final LoeMaterial material, final LoeMaterialImage pendingImage) {
+		LoeMaterial canonicalMaterial = material;
+		LoeMaterialImage candidate = pendingImage;
+		for (int attempt = 0; attempt < 100; attempt++) {
+			final Optional<LoeMaterialImage> existing = findMaterialImageByContentHash(candidate.contentHash());
+			if (existing.isPresent()) {
+				return replaceMaterialImageId(canonicalMaterial, candidate.id(), existing.orElseThrow().id());
+			}
+			if (materialImageIdExists(candidate.id())) {
+				final String replacementId = randomMaterialImageId();
+				canonicalMaterial = replaceMaterialImageId(canonicalMaterial, candidate.id(), replacementId);
+				candidate = withId(candidate, replacementId);
+				continue;
+			}
+			try {
+				insertMaterialImage(candidate);
+				return canonicalMaterial;
+			} catch (final DuplicateKeyException exception) {
+				final Optional<LoeMaterialImage> concurrentlyStored = findMaterialImageByContentHash(candidate.contentHash());
+				if (concurrentlyStored.isPresent()) {
+					return replaceMaterialImageId(canonicalMaterial, candidate.id(),
+							concurrentlyStored.orElseThrow().id());
+				}
+				final String replacementId = randomMaterialImageId();
+				canonicalMaterial = replaceMaterialImageId(canonicalMaterial, candidate.id(), replacementId);
+				candidate = withId(candidate, replacementId);
+			}
+		}
+		throw new IllegalStateException("Für das Bild konnte keine freie Kennung erzeugt werden.");
+	}
+
+	private void assertMaterialImagesExist(final String markdown) {
+		final Set<String> referencedIds = LoeMaterialImageReferences.ids(markdown);
+		final Set<String> storedIds = findMaterialImagesByIds(referencedIds).stream().map(LoeMaterialImage::id)
+				.collect(java.util.stream.Collectors.toSet());
+		if (!storedIds.equals(referencedIds)) {
+			throw new IllegalArgumentException("Das Material verweist auf ein nicht vorhandenes Bild.");
+		}
+	}
+
+	private void cleanupUnreferencedMaterialImages() {
+		final Set<String> referencedIds = new HashSet<>();
+		jdbc.queryForList("select description_markdown from loe_material", Map.of(), String.class).stream()
+				.map(LoeMaterialImageReferences::ids).forEach(referencedIds::addAll);
+		if (referencedIds.isEmpty()) {
+			jdbc.update("delete from loe_material_image", Map.of());
+			return;
+		}
+		jdbc.update("delete from loe_material_image where id not in (:ids)", Map.of("ids", referencedIds));
+	}
+
+	private static LoeMaterial withDescription(final LoeMaterial material, final String descriptionMarkdown) {
+		return new LoeMaterial(material.id(), material.partId(), material.title(), descriptionMarkdown,
+				material.sortOrder());
+	}
+
+	private static LoeMaterial replaceMaterialImageId(final LoeMaterial material, final String currentId,
+			final String replacementId) {
+		return withDescription(material,
+				LoeMaterialImageReferences.replaceId(material.descriptionMarkdown(), currentId, replacementId));
+	}
+
+	private static LoeMaterialImage withId(final LoeMaterialImage image, final String id) {
+		return new LoeMaterialImage(id, image.contentHash(), image.mediaType(), image.pixelWidth(), image.pixelHeight(),
+				image.byteSize(), image.data());
+	}
+
+	private String randomMaterialImageId() {
+		final StringBuilder id = new StringBuilder(8);
+		for (int index = 0; index < 8; index++) {
+			id.append(MATERIAL_IMAGE_ID_ALPHABET.charAt(random.nextInt(MATERIAL_IMAGE_ID_ALPHABET.length())));
+		}
+		return id.toString();
 	}
 
 	private LoeRequirement insertRequirement(final LoeRequirement requirement) {
@@ -951,6 +1110,12 @@ public class LevelOfExpectationsRepository {
 	private LoeMaterial mapMaterial(final ResultSet resultSet, final int rowNumber) throws SQLException {
 		return new LoeMaterial(resultSet.getInt("id"), resultSet.getInt("part_id"), resultSet.getString("title"),
 				resultSet.getString("description_markdown"), resultSet.getInt("sort_order"));
+	}
+
+	private LoeMaterialImage mapMaterialImage(final ResultSet resultSet, final int rowNumber) throws SQLException {
+		return new LoeMaterialImage(resultSet.getString("id"), resultSet.getString("content_hash"),
+				resultSet.getString("media_type"), resultSet.getInt("pixel_width"), resultSet.getInt("pixel_height"),
+				resultSet.getLong("byte_size"), resultSet.getBytes("image_data"));
 	}
 
 	private LoeRequirement mapRequirement(final ResultSet resultSet, final int rowNumber) throws SQLException {

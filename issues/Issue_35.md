@@ -77,9 +77,9 @@ independent view state or dirty-state handling.
   the existing pupil and teacher EH result PDFs.
 - Footnotes and line numbering are deferred to a separate issue. They must not
   hold up the initial material-authoring workflow.
-- The initial material-authoring version ships without managed images. The
-  agreed image-support follow-up is recorded below; uploads and storage are not
-  implemented yet.
+- Material supports managed PNG/JPEG images through the image workflow recorded
+  below and specified in the
+  [operational documentation](../doc/ops/LevelOfExpectations.md#managed-images).
 - Remove the `Notizen` tab and the complete exam-note-section feature. It was
   accidental legacy from the original exam template and must not be repurposed
   as the implementation of `Material`.
@@ -236,8 +236,8 @@ exports, and MCP result summaries.
   material content.
 - Exam-sheet printing and print-specific layout such as page breaks and answer
   space are deferred.
-- Managed image support is planned as the follow-up described below; generic
-  document attachments remain outside that scope.
+- Managed image support is implemented as described below; generic document
+  attachments remain outside that scope.
 - Footnotes and source-text line numbering are deferred.
 
 ## Reimplementation status
@@ -371,7 +371,7 @@ The combined review pass is intended to provide the following end state:
 - The editor remains the primary interface; users do not need to learn URI
   syntax. This change prepares the shared declaration convention for images.
 
-## Planned image support
+## Managed image support
 
 ### Scope and editor workflow
 
@@ -382,10 +382,8 @@ The combined review pass is intended to provide the following end state:
   opens a dialog for choosing an image and entering its description/alternative
   text, with a rendering-width option. Confirmation uploads the image and
   inserts its Markdown declaration at the cursor.
-- Drag-and-drop is also planned. Dropping an image in Material opens the same
-  dialog with the dropped file prefilled and not replaceable. Whether the drop
-  target can be the editor itself or needs a dedicated area above it remains an
-  implementation question.
+- Dropping one image directly into editable Material opens the same dialog with
+  the dropped file prefilled and not replaceable.
 - All Markdown editors must intercept file drops, including editors without
   image support. Unsupported drops show a clear message instead of allowing
   the browser to navigate to the file or replace the current page. Those other
@@ -396,13 +394,15 @@ The combined review pass is intended to provide the following end state:
 
 - Store image data in the database, rather than relying on external documents
   or images on the teacher's filesystem.
-- Accept PNG and JPEG only, with upload-size limits. Automatic resizing was
-  discussed to keep database growth manageable; exact limits, resizing
-  thresholds, and the resulting quality policy still need to be specified.
+- Accept PNG and JPEG only. Uploads are limited to 10 MiB and 40 decoded
+  megapixels. Images above 3,000 pixels on their longest side are reduced
+  proportionally; JPEGs are normalized at 90% quality, while PNG transparency
+  is preserved.
 - Use short opaque IDs containing lowercase letters and digits, such as
-  `4n8k2p7c`, rather than long technical-looking identifiers. The expected number
-  of images is small, but implementation must still guard against collisions;
-  the precise ID-generation policy remains to be chosen.
+  `4n8k2p7c`, rather than long technical-looking identifiers. IDs contain eight
+  random lowercase letters/digits. Database constraints enforce their
+  uniqueness, and saving retries with a new ID if one collides. SHA-256 content
+  hashes provide internal deduplication.
 
 ### Markdown convention and rendering
 
@@ -433,9 +433,19 @@ URL query parameters, matching the new criterion convention:
 
 ### Implementation status
 
-The preparatory criterion change to `crit:<key>[?points=<value>]` is implemented,
-including editor generation, rendering, validation, and the one-time conversion
-of stored declarations without changing criterion identities or scores. Image
-upload dialogs, drop handling, image persistence, and image rendering are not
-implemented yet. Footnotes, line numbering, and exam-sheet print/export layout
-remain separate follow-up work.
+The criterion change and managed-image follow-up are implemented. Material now
+has the image command and shared upload dialog, direct file-drop handling,
+cursor insertion, content-relative width choices, session-scoped preview and
+inspection rendering, immutable deduplicated database storage, reference-aware
+cleanup, duplication reuse, save/discard behavior, and repository-enforced
+first-result locking. All other editable and rendered Markdown surfaces safely
+intercept file drops and explain the supported Material workflow.
+
+The settled processing policy is a 10 MiB upload limit, a 40-megapixel decoded
+limit, proportional resizing above 3,000 pixels on the longest side, JPEG
+orientation correction, metadata removal through re-encoding, PNG transparency
+preservation, and 90% JPEG quality. Public image endpoints are deliberately not
+used; previews use active-session resources. See the
+[operational specification](../doc/ops/LevelOfExpectations.md#managed-images)
+for the authoritative behavior. Footnotes, line numbering, and exam-sheet
+print/export layout remain separate follow-up work.
