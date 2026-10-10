@@ -23,11 +23,11 @@ type ManagedImageState = {
 
 type ManagedImageProps = ImgHTMLAttributes<HTMLImageElement> & {
   node?: unknown;
-  dataMaterialImageId?: string;
-  dataMaterialImageWidth?: string;
-  dataMaterialImageMissing?: string;
-  dataMaterialPixelWidth?: string;
-  dataMaterialPixelHeight?: string;
+  'data-material-image-id'?: string;
+  'data-material-image-width'?: string;
+  'data-material-image-missing'?: string;
+  'data-material-pixel-width'?: string;
+  'data-material-pixel-height'?: string;
 };
 
 const targetPattern = /^img:([a-z0-9]{8})(?:\?width=(100|[1-9][0-9]?))?$/;
@@ -111,11 +111,11 @@ function ManagedImage(props: ManagedImageProps): ReactElement {
   const [expanded, setExpanded] = React.useState(false);
   const {
     node: _node,
-    dataMaterialImageId: _id,
-    dataMaterialImageWidth: width,
-    dataMaterialImageMissing: missing,
-    dataMaterialPixelWidth: pixelWidth,
-    dataMaterialPixelHeight: pixelHeight,
+    'data-material-image-id': _id,
+    'data-material-image-width': width,
+    'data-material-image-missing': missing,
+    'data-material-pixel-width': pixelWidth,
+    'data-material-pixel-height': pixelHeight,
     ...imageProps
   } = props;
   if (missing === 'true' || !imageProps.src) {
@@ -128,11 +128,12 @@ function ManagedImage(props: ManagedImageProps): ReactElement {
     className="tt-material-image"
     width={pixelWidth ? Number(pixelWidth) : undefined}
     height={pixelHeight ? Number(pixelHeight) : undefined}
-    style={{ width: width ? `${width}%` : undefined }}
+    style={{ width: width ? '100%' : undefined }}
   />;
   return <>
     <button type="button" className="tt-material-image-open" onClick={() => setExpanded(true)}
-      aria-label={`${imageProps.alt || 'Bild'} vergrößern`} title="Bild vergrößern">
+      aria-label={`${imageProps.alt || 'Bild'} vergrößern`} title="Bild vergrößern"
+      style={{ width: width ? `${width}%` : undefined }}>
       {image}
     </button>
     {expanded && <div className="tt-material-image-overlay" role="dialog" aria-modal="true"
