@@ -75,9 +75,9 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 		final Component actions = editorBlockWithMoveButtons(components, siblings, handler, List.of(), List.of(delete),
 				locked);
 		if (dropUpload == null) {
-			addToBody(descriptionBlock, actions);
+			addToBody(actions, descriptionBlock);
 		} else {
-			addToBody(dropUpload, descriptionBlock, actions);
+			addToBody(dropUpload, actions, descriptionBlock);
 		}
 	}
 
