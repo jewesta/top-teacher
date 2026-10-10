@@ -458,7 +458,9 @@ settled behavior.
 
 Literal line numbering uses the agreed `> [!NUMBERED]` blockquote convention,
 preserves authored line breaks including empty lines, and clips excess text
-without deleting it. A separate Material command inserts the block. All current
+without deleting it. Only line 1 and multiples of five are labelled in the
+margin, while every source line still counts. A separate Material command
+inserts the block. All current
 Markdown editors offer the five GitHub alerts through their own icon and the
 shared dialog factory. Alerts render in preview, read-only views, and the
 existing EH PDFs. The exact five GitHub Octicons from the issue examples are

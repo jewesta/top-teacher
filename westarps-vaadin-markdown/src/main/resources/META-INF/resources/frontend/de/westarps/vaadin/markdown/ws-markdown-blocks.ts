@@ -105,6 +105,7 @@ function numberedBlock(
   /* Prefixing each source line prevents list/heading syntax from turning one line into a block. */
   const prefix = 'WSLINE ';
   node.children = lines.map((line, index) => {
+    const lineNumber = index + 1;
     const content = line.replace(/^ {0,3}>[ \t]?/, '');
     const parsed = parse(`${prefix}${content}\n\n${definitions}`);
     const inline = parsed.children?.[0]?.children ?? [];
@@ -116,7 +117,7 @@ function numberedBlock(
         {
           type: 'paragraph',
           data: htmlData('span', ['ws-markdown-line-number']),
-          children: [{ type: 'text', value: String(index + 1) }],
+          children: [{ type: 'text', value: lineNumber === 1 || lineNumber % 5 === 0 ? String(lineNumber) : '' }],
         },
         {
           type: 'paragraph',

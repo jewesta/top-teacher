@@ -50,7 +50,9 @@ without a selection it wraps the current line or inserts a text placeholder.
 
 Each source line after the marker is one displayed line. Each block starts at
 1; an explicitly empty quoted line also consumes a number. The marker and
-quote prefixes are hidden, and every line number appears in the left margin.
+quote prefixes are hidden. The left margin shows only the first line number
+and multiples of five: 1, 5, 10, 15, and so on. All intervening lines still
+count, and the number column keeps the same width on unlabelled lines.
 Inline formatting, links, and footnote references remain supported. Footnote
 definitions stay outside the block and appear in the local footnote list.
 

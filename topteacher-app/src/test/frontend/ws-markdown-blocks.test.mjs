@@ -80,11 +80,27 @@ test('numbers literal lines including blanks and preserves links and footnotes',
     + '[^1]: Eine Fußnote.\n\n[quelle]: https://example.com');
   const rows = nodes(tree, (node) => node.properties?.className?.includes('ws-markdown-numbered-line'));
   assert.equal(rows.length, 3);
-  assert.deepEqual(rows.map((row) => text(row.children[0])), ['1', '2', '3']);
+  assert.deepEqual(rows.map((row) => text(row.children[0])), ['1', '', '']);
   assert.equal(text(rows[1].children[1]), '');
   assert.equal(nodes(rows[0], (node) => node.properties?.dataFootnoteRef).length, 1);
   assert.equal(nodes(rows[2], (node) => node.tagName === 'a')[0].properties.href, 'https://example.com');
   assert.equal(nodes(tree, (node) => node.properties?.dataFootnotes).length, 1);
+});
+
+test('shows the first and every fifth line number without skipping rows or blank lines', async () => {
+  const block = (count) => '> [!NUMBERED]\n' + Array.from({ length: count }, (_, index) =>
+    index === 4 ? '>' : `> Zeile ${index + 1}`).join('\n');
+  const tree = await render(`${block(16)}\n\n${block(6)}`);
+  const blocks = nodes(tree, (node) => node.properties?.className?.includes('ws-markdown-numbered'));
+  assert.equal(blocks.length, 2);
+  for (const [index, block] of blocks.entries()) {
+    const rows = nodes(block, (node) => node.properties?.className?.includes('ws-markdown-numbered-line'));
+    assert.equal(rows.length, index === 0 ? 16 : 6);
+    assert.deepEqual(rows.flatMap((row, index) => text(row.children[0]) ? [[index + 1, text(row.children[0])]] : []),
+      index === 0 ? [[1, '1'], [5, '5'], [10, '10'], [15, '15']] : [[1, '1'], [5, '5']]);
+    assert.equal(text(rows[4].children[1]), '');
+    assert.equal(text(rows.at(-1).children[1]), `Zeile ${rows.length}`);
+  }
 });
 
 test('keeps a long source line as one row and does not interpret it as a list', async () => {
