@@ -65,10 +65,21 @@ multi-select combo boxes. Their selection highlight, spacing, keyboard
 navigation, and accessible selected state remain unchanged. Checkmarks used
 for completion and actual checkbox controls are unaffected.
 
+## Editor-tab indicators
+
+Normal editing of an existing record is the unmarked default: the editor tab
+shows only its label, without a pencil. New-record forms retain their plus
+icon. Locked records retain their lock icon and explanatory tooltip. Multiple
+selected records show their selection count without a pencil.
+
+The tab's accessible name continues to describe its mode, even when no icon
+is displayed. Selection counts retain their accessible description and tooltip.
+EH completion and lock indicators remain unchanged.
+
 ## Grading-scale lock
 
-Selecting a grading scale already used by an exam shows a lock instead of the
-edit pencil on the `Notenschlüssel` editor tab. Its tooltip and accessible name
+Selecting a grading scale already used by an exam shows a lock on the
+`Notenschlüssel` editor tab. Its tooltip and accessible name
 explain the reason:
 
 `Dieser Notenschlüssel wird bereits von Klausuren verwendet und kann nicht mehr geändert werden.`
@@ -76,6 +87,6 @@ explain the reason:
 This explanation is not repeated as a message in the form. Name, maximum
 points, lifecycle, and grade ranges remain read-only; save and archive remain
 visible but disabled. Archive is still hidden for a new or already archived
-scale. Selecting an unused scale restores the edit status and enables archive;
-creating a new scale restores the new-record status and the lone labeled
+scale. Selecting an unused scale removes the lock and enables archive;
+creating a new scale restores the new-record plus and the lone labeled
 `Anlegen` action.

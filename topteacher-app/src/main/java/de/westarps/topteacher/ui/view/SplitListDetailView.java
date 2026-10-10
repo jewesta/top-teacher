@@ -310,13 +310,12 @@ public class SplitListDetailView<T> extends VerticalLayout implements HasDynamic
 	private List<Component> editorStatusComponents(final EditorMode editorMode, final List<T> selectedItems,
 			final String status, final boolean locked) {
 		if (editorMode == EditorMode.MULTI_SELECT) {
-			return List.of(editorStatusIcon(VaadinIcon.PENCIL, status),
-					editorStatusCount(selectedItems.size(), status));
+			return List.of(editorStatusCount(selectedItems.size(), status));
 		}
 		if (selectedItems.isEmpty()) {
 			return List.of(editorStatusIcon(VaadinIcon.PLUS, status));
 		}
-		return List.of(editorStatusIcon(locked ? VaadinIcon.LOCK : VaadinIcon.PENCIL, status));
+		return locked ? List.of(editorStatusIcon(VaadinIcon.LOCK, status)) : List.of();
 	}
 
 	private Icon editorStatusIcon(final VaadinIcon iconType, final String status) {

@@ -304,6 +304,9 @@ The combined review pass is intended to provide the following end state:
   message; save and archive stay visible but disabled while locked.
   `Zurücksetzen` remains an exception. See
   [application action bars and locks](../doc/ops/ApplicationActions.md).
+  Normal record editing has no tab pencil; new-item plus, locks, selection
+  counts, and accessible mode descriptions remain. See
+  [editor-tab indicators](../doc/ops/ApplicationActions.md#editor-tab-indicators).
   Dropdown selections use dots to distinguish selection from completion;
   see [selection indicators](../doc/ops/ApplicationActions.md#selection-indicators).
   Aufgaben task and EH requirement action rows sit above their Markdown;

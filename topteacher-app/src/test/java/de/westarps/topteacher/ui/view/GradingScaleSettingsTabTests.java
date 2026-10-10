@@ -96,10 +96,13 @@ class GradingScaleSettingsTabTests {
 		final GradingScaleSettingsTab tab = new GradingScaleSettingsTab(repository);
 		final Grid<GradingScale> grid = grid(tab);
 		final Button archive = button(tab, "Archivieren...");
+		final Tab editorTab = components(tab, TabSheet.class).getFirst().getTabAt(0);
 
 		grid.select(locked);
 		assertThat(archive.isVisible()).isTrue();
 		assertThat(archive.isEnabled()).isFalse();
+		assertThat(editorTab.getChildren().filter(Icon.class::isInstance).map(Icon.class::cast)
+				.map(icon -> icon.getElement().getAttribute("icon"))).containsExactly("vaadin:lock");
 
 		grid.deselectAll();
 		grid.select(unused);
@@ -107,6 +110,9 @@ class GradingScaleSettingsTabTests {
 		assertThat(archive.isVisible()).isTrue();
 		assertThat(archive.isEnabled()).isTrue();
 		assertThat(button(tab, "Speichern").isEnabled()).isFalse();
+		assertThat(editorTab.getChildren().filter(Icon.class::isInstance)).isEmpty();
+		assertThat(editorTab.getElement().getAttribute("aria-label"))
+				.isEqualTo("Notenschlüssel, Notenschlüssel bearbeiten");
 	}
 
 	@Test

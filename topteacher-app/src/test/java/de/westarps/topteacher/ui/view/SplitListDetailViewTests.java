@@ -118,7 +118,7 @@ class SplitListDetailViewTests {
 	}
 
 	@Test
-	void updatesEditorTabStatusIconForCreateEditAndMultiSelectModes() {
+	void showsOnlyExceptionalEditorTabIndicatorsAndKeepsAccessibleModeDescriptions() {
 		final TestSplitListDetailView view = new TestSplitListDetailView();
 		view.grid().setItems(List.of("Ada", "Grace"));
 
@@ -127,14 +127,26 @@ class SplitListDetailViewTests {
 
 		view.grid().select("Ada");
 
-		assertThat(editorStatusIconNames(view)).containsExactly("vaadin:pencil");
+		assertThat(editorStatusIconNames(view)).isEmpty();
 		assertThat(editorTab(view).getElement().getAttribute("aria-label")).isEqualTo("Test, Ada bearbeiten");
 
 		view.grid().select("Grace");
 
-		assertThat(editorStatusIconNames(view)).containsExactly("vaadin:pencil");
+		assertThat(editorStatusIconNames(view)).isEmpty();
 		assertThat(editorStatusCount(view)).isEqualTo("2");
 		assertThat(editorTab(view).getElement().getAttribute("aria-label")).isEqualTo("Test, 2 Test-Zeilen ausgewählt");
+
+		view.grid().deselect("Grace");
+
+		assertThat(editorStatusIconNames(view)).isEmpty();
+		assertThat(editorTab(view).getChildren()).noneMatch(component -> component.hasClassName("tt-tab-status-count"));
+		assertThat(editorTab(view).getElement().getAttribute("aria-label")).isEqualTo("Test, Ada bearbeiten");
+
+		view.grid().deselectAll();
+
+		assertThat(editorStatusIconNames(view)).containsExactly("vaadin:plus");
+		assertThat(editorTab(view).getChildren()).noneMatch(component -> component.hasClassName("tt-tab-status-count"));
+		assertThat(editorTab(view).getElement().getAttribute("aria-label")).isEqualTo("Test, Neue Test-Zeile");
 	}
 
 	@Test
