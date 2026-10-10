@@ -230,6 +230,56 @@ vaadin-app-layout::part(navbar) {
 	padding-top: var(--lumo-space-m);
 }
 
+vaadin-upload.tt-material-image-upload {
+	--vaadin-upload-background: transparent;
+	--vaadin-upload-border-width: 0;
+	--vaadin-upload-padding: 0;
+	background: transparent;
+}
+
+vaadin-upload.tt-material-image-upload[dragover-valid] {
+	--vaadin-upload-background: transparent;
+	background: transparent;
+}
+
+vaadin-upload.tt-material-image-upload::part(primary-buttons) {
+	align-items: center;
+	flex-direction: row-reverse;
+	width: 100%;
+}
+
+vaadin-upload.tt-material-image-upload::part(drop-label) {
+	flex: 1 1 auto;
+	flex-direction: row-reverse;
+	min-width: 0;
+}
+
+.tt-material-image-upload-separator {
+	color: var(--lumo-secondary-text-color);
+	flex: 0 0 auto;
+	white-space: nowrap;
+}
+
+.tt-material-image-drop-target {
+	align-items: center;
+	border: 1px dashed var(--lumo-contrast-20pct);
+	border-radius: var(--lumo-border-radius-m);
+	box-sizing: border-box;
+	display: flex;
+	flex: 1 1 auto;
+	gap: var(--lumo-space-s);
+	justify-content: center;
+	min-height: 7rem;
+	min-width: 0;
+	padding: var(--lumo-space-l);
+	text-align: center;
+}
+
+vaadin-upload.tt-material-image-upload[dragover-valid] .tt-material-image-drop-target {
+	background: var(--lumo-contrast-5pct);
+	border-color: var(--lumo-primary-color);
+}
+
 .tt-settings-form {
 	width: 100%;
 }

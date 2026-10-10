@@ -32,7 +32,7 @@ final class LoeSectionComponents {
 	static final String CORRECTION_MODE_TOOLTIP = "Korrekturmodus: Ergebnisse vorhanden. Struktur, Punkte und Kriterien sind gesperrt.";
 
 	private final LoeSaveController saveController;
-	private final ConfirmDialog discardConfirmation = new ConfirmDialog();
+	private final ConfirmDialog discardConfirmation;
 	private Runnable valueChangeHandler = () -> {
 	};
 	private Runnable pointsChangeHandler = () -> {
@@ -40,10 +40,7 @@ final class LoeSectionComponents {
 
 	LoeSectionComponents(final LoeSaveController saveController) {
 		this.saveController = saveController;
-		TopTeacherDialogs.configureDiscardConfirmation(discardConfirmation, "Änderungen verwerfen?", () -> {
-			discardConfirmation.close();
-			saveController.discard();
-		});
+		discardConfirmation = TopTeacherDialogs.discardConfirmation("Änderungen verwerfen?", saveController::discard);
 	}
 
 	void setValueChangeHandler(final Runnable valueChangeHandler) {

@@ -43,16 +43,20 @@ function materialImageCommand(): ICommand {
       'aria-label': 'Bild einfügen',
       title: 'Bild einfügen',
     },
-    execute: (state, api) => api.textArea.dispatchEvent(new CustomEvent('markdown-extension-event', {
-      bubbles: true,
-      composed: true,
-      detail: {
-        name: 'material-image-requested',
-        selectionStart: state.selection.start,
-        selectionEnd: state.selection.end,
-        selectedText: state.selectedText,
-      },
-    })),
+    execute: (_state, api) => {
+      const selectionStart = api.textArea.selectionStart;
+      const selectionEnd = api.textArea.selectionEnd;
+      api.textArea.dispatchEvent(new CustomEvent('markdown-extension-event', {
+        bubbles: true,
+        composed: true,
+        detail: {
+          name: 'material-image-requested',
+          selectionStart,
+          selectionEnd,
+          selectedText: api.textArea.value.slice(selectionStart, selectionEnd),
+        },
+      }));
+    },
   };
 }
 

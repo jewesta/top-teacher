@@ -155,14 +155,33 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 
 	private void openImageDialog(final MaterialMarkdownEditor.InsertionPoint insertionPoint,
 			final LoeMaterialImage prefilledImage) {
-		new MaterialImageDialog(insertionPoint.selectedText(), prefilledImage, this::prepareImage, result -> {
+		final Optional<ExistingImage> existingImage = prefilledImage == null
+				? LoeMaterialImageReferences.findAt(description.getValue(), insertionPoint.start(), insertionPoint.end())
+						.flatMap(occurrence -> findImageById(occurrence.id())
+								.map(image -> new ExistingImage(occurrence, image)))
+				: Optional.empty();
+		final MaterialMarkdownEditor.InsertionPoint replacementPoint = existingImage
+				.map(existing -> new MaterialMarkdownEditor.InsertionPoint(existing.occurrence().start(),
+						existing.occurrence().end(), existing.occurrence().description()))
+				.orElse(insertionPoint);
+		final MaterialImageDialog.Action action = existingImage.isPresent() ? MaterialImageDialog.Action.EDIT
+				: MaterialImageDialog.Action.INSERT;
+		final String initialDescription = existingImage.map(existing -> existing.occurrence().description())
+				.orElse(insertionPoint.selectedText());
+		final Integer initialWidth = existingImage.map(existing -> existing.occurrence().width()).orElse(null);
+		final LoeMaterialImage dialogImage = existingImage.map(ExistingImage::image).orElse(prefilledImage);
+		new MaterialImageDialog(action, initialDescription, initialWidth, dialogImage, this::prepareImage, result -> {
 			final LoeMaterialImage image = result.image();
 			if (storedImages.stream().noneMatch(stored -> stored.id().equals(image.id()))) {
 				pendingImages.putIfAbsent(image.id(), image);
 			}
 			description.setImages(allImages());
-			description.insertImage(insertionPoint, declaration(result));
+			description.insertImage(replacementPoint, declaration(result));
 		}).open();
+	}
+
+	private Optional<LoeMaterialImage> findImageById(final String id) {
+		return allImages().stream().filter(image -> image.id().equals(id)).findFirst();
 	}
 
 	private LoeMaterialImage prepareImage(final byte[] bytes) {
@@ -208,6 +227,9 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 
 	private static String normalized(final String value) {
 		return value == null ? "" : value;
+	}
+
+	private record ExistingImage(LoeMaterialImageReferences.Occurrence occurrence, LoeMaterialImage image) {
 	}
 
 	interface Handler extends LoeSectionHandler<LoeMaterial> {

@@ -68,8 +68,10 @@ public class ExamResultsEditor extends AbstractDesigner {
 			event -> openDeleteConfirmation());
 	private final Button reloadButton = Buttons.icon("Neu laden", VaadinIcon.REFRESH, event -> refreshFromDatabase());
 	private final MenuBar pdfMenu = new MenuBar();
-	private final ConfirmDialog discardConfirmation = new ConfirmDialog();
-	private final ConfirmDialog deleteConfirmation = new ConfirmDialog();
+	private final ConfirmDialog discardConfirmation = TopTeacherDialogs.discardConfirmation("Änderungen verwerfen?",
+			saveController::discard);
+	private final ConfirmDialog deleteConfirmation = TopTeacherDialogs.deleteConfirmation("Ergebnisse löschen?",
+			this::deleteSelectedPupilResults);
 	private final FullscreenButton fullscreenButton;
 	private final VerticalLayout results;
 	private final DesignerViewport viewport = new DesignerViewport(content());
@@ -211,8 +213,6 @@ public class ExamResultsEditor extends AbstractDesigner {
 		discardButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY_INLINE);
 		saveController.setDiscardAction(this::discardChanges);
 		saveController.register(discardButton);
-		TopTeacherDialogs.configureDiscardConfirmation(discardConfirmation, "Änderungen verwerfen?",
-				saveController::discard);
 	}
 
 	private void configureReloadButton() {
@@ -222,8 +222,6 @@ public class ExamResultsEditor extends AbstractDesigner {
 
 	private void configureDeleteButton() {
 		deleteButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY_INLINE);
-		TopTeacherDialogs.configureDeleteConfirmation(deleteConfirmation, "Ergebnisse löschen?",
-				this::deleteSelectedPupilResults);
 		updateDeleteButton();
 	}
 

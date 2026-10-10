@@ -39,6 +39,10 @@ public final class Buttons {
 		return command(dialogLabel(label), icon);
 	}
 
+	public static Button dialogOpener(final String label) {
+		return new Button(dialogLabel(label));
+	}
+
 	public static Button dialogOpener(final String label, final VaadinIcon icon,
 			final ComponentEventListener<ClickEvent<Button>> listener) {
 		return command(dialogLabel(label), icon, listener);

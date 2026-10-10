@@ -89,12 +89,15 @@ class ButtonsTests {
 
 	@Test
 	void dialogOpenersKeepOneEllipsisInLabelsTooltipsAndAccessibleNames() {
+		final Button withoutIcon = Buttons.dialogOpener("Datei auswählen");
 		final Button labeled = Buttons.dialogOpener("Verwerfen", VaadinIcon.ROTATE_LEFT, event -> { });
 		final Button alreadyMarked = Buttons.dialogOpener("Aus Kurs...", VaadinIcon.COPY);
 		final Button unicodeMarked = Buttons.dialogOpener("Aus Kurs…", VaadinIcon.COPY);
 		final Button iconOnly = Buttons.dialogIcon("Ergebnisse löschen", VaadinIcon.TRASH, event -> { });
 		final Button delete = Buttons.deleteIcon("Löschen", "Löschen?", () -> { });
 
+		assertThat(withoutIcon.getText()).isEqualTo("Datei auswählen...");
+		assertThat(withoutIcon.getIcon()).isNull();
 		assertThat(labeled.getText()).isEqualTo("Verwerfen...");
 		assertThat(alreadyMarked.getText()).isEqualTo("Aus Kurs...");
 		assertThat(unicodeMarked.getText()).isEqualTo("Aus Kurs…");

@@ -438,7 +438,12 @@ has the image command and shared upload dialog, direct file-drop handling,
 cursor insertion, content-relative width choices, session-scoped preview and
 inspection rendering, immutable deduplicated database storage, reference-aware
 cleanup, duplication reuse, save/discard behavior, and repository-enforced
-first-result locking. All other editable and rendered Markdown surfaces safely
+first-result locking. Existing declarations can be reopened at the cursor,
+edited with their description and width prefilled, and replaced through
+`Bild bearbeiten` / `Übernehmen`; the insert dialog presents its dashed drop
+target, `oder`, and file chooser as separate horizontal elements. Only the
+dashed area accepts dragged files. All other
+editable and rendered Markdown surfaces safely
 intercept file drops and explain the supported Material workflow.
 
 The settled processing policy is a 10 MiB upload limit, a 40-megapixel decoded

@@ -3,7 +3,6 @@ package de.westarps.topteacher.ui;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.applayout.AppLayout;
-import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.html.Header;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Span;
@@ -17,6 +16,7 @@ import com.vaadin.flow.router.RouterLink;
 
 import de.westarps.topteacher.ApplicationVersion;
 import de.westarps.topteacher.backend.settings.AppSettings;
+import de.westarps.topteacher.ui.component.TopTeacherDialogs;
 import de.westarps.topteacher.ui.view.CoursesView;
 import de.westarps.topteacher.ui.view.DatabaseInitializationDialogFactory;
 import de.westarps.topteacher.ui.view.ExamsView;
@@ -115,12 +115,8 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
 
 		appSettings.ttEventDatabaseBackupError().ifPresent(error -> {
 			backupErrorShown = true;
-			final ConfirmDialog dialog = new ConfirmDialog();
-			dialog.setHeader("Datenbank-Backup fehlgeschlagen");
-			dialog.setText(error);
-			dialog.setConfirmText("OK");
-			dialog.addConfirmListener(event -> appSettings.clearTtEventDatabaseBackupError());
-			dialog.open();
+			TopTeacherDialogs.acknowledgement("Datenbank-Backup fehlgeschlagen", error,
+					appSettings::clearTtEventDatabaseBackupError).open();
 		});
 	}
 }

@@ -21,7 +21,6 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.textfield.TextField;
@@ -51,6 +50,7 @@ import de.westarps.topteacher.ui.component.GradingScaleViewer;
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
 import de.westarps.topteacher.ui.component.PupilAssignmentGrid;
 import de.westarps.topteacher.ui.component.RefreshRegistry;
+import de.westarps.topteacher.ui.component.TopTeacherDialogs;
 import de.westarps.topteacher.ui.component.loe.ExamEvaluationViewer;
 import de.westarps.topteacher.ui.component.loe.ExamMaterialEditor;
 import de.westarps.topteacher.ui.component.loe.ExamResultsEditor;
@@ -123,7 +123,7 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 	private final Button newButton = createNewButton();
 	private final Button saveButton = Buttons.createOrSave();
 	private final Button duplicateButton = Buttons.duplicateOpener();
-	private final Dialog duplicateDialog = new Dialog();
+	private final Dialog duplicateDialog = TopTeacherDialogs.create("Klausur duplizieren");
 	private final TextField duplicateTitle = new TextField("Titel");
 	private final DatePicker duplicateDate = new DatePicker("Datum");
 	private final ComboBox<Course> duplicateCourse = new ComboBox<>("Kurs");
@@ -573,8 +573,6 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 	}
 
 	private void configureDuplicateDialog() {
-		duplicateDialog.setHeaderTitle("Klausur duplizieren");
-
 		duplicateTitle.setRequiredIndicatorVisible(true);
 		duplicateTitle.setWidthFull();
 
@@ -590,15 +588,13 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 
 		final Button cancelButton = new Button("Abbrechen", event -> duplicateDialog.close());
 		final Button applyButton = Buttons.duplicate(event -> duplicateExam());
-		final HorizontalLayout actions = new HorizontalLayout(cancelButton, applyButton);
-		actions.setPadding(false);
-		actions.setSpacing(true);
 
-		final VerticalLayout content = new VerticalLayout(duplicateTitle, duplicateDate, duplicateCourse, actions);
+		final VerticalLayout content = new VerticalLayout(duplicateTitle, duplicateDate, duplicateCourse);
+		content.addClassName("tt-dialog-content");
 		content.setPadding(false);
 		content.setSpacing(true);
 		content.setWidth("28rem");
-		duplicateDialog.add(content);
+		duplicateDialog.add(content, TopTeacherDialogs.buttonBar(cancelButton, applyButton));
 	}
 
 	private void openDuplicateDialog() {

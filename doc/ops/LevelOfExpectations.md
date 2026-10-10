@@ -61,7 +61,10 @@ diagrams, data, and similar material handed out with the exam.
 Only Material Markdown supports managed images. Its image toolbar command opens
 one dialog for choosing a PNG or JPEG image, entering the required description
 or alternative text, and selecting automatic, 25%, 50%, 75%, or 100% content
-width. Confirmation inserts the declaration at the remembered cursor position:
+width. The upload row places the dashed file-drop target to the left, followed
+by `oder` and `Datei auswählen...` to the right. Confirmation inserts the
+declaration at the remembered cursor position. Only the dashed area accepts a
+dragged file; the separator and selection button are not drop targets:
 
 ```markdown
 ![Diagramm 1](img:4n8k2p7c?width=75)
@@ -72,6 +75,11 @@ occurrence, not to the stored image. An omitted width uses automatic sizing.
 Images preserve their aspect ratio, never exceed the available preview width,
 and can be opened in a larger inspection view. The future pupil printout must
 apply the same content-relative sizing contract.
+
+If the cursor or selection is inside an existing managed-image declaration,
+the image command opens `Bild bearbeiten` with its description and width
+prefilled. `Übernehmen` replaces that declaration in place without requiring a
+new upload; the insert dialog continues to use `Einfügen`.
 
 Dropped files are intercepted in every editable or rendered Markdown surface
 so the browser cannot navigate away. A single PNG or JPEG dropped into editable
