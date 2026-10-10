@@ -30,7 +30,6 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.internal.PendingJavaScriptInvocation;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.dom.DomEvent;
 import com.vaadin.flow.internal.nodefeature.ElementListenerMap;
@@ -174,7 +173,7 @@ class LevelOfExpectationsEditorTests {
 		final LevelOfExpectationsEditor editor = editorWithGradingScale(repository, 2);
 		editor.setExam(EXAM);
 
-		components(editor, IntegerField.class).getFirst().setValue(3);
+		setRequirementMaxPoints(editor, 3);
 
 		assertThat(saveButtons(editor)).extracting(Button::isEnabled).containsOnly(false);
 		assertThat(discardButtons(editor)).extracting(Button::isEnabled).containsOnly(true);
@@ -230,7 +229,7 @@ class LevelOfExpectationsEditorTests {
 		verify(repository).findTasksByExamId(EXAM.id());
 		verify(repository).findRequirementsByExamId(EXAM.id());
 
-		components(editor, IntegerField.class).getFirst().setValue(7);
+		setRequirementMaxPoints(editor, 7);
 
 		assertThat(buttonsByAriaLabel(editor, "Neu laden").getFirst().isEnabled()).isFalse();
 	}
@@ -312,7 +311,7 @@ class LevelOfExpectationsEditorTests {
 		final Details partDetails = components(editor, Details.class).getFirst();
 		clearInvocations(repository);
 
-		components(editor, IntegerField.class).getFirst().setValue(4);
+		setRequirementMaxPoints(editor, 4);
 
 		assertThat(badgeTexts(editor)).contains("Summe: 5 (+0)", "Gesamt: 5 (+0)", "100 %",
 				"Verteilt: 4 / 5 (+0) · 1 offen");
@@ -340,7 +339,7 @@ class LevelOfExpectationsEditorTests {
 		final Details partDetails = components(editor, Details.class).getFirst();
 		clearInvocations(repository);
 
-		components(editor, IntegerField.class).getFirst().setValue(7);
+		setRequirementMaxPoints(editor, 7);
 		bonusButtons(editor).getFirst().click();
 
 		assertThat(badgeTexts(editor)).contains("Summe: 5 (+7)", "Gesamt: 5 (+7)", "100 %");
@@ -370,7 +369,7 @@ class LevelOfExpectationsEditorTests {
 		assertThat(saveButtons).hasSize(1).extracting(Button::isEnabled).containsOnly(false);
 		assertThat(discardButtons).hasSize(1).extracting(Button::isEnabled).containsOnly(false);
 
-		components(editor, IntegerField.class).getFirst().setValue(4);
+		setRequirementMaxPoints(editor, 4);
 
 		assertThat(saveButtons).extracting(Button::isEnabled).containsOnly(true);
 		assertThat(discardButtons).extracting(Button::isEnabled).containsOnly(true);
@@ -407,7 +406,8 @@ class LevelOfExpectationsEditorTests {
 		assertThat(buttonsByAriaLabel(editor, "Löschen")).extracting(Button::isEnabled).containsOnly(false);
 		assertThat(buttonsByAriaLabel(editor, "Nach oben")).extracting(Button::isEnabled).containsOnly(false);
 		assertThat(buttonsByAriaLabel(editor, "Nach unten")).extracting(Button::isEnabled).containsOnly(false);
-		assertThat(components(editor, IntegerField.class)).extracting(IntegerField::isEnabled).containsOnly(false);
+		assertThat(buttonsByAriaLabel(editor, "Max. Punkte verringern")).extracting(Button::isEnabled).containsOnly(false);
+		assertThat(buttonsByAriaLabel(editor, "Max. Punkte erhöhen")).extracting(Button::isEnabled).containsOnly(false);
 		assertThat(bonusButtons(editor)).extracting(Button::isEnabled).containsOnly(false);
 
 		assertThat(components(editor, TextField.class)).isEmpty();
@@ -564,8 +564,7 @@ class LevelOfExpectationsEditorTests {
 
 		assertThat(message.isVisible()).isFalse();
 
-		final IntegerField maxPoints = components(editor, IntegerField.class).getFirst();
-		maxPoints.setValue(1);
+		setRequirementMaxPoints(editor, 1);
 
 		assertThat(message.isVisible()).isTrue();
 		assertThat(message.getText()).isEqualTo("Ordne einen Kriterienpunkt weniger zu.");
@@ -579,7 +578,7 @@ class LevelOfExpectationsEditorTests {
 		assertThat(message.getText()).isEqualTo("Ordne 0,5 Kriterienpunkte weniger zu.");
 		assertThat(message.getElement().getAttribute("data-severity")).isEqualTo("error");
 
-		maxPoints.setValue(3);
+		setRequirementMaxPoints(editor, 3);
 
 		assertThat(message.isVisible()).isTrue();
 		assertThat(message.getText()).isEqualTo("Ordne weitere 1,5 Kriterienpunkte zu.");
@@ -598,33 +597,36 @@ class LevelOfExpectationsEditorTests {
 	}
 
 	@Test
-	void placesMaxPointsFieldInRequirementSummary() {
+	void placesSharedWholePointStepperWithoutVisibleLabelInRequirementSummary() {
 		final LevelOfExpectationsRepository repository = repositoryWithHierarchy();
 		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repository);
 
 		editor.setExam(EXAM);
 
-		final IntegerField maxPoints = components(editor, IntegerField.class).getFirst();
+		final LoeWholePointStepper maxPoints = components(editor, LoeWholePointStepper.class).getFirst();
 		final Button bonus = bonusButtons(editor).getFirst();
 		final Component parent = maxPoints.getParent().orElseThrow();
 		final Component bonusParent = bonus.getParent().orElseThrow();
 		final Component headerControls = parent.getParent().orElseThrow();
 
-		assertThat(maxPoints.getElement().getAttribute("aria-label")).isEqualTo("Max. Punkte");
-		assertThat(maxPoints.getPrefixComponent()).isNull();
-		assertThat(maxPoints.getClassNames()).contains("tt-eh-requirement-points-field");
+		assertThat(components(maxPoints, Span.class)).singleElement()
+				.satisfies(value -> {
+					assertThat(value.getElement().getAttribute("aria-label")).isEqualTo("Max. Punkte");
+					assertThat(value.getText()).isEqualTo("5");
+				});
+		assertThat(maxPoints.getClassNames()).contains("tt-loe-point-stepper", "tt-loe-whole-point-stepper");
+		assertThat(buttonsByAriaLabel(maxPoints, "Max. Punkte verringern")).hasSize(1);
+		assertThat(buttonsByAriaLabel(maxPoints, "Max. Punkte erhöhen")).hasSize(1);
 		assertThat(maxPoints.getWidth()).isNull();
 		assertThat(parent).isInstanceOf(HorizontalLayout.class);
 		assertThat(parent.getClassNames()).contains("tt-eh-requirement-points-control");
 		final List<Component> pointControlChildren = parent.getChildren().toList();
-		assertThat(pointControlChildren).hasSize(3);
+		assertThat(pointControlChildren).hasSize(2);
 		assertThat(pointControlChildren.get(0)).isInstanceOf(Span.class)
 				.satisfies(component -> assertThat(component.getClassNames())
 						.contains("tt-eh-requirement-allocation-message"));
 		assertThat(pointControlChildren.get(0).isVisible()).isFalse();
-		assertThat(pointControlChildren.get(1)).isInstanceOf(Span.class)
-				.satisfies(component -> assertThat(((Span) component).getText()).isEqualTo("Max. Punkte"));
-		assertThat(pointControlChildren.get(2)).isSameAs(maxPoints);
+		assertThat(pointControlChildren.get(1)).isSameAs(maxPoints);
 		assertThat(bonus.getElement().getAttribute("aria-label")).isEqualTo("Sternchen-Aufgabe");
 		assertThat(bonus.getElement().getAttribute("aria-pressed")).isEqualTo("false");
 		assertThat(bonus.getIcon().getElement().getAttribute("icon")).isEqualTo("vaadin:star");
@@ -669,7 +671,8 @@ class LevelOfExpectationsEditorTests {
 
 		editor.setExam(EXAM);
 
-		final List<String> spanTexts = components(editor, Span.class).stream().map(Span::getText).toList();
+		final List<String> spanTexts = components(editor, Span.class).stream()
+				.filter(span -> span.getClassNames().contains("tt-eh-summary-type")).map(Span::getText).toList();
 		assertThat(spanTexts).contains("Anforderung 1", "Anforderung 2");
 		assertThat(spanTexts).doesNotContain("1", "2");
 		assertThat(spanTexts).doesNotContain(REQUIREMENT.descriptionMarkdown(),
@@ -912,6 +915,18 @@ class LevelOfExpectationsEditorTests {
 
 	private static List<Button> saveButtons(final Component root) {
 		return components(root, Button.class).stream().filter(button -> "Speichern".equals(button.getText())).toList();
+	}
+
+	private static void setRequirementMaxPoints(final Component root, final int value) {
+		final LoeWholePointStepper points = components(root, LoeWholePointStepper.class).getFirst();
+		final String action = points.getValue() < value ? "Max. Punkte erhöhen" : "Max. Punkte verringern";
+		final Button button = buttonsByAriaLabel(points, action).getFirst();
+		final int changes = Math.abs(points.getValue() - value);
+		for (int index = 0; index < changes; index++) {
+			assertThat(button.isEnabled()).isTrue();
+			button.click();
+		}
+		assertThat(points.getValue()).isEqualTo(value);
 	}
 
 	private static List<Button> discardButtons(final Component root) {

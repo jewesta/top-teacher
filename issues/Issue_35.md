@@ -279,6 +279,10 @@ The combined review pass is intended to provide the following end state:
 - Task maximum points use the shared compact minus/value/plus control with a
   permanent background in the task summary's point column; see the
   [operational specification](../doc/ops/LevelOfExpectations.md#task).
+- EH requirement maxima use the same unlabeled control; all three authoring
+  views share the Markdown right inset and aligned points column. See
+  [requirements](../doc/ops/LevelOfExpectations.md#requirement) and
+  [shared layout behavior](../doc/ops/LevelOfExpectations.md#editing-ownership-and-shared-tree-behavior).
 - `Material` stores ordered title/Markdown entries under exactly one read-only
   exam part.
 - EH shows part, category, task Markdown, and task points as read-only context;

@@ -74,6 +74,11 @@ incomplete. A completed requirement must have a meaningful positive maximum,
 and the regular requirements of its task must together distribute that task's
 explicit maximum.
 
+Requirement maxima use the same compact whole-point minus/value/plus control
+as task maxima in `Aufgaben`, with a permanent background and no visible
+`Max. Punkte` label. The controls retain descriptive accessibility labels and
+become read-only in correction mode.
+
 ## Authoritative budgets and distributions
 
 The grading scale defines the authoritative regular maximum for the exam. Task
@@ -218,6 +223,10 @@ the application.
 `Aufgaben`, `Material`, and EH are separate views of the same exam definition
 and use the same tree-section rendering and collapse behavior.
 
+All three views share the EH Markdown right inset. Summary point badges and
+maximum-point controls align with the Markdown content's right edge, including
+the exam total above the tree.
+
 - `Aufgaben` is the sole editor for parts, performance categories, task titles,
   task Markdown, task maxima, and their order.
 - `Material` edits ordered material below read-only part headings.
@@ -270,7 +279,7 @@ designer.
 - Missing allocations are warnings. Excess allocations and malformed values are
   errors.
 - A requirement with criterion validation findings shows the first finding
-  inline immediately before its `Max. Punkte` control. This uses the same
+  inline immediately before its maximum-point control. This uses the same
   validator result as the status tray, without repeating the requirement label.
   Warnings use yellow and errors use red. The message updates while either the
   criterion definitions or the requirement maximum changes. Criterion-free
