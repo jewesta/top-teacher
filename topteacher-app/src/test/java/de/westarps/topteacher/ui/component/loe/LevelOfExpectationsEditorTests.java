@@ -46,6 +46,7 @@ import de.westarps.topteacher.model.loe.LoeCategory;
 import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeTask;
+import de.westarps.topteacher.ui.component.ActionToolbar;
 import de.westarps.topteacher.ui.component.FullscreenButton;
 import de.westarps.topteacher.ui.component.loe.LevelOfExpectationsEditor.DesignState;
 import de.westarps.vaadin.markdown.MarkdownEditor;
@@ -70,6 +71,26 @@ class LevelOfExpectationsEditorTests {
 	private static final LoeRequirement BONUS_REQUIREMENT = new LoeRequirement(10, TASK.id(), "Bonus requirement", 4,
 			true, 1);
 	private static final LoeRequirement NEW_REQUIREMENT = new LoeRequirement(11, TASK.id(), "", 0, false, 1);
+
+	@Test
+	void placesRequirementActionsBeforeMarkdownInDesignAndCorrectionMode() {
+		for (final boolean correctionMode : List.of(false, true)) {
+			final LevelOfExpectationsRepository repository = repositoryWithHierarchy();
+			when(repository.hasResultsForExam(EXAM.id())).thenReturn(correctionMode);
+			final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repository);
+			editor.setExam(EXAM);
+			final VerticalLayout requirement = components(editor, VerticalLayout.class).stream()
+					.filter(layout -> layout.hasClassName("tt-eh-requirement")).findFirst().orElseThrow();
+			final List<Component> content = requirement.getChildren().toList();
+
+			assertThat(content).hasSize(3);
+			assertThat(content.getFirst().hasClassName("tt-eh-summary")).isTrue();
+			assertThat(content.get(1)).isInstanceOf(ActionToolbar.class);
+			assertThat(content.get(1).hasClassName("tt-eh-actions")).isTrue();
+			assertThat(content.getLast().hasClassName("tt-markdown-block")).isTrue();
+			assertThat(components(content.getLast(), MarkdownEditor.class)).hasSize(1);
+		}
+	}
 
 	@Test
 	void showsAllocationWarningsInTheStatusTray() {

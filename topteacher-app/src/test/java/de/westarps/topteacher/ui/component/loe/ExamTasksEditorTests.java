@@ -24,6 +24,7 @@ import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 
 import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
@@ -31,6 +32,7 @@ import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.loe.LoeCategory;
 import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoeTask;
+import de.westarps.topteacher.ui.component.ActionToolbar;
 import de.westarps.vaadin.markdown.MarkdownEditor;
 import de.westarps.vaadin.markdown.MarkdownViewer;
 
@@ -83,6 +85,28 @@ class ExamTasksEditorTests {
 		assertThat(editor.hasUnsavedChanges()).isFalse();
 		assertThat(titleField(editor, TASK.title()).getValue()).isEqualTo(TASK.title());
 		verify(repository, never()).saveTask(org.mockito.ArgumentMatchers.any());
+	}
+
+	@Test
+	void placesTaskActionsBeforeMarkdownInEditableAndLockedMode() {
+		for (final boolean locked : List.of(false, true)) {
+			final ExamTasksEditor editor = new ExamTasksEditor(repository(locked));
+			editor.setExam(EXAM);
+			final Details task = components(editor, Details.class).getLast();
+			final VerticalLayout body = components(task, VerticalLayout.class).stream()
+					.filter(layout -> layout.hasClassName("tt-eh-section-content")).findFirst().orElseThrow();
+			final List<Component> content = body.getChildren().toList();
+
+			assertThat(content).hasSize(2);
+			assertThat(content.getFirst().hasClassName("tt-eh-editor-block")).isTrue();
+			assertThat(content.getFirst().getChildren()).singleElement().isInstanceOf(ActionToolbar.class);
+			assertThat(content.getLast().hasClassName("tt-markdown-block")).isTrue();
+			if (locked) {
+				assertThat(components(content.getLast(), MarkdownViewer.class)).hasSize(1);
+			} else {
+				assertThat(components(content.getLast(), MarkdownEditor.class)).hasSize(1);
+			}
+		}
 	}
 
 	@Test

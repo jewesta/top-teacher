@@ -13,6 +13,16 @@ vaadin-tab:not([disabled]) {
 	cursor: pointer;
 }
 
+vaadin-combo-box-item::part(checkmark)::before,
+vaadin-multi-select-combo-box-item::part(checkmark)::before,
+vaadin-select-item::part(checkmark)::before {
+	content: "\2022";
+	font-family: var(--lumo-font-family);
+	background: none;
+	mask: none;
+	text-align: center;
+}
+
 vaadin-app-layout::part(drawer) {
 	background-image: none;
 }
@@ -902,6 +912,10 @@ vaadin-app-layout::part(navbar) {
 
 .tt-eh-editor-block {
 	gap: var(--lumo-space-s);
+}
+
+.tt-eh-task .tt-eh-section-content:has(> .tt-eh-editor-block) {
+	padding-bottom: var(--lumo-space-m);
 }
 
 .tt-eh-actions {

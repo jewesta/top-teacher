@@ -7,6 +7,8 @@
   and fields, rather than below the form. This includes single-record editors,
   bulk status changes,
   grading-scale editing, and backup settings.
+  Task and requirement reorder/delete bars appear above their Markdown content
+  within the section, below its header.
 - Action bars adapt to their visible elements. A lone action shows its icon
   and German label as a neutral secondary button. With two or more visible
   elements, actions show only their icons, without a persistent button
@@ -55,6 +57,13 @@
 - `Zurücksetzen` is the explicit tab-level exception: its destructive action
   keeps its label and remains below the explanatory text. Confirmation dialogs
   remain unchanged.
+
+## Selection indicators
+
+Dropdowns use a dot to mark selected options, including single- and
+multi-select combo boxes. Their selection highlight, spacing, keyboard
+navigation, and accessible selected state remain unchanged. Checkmarks used
+for completion and actual checkbox controls are unaffected.
 
 ## Grading-scale lock
 

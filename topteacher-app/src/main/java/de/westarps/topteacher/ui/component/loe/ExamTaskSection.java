@@ -47,8 +47,8 @@ final class ExamTaskSection extends AbstractLoeSection<LoeTask> {
 		final Component descriptionBlock = locked
 				? components.markdownViewBlock("Aufgabentext", task.descriptionMarkdown())
 				: components.markdownBlock("Aufgabentext", description);
-		addToBody(descriptionBlock,
-				editorBlockWithMoveButtons(components, siblings, handler, List.of(), List.of(delete), locked));
+		addToBody(editorBlockWithMoveButtons(components, siblings, handler, List.of(), List.of(delete), locked),
+				descriptionBlock);
 	}
 
 	private static Fields fields(final LoeTask task, final LoeSectionComponents components, final boolean locked) {

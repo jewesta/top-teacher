@@ -88,7 +88,7 @@ final class LoeRequirementSection extends Composite<VerticalLayout> implements L
 
 	@Override
 	protected VerticalLayout initContent() {
-		final VerticalLayout editor = new VerticalLayout(summary, description, actions);
+		final VerticalLayout editor = new VerticalLayout(summary, actions, description);
 		editor.addClassName("tt-eh-requirement");
 		editor.setPadding(false);
 		editor.setWidthFull();

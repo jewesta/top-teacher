@@ -231,6 +231,11 @@ the exam total above the tree.
 The [shared application action-bar rules](ApplicationActions.md#action-bars)
 apply to list, form, designer, and nested tree action bars. Add/reorder/delete
 rows use normal-sized controls and the shared compact horizontal spacing.
+Task reorder/delete action rows in Aufgaben and requirement reorder/delete
+rows in EH appear above their Markdown editors, after the section header.
+The same order applies to rendered task text in locked mode. They use the
+standard gap before the Markdown block; task sections retain the same bottom
+inset as EH requirements.
 Point steppers, section-header toggles, and Markdown formatting controls retain
 their existing sizing. Contextual add actions retain their
 plus icon and label; for example, `Klausurteil hinzufügen` is first in Aufgaben.
