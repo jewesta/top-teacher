@@ -13,7 +13,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -33,7 +32,6 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.dom.DomEvent;
 import com.vaadin.flow.internal.nodefeature.ElementListenerMap;
 import com.vaadin.flow.server.VaadinSession;
@@ -61,11 +59,11 @@ class LevelOfExpectationsEditorTests {
 	private static final Exam EXAM = new Exam(1, 10, "Klausur", LocalDate.of(2026, 9, 1), null, GRADING_SCALE_ID);
 	private static final LoePart PART = new LoePart(1, EXAM.id(), "Klausurteil A", 0);
 	private static final LoeCategory CATEGORY = new LoeCategory(2, PART.id(), "Inhalt", "Beschreibung", 0);
-	private static final LoeTask TASK = new LoeTask(3, CATEGORY.id(), "Teilaufgabe 1", 0);
+	private static final LoeTask TASK = new LoeTask(3, CATEGORY.id(), "Teilaufgabe 1", "Aufgabentext", 5, 0);
 	private static final LoeRequirement REQUIREMENT = new LoeRequirement(4, TASK.id(), "Requirement text", 5, false, 0);
 	private static final LoePart SECOND_PART = new LoePart(5, EXAM.id(), "Klausurteil B", 1);
 	private static final LoeCategory SECOND_CATEGORY = new LoeCategory(6, SECOND_PART.id(), "Sprache", "", 0);
-	private static final LoeTask SECOND_TASK = new LoeTask(7, SECOND_CATEGORY.id(), "Teilaufgabe 2", 0);
+	private static final LoeTask SECOND_TASK = new LoeTask(7, SECOND_CATEGORY.id(), "Teilaufgabe 2", "", 15, 0);
 	private static final LoeRequirement SECOND_REQUIREMENT = new LoeRequirement(8, SECOND_TASK.id(),
 			"Second requirement", 15, false, 0);
 	private static final LoeRequirement FOLLOWING_REQUIREMENT = new LoeRequirement(9, TASK.id(),
@@ -99,7 +97,7 @@ class LevelOfExpectationsEditorTests {
 				repositoryWithHierarchy(underallocatedRequirement));
 		editor.setExam(EXAM);
 		final StatusTray tray = components(editor, StatusTray.class).getFirst();
-		collapseButtons(editor).getFirst().click();
+		globalToggleButtons(editor).getFirst().click();
 		tray.show();
 
 		final Anchor link = components(tray, Anchor.class).stream()
@@ -137,15 +135,18 @@ class LevelOfExpectationsEditorTests {
 		final LevelOfExpectationsRepository repository = repositoryWithHierarchy(completeRequirement);
 		final LevelOfExpectationsEditor editor = editorWithGradingScale(repository, 4);
 		editor.setExam(EXAM);
+		final String updatedDescription = completeRequirement.descriptionMarkdown() + "\n\nZusatz";
 
-		titleField(editor, PART.title()).setValue("Klausurteil Alpha");
+		markdownEditor(editor, completeRequirement.descriptionMarkdown()).setValue(updatedDescription);
 
 		assertThat(editor.getDesignState()).isEqualTo(DesignState.INCOMPLETE);
 		assertThat(saveButtons(editor)).extracting(Button::isEnabled).containsOnly(true);
 
 		saveButtons(editor).getFirst().click();
 
-		verify(repository).savePart(new LoePart(PART.id(), PART.examId(), "Klausurteil Alpha", PART.sortOrder()));
+		verify(repository).saveRequirement(new LoeRequirement(completeRequirement.id(), completeRequirement.taskId(),
+				updatedDescription, completeRequirement.maxPoints(), completeRequirement.bonus(),
+				completeRequirement.sortOrder()));
 	}
 
 	@Test
@@ -179,7 +180,7 @@ class LevelOfExpectationsEditorTests {
 		assertThat(discardButtons(editor)).extracting(Button::isEnabled).containsOnly(true);
 		assertThat(components(editor, StatusTray.class).getFirst().getItems())
 				.anySatisfy(result -> assertThat(result.message())
-						.isEqualTo("Erwartungshorizont: Ordne einen Punkt weniger zu."));
+						.isEqualTo("Aufgabe 1: Erwartungshorizont: Ordne einen Punkt weniger zu."));
 		verify(repository, never()).saveRequirement(any());
 	}
 
@@ -238,7 +239,7 @@ class LevelOfExpectationsEditorTests {
 	void marksTheHierarchyAndExpandsThePathForDeepLinks() {
 		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repositoryWithHierarchy());
 		editor.setExam(EXAM);
-		collapseButtons(editor).getFirst().click();
+		globalToggleButtons(editor).getFirst().click();
 
 		assertThat(components(editor, Details.class)).extracting(Details::isOpened).containsOnly(false);
 		assertThat(
@@ -311,9 +312,10 @@ class LevelOfExpectationsEditorTests {
 		final Details partDetails = components(editor, Details.class).getFirst();
 		clearInvocations(repository);
 
-		components(editor, IntegerField.class).getFirst().setValue(7);
+		components(editor, IntegerField.class).getFirst().setValue(4);
 
-		assertThat(badgeTexts(editor)).contains("Summe: 7 (+0)", "Gesamt: 7 (+0)", "100 %");
+		assertThat(badgeTexts(editor)).contains("Summe: 5 (+0)", "Gesamt: 5 (+0)", "100 %",
+				"Verteilt: 4 / 5 (+0) · 1 offen");
 		assertThat(components(editor, Details.class).getFirst()).isSameAs(partDetails);
 
 		final List<Button> saveButtons = saveButtons(editor);
@@ -321,13 +323,13 @@ class LevelOfExpectationsEditorTests {
 		saveButtons.getFirst().click();
 
 		verify(repository).saveRequirement(new LoeRequirement(REQUIREMENT.id(), REQUIREMENT.taskId(),
-				REQUIREMENT.descriptionMarkdown(), 7, REQUIREMENT.bonus(), REQUIREMENT.sortOrder()));
+				REQUIREMENT.descriptionMarkdown(), 4, REQUIREMENT.bonus(), REQUIREMENT.sortOrder()));
 		verify(repository, never()).findPartsByExamId(anyInt());
 		verify(repository, never()).findCategoriesByExamId(anyInt());
 		verify(repository, never()).findTasksByExamId(anyInt());
 		verify(repository, never()).findRequirementsByExamId(anyInt());
 		assertThat(components(editor, Details.class).getFirst()).isSameAs(partDetails);
-		assertThat(badgeTexts(editor)).contains("Gesamt: 7 (+0)", "100 %");
+		assertThat(badgeTexts(editor)).contains("Gesamt: 5 (+0)", "100 %");
 	}
 
 	@Test
@@ -341,7 +343,7 @@ class LevelOfExpectationsEditorTests {
 		components(editor, IntegerField.class).getFirst().setValue(7);
 		bonusButtons(editor).getFirst().click();
 
-		assertThat(badgeTexts(editor)).contains("Summe: 0 (+7)", "Gesamt: 0 (+7)", "0 %");
+		assertThat(badgeTexts(editor)).contains("Summe: 5 (+7)", "Gesamt: 5 (+7)", "100 %");
 		assertThat(components(editor, Details.class).getFirst()).isSameAs(partDetails);
 
 		final List<Button> saveButtons = saveButtons(editor);
@@ -354,7 +356,7 @@ class LevelOfExpectationsEditorTests {
 		verify(repository, never()).findTasksByExamId(anyInt());
 		verify(repository, never()).findRequirementsByExamId(anyInt());
 		assertThat(components(editor, Details.class).getFirst()).isSameAs(partDetails);
-		assertThat(badgeTexts(editor)).contains("Gesamt: 0 (+7)");
+		assertThat(badgeTexts(editor)).contains("Gesamt: 5 (+7)");
 	}
 
 	@Test
@@ -368,7 +370,7 @@ class LevelOfExpectationsEditorTests {
 		assertThat(saveButtons).hasSize(1).extracting(Button::isEnabled).containsOnly(false);
 		assertThat(discardButtons).hasSize(1).extracting(Button::isEnabled).containsOnly(false);
 
-		components(editor, IntegerField.class).getFirst().setValue(7);
+		components(editor, IntegerField.class).getFirst().setValue(4);
 
 		assertThat(saveButtons).extracting(Button::isEnabled).containsOnly(true);
 		assertThat(discardButtons).extracting(Button::isEnabled).containsOnly(true);
@@ -376,34 +378,21 @@ class LevelOfExpectationsEditorTests {
 		saveButtons.getFirst().click();
 
 		verify(repository).saveRequirement(new LoeRequirement(REQUIREMENT.id(), REQUIREMENT.taskId(),
-				REQUIREMENT.descriptionMarkdown(), 7, REQUIREMENT.bonus(), REQUIREMENT.sortOrder()));
+				REQUIREMENT.descriptionMarkdown(), 4, REQUIREMENT.bonus(), REQUIREMENT.sortOrder()));
 		assertThat(saveButtons).extracting(Button::isEnabled).containsOnly(false);
 		assertThat(discardButtons).extracting(Button::isEnabled).containsOnly(false);
 	}
 
 	@Test
-	void titleFieldsAlsoControlSaveButtonState() {
+	void keepsPartCategoryAndTaskReadOnlyBeforeResultsExist() {
 		final LevelOfExpectationsRepository repository = repositoryWithHierarchy();
 		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repository);
-		final AtomicInteger changes = new AtomicInteger();
-		editor.setChangeHandler(changes::incrementAndGet);
 		editor.setExam(EXAM);
-		clearInvocations(repository);
-		final List<Button> saveButtons = saveButtons(editor);
-		final TextField partTitle = titleField(editor, PART.title());
 
-		assertThat(partTitle.getValueChangeMode()).isEqualTo(ValueChangeMode.EAGER);
-		assertThat(saveButtons).extracting(Button::isEnabled).containsOnly(false);
-
-		partTitle.setValue("Klausurteil X");
-
-		assertThat(saveButtons).extracting(Button::isEnabled).containsOnly(true);
-
-		saveButtons.getFirst().click();
-
-		verify(repository).savePart(new LoePart(PART.id(), PART.examId(), "Klausurteil X", PART.sortOrder()));
-		assertThat(saveButtons).extracting(Button::isEnabled).containsOnly(false);
-		assertThat(changes).hasValue(1);
+		assertThat(components(editor, TextField.class)).isEmpty();
+		assertThat(components(editor, Span.class).stream().map(Span::getText)).contains(PART.title(), CATEGORY.title(),
+				TASK.title());
+		assertThat(buttonsByAriaLabel(editor, "Löschen")).hasSize(1);
 	}
 
 	@Test
@@ -414,9 +403,6 @@ class LevelOfExpectationsEditorTests {
 
 		editor.setExam(EXAM);
 
-		assertThat(button(editor, "Klausurteil hinzufügen").isEnabled()).isFalse();
-		assertThat(button(editor, "Leistungskategorie hinzufügen").isEnabled()).isFalse();
-		assertThat(button(editor, "Teilaufgabe hinzufügen").isEnabled()).isFalse();
 		assertThat(button(editor, "Anforderung hinzufügen").isEnabled()).isFalse();
 		assertThat(buttonsByAriaLabel(editor, "Löschen")).extracting(Button::isEnabled).containsOnly(false);
 		assertThat(buttonsByAriaLabel(editor, "Nach oben")).extracting(Button::isEnabled).containsOnly(false);
@@ -424,11 +410,8 @@ class LevelOfExpectationsEditorTests {
 		assertThat(components(editor, IntegerField.class)).extracting(IntegerField::isEnabled).containsOnly(false);
 		assertThat(bonusButtons(editor)).extracting(Button::isEnabled).containsOnly(false);
 
-		final TextField partTitle = titleField(editor, PART.title());
-		partTitle.setValue("Klausurteil Alpha");
-		saveButtons(editor).getFirst().click();
-
-		verify(repository).savePart(new LoePart(PART.id(), PART.examId(), "Klausurteil Alpha", PART.sortOrder()));
+		assertThat(components(editor, TextField.class)).isEmpty();
+		assertThat(markdownEditor(editor, REQUIREMENT.descriptionMarkdown()).isEnabled()).isTrue();
 	}
 
 	@Test
@@ -437,12 +420,6 @@ class LevelOfExpectationsEditorTests {
 
 		editor.setExam(EXAM);
 
-		assertThat(button(editor, "Klausurteil hinzufügen").getThemeNames())
-				.doesNotContain(ButtonVariant.LUMO_PRIMARY.getVariantName());
-		assertThat(button(editor, "Leistungskategorie hinzufügen").getThemeNames())
-				.doesNotContain(ButtonVariant.LUMO_PRIMARY.getVariantName());
-		assertThat(button(editor, "Teilaufgabe hinzufügen").getThemeNames())
-				.doesNotContain(ButtonVariant.LUMO_PRIMARY.getVariantName());
 		assertThat(button(editor, "Anforderung hinzufügen").getThemeNames())
 				.doesNotContain(ButtonVariant.LUMO_PRIMARY.getVariantName());
 	}
@@ -463,14 +440,14 @@ class LevelOfExpectationsEditorTests {
 
 			deleteButton.click();
 
-			verify(repository, never()).deletePart(PART.id());
+			verify(repository, never()).deleteRequirement(REQUIREMENT.id());
 			final ConfirmDialog confirmation = components(ui, ConfirmDialog.class).getFirst();
 			assertThat(confirmation.isOpened()).isTrue();
-			assertThat(confirmation.getElement().getProperty("header")).isEqualTo("Klausurteil löschen?");
+			assertThat(confirmation.getElement().getProperty("header")).isEqualTo("Anforderung löschen?");
 
 			ComponentUtil.fireEvent(confirmation, new ConfirmDialog.ConfirmEvent(confirmation, false));
 
-			verify(repository).deletePart(PART.id());
+			verify(repository).deleteRequirement(REQUIREMENT.id());
 		} finally {
 			UI.setCurrent(null);
 		}
@@ -521,7 +498,27 @@ class LevelOfExpectationsEditorTests {
 
 		editor.setExam(EXAM);
 
-		assertThat(badgeTexts(editor)).contains("Summe: 5 (+4)", "Gesamt: 5 (+4)", "100 %");
+		assertThat(badgeTexts(editor)).contains("Summe: 5 (+4)", "Gesamt: 5 (+4)", "100 %",
+				"Verteilt: 5 / 5 (+4)");
+	}
+
+	@Test
+	void showsOpenAndExcessRequirementPointsAgainstTheTaskBudget() {
+		final LoeRequirement openRequirement = new LoeRequirement(REQUIREMENT.id(), REQUIREMENT.taskId(),
+				REQUIREMENT.descriptionMarkdown(), 3, false, REQUIREMENT.sortOrder());
+		final LevelOfExpectationsEditor openEditor = new LevelOfExpectationsEditor(
+				repositoryWithFixedTaskBudget(openRequirement, 5));
+		openEditor.setExam(EXAM);
+
+		assertThat(badgeTexts(openEditor)).contains("Verteilt: 3 / 5 (+0) · 2 offen");
+
+		final LoeRequirement excessRequirement = new LoeRequirement(REQUIREMENT.id(), REQUIREMENT.taskId(),
+				REQUIREMENT.descriptionMarkdown(), 7, false, REQUIREMENT.sortOrder());
+		final LevelOfExpectationsEditor excessEditor = new LevelOfExpectationsEditor(
+				repositoryWithFixedTaskBudget(excessRequirement, 5));
+		excessEditor.setExam(EXAM);
+
+		assertThat(badgeTexts(excessEditor)).contains("Verteilt: 7 / 5 (+0) · 2 zu viel");
 	}
 
 	@Test
@@ -556,8 +553,8 @@ class LevelOfExpectationsEditorTests {
 		assertThat(message.isVisible()).isTrue();
 		assertThat(message.getText()).isEqualTo("Ordne weitere 1,5 Kriterienpunkte zu.");
 		assertThat(message.getElement().getAttribute("data-severity")).isEqualTo("warning");
-		assertThat(components(editor, StatusTray.class).getFirst().getItems()).singleElement()
-				.satisfies(result -> assertThat(result.message())
+		assertThat(components(editor, StatusTray.class).getFirst().getItems())
+				.anySatisfy(result -> assertThat(result.message())
 						.isEqualTo("Aufgabe 1 · Anforderung 1: " + message.getText()));
 
 		final MarkdownEditor description = markdownEditor(editor, underAllocatedDescription);
@@ -573,8 +570,8 @@ class LevelOfExpectationsEditorTests {
 		assertThat(message.isVisible()).isTrue();
 		assertThat(message.getText()).isEqualTo("Ordne einen Kriterienpunkt weniger zu.");
 		assertThat(message.getElement().getAttribute("data-severity")).isEqualTo("error");
-		assertThat(components(editor, StatusTray.class).getFirst().getItems()).singleElement()
-				.satisfies(result -> assertThat(result.message())
+		assertThat(components(editor, StatusTray.class).getFirst().getItems())
+				.anySatisfy(result -> assertThat(result.message())
 						.isEqualTo("Aufgabe 1 · Anforderung 1: " + message.getText()));
 
 		description.setValue("[Erster Aspekt](eh:1/0,5) [Zweiter Aspekt](eh:2/1)");
@@ -592,8 +589,8 @@ class LevelOfExpectationsEditorTests {
 
 		assertThat(message.getText()).isEqualTo("Kriterium „Erster Aspekt“: Ordne eine gültige Punktzahl zu.");
 		assertThat(message.getElement().getAttribute("data-severity")).isEqualTo("error");
-		assertThat(components(editor, StatusTray.class).getFirst().getItems()).singleElement()
-				.satisfies(result -> assertThat(result.message())
+		assertThat(components(editor, StatusTray.class).getFirst().getItems())
+				.anySatisfy(result -> assertThat(result.message())
 						.isEqualTo("Aufgabe 1 · Anforderung 1: " + message.getText()));
 
 		description.setValue("Keine Kriterien");
@@ -684,7 +681,7 @@ class LevelOfExpectationsEditorTests {
 		final LevelOfExpectationsRepository repository = repositoryWithTwoPartHierarchy();
 		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repository);
 		editor.setExam(EXAM);
-		final Button collapseButton = collapseButtons(editor).getFirst();
+		final Button collapseButton = globalToggleButtons(editor).getFirst();
 
 		assertThat(collapseIcon(collapseButton)).isEqualTo("vaadin:angle-double-down");
 
@@ -713,15 +710,50 @@ class LevelOfExpectationsEditorTests {
 	}
 
 	@Test
-	void partCollapseButtonCollapsesDescendantsOnly() {
+	void sectionHeadersUseExplicitSelfAndSubtreeToggleButtons() {
 		final LevelOfExpectationsRepository repository = repositoryWithHierarchy();
 		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repository);
 		editor.setExam(EXAM);
-		assertThat(collapseButtons(editor)).hasSize(4);
+		final List<Details> details = components(editor, Details.class);
+		final List<Button> sectionToggles = details.stream()
+				.map(detail -> buttonsByDataAction(detail.getSummary(), "toggle-section").getFirst()).toList();
+		final List<Button> subtreeToggles = details.stream()
+				.flatMap(detail -> buttonsByDataAction(detail.getSummary(), "toggle-subtree").stream()).toList();
 
-		collapseButtons(editor).get(1).click();
+		assertThat(details).hasSize(3);
+		assertThat(sectionToggles).hasSize(3);
+		assertThat(subtreeToggles).hasSize(2);
+		assertThat(globalToggleButtons(editor)).hasSize(1);
+		assertThat(details).allSatisfy(detail -> assertThat(detail.getElement()
+				.getAttribute("data-summary-toggle")).isEqualTo("explicit"));
+		for (int index = 0; index < details.size(); index++) {
+			assertThat(sectionToggles.get(index).getParent().orElseThrow()).isSameAs(details.get(index).getSummary());
+			assertThat(details.get(index).getSummary().getChildren().findFirst().orElseThrow())
+					.isSameAs(sectionToggles.get(index));
+		}
+		assertThat(subtreeToggles.get(0).getParent().orElseThrow()).isSameAs(details.get(0).getSummary());
+		assertThat(subtreeToggles.get(1).getParent().orElseThrow()).isSameAs(details.get(1).getSummary());
+		assertThat(sectionToggles).extracting(button -> button.getElement().getAttribute("aria-label"))
+				.containsExactly("Klausurteil „Klausurteil A“ einklappen",
+						"Leistungskategorie „Inhalt“ einklappen", "Aufgabe „Teilaufgabe 1“ einklappen");
+		assertThat(sectionToggles).allSatisfy(button -> {
+			assertThat(button.getElement().getAttribute("aria-expanded")).isEqualTo("true");
+			assertThat(collapseIcon(button)).isEqualTo("vaadin:angle-down");
+		});
 
-		assertThat(components(editor, Details.class)).extracting(Details::isOpened).containsExactly(true, false, false);
+		sectionToggles.getFirst().click();
+		assertThat(details).extracting(Details::isOpened).containsExactly(false, true, true);
+		assertThat(sectionToggles.getFirst().getElement().getAttribute("aria-label"))
+				.isEqualTo("Klausurteil „Klausurteil A“ ausklappen");
+		assertThat(sectionToggles.getFirst().getElement().getAttribute("aria-expanded")).isEqualTo("false");
+		assertThat(collapseIcon(sectionToggles.getFirst())).isEqualTo("vaadin:angle-right");
+
+		sectionToggles.getFirst().click();
+		subtreeToggles.getFirst().click();
+		assertThat(details).extracting(Details::isOpened).containsOnly(false);
+
+		subtreeToggles.getFirst().click();
+		assertThat(details).extracting(Details::isOpened).containsOnly(true);
 	}
 
 	@Test
@@ -744,11 +776,11 @@ class LevelOfExpectationsEditorTests {
 	}
 
 	@Test
-	void collapseButtonReflectsIndividualDetailsStateChanges() {
+	void groupToggleOffersExpansionUntilWholeTreeIsExpanded() {
 		final LevelOfExpectationsRepository repository = repositoryWithHierarchy();
 		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repository);
 		editor.setExam(EXAM);
-		final Button collapseButton = collapseButtons(editor).getFirst();
+		final Button collapseButton = globalToggleButtons(editor).getFirst();
 		final List<Details> details = components(editor, Details.class);
 
 		details.forEach(detail -> detail.setOpened(false));
@@ -757,24 +789,36 @@ class LevelOfExpectationsEditorTests {
 
 		details.getFirst().setOpened(true);
 
+		assertThat(collapseIcon(collapseButton)).isEqualTo("vaadin:angle-double-right");
+		assertThat(collapseButton.getElement().getAttribute("aria-label")).isEqualTo("Alle Abschnitte ausklappen");
+
+		collapseButton.click();
+
+		assertThat(details).extracting(Details::isOpened).containsOnly(true);
 		assertThat(collapseIcon(collapseButton)).isEqualTo("vaadin:angle-double-down");
+		assertThat(collapseButton.getElement().getAttribute("aria-label")).isEqualTo("Alle Abschnitte einklappen");
 	}
 
 	@Test
-	void partCollapseButtonTreatsTasksBelowCollapsedCategoriesAsCollapsed() {
+	void subtreeToggleOffersExpansionUntilWholeSubtreeIsExpanded() {
 		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repositoryWithHierarchy());
 		editor.setExam(EXAM);
-		final Button partCollapseButton = collapseButtons(editor).get(1);
 		final List<Details> details = components(editor, Details.class);
+		final Button partCollapseButton = buttonsByDataAction(details.getFirst().getSummary(), "toggle-subtree")
+				.getFirst();
 
 		details.get(1).setOpened(false);
 
 		assertThat(collapseIcon(partCollapseButton)).isEqualTo("vaadin:angle-double-right");
+		assertThat(partCollapseButton.getElement().getAttribute("aria-label"))
+				.isEqualTo("Klausurteil „Klausurteil A“ samt Unterpunkten ausklappen");
 		partCollapseButton.click();
-		assertThat(details.subList(1, 3)).extracting(Details::isOpened).containsOnly(true);
+		assertThat(details).extracting(Details::isOpened).containsOnly(true);
 		assertThat(collapseIcon(partCollapseButton)).isEqualTo("vaadin:angle-double-down");
+		assertThat(partCollapseButton.getElement().getAttribute("aria-label"))
+				.isEqualTo("Klausurteil „Klausurteil A“ samt Unterpunkten einklappen");
 
-		details.get(1).setOpened(false);
+		details.get(2).setOpened(false);
 
 		assertThat(collapseIcon(partCollapseButton)).isEqualTo("vaadin:angle-double-right");
 	}
@@ -784,10 +828,18 @@ class LevelOfExpectationsEditorTests {
 	}
 
 	private static LevelOfExpectationsRepository repositoryWithHierarchy(final LoeRequirement requirement) {
+		return repositoryWithFixedTaskBudget(requirement,
+				requirement.bonus() ? TASK.maxPoints() : requirement.maxPoints());
+	}
+
+	private static LevelOfExpectationsRepository repositoryWithFixedTaskBudget(final LoeRequirement requirement,
+			final int taskMaxPoints) {
 		final LevelOfExpectationsRepository repository = mock(LevelOfExpectationsRepository.class);
+		final LoeTask task = new LoeTask(TASK.id(), TASK.categoryId(), TASK.title(), TASK.descriptionMarkdown(),
+				taskMaxPoints, TASK.sortOrder());
 		when(repository.findPartsByExamId(EXAM.id())).thenReturn(List.of(PART));
 		when(repository.findCategoriesByExamId(EXAM.id())).thenReturn(List.of(CATEGORY));
-		when(repository.findTasksByExamId(EXAM.id())).thenReturn(List.of(TASK));
+		when(repository.findTasksByExamId(EXAM.id())).thenReturn(List.of(task));
 		when(repository.findRequirementsByExamId(EXAM.id())).thenReturn(List.of(requirement));
 		return repository;
 	}
@@ -893,14 +945,13 @@ class LevelOfExpectationsEditorTests {
 				.filter(span -> span.getClassNames().contains("tt-designer-breadcrumb")).findFirst().orElseThrow();
 	}
 
-	private static TextField titleField(final Component root, final String value) {
-		return components(root, TextField.class).stream().filter(field -> value.equals(field.getValue())).findFirst()
-				.orElseThrow();
+	private static List<Button> globalToggleButtons(final Component root) {
+		return buttonsByDataAction(root, "toggle-all");
 	}
 
-	private static List<Button> collapseButtons(final Component root) {
+	private static List<Button> buttonsByDataAction(final Component root, final String action) {
 		return components(root, Button.class).stream()
-				.filter(button -> "collapse-below".equals(button.getElement().getAttribute("data-action"))).toList();
+				.filter(button -> action.equals(button.getElement().getAttribute("data-action"))).toList();
 	}
 
 	private static List<Button> bonusButtons(final Component root) {

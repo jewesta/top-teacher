@@ -65,6 +65,31 @@ class DatabaseInitializationServiceTests {
 	}
 
 	@Test
+	void backfillsTaskPointBudgetsFromRegularRequirementsOnce() {
+		initializationService.initialize(DatabaseInitializationMode.DEMO);
+		jdbc.update("update eh_task set max_points = 0");
+		jdbc.update("delete from app_setting where setting_key = 'tt.database.migration.issue35.task-points'");
+
+		new ResourceDatabasePopulator(new ClassPathResource("db/schema.sql")).execute(dataSource);
+
+		assertThat(count("""
+			select count(*)
+			from eh_task task
+			where task.max_points <> (
+			    select coalesce(sum(requirement.max_points), 0)
+			    from eh_requirement requirement
+			    where requirement.task_id = task.id
+			      and requirement.bonus = false
+			)
+			""")).isZero();
+		assertThat(count("""
+			select count(*)
+			from app_setting
+			where setting_key = 'tt.database.migration.issue35.task-points'
+			""")).isOne();
+	}
+
+	@Test
 	void skipsFirstStartPromptWhenDatabaseAlreadyContainsBusinessData() {
 		jdbc.update("""
 			insert into pupil (name, surname, lifecycle)
@@ -149,6 +174,7 @@ class DatabaseInitializationServiceTests {
 			) course_roster
 			""")).isEqualTo(2);
 		assertThat(countRows("exam_pupil")).isEqualTo(12);
+		assertThat(countRows("loe_material")).isEqualTo(4);
 		assertThat(count("""
 			select count(*)
 			from (
@@ -165,6 +191,19 @@ class DatabaseInitializationServiceTests {
 			    group by e.id
 			    having sum(case when requirement.bonus then 0 else requirement.max_points end) = 150
 			       and sum(case when requirement.bonus then requirement.max_points else 0 end) > 0
+			) demo_exam
+			""")).isEqualTo(2);
+		assertThat(count("""
+			select count(*)
+			from (
+			    select exam.id
+			    from exam
+			    join grading_scale on grading_scale.id = exam.grading_scale_id
+			    join eh_part part on part.exam_id = exam.id
+			    join eh_category category on category.part_id = part.id
+			    join eh_task task on task.category_id = category.id
+			    group by exam.id, grading_scale.max_points
+			    having sum(task.max_points) = grading_scale.max_points
 			) demo_exam
 			""")).isEqualTo(2);
 		assertThat(countRows("eh_requirement_result")).isZero();

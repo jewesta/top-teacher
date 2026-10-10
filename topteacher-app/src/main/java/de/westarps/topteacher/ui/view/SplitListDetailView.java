@@ -308,7 +308,7 @@ public class SplitListDetailView<T> extends VerticalLayout implements HasDynamic
 					editorStatusCount(selectedItems.size(), status));
 		}
 		if (selectedItems.isEmpty()) {
-			return List.of(editorStatusIcon(VaadinIcon.STAR, status));
+			return List.of(editorStatusIcon(VaadinIcon.PLUS, status));
 		}
 		return List.of(editorStatusIcon(VaadinIcon.PENCIL, status));
 	}

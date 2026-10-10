@@ -214,12 +214,12 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 	}
 
 	private String gradeDisplayName(final EvaluationRow row) {
-		if (pointRules == null || !pointRules.regularMaxPointsMatch(requirements)) {
+		if (pointRules == null || !pointRules.validDesign(tasks, requirements)) {
 			return "";
 		}
 		final int effectivePoints;
 		try {
-			effectivePoints = pointRules.cappedAchievedTotal(requirements, row::achievedPointsFor);
+			effectivePoints = pointRules.cappedAchievedTotal(tasks, requirements, row::achievedPointsFor);
 		} catch (final IllegalArgumentException exception) {
 			return "";
 		}

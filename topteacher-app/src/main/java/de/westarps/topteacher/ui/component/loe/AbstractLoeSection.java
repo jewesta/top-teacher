@@ -6,6 +6,7 @@ import java.util.List;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.details.Details;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 
 abstract class AbstractLoeSection<T> extends Composite<Details> implements LoeEditable {
@@ -13,14 +14,14 @@ abstract class AbstractLoeSection<T> extends Composite<Details> implements LoeEd
 	private final T item;
 	private final Component summary;
 	private final VerticalLayout body;
-	private final LoePointBadge pointBadge;
+	private final LoeRefreshable sectionBadge;
 	private final List<? extends LoeEditable> children;
 
 	protected AbstractLoeSection(final T item, final String sectionClassName, final Component summary,
-			final LoePointBadge pointBadge, final List<? extends LoeEditable> children) {
+			final LoeRefreshable sectionBadge, final List<? extends LoeEditable> children) {
 		this.item = item;
 		this.summary = summary;
-		this.pointBadge = pointBadge;
+		this.sectionBadge = sectionBadge;
 		this.children = List.copyOf(children);
 		this.body = new VerticalLayout();
 		body.addClassName("tt-eh-section-content");
@@ -32,7 +33,7 @@ abstract class AbstractLoeSection<T> extends Composite<Details> implements LoeEd
 
 	@Override
 	protected Details initContent() {
-		return new Details(summary, body);
+		return new ExplicitToggleDetails(summary, body);
 	}
 
 	protected T item() {
@@ -64,7 +65,9 @@ abstract class AbstractLoeSection<T> extends Composite<Details> implements LoeEd
 	@Override
 	public void refreshBadges() {
 		refreshSectionBadges();
-		pointBadge.refreshBadges();
+		if (sectionBadge != null) {
+			sectionBadge.refreshBadges();
+		}
 		children.forEach(LoeRefreshable::refreshBadges);
 	}
 
@@ -95,6 +98,27 @@ abstract class AbstractLoeSection<T> extends Composite<Details> implements LoeEd
 
 	protected boolean saveSection() {
 		return true;
+	}
+
+	private static final class ExplicitToggleDetails extends Details {
+
+		private ExplicitToggleDetails(final Component summary, final Component body) {
+			super(summary, body);
+			getElement().setAttribute("data-summary-toggle", "explicit");
+		}
+
+		@Override
+		protected Component createSummaryContainer() {
+			final Div container = new Div();
+			container.addClassName("tt-eh-details-summary");
+			container.addAttachListener(event -> container.getElement().executeJs("""
+				if (!this.__ttExplicitSectionToggle) {
+				   this.__ttExplicitSectionToggle = true;
+				   this.addEventListener('click', event => event.stopPropagation());
+				}
+				"""));
+			return container;
+		}
 	}
 
 }

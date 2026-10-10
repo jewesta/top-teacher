@@ -89,6 +89,36 @@ class LoeValidatorTests {
 				.containsExactly("Kriterium „Begründung“: Ordne eine gültige Punktzahl zu.");
 	}
 
+	@Test
+	void validatesTaskBudgetsBeforeRequirementAndCriterionAllocations() {
+		final LoeTask firstTask = new LoeTask(10, 1, "Aufgabe 1", "", 3, 0);
+		final LoeTask secondTask = new LoeTask(11, 1, "Aufgabe 2", "", 2, 1);
+		final LoeRequirement underAllocated = new LoeRequirement(20, firstTask.id(), "Ganzheitlich", 2, false, 0);
+		final LoeRequirement matching = new LoeRequirement(21, secondTask.id(), "Ganzheitlich", 2, false, 0);
+		final LoeRequirement bonus = new LoeRequirement(22, firstTask.id(), "Bonus", 4, true, 1);
+
+		final var results = LoeValidator.validate(6, List.of(firstTask, secondTask),
+				List.of(underAllocated, matching, bonus));
+
+		assertThat(results.messages(ValidationSeverity.WARNING)).containsExactly(
+				"Aufgaben: Ordne einen weiteren Punkt zu.",
+				"Erwartungshorizont: Ordne einen weiteren Punkt zu.");
+		assertThat(results.getTargets()).containsExactly(LoeValidationTarget.totalPoints(),
+				LoeValidationTarget.taskPoints(firstTask.id()));
+	}
+
+	@Test
+	void rejectsRequirementPointsAboveTheirTaskBudgetWithoutNeedingAGradingScale() {
+		final LoeTask task = new LoeTask(10, 1, "Aufgabe 1", "", 2, 0);
+		final LoeRequirement requirement = new LoeRequirement(20, task.id(), "Ganzheitlich", 3, false, 0);
+
+		final var results = LoeValidator.validate(List.of(task), List.of(requirement));
+
+		assertThat(results.messages(ValidationSeverity.ERROR))
+				.containsExactly("Erwartungshorizont: Ordne einen Punkt weniger zu.");
+		assertThat(results.getTargets()).containsExactly(LoeValidationTarget.taskPoints(task.id()));
+	}
+
 	private static LoeRequirement requirement(final int id, final String description, final int maxPoints,
 			final boolean bonus) {
 		return new LoeRequirement(id, 10, description, maxPoints, bonus, 0);

@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.mcp.annotation.McpTool;
@@ -97,7 +98,23 @@ class TopTeacherMcpSchemaTests {
 		final Map<String, Object> createProperties = properties(specifications, "create_level_of_expectations");
 		assertThat(createProperties).containsKeys("examId", "parts").doesNotContainKey("noteSections");
 		assertThat(map(createProperties.get("parts"))).containsEntry("type", "array");
+		final Map<String, Object> createLevelSchema = schema(specifications, "create_level_of_expectations", true);
+		assertThat(containsObjectProperties(createLevelSchema, Set.of("title", "materials", "categories"))).isTrue();
+		assertThat(containsObjectProperties(createLevelSchema,
+				Set.of("title", "descriptionMarkdown", "maxPoints", "requirements"))).isTrue();
+		final Map<String, Object> levelOutputSchema = schema(specifications, "get_level_of_expectations", false);
 		assertThat(outputProperties(specifications, "get_level_of_expectations")).doesNotContainKey("noteSections");
+		assertThat(containsObjectProperties(levelOutputSchema,
+				Set.of("id", "title", "sortOrder", "materials", "categories"))).isTrue();
+		assertThat(containsObjectProperties(levelOutputSchema,
+				Set.of("id", "title", "descriptionMarkdown", "maxPoints", "sortOrder", "requirements"))).isTrue();
+		assertThat(containsObjectProperties(levelOutputSchema,
+				Set.of("regularMaximumMatchesGradingScale", "requirementsMatchTasks", "validDesign"))).isTrue();
+		final Map<String, Object> pupilResultSchema = schema(specifications, "get_pupil_result", false);
+		assertThat(containsObjectProperties(pupilResultSchema,
+				Set.of("requirementId", "points", "pointUnits", "adjustmentUnits"))).isTrue();
+		assertThat(containsObjectProperties(pupilResultSchema,
+				Set.of("criterionId", "awardedPointUnits", "availablePointUnits"))).isTrue();
 
 		final Map<String, Object> createCourseProperties = properties(specifications, "create_course_with_pupils");
 		assertThat(createCourseProperties).containsKeys("course", "roster", "resolutions").doesNotContainKey("context");
@@ -148,6 +165,29 @@ class TopTeacherMcpSchemaTests {
 				.filter(specification -> specification.tool().name().equals(toolName)).findFirst().orElseThrow().tool()
 				.inputSchema();
 		return map(schema.get("properties"));
+	}
+
+	private static Map<String, Object> schema(final List<SyncToolSpecification> specifications, final String toolName,
+			final boolean input) {
+		final var tool = specifications.stream().filter(specification -> specification.tool().name().equals(toolName))
+				.findFirst().orElseThrow().tool();
+		return input ? tool.inputSchema() : tool.outputSchema();
+	}
+
+	private static boolean containsObjectProperties(final Object value, final Set<String> expectedProperties) {
+		if (value instanceof Map<?, ?> values) {
+			final Object properties = values.get("properties");
+			if (properties instanceof Map<?, ?> propertyValues
+					&& propertyValues.keySet().containsAll(expectedProperties)) {
+				return true;
+			}
+			return values.values().stream()
+					.anyMatch(child -> containsObjectProperties(child, expectedProperties));
+		}
+		if (value instanceof List<?> values) {
+			return values.stream().anyMatch(child -> containsObjectProperties(child, expectedProperties));
+		}
+		return false;
 	}
 
 	private static Map<String, Object> outputProperties(final List<SyncToolSpecification> specifications,

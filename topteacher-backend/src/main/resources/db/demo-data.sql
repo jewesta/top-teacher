@@ -143,6 +143,33 @@ where not exists (
       and part.title = demo.title
 );
 
+insert into loe_material (part_id, title, description_markdown, sort_order)
+select part.id, demo.title, demo.description_markdown, demo.sort_order
+from (
+    values
+        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 0, 'Ausgangstext', 'William Shakespeare prägt Literatur und Sprache bis heute. Dieser Demo-Text dient als **Material** für die Aufgaben.'),
+        ('Englisch', 'Klausurteil B: Sprachmittlung D-E (isoliert)', 0, 'Deutscher Ausgangstext', 'Ein kurzer deutscher Demo-Quellentext zur Bedeutung Shakespeares.'),
+        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 0, 'Texto de referencia', 'Este texto de demostración sirve como material para las tareas.'),
+        ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 0, 'Hinweis zum Hörtext', 'Der Hörtext wird zweimal abgespielt.')
+) demo(subject_name, part_title, sort_order, title, description_markdown)
+join course c
+    on c.calendar_year = 2026
+   and c.course_period = 'FULL_YEAR'
+join subject
+    on subject.id = c.subject_id
+   and subject.name = demo.subject_name
+join exam e
+    on e.course_id = c.id
+join eh_part part
+    on part.exam_id = e.id
+   and part.title = demo.part_title
+where not exists (
+    select 1
+    from loe_material material
+    where material.part_id = part.id
+      and material.title = demo.title
+);
+
 insert into eh_category (part_id, title, description_markdown, sort_order)
 select part.id, demo.title, demo.description_markdown, demo.sort_order
 from (
@@ -489,3 +516,12 @@ where not exists (
     where criterion.requirement_id = requirement.id
       and criterion.criterion_key = demo.criterion_key
 );
+
+update eh_task task
+set description_markdown = 'Bearbeite **' || task.title || '**.',
+    max_points = (
+        select coalesce(sum(requirement.max_points), 0)
+        from eh_requirement requirement
+        where requirement.task_id = task.id
+          and requirement.bonus = false
+    );

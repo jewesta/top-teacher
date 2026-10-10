@@ -25,6 +25,7 @@ import de.westarps.topteacher.model.loe.LoeCriterion;
 import de.westarps.topteacher.model.loe.LoeCriterionResult;
 import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeRequirementResult;
+import de.westarps.topteacher.model.loe.LoeTask;
 
 class PupilResultMcpToolsTests {
 
@@ -39,14 +40,19 @@ class PupilResultMcpToolsTests {
 	void returnsCappedPointsAndTheMatchingGradeForAPupil() {
 		final Exam exam = new Exam(7, 3, "Klausur", LocalDate.of(2026, 9, 18), null, 9);
 		final Pupil pupil = new Pupil(21, "Ada", "Lovelace", Lifecycle.ACTIVE);
-		final LoeRequirement regular = new LoeRequirement(31, 1, "Regulär", 5, false, 0);
+		final LoeRequirement regular = new LoeRequirement(31, 1, "Regulär", 3, false, 0);
 		final LoeRequirement bonus = new LoeRequirement(32, 1, "Bonus", 2, true, 1);
+		final LoeRequirement secondRegular = new LoeRequirement(33, 2, "Zweite Aufgabe", 2, false, 0);
 		when(exams.findById(exam.id())).thenReturn(Optional.of(exam));
 		when(exams.hasPupil(exam.id(), pupil.id())).thenReturn(true);
 		when(pupils.findById(pupil.id())).thenReturn(Optional.of(pupil));
-		when(levelOfExpectations.findRequirementsByExamId(exam.id())).thenReturn(List.of(regular, bonus));
+		when(levelOfExpectations.findRequirementsByExamId(exam.id()))
+				.thenReturn(List.of(regular, bonus, secondRegular));
+		when(levelOfExpectations.findTasksByExamId(exam.id()))
+				.thenReturn(List.of(new LoeTask(1, 1, "Aufgabe 1", "", 3, 0),
+						new LoeTask(2, 1, "Aufgabe 2", "", 2, 1)));
 		when(levelOfExpectations.findRequirementResultsByExamAndPupil(exam.id(), pupil.id()))
-				.thenReturn(List.of(new LoeRequirementResult(regular.id(), pupil.id(), 7, 1, ""),
+				.thenReturn(List.of(new LoeRequirementResult(regular.id(), pupil.id(), 5, 1, ""),
 						new LoeRequirementResult(bonus.id(), pupil.id(), 2)));
 		final LoeCriterion criterion = new LoeCriterion(41, regular.id(), "1", "Zeitform", 3, 0, true);
 		when(levelOfExpectations.findActiveCriteriaByExamId(exam.id())).thenReturn(List.of(criterion));
@@ -55,16 +61,16 @@ class PupilResultMcpToolsTests {
 		when(gradingScales.findById(9))
 				.thenReturn(Optional.of(new GradingScale(9, "Fünf Punkte", 5, Lifecycle.ACTIVE)));
 		when(gradingScales.findRangesByGradingScaleId(9))
-				.thenReturn(List.of(new GradingScaleRange(1, 9, GradeLevel.GUT, 5, 5)));
+				.thenReturn(List.of(new GradingScaleRange(1, 9, GradeLevel.GUT, 3, 3)));
 
 		final PupilResultView result = tools.getPupilResult(exam.id(), pupil.id());
 
-		assertThat(result.summary().regularPoints()).isEqualTo(4);
+		assertThat(result.summary().regularPoints()).isEqualTo(3);
 		assertThat(result.summary().bonusPoints()).isEqualTo(2);
-		assertThat(result.summary().effectivePoints()).isEqualTo(5);
+		assertThat(result.summary().effectivePoints()).isEqualTo(3);
 		assertThat(result.summary().grade()).isEqualTo("2");
 		assertThat(result.summary().gradingAvailable()).isTrue();
-		assertThat(result.requirements().getFirst().pointUnits()).isEqualTo(7);
+		assertThat(result.requirements().getFirst().pointUnits()).isEqualTo(5);
 		assertThat(result.requirements().getFirst().adjustmentUnits()).isEqualTo(1);
 		assertThat(result.criteria().getFirst().awardedPointUnits()).isEqualTo(1);
 		assertThat(result.criteria().getFirst().availablePointUnits()).isEqualTo(3);

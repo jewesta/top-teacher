@@ -101,6 +101,33 @@ class LevelOfExpectationsExportModelFactoryTests {
 		assertThat(html).contains("class=\"tt-adjustment\"").contains("Frei vergebene Punkte: +0,5");
 	}
 
+	@Test
+	void capsBonusPointsAtEachTaskWhenCalculatingTheGrade() {
+		final LevelOfExpectationsExportModel base = factory.createPupilModel(data());
+		final var firstTaskPoints = new LevelOfExpectationsExportModelFactory.PointSummary(6, 2, 6, 2);
+		final var secondTaskPoints = new LevelOfExpectationsExportModelFactory.PointSummary(4, 0, 2, 0);
+		final var categoryPoints = firstTaskPoints.plus(secondTaskPoints);
+		final var category = new LevelOfExpectationsExportModelFactory.Category("Inhalt", new SafeHtml(""),
+				categoryPoints,
+				List.of(new LevelOfExpectationsExportModelFactory.Task("Aufgabe 1", firstTaskPoints, List.of()),
+						new LevelOfExpectationsExportModelFactory.Task("Aufgabe 2", secondTaskPoints, List.of())));
+		final var model = new LevelOfExpectationsExportModel(base.course(), base.exam(), base.examNumber(), base.pupil(),
+				new GradingScale(2, "Zehn Punkte", 10, Lifecycle.ACTIVE),
+				List.of(new GradingScaleRange(10, 2, GradeLevel.SEHR_GUT_PLUS, 9, 10),
+						new GradingScaleRange(11, 2, GradeLevel.UNGENUEGEND, 0, 8)),
+				categoryPoints, List.of(new LevelOfExpectationsExportModelFactory.Part("Teil A", categoryPoints,
+						List.of(category))), true, false);
+
+		assertThat(model.totalGradeDisplayName()).isEqualTo("ungenügend");
+	}
+
+	@Test
+	void capsTheCompleteAchievedResultAtTheTaskMaximum() {
+		final var points = new LevelOfExpectationsExportModelFactory.PointSummary(6, 2, 7, 1);
+
+		assertThat(points.effectiveAchievedPoints(6)).isEqualTo(6);
+	}
+
 	private static LevelOfExpectationsExportData data() {
 		final Subject subject = new Subject(1, "Englisch", Lifecycle.ACTIVE);
 		return new LevelOfExpectationsExportData(
@@ -113,7 +140,7 @@ class LevelOfExpectationsExportModelFactoryTests {
 						new GradingScaleRange(2, 1, GradeLevel.UNGENUEGEND, 0, 19)),
 				List.of(new LoePart(1, 1, "Klausurteil A", 0)),
 				List.of(new LoeCategory(1, 1, "Inhaltliche Leistung", "", 0)),
-				List.of(new LoeTask(1, 1, "Teilaufgabe 1", 0)),
+				List.of(new LoeTask(1, 1, "Teilaufgabe 1", "", 6, 0)),
 				List.of(new LoeRequirement(1, 1,
 						"**[Zeitform](eh:criterion-a/1,5)**, [Wortwahl](eh:criterion-b) und [Belege](eh:criterion-c/3,5) nutzen",
 						6, false, 0),

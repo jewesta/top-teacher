@@ -32,11 +32,11 @@ class ButtonsTests {
 	}
 
 	@Test
-	void createsNewButtonWithStarIcon() {
+	void createsNewButtonWithPlusIcon() {
 		final Button button = Buttons.newItem();
 
 		assertThat(button.getText()).isEqualTo("Neu");
-		assertThat(icon(button)).isEqualTo("vaadin:star");
+		assertThat(icon(button)).isEqualTo("vaadin:plus");
 	}
 
 	@Test

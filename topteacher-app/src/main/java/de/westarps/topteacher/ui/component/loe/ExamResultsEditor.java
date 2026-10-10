@@ -134,11 +134,19 @@ public class ExamResultsEditor extends AbstractDesigner {
 	}
 
 	public void setExam(final Exam exam) {
+		if (isDirty() && isDifferentExam(exam)) {
+			Notification.show("Bitte speichere die Ergebnisse zuerst.");
+			return;
+		}
 		if (this.exam == null || exam == null || !this.exam.id().equals(exam.id())) {
 			selectedPupil = null;
 		}
 		this.exam = exam;
 		refresh();
+	}
+
+	private boolean isDifferentExam(final Exam exam) {
+		return this.exam == null || exam == null || !this.exam.id().equals(exam.id());
 	}
 
 	public boolean selectPupil(final int pupilId) {
@@ -941,6 +949,10 @@ public class ExamResultsEditor extends AbstractDesigner {
 		return persistedRequirementComments.getOrDefault(requirement.id(), "");
 	}
 
+	public boolean hasUnsavedChanges() {
+		return isDirty();
+	}
+
 	private boolean isDirty() {
 		return criteria.stream()
 				.anyMatch(criterion -> currentCriterionPointUnits(criterion) != persistedCriterionPointUnits(criterion))
@@ -1075,13 +1087,18 @@ public class ExamResultsEditor extends AbstractDesigner {
 			Notification.show("Für die Klausur wurde kein Notenschlüssel gefunden.");
 			return false;
 		}
-		final int regularMaxPoints = pointRules.regularMaxPoints(requirements);
-		if (!pointRules.regularMaxPointsMatch(requirements)) {
-			Notification.show("Der Erwartungshorizont hat " + regularMaxPoints
-					+ " reguläre Punkte. Der Notenschlüssel erwartet " + pointRules.maxPoints() + " Punkte.");
+		final int taskMaxPoints = pointRules.taskMaxPoints(tasks);
+		if (!pointRules.taskMaxPointsMatch(tasks)) {
+			Notification.show("Die Aufgaben haben zusammen " + taskMaxPoints + " Punkte. Der Notenschlüssel erwartet "
+					+ pointRules.maxPoints() + " Punkte.");
 			return false;
 		}
-		pointRules.cappedAchievedTotal(requirements, this::currentRequirementPoints);
+		if (!pointRules.requirementMaxPointsMatchTasks(tasks, requirements)) {
+			Notification.show(
+					"Die regulären Anforderungspunkte müssen bei jeder Aufgabe genau den Aufgabenpunkten entsprechen.");
+			return false;
+		}
+		pointRules.cappedAchievedTotal(tasks, requirements, this::currentRequirementPoints);
 		return true;
 	}
 

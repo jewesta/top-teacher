@@ -1,9 +1,10 @@
 # Level of Expectations
 
 The level of expectations is the app's English domain name for the German
-school concept "Erwartungshorizont". It belongs to exactly one exam, defines
-that exam's assessment structure, and provides the basis for marking pupil
-results.
+school concept "Erwartungshorizont". It belongs to exactly one exam and adds
+the requirements used to mark pupil results to the exam structure authored in
+`Aufgaben`. The EH is not the authority for parts, performance categories, or
+tasks.
 
 Result-entry behavior is specified in
 [LevelOfExpectationsResults.md](LevelOfExpectationsResults.md). PDF behavior is
@@ -12,7 +13,7 @@ specified in
 
 ## Structure
 
-The structure is hierarchical:
+The assessment structure is hierarchical:
 
 1. Part
 2. Performance category
@@ -23,19 +24,37 @@ The structure is hierarchical:
 
 A part is the top-level subject-specific section inside an exam, for example
 "Klausurteil A: Schreiben mit Leseverstehen". It has a title and sort order.
-Its regular and bonus points are aggregated from all requirements below it.
+Its regular point budget is aggregated from the explicit maxima of its tasks.
+The EH additionally shows the regular and bonus requirement points distributed
+below it.
 
 ### Performance category
 
 A performance category groups tasks by assessment area, for example content or
 language performance. It has a title, optional markdown description, and sort
-order. Its regular and bonus points are aggregated from all requirements below
-it.
+order. Its regular point budget is aggregated from the explicit maxima of its
+tasks. The EH additionally shows the regular and bonus requirement points
+distributed below it.
 
 ### Task
 
-A task groups concrete requirements. It has a title and sort order. Its regular
-and bonus points are aggregated from its requirements.
+A task represents an actual exam task and groups its later assessment
+requirements. It has a title, Markdown content, an explicitly assigned integer
+maximum, and a sort order. The task maximum is authored in `Aufgaben`; it is not
+derived from the requirements. Non-bonus requirements subsequently distribute
+that budget in EH, while bonus requirements remain separate.
+
+### Material
+
+Material is a parallel branch below a part rather than another level between a
+task and its requirements. It represents source texts, historical sources,
+diagrams, data, and similar material handed out with the exam.
+
+- A material belongs to exactly one part.
+- It has a title, Markdown content, and an explicit order among the other
+  materials of that part.
+- It is authored in the dedicated `Material` tab.
+- Tasks refer to material in their wording; they do not own or duplicate it.
 
 ### Requirement
 
@@ -49,29 +68,41 @@ half-point results are rounded. It has:
 - zero or more optional criteria embedded in its description.
 
 The editor may temporarily contain a zero-point requirement while the design is
-incomplete. A completed requirement must have a meaningful positive maximum.
+incomplete. A completed requirement must have a meaningful positive maximum,
+and the regular requirements of its task must together distribute that task's
+explicit maximum.
 
-## Authoritative totals
+## Authoritative budgets and distributions
 
-The grading scale defines the authoritative regular maximum for the exam. A
-complete level of expectations must assign exactly that number of regular
-requirement points.
+The grading scale defines the authoritative regular maximum for the exam. Task
+maxima define how that exam budget is divided, and regular requirement maxima
+define how each task budget is assessed. A complete design therefore satisfies
+both equalities:
 
-- Too few regular requirement points make the design incomplete but remain
-  saveable as an intermediate state.
-- Too many regular requirement points are an error. The editor may temporarily
-  display the pending over-allocation, but it must not save it.
-- Bonus requirements do not count toward the grading-scale maximum.
+```text
+sum(task maxima) = grading-scale maximum
+sum(regular requirement maxima for a task) = that task's maximum
+```
+
+- Too few task points or too few regular requirement points make the design
+  incomplete but remain saveable as an intermediate state.
+- Too many task points or too many regular requirement points are errors. The
+  editor may temporarily display the pending over-allocation, but it must not
+  save it.
+- Bonus requirements do not count toward either equality.
 - Regular and bonus totals are displayed separately, for example
   `Summe: 98 (+ 2)`.
+- A task's distribution indicator uses the concise `n / m` relationship,
+  supplemented by remaining or excess points where needed. An exact match does
+  not add a redundant `passend` label.
 - EH and Results use the same aggregate-points badge. Its label is left-aligned.
   Regular points are right-aligned to a fixed axis, while bonus points are
   left-aligned beyond it. Fixed-width number slots keep changing values from
   shifting the badge layout.
 - The EH percentage chip matches the aggregate-points badge height.
 
-Changes to pending requirement maxima and bonus flags must update requirement,
-task, category, part, and exam totals immediately.
+Changes to pending task maxima, requirement maxima, and bonus flags must update
+the affected task, category, part, and exam information immediately.
 
 ## Criteria
 
@@ -176,17 +207,49 @@ editor library's command child-panel mechanism. The reusable Markdown component
 provides extension hooks but must not contain EH point semantics or criterion
 presentation rules; no fork of the underlying editor is required.
 
+## Editing ownership and shared tree behavior
+
+The exam tabs follow the authoring workflow `Aufgaben` → `Material` → `EH`.
+The former `Notizen` tab and its exam-note persistence are no longer part of
+the application.
+
+`Aufgaben`, `Material`, and EH are separate views of the same exam definition
+and use the same tree-section rendering and collapse behavior.
+
+- `Aufgaben` is the sole editor for parts, performance categories, task titles,
+  task Markdown, task maxima, and their order.
+- `Material` edits ordered material below read-only part headings.
+- EH renders part, category, and task data as read-only context and edits only
+  requirements.
+- Each section header has an explicit control for that section and, when the
+  section has descendants, a second control for its complete subtree. Clicking
+  the rest of the header does not expand or collapse anything.
+- A subtree or whole-tree control offers expansion until every section in its
+  scope is expanded. It offers collapse only when the complete scope is
+  expanded.
+- Each tab keeps its own collapse and dirty state. Refreshing or switching tabs
+  must not silently discard unsaved work.
+
+After the first result is recorded, `Aufgaben` and `Material` become read-only.
+Their Markdown is then rendered as content instead of being left in disabled
+editor controls. EH continues to permit only the narrowly safeguarded
+requirement corrections described below; its ancestor hierarchy remains
+read-only before and after that boundary.
+
 ## Derived design state
 
 The level of expectations has no separately persisted lifecycle state. Its
 state is derived from its contents and existing results:
 
-- **Incomplete and editable:** one or more required point allocations are
-  missing or otherwise invalid.
-- **Complete and editable:** grading-scale and criterion allocations match and
-  no pupil results exist.
+- **Incomplete and editable:** one or more task, requirement, or criterion
+  allocations are missing or otherwise invalid.
+- **Complete and editable:** the grading scale matches the task budgets, each
+  task budget matches its regular requirements, all criterion allocations are
+  valid, and no pupil results exist.
 - **Complete and locked:** pupil results exist, so structure, point maxima,
-  bonus status, and criterion identities may no longer change.
+  bonus status, ordering, and criterion identities may no longer change. Only
+  requirement corrections that preserve result-bearing semantics remain
+  possible.
 
 The EH tab represents these states with an hourglass, tick, and lock respectively.
 
@@ -197,8 +260,9 @@ designer.
 
 - The tray peeks into view whenever the EH uses validation.
 - Its badge shows the number of messages and the most severe message level.
-- Overall allocation messages are not links because they have no single edit
+- Exam-level allocation messages are not links because they have no single edit
   target.
+- Task-distribution messages identify and link to the affected task.
 - Requirement-specific messages identify their task and requirement. Activating
   one expands, scrolls to, and briefly emphasizes the affected requirement.
 - Missing allocations are warnings. Excess allocations and malformed values are
@@ -215,12 +279,19 @@ designer.
 
 Regular and bonus points are aggregated independently.
 
-- Regular requirements count toward the grading-scale total.
+- Regular requirements distribute their task's maximum.
 - Bonus requirements are shown in parentheses.
-- Awarded bonus points may raise the effective exam result only up to the
-  grading-scale maximum.
+- After every raw requirement result has been rounded locally, awarded regular
+  and bonus points are combined within their task. The effective task result is
+  capped at that task's explicit maximum.
+- The effective exam result is the sum of those individually capped task
+  results. Surplus bonus points from one task cannot compensate for missing
+  points in another task.
 - The UI continues to show entered regular and bonus points separately even
   when the effective total is capped.
 
-For example, with a grading-scale maximum of 100, 99 regular points and four
-bonus points remain visible as `99 (+ 4)`, while the effective result is 100.
+For example, suppose a 100-point exam has a 60-point task and a 40-point task.
+If the first task receives 58 regular plus five bonus points, its effective
+result is capped at 60. If the second task receives 35 points, the effective
+exam result is 95, not 98. The entered regular and bonus values remain visible
+for assessment transparency.

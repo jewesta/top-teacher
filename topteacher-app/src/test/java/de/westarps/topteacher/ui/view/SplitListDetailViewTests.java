@@ -119,7 +119,7 @@ class SplitListDetailViewTests {
 		final TestSplitListDetailView view = new TestSplitListDetailView();
 		view.grid().setItems(List.of("Ada", "Grace"));
 
-		assertThat(editorStatusIconNames(view)).containsExactly("vaadin:star");
+		assertThat(editorStatusIconNames(view)).containsExactly("vaadin:plus");
 		assertThat(editorTab(view).getElement().getAttribute("aria-label")).isEqualTo("Test, Neue Test-Zeile");
 
 		view.grid().select("Ada");

@@ -4,6 +4,8 @@ The Results view records one pupil's performance against a level of
 expectations. Criteria support the marker's judgement, but they are not a hard
 gate: freely awarded points can credit valid work that does not match a
 predefined criterion, or provide the entire result when no criteria exist.
+Results may be recorded only after the task budgets and their regular
+requirement distributions form a valid, complete design.
 
 The underlying assessment structure and criterion syntax are specified in
 [LevelOfExpectations.md](LevelOfExpectations.md). PDF presentation is specified
@@ -152,12 +154,27 @@ field starts at two lines and grows with its content without a row limit.
 Rounded requirement results are aggregated separately for regular and bonus
 requirements.
 
-- Regular results contribute directly to the exam result.
+- Regular results contribute to the result of their task.
 - Bonus results remain visible separately.
-- Applicable bonus points are capped so the effective result cannot exceed the
-  grading-scale maximum.
+- Within each task, regular and bonus results are combined only after every
+  requirement has applied its own half-up rounding. The effective task result
+  is then capped at the task's explicit maximum:
+
+  ```text
+  effective task result = min(task maximum,
+                              rounded regular results + rounded bonus results)
+  ```
+
+- The effective exam result is the sum of the effective task results. The cap
+  is not applied only once at exam level; surplus bonus points from one task
+  cannot compensate for missing points in another task.
 - Pending edits update requirement, task, category, part, and exam badges
   immediately.
+
+For example, if a 60-point task receives 58 regular plus five bonus points, it
+contributes 60 points. A separate 40-point task with 35 points contributes 35,
+so the effective exam result is 95. The entered regular and bonus totals remain
+visible even though the first task is capped.
 
 ## Editing and saving
 
@@ -167,5 +184,8 @@ Result changes are collected for the selected pupil and saved together.
 - Discard restores criterion values, freely awarded points,
   and comments to their persisted state.
 - Switching or refreshing must not silently lose dirty edits.
-- Once any result exists for an exam, the corresponding level of expectations
-  enters its locked structural state.
+- Once any result exists for an exam, `Aufgaben` and `Material` become
+  read-only. EH ancestors were already read-only there; its requirement editor
+  enters correction mode and permits only changes that preserve task
+  assignment, maxima, bonus status, order, and criterion identities and point
+  values.

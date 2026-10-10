@@ -20,6 +20,7 @@ import com.vaadin.flow.data.value.ValueChangeMode;
 
 import de.westarps.topteacher.ui.component.Buttons;
 import de.westarps.vaadin.markdown.MarkdownEditor;
+import de.westarps.vaadin.markdown.MarkdownViewer;
 
 final class LoeSectionComponents {
 
@@ -57,6 +58,12 @@ final class LoeSectionComponents {
 			this.addEventListener('keydown', event => event.stopPropagation());
 			"""));
 		return field;
+	}
+
+	Span summaryTitle(final String value) {
+		final Span title = new Span(value);
+		title.addClassName("tt-eh-summary-title");
+		return title;
 	}
 
 	MarkdownEditor markdownEditor(final String value, final String placeholder) {
@@ -100,11 +107,35 @@ final class LoeSectionComponents {
 		return block;
 	}
 
+	Component markdownViewBlock(final String label, final String value) {
+		final MarkdownViewer viewer = new MarkdownViewer(value == null ? "" : value);
+		viewer.addClassName("tt-markdown-viewer");
+		viewer.setWidthFull();
+		final Span viewerLabel = new Span(label);
+		viewerLabel.addClassName("tt-field-label");
+		final VerticalLayout block = new VerticalLayout(viewerLabel, viewer);
+		block.addClassName("tt-markdown-block");
+		block.setPadding(false);
+		block.setWidthFull();
+		return block;
+	}
+
 	Component summary(final String type, final Component title, final Component pointBadge) {
 		final Span typeLabel = new Span(type);
 		typeLabel.addClassName("tt-eh-summary-type");
 
 		final HorizontalLayout summary = new HorizontalLayout(typeLabel, title, pointBadge);
+		summary.addClassName("tt-eh-summary");
+		summary.setPadding(false);
+		summary.setWidthFull();
+		return summary;
+	}
+
+	Component summary(final String type, final Component title) {
+		final Span typeLabel = new Span(type);
+		typeLabel.addClassName("tt-eh-summary-type");
+
+		final HorizontalLayout summary = new HorizontalLayout(typeLabel, title);
 		summary.addClassName("tt-eh-summary");
 		summary.setPadding(false);
 		summary.setWidthFull();
@@ -136,6 +167,11 @@ final class LoeSectionComponents {
 
 	LoePointBadge pointBadge(final String label, final Supplier<LoePoints> pointsSupplier) {
 		return new LoePointBadge(label, pointsSupplier);
+	}
+
+	LoePointDistributionBadge pointDistributionBadge(final int taskMaxPoints,
+			final Supplier<LoePoints> distributedPointsSupplier) {
+		return new LoePointDistributionBadge(taskMaxPoints, distributedPointsSupplier);
 	}
 
 	LoePercentageBadge percentageBadge(final Supplier<Integer> percentageSupplier) {

@@ -30,8 +30,8 @@ Task content should be authored as Markdown with the existing Markdown editor.
 
 ## Design direction
 
-- Add an `Aufgaben` tab immediately before the `EH` tab.
-- Add a dedicated `Material` tab immediately after `Aufgaben` and before `EH`.
+- Add an `Aufgaben` tab immediately before the new `Material` tab.
+- Add the dedicated `Material` tab immediately before `EH`.
 - Reuse one shared hierarchy and the existing EH editing concepts rather than
   introduce a second, independently maintained exam-task tree.
 - Treat `Aufgaben` and `EH` as two views of the same structure with different
@@ -67,12 +67,14 @@ independent view state or dirty-state handling.
 - In the locked `Aufgaben` and `Material` views, Markdown content is rendered
   for reading instead of leaving disabled editor controls on screen. This
   matches the read-only category and task context already used in EH.
-- After results exist, EH uses its existing safeguards. Only requirement text
-  changes that preserve result-bearing semantics, such as criterion identity,
-  remain possible; structure, ordering, points, bonus status, and other guarded
-  properties remain locked.
-- Printing and export are deferred until the `Aufgaben` tab is fully
-  functional. No separate teacher version is currently needed.
+- After results exist, EH uses its existing safeguards. Only corrections to the
+  actual requirement content that preserve result-bearing semantics remain
+  possible; task assignment, ordering, points, bonus status, criterion
+  identities, and criterion point values remain locked.
+- The new pupil-facing exam-sheet printing and export are deferred until the
+  `Aufgaben` and `Material` tabs are fully functional. No separate teacher
+  version of that future exam sheet is currently needed. This does not affect
+  the existing pupil and teacher EH result PDFs.
 - Footnotes and line numbering are deferred to a separate issue. They must not
   hold up the initial material-authoring workflow.
 - Managed image uploads and other image-storage work are deferred. The first
@@ -171,6 +173,9 @@ points.
 
   `min(task maximum, achieved regular points + achieved bonus points)`
 
+- The existing requirement-local half-up rounding happens before those rounded
+  requirement results are aggregated and capped at the task boundary. No half
+  point leaves its requirement.
 - The effective result for the exam is the sum of the individually capped task
   results. Bonus points from one task cannot compensate for missing points in
   another task.
@@ -184,11 +189,11 @@ points.
 - Once results exist, task points are locked with `Aufgaben`, while requirement
   points remain protected by the existing EH correction-mode safeguards.
 
-Today all higher-level point totals are derived upward from requirements and
-`eh_task` has no point column. This issue deliberately introduces a stored task
-point budget because task points and requirement points represent two separate
-workflow stages. Existing task point values must be backfilled from their
-current non-bonus requirement totals.
+Before this issue, all higher-level point totals were derived upward from
+requirements and `eh_task` had no point column. This issue deliberately
+introduces a stored task point budget because task points and requirement
+points represent two separate workflow stages. Existing task point values are
+backfilled from their current non-bonus requirement totals.
 
 The existing bonus cap is applied once at exam level. It must move to the task
 boundary throughout result entry, grading, evaluation, existing EH/result
@@ -196,7 +201,7 @@ exports, and MCP result summaries.
 
 ## Initial implications
 
-- `LoeTask` currently contains only its title and sort order. It will need a
+- Previously, `LoeTask` contained only its title and sort order. It gains a
   Markdown field and a maximum-point field for the actual task, with
   corresponding database columns and repository mappings.
 - A material domain type and persistence table are needed with a required
@@ -222,12 +227,16 @@ exports, and MCP result summaries.
 - A printable exam artifact is a later part of the workflow but should inform
   the model now. Task content should not be stored only as presentation state.
 - Deep links, refresh propagation, accessibility labels, and tab restoration
-  need to recognize the additional exam tab.
+  need to recognize both additional exam tabs.
 
-## Open questions
+## Deferred follow-up work
 
-- Are attachments, page breaks, answer space, and other print-specific
-  features in scope, or is the first version limited to Markdown authoring?
+- The first implementation is limited to Markdown authoring for task and
+  material content.
+- Exam-sheet printing and print-specific layout such as page breaks and answer
+  space are deferred.
+- Attachments and managed image storage are deferred.
+- Footnotes and source-text line numbering are deferred.
 
 ## Reimplementation status
 
@@ -238,7 +247,7 @@ baseline (`9aa2100`) so that Issue 32's half-point model, point aggregation,
 and status tray remain authoritative instead of being reconstructed through a
 large conflict resolution.
 
-The Issue 35 work will be reapplied in reviewable stages:
+The Issue 35 work was planned for these reviewable stages:
 
 1. remove the accidental Notes feature;
 2. add task and material domain/persistence support;
@@ -251,10 +260,17 @@ The Issue 35 work will be reapplied in reviewable stages:
 7. retain the concise point-distribution label without the redundant
    `passend` text.
 
-Current progress: the current-main foundation and stage 1 (complete removal of
-the accidental Notes feature) are complete. Stages 2 through 7 remain pending.
+Current progress: the restart foundation and stage 1 are committed at
+`301ec3c`. The worktree now contains one combined, uncommitted review pass for
+stages 2 through 7. The stages were reapplied together because their domain,
+validation, result, export, MCP, shared-rendering, and lock behavior are tightly
+coupled. The review pass is complete: the full reactor test suite passes with
+397 tests, `git diff --check` reports no issues, and the running application was
+visually checked for the workflow tab order, editable Aufgaben/Material views,
+read-only EH ancestors, explicit collapse controls, concise point-distribution
+labels, half-point handling, and the preserved Issue 32 status tray.
 
-The preserved first pass demonstrated the intended end state:
+The combined review pass is intended to provide the following end state:
 
 - `Aufgaben`, `Material`, and `EH` are separate tabs in workflow order and use
   the same tree-section, designer, collapse, breadcrumb, save/dirty, and lock
@@ -269,11 +285,16 @@ The preserved first pass demonstrated the intended end state:
   correction safeguards, and valid task/requirement point distribution before
   result entry.
 - Result totals, evaluation, exports, and MCP summaries cap bonus points at the
-  individual task boundary.
+  individual task boundary after requirement-local rounding.
 - Existing task point budgets are migrated from their regular requirements,
   while duplication copies task content, points, material, and EH data.
 - Locked task, category, and material Markdown is shown as rendered content;
   no Markdown editing controls remain in the component tree.
+- Section headers use the adjacent self/subtree controls, header clicks no
+  longer toggle a section, and mixed scopes continue to offer expansion until
+  every child is expanded.
+- Point-distribution indicators use the concise numeric relationship and do not
+  add the redundant `passend` text.
 - The accidental legacy Notes feature has been removed end-to-end, including
   its persistence, export, and MCP surfaces.
 

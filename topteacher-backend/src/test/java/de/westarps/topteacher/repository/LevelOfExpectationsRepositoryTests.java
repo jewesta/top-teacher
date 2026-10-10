@@ -31,6 +31,7 @@ import de.westarps.topteacher.model.Subject;
 import de.westarps.topteacher.model.loe.LoeCategory;
 import de.westarps.topteacher.model.loe.LoeCriterion;
 import de.westarps.topteacher.model.loe.LoeCriterionResult;
+import de.westarps.topteacher.model.loe.LoeMaterial;
 import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeRequirementResult;
@@ -40,6 +41,7 @@ import de.westarps.topteacher.model.loe.LoeTask;
 class LevelOfExpectationsRepositoryTests {
 
 	private static final String CORRECTION_MODE_MESSAGE = "Der Erwartungshorizont ist im Korrekturmodus. Struktur, Punkte und Kriterien können nicht geändert werden.";
+	private static final String RESULTS_BLOCKED_MESSAGE = "Ergebnisse können erst erfasst werden, wenn die regulären Anforderungspunkte jeder Aufgabe genau den Aufgabenpunkten entsprechen und die Aufgabensumme zur Notenskala passt.";
 
 	@Autowired
 	private CourseRepository courseRepository;
@@ -70,13 +72,16 @@ class LevelOfExpectationsRepositoryTests {
 		final LoeCategory category = levelOfExpectationsRepository
 				.saveCategory(new LoeCategory(null, part.id(), "Inhalt", "**Textverstaendnis**", 0));
 		final LoeTask task = levelOfExpectationsRepository
-				.saveTask(new LoeTask(null, category.id(), "Teilaufgabe 1", 0));
+				.saveTask(new LoeTask(null, category.id(), "Teilaufgabe 1", "**Aufgabentext**", 6, 0));
+		final LoeMaterial material = levelOfExpectationsRepository
+				.saveMaterial(new LoeMaterial(null, part.id(), "Quelle 1", "**Quellentext**", 0));
 		final LoeRequirement requirement = levelOfExpectationsRepository
 				.saveRequirement(new LoeRequirement(null, task.id(), "Nennt zwei Argumente.", 6, false, 0));
 
 		assertThat(levelOfExpectationsRepository.findPartsByExamId(exam.id())).containsExactly(part);
 		assertThat(levelOfExpectationsRepository.findCategoriesByExamId(exam.id())).containsExactly(category);
 		assertThat(levelOfExpectationsRepository.findTasksByExamId(exam.id())).containsExactly(task);
+		assertThat(levelOfExpectationsRepository.findMaterialsByExamId(exam.id())).containsExactly(material);
 		assertThat(levelOfExpectationsRepository.findRequirementsByExamId(exam.id())).containsExactly(requirement);
 
 		final LoeRequirement updatedRequirement = new LoeRequirement(requirement.id(), task.id(),
@@ -95,6 +100,7 @@ class LevelOfExpectationsRepositoryTests {
 				.saveCategory(new LoeCategory(null, part.id(), "Sprache", "", 0));
 		final LoeTask task = levelOfExpectationsRepository
 				.saveTask(new LoeTask(null, category.id(), "Teilaufgabe 1", 0));
+		levelOfExpectationsRepository.saveMaterial(new LoeMaterial(null, part.id(), "Quelle 1", "Text", 0));
 		levelOfExpectationsRepository
 				.saveRequirement(new LoeRequirement(null, task.id(), "Formuliert sauber.", 4, false, 0));
 
@@ -104,6 +110,7 @@ class LevelOfExpectationsRepositoryTests {
 		assertThat(levelOfExpectationsRepository.findCategoriesByExamId(exam.id())).isEmpty();
 		assertThat(levelOfExpectationsRepository.findTasksByExamId(exam.id())).isEmpty();
 		assertThat(levelOfExpectationsRepository.findRequirementsByExamId(exam.id())).isEmpty();
+		assertThat(levelOfExpectationsRepository.findMaterialsByExamId(exam.id())).isEmpty();
 	}
 
 	@Test
@@ -127,7 +134,7 @@ class LevelOfExpectationsRepositoryTests {
 		final LoeCategory category = levelOfExpectationsRepository
 				.saveCategory(new LoeCategory(null, part.id(), "Sprache", "", 0));
 		final LoeTask task = levelOfExpectationsRepository
-				.saveTask(new LoeTask(null, category.id(), "Teilaufgabe 1", 0));
+				.saveTask(new LoeTask(null, category.id(), "Teilaufgabe 1", "", 100, 0));
 		assertThatThrownBy(() -> levelOfExpectationsRepository.saveRequirement(
 				new LoeRequirement(null, task.id(), "[Zu viel](eh:1/1,5)", 1, false, 0)))
 					.isInstanceOf(IllegalArgumentException.class)
@@ -137,7 +144,7 @@ class LevelOfExpectationsRepositoryTests {
 					.isInstanceOf(IllegalArgumentException.class)
 					.hasMessage("Kriterium „Offen“: Ordne eine gültige Punktzahl zu.");
 		final LoeRequirement requirement = levelOfExpectationsRepository.saveRequirement(new LoeRequirement(null,
-				task.id(), "Nutzt die [korrekte Zeitform](eh:1/0,5) und [präzise Wortwahl](eh:2/1.5).", 8, false,
+				task.id(), "Nutzt die [korrekte Zeitform](eh:1/0,5) und [präzise Wortwahl](eh:2/1.5).", 100, false,
 				0));
 
 		assertThat(levelOfExpectationsRepository.findActiveCriteriaByExamId(exam.id())).extracting(
@@ -147,7 +154,7 @@ class LevelOfExpectationsRepositoryTests {
 						tuple("2", "präzise Wortwahl", 3, 1, true));
 
 		final LoeRequirement updatedRequirement = new LoeRequirement(requirement.id(), task.id(),
-				"Nutzt die [richtige Zeitform](eh:1/1,5) und [passende Konnektoren](eh:3).", 8, false, 0);
+				"Nutzt die [richtige Zeitform](eh:1/1,5) und [passende Konnektoren](eh:3).", 100, false, 0);
 		levelOfExpectationsRepository.saveRequirement(updatedRequirement);
 		final List<LoeCriterion> updatedCriteria = levelOfExpectationsRepository.findActiveCriteriaByExamId(exam.id());
 
@@ -174,7 +181,7 @@ class LevelOfExpectationsRepositoryTests {
 		assertThat(levelOfExpectationsRepository.findCriterionResultsByExamAndPupil(exam.id(), pupil.id()))
 				.containsExactly(new LoeCriterionResult(firstCriterion.id(), pupil.id(), 3));
 		assertThatThrownBy(() -> levelOfExpectationsRepository.saveRequirement(new LoeRequirement(requirement.id(),
-				task.id(), "Nutzt die [richtige Zeitform](eh:1/2) und [passende Konnektoren](eh:3).", 8, false,
+				task.id(), "Nutzt die [richtige Zeitform](eh:1/2) und [passende Konnektoren](eh:3).", 100, false,
 				0))).isInstanceOf(IllegalStateException.class).hasMessage(CORRECTION_MODE_MESSAGE);
 		assertThatThrownBy(() -> levelOfExpectationsRepository.deleteRequirement(requirement.id()))
 				.isInstanceOf(IllegalStateException.class).hasMessage(CORRECTION_MODE_MESSAGE);
@@ -192,9 +199,9 @@ class LevelOfExpectationsRepositoryTests {
 		final LoeCategory category = levelOfExpectationsRepository
 				.saveCategory(new LoeCategory(null, part.id(), "Sprache", "", 0));
 		final LoeTask task = levelOfExpectationsRepository
-				.saveTask(new LoeTask(null, category.id(), "Teilaufgabe 1", 0));
+				.saveTask(new LoeTask(null, category.id(), "Teilaufgabe 1", "", 100, 0));
 		final LoeRequirement requirement = levelOfExpectationsRepository
-				.saveRequirement(new LoeRequirement(null, task.id(), "Formuliert sauber.", 4, false, 0));
+				.saveRequirement(new LoeRequirement(null, task.id(), "Formuliert sauber.", 100, false, 0));
 		final Pupil pupil = pupilRepository.save(new Pupil(null, "Test", "Punkte", Lifecycle.ACTIVE));
 
 		levelOfExpectationsRepository
@@ -219,15 +226,69 @@ class LevelOfExpectationsRepositoryTests {
 	}
 
 	@Test
-	void allowsTextCorrectionsButLocksStructureAfterResultsExist() {
+	void blocksResultsUntilTaskAndRequirementPointBudgetsAreValid() {
+		final Exam exam = createExam(2045, "EH Point Distribution");
+		final LoePart part = levelOfExpectationsRepository.savePart(new LoePart(null, exam.id(), "Klausurteil A", 0));
+		final LoeCategory category = levelOfExpectationsRepository
+				.saveCategory(new LoeCategory(null, part.id(), "Inhalt", "", 0));
+		LoeTask task = levelOfExpectationsRepository
+				.saveTask(new LoeTask(null, category.id(), "Aufgabe 1", "Aufgabentext", 90, 0));
+		LoeRequirement requirement = levelOfExpectationsRepository
+				.saveRequirement(new LoeRequirement(null, task.id(), "Anforderung", 90, false, 0));
+		final Pupil pupil = pupilRepository.save(new Pupil(null, "Test", "Verteilung", Lifecycle.ACTIVE));
+
+		assertThat(levelOfExpectationsRepository.isPointDistributionValidForExam(exam.id())).isFalse();
+		final LoeRequirement initialRequirement = requirement;
+		assertThatThrownBy(() -> levelOfExpectationsRepository
+				.saveRequirementResult(new LoeRequirementResult(initialRequirement.id(), pupil.id(), 45)))
+						.isInstanceOf(IllegalStateException.class).hasMessage(RESULTS_BLOCKED_MESSAGE);
+
+		task = levelOfExpectationsRepository.saveTask(new LoeTask(task.id(), task.categoryId(), task.title(),
+				task.descriptionMarkdown(), 100, task.sortOrder()));
+		assertThat(levelOfExpectationsRepository.isPointDistributionValidForExam(exam.id())).isFalse();
+
+		requirement = levelOfExpectationsRepository.saveRequirement(new LoeRequirement(requirement.id(), task.id(),
+				requirement.descriptionMarkdown(), 100, false, requirement.sortOrder()));
+		assertThat(levelOfExpectationsRepository.isPointDistributionValidForExam(exam.id())).isTrue();
+		levelOfExpectationsRepository
+				.saveRequirementResult(new LoeRequirementResult(requirement.id(), pupil.id(), 45));
+	}
+
+	@Test
+	void treatsAnExamWithoutAGradingScaleAsAnInvalidPointDistribution() {
+		final Exam exam = createExam(2046, "EH Missing Grading Scale");
+		final LoePart part = levelOfExpectationsRepository.savePart(new LoePart(null, exam.id(), "Klausurteil A", 0));
+		final LoeCategory category = levelOfExpectationsRepository
+				.saveCategory(new LoeCategory(null, part.id(), "Inhalt", "", 0));
+		final LoeTask task = levelOfExpectationsRepository
+				.saveTask(new LoeTask(null, category.id(), "Aufgabe 1", "Aufgabentext", 100, 0));
+		levelOfExpectationsRepository
+				.saveRequirement(new LoeRequirement(null, task.id(), "Anforderung", 100, false, 0));
+
+		jdbc.getJdbcTemplate().execute("alter table exam alter column grading_scale_id drop not null");
+		try {
+			jdbc.update("update exam set grading_scale_id = null where id = :id", Map.of("id", exam.id()));
+
+			assertThat(levelOfExpectationsRepository.isPointDistributionValidForExam(exam.id())).isFalse();
+		} finally {
+			jdbc.update("update exam set grading_scale_id = :gradingScaleId where id = :id",
+					Map.of("gradingScaleId", exam.gradingScaleId(), "id", exam.id()));
+			jdbc.getJdbcTemplate().execute("alter table exam alter column grading_scale_id set not null");
+		}
+	}
+
+	@Test
+	void allowsRequirementTextCorrectionsButLocksTasksMaterialsAndStructureAfterResultsExist() {
 		final Exam exam = createExam(2044, "EH Correction Mode");
 		final LoePart part = levelOfExpectationsRepository.savePart(new LoePart(null, exam.id(), "Klausurteil A", 0));
 		final LoeCategory category = levelOfExpectationsRepository
 				.saveCategory(new LoeCategory(null, part.id(), "Sprache", "Beschreibung", 0));
 		final LoeTask task = levelOfExpectationsRepository
-				.saveTask(new LoeTask(null, category.id(), "Teilaufgabe 1", 0));
+				.saveTask(new LoeTask(null, category.id(), "Teilaufgabe 1", "Aufgabentext", 100, 0));
 		final LoeRequirement requirement = levelOfExpectationsRepository.saveRequirement(new LoeRequirement(null,
-				task.id(), "Nutzt die [korrekte Zeitform](eh:1) und [präzise Wortwahl](eh:2).", 8, false, 0));
+				task.id(), "Nutzt die [korrekte Zeitform](eh:1) und [präzise Wortwahl](eh:2).", 100, false, 0));
+		final LoeMaterial material = levelOfExpectationsRepository
+				.saveMaterial(new LoeMaterial(null, part.id(), "Quelle 1", "Text", 0));
 		final Pupil pupil = pupilRepository.save(new Pupil(null, "Test", "Korrektur", Lifecycle.ACTIVE));
 		final LoeCriterion criterion = levelOfExpectationsRepository.findActiveCriteriaByExamId(exam.id()).getFirst();
 		assertThat(levelOfExpectationsRepository.hasResultsForExam(exam.id())).isFalse();
@@ -238,30 +299,46 @@ class LevelOfExpectationsRepositoryTests {
 
 		assertThat(levelOfExpectationsRepository.hasResultsForExam(exam.id())).isTrue();
 
-		levelOfExpectationsRepository.savePart(new LoePart(part.id(), part.examId(), "Klausurteil Alpha", 0));
-		levelOfExpectationsRepository
-				.saveCategory(new LoeCategory(category.id(), category.partId(), "Stil", "Neue Beschreibung", 0));
-		levelOfExpectationsRepository.saveTask(new LoeTask(task.id(), task.categoryId(), "Aufgabe 1", 0));
 		levelOfExpectationsRepository.saveRequirement(new LoeRequirement(requirement.id(), requirement.taskId(),
-				"Nutzt die [richtige Zeitform](eh:1) und [treffende Wortwahl](eh:2).", 8, false, 0));
+				"Nutzt die [richtige Zeitform](eh:1) und [treffende Wortwahl](eh:2).", 100, false, 0));
 
 		assertThat(levelOfExpectationsRepository.findActiveCriteriaByExamId(exam.id()))
 				.extracting(LoeCriterion::criterionKey, LoeCriterion::label)
 				.containsExactly(tuple("1", "richtige Zeitform"), tuple("2", "treffende Wortwahl"));
 		assertThatThrownBy(() -> levelOfExpectationsRepository.saveRequirement(new LoeRequirement(requirement.id(),
-				requirement.taskId(), "Nutzt die [richtige Zeitform](eh:1).", 8, false, 0)))
+				requirement.taskId(), "Nutzt die [richtige Zeitform](eh:1).", 100, false, 0)))
 						.isInstanceOf(IllegalStateException.class).hasMessage(CORRECTION_MODE_MESSAGE);
 		assertThatThrownBy(() -> levelOfExpectationsRepository.saveRequirement(new LoeRequirement(requirement.id(),
 				requirement.taskId(),
-				"Nutzt die [richtige Zeitform](eh:1), [treffende Wortwahl](eh:2) und [Satzbau](eh:3).", 8, false, 0)))
+				"Nutzt die [richtige Zeitform](eh:1), [treffende Wortwahl](eh:2) und [Satzbau](eh:3).", 100, false, 0)))
 						.isInstanceOf(IllegalStateException.class);
 		assertThatThrownBy(() -> levelOfExpectationsRepository.saveRequirement(new LoeRequirement(requirement.id(),
 				requirement.taskId(), requirement.descriptionMarkdown(), 10, false, 0)))
 						.isInstanceOf(IllegalStateException.class);
 		assertThatThrownBy(() -> levelOfExpectationsRepository.savePart(new LoePart(null, exam.id(), "Teil B", 1)))
 				.isInstanceOf(IllegalStateException.class);
+		assertThatThrownBy(() -> levelOfExpectationsRepository
+				.savePart(new LoePart(part.id(), part.examId(), "Klausurteil Alpha", 0)))
+						.isInstanceOf(IllegalStateException.class).hasMessage(CORRECTION_MODE_MESSAGE);
+		assertThatThrownBy(() -> levelOfExpectationsRepository
+				.saveCategory(new LoeCategory(category.id(), category.partId(), "Stil", "Neue Beschreibung", 0)))
+						.isInstanceOf(IllegalStateException.class).hasMessage(CORRECTION_MODE_MESSAGE);
+		assertThatThrownBy(() -> levelOfExpectationsRepository.saveTask(new LoeTask(task.id(), task.categoryId(),
+				"Aufgabe 1", task.descriptionMarkdown(), task.maxPoints(), task.sortOrder())))
+						.isInstanceOf(IllegalStateException.class).hasMessage(CORRECTION_MODE_MESSAGE);
+		assertThatThrownBy(() -> levelOfExpectationsRepository.saveMaterial(new LoeMaterial(material.id(), part.id(),
+				"Quelle geändert", material.descriptionMarkdown(), material.sortOrder())))
+						.isInstanceOf(IllegalStateException.class).hasMessage(CORRECTION_MODE_MESSAGE);
 		assertThatThrownBy(() -> levelOfExpectationsRepository.movePart(part, 1))
 				.isInstanceOf(IllegalStateException.class);
+		final Exam unlockedExam = createExam(2047, "EH Unlocked Material Move");
+		final LoePart unlockedPart = levelOfExpectationsRepository
+				.savePart(new LoePart(null, unlockedExam.id(), "Klausurteil A", 0));
+		final LoeMaterial forgedMaterial = new LoeMaterial(material.id(), unlockedPart.id(), material.title(),
+				material.descriptionMarkdown(), material.sortOrder());
+		assertThatThrownBy(() -> levelOfExpectationsRepository.moveMaterial(forgedMaterial, 1))
+				.isInstanceOf(IllegalStateException.class)
+						.hasMessage(CORRECTION_MODE_MESSAGE);
 		assertThatThrownBy(() -> levelOfExpectationsRepository.deleteTask(task.id()))
 				.isInstanceOf(IllegalStateException.class);
 	}
@@ -273,9 +350,9 @@ class LevelOfExpectationsRepositoryTests {
 		final LoeCategory category = levelOfExpectationsRepository
 				.saveCategory(new LoeCategory(null, part.id(), "Sprache", "", 0));
 		final LoeTask task = levelOfExpectationsRepository
-				.saveTask(new LoeTask(null, category.id(), "Teilaufgabe 1", 0));
+				.saveTask(new LoeTask(null, category.id(), "Teilaufgabe 1", "", 100, 0));
 		final LoeRequirement requirement = levelOfExpectationsRepository.saveRequirement(
-				new LoeRequirement(null, task.id(), "Nutzt die [korrekte Zeitform](eh:1).", 5, false, 0));
+				new LoeRequirement(null, task.id(), "Nutzt die [korrekte Zeitform](eh:1).", 100, false, 0));
 		final LoeCriterion criterion = levelOfExpectationsRepository.findActiveCriteriaByExamId(exam.id()).getFirst();
 		final Pupil pupil = pupilRepository.save(new Pupil(null, "Test", "Löschen", Lifecycle.ACTIVE));
 		final Pupil otherPupil = pupilRepository.save(new Pupil(null, "Test", "Bleibt", Lifecycle.ACTIVE));
@@ -307,9 +384,11 @@ class LevelOfExpectationsRepositoryTests {
 		final LoeCategory category = levelOfExpectationsRepository
 				.saveCategory(new LoeCategory(null, part.id(), "Sprache", "**Fokus**", 0));
 		final LoeTask task = levelOfExpectationsRepository
-				.saveTask(new LoeTask(null, category.id(), "Teilaufgabe 1", 0));
+				.saveTask(new LoeTask(null, category.id(), "Teilaufgabe 1", "Aufgabentext", 100, 0));
+		final LoeMaterial material = levelOfExpectationsRepository
+				.saveMaterial(new LoeMaterial(null, part.id(), "Quelle 1", "Quellentext", 0));
 		final LoeRequirement requirement = levelOfExpectationsRepository.saveRequirement(
-				new LoeRequirement(null, task.id(), "Nutzt die [korrekte Zeitform](eh:1).", 5, true, 0));
+				new LoeRequirement(null, task.id(), "Nutzt die [korrekte Zeitform](eh:1).", 100, false, 0));
 		final LoeCriterion criterion = levelOfExpectationsRepository.findActiveCriteriaByExamId(sourceExam.id())
 				.getFirst();
 		final Pupil pupil = pupilRepository.save(new Pupil(null, "Test", "Kopie", Lifecycle.ACTIVE));
@@ -325,13 +404,18 @@ class LevelOfExpectationsRepositoryTests {
 		final LoeTask copiedTask = levelOfExpectationsRepository.findTasksByExamId(targetExam.id()).getFirst();
 		final LoeRequirement copiedRequirement = levelOfExpectationsRepository.findRequirementsByExamId(targetExam.id())
 				.getFirst();
+		final LoeMaterial copiedMaterial = levelOfExpectationsRepository.findMaterialsByExamId(targetExam.id())
+				.getFirst();
 
 		assertThat(copiedPart).isEqualTo(new LoePart(copiedPart.id(), targetExam.id(), part.title(), part.sortOrder()));
 		assertThat(copiedPart.id()).isNotEqualTo(part.id());
 		assertThat(copiedCategory).isEqualTo(new LoeCategory(copiedCategory.id(), copiedPart.id(), category.title(),
 				category.descriptionMarkdown(), category.sortOrder()));
 		assertThat(copiedTask)
-				.isEqualTo(new LoeTask(copiedTask.id(), copiedCategory.id(), task.title(), task.sortOrder()));
+				.isEqualTo(new LoeTask(copiedTask.id(), copiedCategory.id(), task.title(), task.descriptionMarkdown(),
+						task.maxPoints(), task.sortOrder()));
+		assertThat(copiedMaterial).isEqualTo(new LoeMaterial(copiedMaterial.id(), copiedPart.id(), material.title(),
+				material.descriptionMarkdown(), material.sortOrder()));
 		assertThat(copiedRequirement).isEqualTo(
 				new LoeRequirement(copiedRequirement.id(), copiedTask.id(), requirement.descriptionMarkdown(),
 						requirement.maxPoints(), requirement.bonus(), requirement.sortOrder()));

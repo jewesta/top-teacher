@@ -56,7 +56,7 @@ public final class Buttons {
 	}
 
 	public static Button newItem() {
-		return command("Neu", VaadinIcon.STAR);
+		return command("Neu", VaadinIcon.PLUS);
 	}
 
 	public static Button createOrSave() {

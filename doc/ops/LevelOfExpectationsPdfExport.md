@@ -1,9 +1,11 @@
 # Level of Expectations PDF Export
 
-The level-of-expectations PDF presents one pupil's assessment as a static,
-printable document. It uses the assessment structure defined in
-[LevelOfExpectations.md](LevelOfExpectations.md) and the awarded values defined
-in [LevelOfExpectationsResults.md](LevelOfExpectationsResults.md).
+The level-of-expectations PDF presents one pupil's completed assessment as a
+static, printable document. It is a result document, not the future pupil exam
+sheet made from task and material content. It uses the assessment structure
+defined in [LevelOfExpectations.md](LevelOfExpectations.md) and the awarded
+values defined in
+[LevelOfExpectationsResults.md](LevelOfExpectationsResults.md).
 
 ## Variants
 
@@ -26,8 +28,9 @@ hierarchy and show the rounded achieved result for every requirement.
 
 The existing compact table structure remains authoritative. Requirements keep
 their number, text, maximum, and achieved-result cells. Task summaries retain
-their existing position, and bonus points remain visibly separate from regular
-points, including the existing parenthetical presentation where applicable.
+their existing position and use the task's explicitly authored maximum. Bonus
+points remain visibly separate from regular points, including the existing
+parenthetical presentation where applicable.
 
 The PDF must use the same requirement-local rounding as the Results view:
 
@@ -40,6 +43,22 @@ For a criterion-free requirement, the directly awarded value is rounded by the
 same rule. Only the rounded requirement result contributes to task, category,
 part, exam, grading, and export totals. No half point is aggregated beyond its
 requirement.
+
+## Effective totals and grades
+
+All exported totals and grade calculations use the same task boundary as the
+Results and Evaluation views.
+
+```text
+effective task result = min(task maximum,
+                            rounded regular results + rounded bonus results)
+effective exam result = sum(effective task results)
+```
+
+The export still presents regular and bonus awards separately. The cap affects
+the effective task and exam result used for grading; it does not hide the
+recorded awards. Bonus points from one task therefore cannot compensate for
+missing points in another task.
 
 ## Pupil version
 
@@ -86,3 +105,12 @@ not resemble interactive checkboxes or controls.
   within their existing cells rather than overlap neighboring content.
 - PDF output must contain no controls, popovers, hover behavior, or internal
   criterion keys.
+
+## Deferred exam-sheet export
+
+Generating the pupil-facing exam sheet from `Aufgaben` and `Material` is
+outside the current scope. That future output will group content by part and
+place the part's tasks before its materials. Its print layout, image handling,
+footnotes, line numbering, and any separate teacher variant are deliberately
+deferred; this does not remove or change the existing pupil and teacher
+variants of the level-of-expectations result PDF described above.

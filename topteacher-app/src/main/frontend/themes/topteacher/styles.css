@@ -492,9 +492,13 @@ vaadin-app-layout::part(navbar) {
 	width: 100%;
 }
 
-.tt-eh-details>vaadin-details-summary {
+.tt-eh-details>.tt-eh-details-summary {
 	background: var(--lumo-contrast-5pct);
+	border-radius: var(--lumo-border-radius-m);
+	box-sizing: border-box;
+	cursor: default;
 	padding: var(--lumo-space-s);
+	width: 100%;
 }
 
 .tt-eh-details::part(content) {
@@ -688,6 +692,26 @@ vaadin-app-layout::part(navbar) {
 	white-space: nowrap;
 }
 
+.tt-loe-distribution-points {
+	gap: var(--lumo-space-xs);
+}
+
+.tt-loe-distribution-points .tt-loe-aggregate-points-values {
+	font-size: var(--lumo-font-size-xs);
+}
+
+.tt-loe-distribution-regular {
+	width: 3ch;
+}
+
+.tt-loe-distribution-bonus {
+	width: 2ch;
+}
+
+.tt-loe-distribution-status {
+	color: var(--lumo-secondary-text-color);
+}
+
 .tt-loe-point-number {
 	display: inline-block;
 	text-align: right;
@@ -839,6 +863,10 @@ vaadin-app-layout::part(navbar) {
 	min-width: 0;
 }
 
+.tt-eh-header-toggle {
+	flex: 0 0 auto;
+}
+
 .tt-eh-summary-type {
 	color: var(--lumo-secondary-text-color);
 	flex: 0 0 auto;
@@ -883,15 +911,15 @@ vaadin-app-layout::part(navbar) {
 	padding: 0 var(--lumo-space-s);
 }
 
-.tt-eh-part > vaadin-details-summary .tt-loe-aggregate-points {
+.tt-eh-part > .tt-eh-details-summary .tt-loe-aggregate-points {
 	margin-right: -1px;
 }
 
-.tt-eh-category > vaadin-details-summary .tt-loe-aggregate-points {
+.tt-eh-category > .tt-eh-details-summary .tt-loe-aggregate-points {
 	margin-right: -2px;
 }
 
-.tt-eh-task > vaadin-details-summary .tt-loe-aggregate-points {
+.tt-eh-task > .tt-eh-details-summary .tt-loe-aggregate-points {
 	margin-right: -3px;
 }
 

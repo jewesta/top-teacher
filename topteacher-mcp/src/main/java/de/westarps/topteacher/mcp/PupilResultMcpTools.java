@@ -24,6 +24,7 @@ import de.westarps.topteacher.model.loe.LoeCriterionResult;
 import de.westarps.topteacher.model.loe.LoePointRules;
 import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeRequirementResult;
+import de.westarps.topteacher.model.loe.LoeTask;
 
 /**
  * MCP operations for reading pupil results.
@@ -60,6 +61,7 @@ public class PupilResultMcpTools {
 		final Pupil pupil = pupils.findById(pupilId)
 				.orElseThrow(() -> new IllegalArgumentException("Pupil does not exist: " + pupilId));
 		final List<LoeRequirement> requirements = levelOfExpectations.findRequirementsByExamId(examId);
+		final List<LoeTask> tasks = levelOfExpectations.findTasksByExamId(examId);
 		final List<LoeCriterion> criteria = levelOfExpectations.findActiveCriteriaByExamId(examId);
 		final Map<Integer, LoeRequirementResult> requirementResults = levelOfExpectations
 				.findRequirementResultsByExamAndPupil(examId, pupilId).stream()
@@ -73,10 +75,11 @@ public class PupilResultMcpTools {
 		final List<CriterionResultView> criterionViews = criteria.stream()
 				.map(criterion -> criterionResultView(criterion, criterionResults.get(criterion.id()))).toList();
 		return new PupilResultView(examId, ExamMcpTools.pupilView(pupil),
-				resultSummary(exam, requirements, requirementResults), requirementViews, criterionViews);
+				resultSummary(exam, tasks, requirements, requirementResults), requirementViews, criterionViews);
 	}
 
-	private ResultSummaryView resultSummary(final Exam exam, final List<LoeRequirement> requirements,
+	private ResultSummaryView resultSummary(final Exam exam, final List<LoeTask> tasks,
+			final List<LoeRequirement> requirements,
 			final Map<Integer, LoeRequirementResult> results) {
 		final int regularPoints = requirements.stream().filter(requirement -> !requirement.bonus())
 				.mapToInt(requirement -> achievedPoints(requirement, results)).sum();
@@ -90,11 +93,11 @@ public class PupilResultMcpTools {
 			return new ResultSummaryView(regularPoints, bonusPoints, null, "", false);
 		}
 		final LoePointRules pointRules = new LoePointRules(gradingScale);
-		if (!pointRules.regularMaxPointsMatch(requirements)) {
+		if (!pointRules.validDesign(tasks, requirements)) {
 			return new ResultSummaryView(regularPoints, bonusPoints, null, "", false);
 		}
 		try {
-			final int effectivePoints = pointRules.cappedAchievedTotal(requirements,
+			final int effectivePoints = pointRules.cappedAchievedTotal(tasks, requirements,
 					requirement -> achievedPoints(requirement, results));
 			final String grade = gradingScales.findRangesByGradingScaleId(gradingScale.id()).stream()
 					.filter(range -> range.minPoints() <= effectivePoints && effectivePoints <= range.maxPoints())

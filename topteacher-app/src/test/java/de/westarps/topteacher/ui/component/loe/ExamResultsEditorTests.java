@@ -72,7 +72,7 @@ class ExamResultsEditorTests {
 	private static final Pupil SECOND_PUPIL = new Pupil(21, "Berta", "Ergebnis", Lifecycle.ACTIVE);
 	private static final LoePart PART = new LoePart(1, EXAM.id(), "Klausurteil A", 0);
 	private static final LoeCategory CATEGORY = new LoeCategory(2, PART.id(), "Inhalt", "", 0);
-	private static final LoeTask TASK = new LoeTask(3, CATEGORY.id(), "Teilaufgabe 1", 0);
+	private static final LoeTask TASK = new LoeTask(3, CATEGORY.id(), "Teilaufgabe 1", "", 5, 0);
 	private static final LoeRequirement REQUIREMENT = new LoeRequirement(4, TASK.id(),
 			"Nutzt die [korrekte Zeitform](eh:1) und [präzise Wortwahl](eh:2/4).", 5, false, 0);
 	private static final LoeCriterion CRITERION = new LoeCriterion(5, REQUIREMENT.id(), "1", "korrekte Zeitform", 0,

@@ -1,6 +1,7 @@
 package de.westarps.topteacher.model.loe;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 
 import de.westarps.validate.ValidationResult;
@@ -24,6 +25,30 @@ public final class LoeValidator {
 		return results.build();
 	}
 
+	public static ValidationResults<LoeValidationTarget> validate(final int gradingScaleMaxPoints,
+			final Collection<LoeTask> tasks, final Collection<LoeRequirement> requirements) {
+		if (gradingScaleMaxPoints < 0) {
+			throw new IllegalArgumentException("gradingScaleMaxPoints must not be negative");
+		}
+		Objects.requireNonNull(tasks, "tasks must not be null");
+		Objects.requireNonNull(requirements, "requirements must not be null");
+
+		final ValidationResults.Builder<LoeValidationTarget> results = ValidationResults.builder();
+		validateTaskTotalPoints(gradingScaleMaxPoints, tasks, results);
+		results.addAll(validate(tasks, requirements).getResults());
+		return results.build();
+	}
+
+	public static ValidationResults<LoeValidationTarget> validate(final Collection<LoeTask> tasks,
+			final Collection<LoeRequirement> requirements) {
+		Objects.requireNonNull(tasks, "tasks must not be null");
+		Objects.requireNonNull(requirements, "requirements must not be null");
+		final ValidationResults.Builder<LoeValidationTarget> results = ValidationResults.builder();
+		validateRequirementTotalsByTask(tasks, requirements, results);
+		results.addAll(validateRequirements(requirements).getResults());
+		return results.build();
+	}
+
 	public static ValidationResults<LoeValidationTarget> validateRequirements(
 			final Collection<LoeRequirement> requirements) {
 		Objects.requireNonNull(requirements, "requirements must not be null");
@@ -43,6 +68,38 @@ public final class LoeValidator {
 		} else if (difference < 0) {
 			results.add(ValidationResult.error(LoeValidationTarget.totalPoints(),
 					"Erwartungshorizont: " + assignFewerPoints(-difference)));
+		}
+	}
+
+	private static void validateTaskTotalPoints(final int expectedPoints, final Collection<LoeTask> tasks,
+			final ValidationResults.Builder<LoeValidationTarget> results) {
+		final int assignedPoints = tasks.stream().mapToInt(LoeTask::maxPoints).sum();
+		final int difference = expectedPoints - assignedPoints;
+		if (difference > 0) {
+			results.add(ValidationResult.warning(LoeValidationTarget.totalPoints(),
+					"Aufgaben: " + assignMorePoints(difference)));
+		} else if (difference < 0) {
+			results.add(ValidationResult.error(LoeValidationTarget.totalPoints(),
+					"Aufgaben: " + assignFewerPoints(-difference)));
+		}
+	}
+
+	private static void validateRequirementTotalsByTask(final Collection<LoeTask> tasks,
+			final Collection<LoeRequirement> requirements,
+			final ValidationResults.Builder<LoeValidationTarget> results) {
+		final List<LoeRequirement> requirementList = List.copyOf(requirements);
+		for (final LoeTask task : tasks) {
+			final int assignedPoints = requirementList.stream()
+					.filter(requirement -> requirement.taskId().equals(task.id()) && !requirement.bonus())
+					.mapToInt(LoeRequirement::maxPoints).sum();
+			final int difference = task.maxPoints() - assignedPoints;
+			if (difference > 0) {
+				results.add(ValidationResult.warning(LoeValidationTarget.taskPoints(task.id()),
+						"Erwartungshorizont: " + assignMorePoints(difference)));
+			} else if (difference < 0) {
+				results.add(ValidationResult.error(LoeValidationTarget.taskPoints(task.id()),
+						"Erwartungshorizont: " + assignFewerPoints(-difference)));
+			}
 		}
 	}
 

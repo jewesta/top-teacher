@@ -18,6 +18,7 @@ import de.westarps.topteacher.model.loe.LoeCategory;
 import de.westarps.topteacher.model.loe.LoeCriterion;
 import de.westarps.topteacher.model.loe.LoeCriterionParser;
 import de.westarps.topteacher.model.loe.LoeCriterionResult;
+import de.westarps.topteacher.model.loe.LoeMaterial;
 import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeRequirementResult;
@@ -28,11 +29,13 @@ import de.westarps.topteacher.model.loe.LoeValidator;
 public class LevelOfExpectationsRepository {
 
 	private static final String CORRECTION_MODE_MESSAGE = "Der Erwartungshorizont ist im Korrekturmodus. Struktur, Punkte und Kriterien können nicht geändert werden.";
+	private static final String RESULTS_BLOCKED_MESSAGE = "Ergebnisse können erst erfasst werden, wenn die regulären Anforderungspunkte jeder Aufgabe genau den Aufgabenpunkten entsprechen und die Aufgabensumme zur Notenskala passt.";
 
 	private final NamedParameterJdbcTemplate jdbc;
 	private final RowMapper<LoePart> partRowMapper = this::mapPart;
 	private final RowMapper<LoeCategory> categoryRowMapper = this::mapCategory;
 	private final RowMapper<LoeTask> taskRowMapper = this::mapTask;
+	private final RowMapper<LoeMaterial> materialRowMapper = this::mapMaterial;
 	private final RowMapper<LoeRequirement> requirementRowMapper = this::mapRequirement;
 	private final RowMapper<LoeCriterion> criterionRowMapper = this::mapCriterion;
 	private final RowMapper<LoeCriterionResult> criterionResultRowMapper = this::mapCriterionResult;
@@ -63,13 +66,23 @@ public class LevelOfExpectationsRepository {
 
 	public List<LoeTask> findTasksByExamId(final int examId) {
 		return jdbc.query("""
-			select t.id, t.category_id, t.title, t.sort_order
+			select t.id, t.category_id, t.title, t.description_markdown, t.max_points, t.sort_order
 			from eh_task t
 			join eh_category c on c.id = t.category_id
 			join eh_part p on p.id = c.part_id
 			where p.exam_id = :examId
 			order by p.sort_order, p.id, c.sort_order, c.id, t.sort_order, t.id
 			""", Map.of("examId", examId), taskRowMapper);
+	}
+
+	public List<LoeMaterial> findMaterialsByExamId(final int examId) {
+		return jdbc.query("""
+			select material.id, material.part_id, material.title, material.description_markdown, material.sort_order
+			from loe_material material
+			join eh_part part on part.id = material.part_id
+			where part.exam_id = :examId
+			order by part.sort_order, part.id, material.sort_order, material.id
+			""", Map.of("examId", examId), materialRowMapper);
 	}
 
 	public List<LoeRequirement> findRequirementsByExamId(final int examId) {
@@ -162,6 +175,11 @@ public class LevelOfExpectationsRepository {
 			partIds.put(part.id(), copiedPart.id());
 		}
 
+		for (final LoeMaterial material : findMaterialsByExamId(sourceExamId)) {
+			saveMaterial(new LoeMaterial(null, partIds.get(material.partId()), material.title(),
+					material.descriptionMarkdown(), material.sortOrder()));
+		}
+
 		for (final LoeCategory category : findCategoriesByExamId(sourceExamId)) {
 			final LoeCategory copiedCategory = saveCategory(new LoeCategory(null, partIds.get(category.partId()),
 					category.title(), category.descriptionMarkdown(), category.sortOrder()));
@@ -169,8 +187,8 @@ public class LevelOfExpectationsRepository {
 		}
 
 		for (final LoeTask task : findTasksByExamId(sourceExamId)) {
-			final LoeTask copiedTask = saveTask(
-					new LoeTask(null, categoryIds.get(task.categoryId()), task.title(), task.sortOrder()));
+			final LoeTask copiedTask = saveTask(new LoeTask(null, categoryIds.get(task.categoryId()), task.title(),
+					task.descriptionMarkdown(), task.maxPoints(), task.sortOrder()));
 			taskIds.put(task.id(), copiedTask.id());
 		}
 
@@ -225,11 +243,40 @@ public class LevelOfExpectationsRepository {
 		jdbc.update("""
 			update eh_task
 			set title = :title,
+			    description_markdown = :descriptionMarkdown,
+			    max_points = :maxPoints,
 			    sort_order = :sortOrder
 			where id = :id
 			""", new MapSqlParameterSource().addValue("id", task.id()).addValue("title", task.title())
+			.addValue("descriptionMarkdown", task.descriptionMarkdown()).addValue("maxPoints", task.maxPoints())
 				.addValue("sortOrder", task.sortOrder()));
 		return task;
+	}
+
+	public LoeMaterial saveMaterial(final LoeMaterial material) {
+		if (material.id() == null) {
+			assertNoResultsForExam(examIdForPart(material.partId()));
+			return insertMaterial(material);
+		}
+		final LoeMaterial existing = findMaterialById(material.id());
+		final int existingExamId = examIdForPart(existing.partId());
+		final int targetExamId = examIdForPart(material.partId());
+		assertNoResultsForExam(existingExamId);
+		assertNoResultsForExam(targetExamId);
+		if (existingExamId != targetExamId) {
+			throw new IllegalStateException("Material kann nicht in eine andere Klausur verschoben werden.");
+		}
+		jdbc.update("""
+			update loe_material
+			set part_id = :partId,
+			    title = :title,
+			    description_markdown = :descriptionMarkdown,
+			    sort_order = :sortOrder
+			where id = :id
+			""", new MapSqlParameterSource().addValue("id", material.id()).addValue("partId", material.partId())
+			.addValue("title", material.title()).addValue("descriptionMarkdown", material.descriptionMarkdown())
+			.addValue("sortOrder", material.sortOrder()));
+		return material;
 	}
 
 	public LoeRequirement saveRequirement(final LoeRequirement requirement) {
@@ -270,6 +317,7 @@ public class LevelOfExpectationsRepository {
 	}
 
 	public void saveCriterionResult(final LoeCriterionResult result) {
+		assertPointDistributionValidForExam(examIdForCriterion(result.criterionId()));
 		final Integer availablePointUnits = jdbc.queryForObject("select point_units from eh_criterion where id = :id",
 				Map.of("id", result.criterionId()), Integer.class);
 		if (result.pointUnits() > availablePointUnits) {
@@ -285,6 +333,7 @@ public class LevelOfExpectationsRepository {
 	}
 
 	public void saveRequirementResult(final LoeRequirementResult result) {
+		assertPointDistributionValidForExam(examIdForRequirement(result.requirementId()));
 		jdbc.update("""
 			merge into eh_requirement_result (requirement_id, pupil_id, points, point_units, adjustment_units, comment_text)
 			key (requirement_id, pupil_id)
@@ -356,6 +405,12 @@ public class LevelOfExpectationsRepository {
 		deleteById("eh_requirement", id);
 	}
 
+	public void deleteMaterial(final int id) {
+		final LoeMaterial material = findMaterialById(id);
+		assertNoResultsForExam(examIdForPart(material.partId()));
+		deleteById("loe_material", id);
+	}
+
 	public int nextPartSortOrder(final int examId) {
 		return nextSortOrder("""
 			select coalesce(max(sort_order), -1) + 1
@@ -388,6 +443,14 @@ public class LevelOfExpectationsRepository {
 			""", taskId);
 	}
 
+	public int nextMaterialSortOrder(final int partId) {
+		return nextSortOrder("""
+			select coalesce(max(sort_order), -1) + 1
+			from loe_material
+			where part_id = :parentId
+			""", partId);
+	}
+
 	public void movePart(final LoePart part, final int offset) {
 		assertNoResultsForExam(part.examId());
 		final List<LoePart> siblings = findPartsByExamId(part.examId());
@@ -410,12 +473,58 @@ public class LevelOfExpectationsRepository {
 		move("eh_requirement", siblings.stream().map(SortableItem::fromRequirement).toList(), requirement.id(), offset);
 	}
 
+	public void moveMaterial(final LoeMaterial material, final int offset) {
+		final LoeMaterial existing = findMaterialById(material.id());
+		final int examId = examIdForPart(existing.partId());
+		assertNoResultsForExam(examId);
+		final List<SortableItem> persistedSiblings = findMaterialsByExamId(examId).stream()
+				.filter(sibling -> sibling.partId().equals(existing.partId())).map(SortableItem::fromMaterial).toList();
+		move("loe_material", persistedSiblings, existing.id(), offset);
+	}
+
+	public boolean isPointDistributionValidForExam(final int examId) {
+		final Integer mismatchedTasks = jdbc.queryForObject("""
+			select count(*)
+			from (
+			    select task.id
+			    from eh_task task
+			    join eh_category category on category.id = task.category_id
+			    join eh_part part on part.id = category.part_id
+			    left join eh_requirement requirement on requirement.task_id = task.id
+			    where part.exam_id = :examId
+			    group by task.id, task.max_points
+			    having coalesce(sum(case when requirement.bonus = false then requirement.max_points else 0 end), 0)
+			           <> task.max_points
+			) mismatch
+			""", Map.of("examId", examId), Integer.class);
+		final Integer matchingScale = jdbc.queryForObject("""
+			select count(*)
+			from exam
+			join grading_scale on grading_scale.id = exam.grading_scale_id
+			where exam.id = :examId
+			  and grading_scale.max_points = (
+			      select coalesce(sum(task.max_points), 0)
+			      from eh_task task
+			      join eh_category category on category.id = task.category_id
+			      join eh_part part on part.id = category.part_id
+			      where part.exam_id = exam.id
+			  )
+			""", Map.of("examId", examId), Integer.class);
+		return (mismatchedTasks == null || mismatchedTasks == 0) && matchingScale != null && matchingScale == 1;
+	}
+
+	public void assertPointDistributionValidForExam(final int examId) {
+		if (!isPointDistributionValidForExam(examId)) {
+			throw new IllegalStateException(RESULTS_BLOCKED_MESSAGE);
+		}
+	}
+
 	private void validatePartCorrectionMode(final LoePart part) {
 		final LoePart existing = findPartById(part.id());
 		if (!hasResultsForExam(existing.examId())) {
 			return;
 		}
-		if (!existing.examId().equals(part.examId()) || existing.sortOrder() != part.sortOrder()) {
+		if (!existing.equals(part)) {
 			throw new IllegalStateException(CORRECTION_MODE_MESSAGE);
 		}
 	}
@@ -426,7 +535,7 @@ public class LevelOfExpectationsRepository {
 		if (!hasResultsForExam(examId)) {
 			return;
 		}
-		if (!existing.partId().equals(category.partId()) || existing.sortOrder() != category.sortOrder()) {
+		if (!existing.equals(category)) {
 			throw new IllegalStateException(CORRECTION_MODE_MESSAGE);
 		}
 	}
@@ -437,7 +546,7 @@ public class LevelOfExpectationsRepository {
 		if (!hasResultsForExam(examId)) {
 			return;
 		}
-		if (!existing.categoryId().equals(task.categoryId()) || existing.sortOrder() != task.sortOrder()) {
+		if (!existing.equals(task)) {
 			throw new IllegalStateException(CORRECTION_MODE_MESSAGE);
 		}
 	}
@@ -484,10 +593,18 @@ public class LevelOfExpectationsRepository {
 
 	private LoeTask findTaskById(final int id) {
 		return jdbc.queryForObject("""
-			select id, category_id, title, sort_order
+			select id, category_id, title, description_markdown, max_points, sort_order
 			from eh_task
 			where id = :id
 			""", Map.of("id", id), taskRowMapper);
+	}
+
+	private LoeMaterial findMaterialById(final int id) {
+		return jdbc.queryForObject("""
+			select id, part_id, title, description_markdown, sort_order
+			from loe_material
+			where id = :id
+			""", Map.of("id", id), materialRowMapper);
 	}
 
 	private LoeRequirement findRequirementById(final int id) {
@@ -536,6 +653,18 @@ public class LevelOfExpectationsRepository {
 			""", Map.of("id", requirementId), Integer.class);
 	}
 
+	private int examIdForCriterion(final int criterionId) {
+		return jdbc.queryForObject("""
+			select p.exam_id
+			from eh_criterion cr
+			join eh_requirement r on r.id = cr.requirement_id
+			join eh_task t on t.id = r.task_id
+			join eh_category c on c.id = t.category_id
+			join eh_part p on p.id = c.part_id
+			where cr.id = :id
+			""", Map.of("id", criterionId), Integer.class);
+	}
+
 	private LoePart insertPart(final LoePart part) {
 		final KeyHolder keyHolder = new GeneratedKeyHolder();
 		jdbc.update("""
@@ -568,14 +697,30 @@ public class LevelOfExpectationsRepository {
 		final KeyHolder keyHolder = new GeneratedKeyHolder();
 		jdbc.update(
 				"""
-					insert into eh_task (category_id, title, sort_order)
-					values (:categoryId, :title, :sortOrder)
+					insert into eh_task (category_id, title, description_markdown, max_points, sort_order)
+					values (:categoryId, :title, :descriptionMarkdown, :maxPoints, :sortOrder)
 					""", new MapSqlParameterSource().addValue("categoryId", task.categoryId())
-						.addValue("title", task.title()).addValue("sortOrder", task.sortOrder()),
+						.addValue("title", task.title()).addValue("descriptionMarkdown", task.descriptionMarkdown())
+						.addValue("maxPoints", task.maxPoints()).addValue("sortOrder", task.sortOrder()),
 				keyHolder, new String[] {
 						"id"
 				});
-		return new LoeTask(generatedId(keyHolder, "EH task"), task.categoryId(), task.title(), task.sortOrder());
+		return new LoeTask(generatedId(keyHolder, "EH task"), task.categoryId(), task.title(),
+				task.descriptionMarkdown(), task.maxPoints(), task.sortOrder());
+	}
+
+	private LoeMaterial insertMaterial(final LoeMaterial material) {
+		final KeyHolder keyHolder = new GeneratedKeyHolder();
+		jdbc.update("""
+			insert into loe_material (part_id, title, description_markdown, sort_order)
+			values (:partId, :title, :descriptionMarkdown, :sortOrder)
+			""", new MapSqlParameterSource().addValue("partId", material.partId())
+			.addValue("title", material.title()).addValue("descriptionMarkdown", material.descriptionMarkdown())
+			.addValue("sortOrder", material.sortOrder()), keyHolder, new String[] {
+					"id"
+			});
+		return new LoeMaterial(generatedId(keyHolder, "material"), material.partId(), material.title(),
+				material.descriptionMarkdown(), material.sortOrder());
 	}
 
 	private LoeRequirement insertRequirement(final LoeRequirement requirement) {
@@ -799,7 +944,13 @@ public class LevelOfExpectationsRepository {
 
 	private LoeTask mapTask(final ResultSet resultSet, final int rowNumber) throws SQLException {
 		return new LoeTask(resultSet.getInt("id"), resultSet.getInt("category_id"), resultSet.getString("title"),
+				resultSet.getString("description_markdown"), resultSet.getInt("max_points"),
 				resultSet.getInt("sort_order"));
+	}
+
+	private LoeMaterial mapMaterial(final ResultSet resultSet, final int rowNumber) throws SQLException {
+		return new LoeMaterial(resultSet.getInt("id"), resultSet.getInt("part_id"), resultSet.getString("title"),
+				resultSet.getString("description_markdown"), resultSet.getInt("sort_order"));
 	}
 
 	private LoeRequirement mapRequirement(final ResultSet resultSet, final int rowNumber) throws SQLException {
@@ -842,6 +993,10 @@ public class LevelOfExpectationsRepository {
 
 		static SortableItem fromRequirement(final LoeRequirement requirement) {
 			return new SortableItem(requirement.id(), requirement.sortOrder());
+		}
+
+		static SortableItem fromMaterial(final LoeMaterial material) {
+			return new SortableItem(material.id(), material.sortOrder());
 		}
 	}
 }

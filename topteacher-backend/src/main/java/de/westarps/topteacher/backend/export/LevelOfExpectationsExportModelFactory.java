@@ -120,7 +120,10 @@ public class LevelOfExpectationsExportModelFactory {
 			exportRequirements.add(createRequirement(requirements.get(index), criteriaByRequirementId,
 					resultsByRequirementId, resultsByCriterionId, view, index + 1));
 		}
-		return new Task(task.title(), PointSummary.sum(exportRequirements, Requirement::points), exportRequirements);
+		final PointSummary requirementPoints = PointSummary.sum(exportRequirements, Requirement::points);
+		final PointSummary taskPoints = new PointSummary(task.maxPoints(), requirementPoints.bonusMaxPoints(),
+				requirementPoints.achievedPoints(), requirementPoints.bonusAchievedPoints());
+		return new Task(task.title(), taskPoints, exportRequirements);
 	}
 
 	private Requirement createRequirement(final LoeRequirement requirement,
@@ -232,7 +235,9 @@ public class LevelOfExpectationsExportModelFactory {
 		}
 
 		public String totalGradeDisplayName() {
-			final int effectiveAchievedPoints = points.effectiveAchievedPoints(gradingScale.maxPoints());
+			final int effectiveAchievedPoints = parts.stream().flatMap(part -> part.categories().stream())
+					.flatMap(category -> category.tasks().stream())
+					.mapToInt(task -> task.points().effectiveAchievedPoints(task.points().maxPoints())).sum();
 			return gradingScaleRanges.stream()
 					.filter(range -> range.minPoints() <= effectiveAchievedPoints
 							&& effectiveAchievedPoints <= range.maxPoints())
@@ -389,8 +394,7 @@ public class LevelOfExpectationsExportModelFactory {
 			if (maxPoints < 0) {
 				throw new IllegalArgumentException("maxPoints must not be negative");
 			}
-			final int applicableBonusPoints = Math.min(bonusAchievedPoints, Math.max(0, maxPoints - achievedPoints));
-			return achievedPoints + applicableBonusPoints;
+			return Math.min(maxPoints, totalAchievedPoints());
 		}
 
 		private static String displayName(final int points, final int bonusPoints) {
