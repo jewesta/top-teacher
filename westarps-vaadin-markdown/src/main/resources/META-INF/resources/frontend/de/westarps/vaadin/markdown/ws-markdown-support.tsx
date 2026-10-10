@@ -10,6 +10,12 @@ import {
 
 export type MarkdownToolbarCommandId = 'IMAGE' | 'FOOTNOTE';
 
+type MarkdownAnchorProperties = React.AnchorHTMLAttributes<HTMLAnchorElement> & {
+  node?: unknown;
+  'data-footnote-ref'?: unknown;
+  'data-footnote-backref'?: unknown;
+};
+
 const toolbarCommandNames: Record<MarkdownToolbarCommandId, string[]> = {
   IMAGE: ['image'],
   FOOTNOTE: ['footnote'],
@@ -78,7 +84,10 @@ export function markdownPreviewConfiguration(extensions: MarkdownExtension[], co
         ...contributions.flatMap((contribution) => contribution.rehypePlugins ?? []),
         [rehypeSanitize, schema],
       ] as PluggableList,
-      components: Object.assign({}, ...contributions.map((contribution) => contribution.components ?? {})),
+      components: Object.assign(
+        { a: MarkdownAnchor },
+        ...contributions.map((contribution) => contribution.components ?? {}),
+      ),
       remarkRehypeOptions: {
         footnoteLabel: 'Fußnoten',
         footnoteBackLabel: 'Zurück zum Text',
@@ -88,6 +97,26 @@ export function markdownPreviewConfiguration(extensions: MarkdownExtension[], co
       (wrapped, contribution) => contribution.wrap?.(wrapped, context) ?? wrapped, content,
     ),
   };
+}
+
+function MarkdownAnchor(properties: MarkdownAnchorProperties): React.ReactElement | null {
+  const isFootnoteReference = Object.prototype.hasOwnProperty.call(properties, 'data-footnote-ref');
+  const isFootnoteBackReference = Object.prototype.hasOwnProperty.call(properties, 'data-footnote-backref');
+  const {
+    node: _node,
+    children,
+    'data-footnote-ref': _footnoteReference,
+    'data-footnote-backref': _footnoteBackReference,
+    ...anchorProperties
+  } = properties;
+
+  if (isFootnoteBackReference) {
+    return null;
+  }
+  if (isFootnoteReference) {
+    return <span>{children}</span>;
+  }
+  return <a {...anchorProperties}>{children}</a>;
 }
 
 function insertBeforeFirstDivider(baseCommands: ICommand[], command: ICommand): ICommand[] {

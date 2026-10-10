@@ -449,7 +449,9 @@ the supported Material workflow.
 Editable Material Markdown also enables the shared editor's optional footnote
 command. The dialog inserts a numeric reference at the remembered cursor and
 appends its definition to the Material source; preview and locked rendering use
-the renderer's local footnote list. See the
+the renderer's local footnote list. References render as plain superscript
+numbers there, without inactive in-preview links or return-arrow controls;
+ordinary Markdown links remain active. See the
 [operational specification](../doc/ops/LevelOfExpectations.md#footnotes) for the
 settled behavior.
 

@@ -77,6 +77,12 @@ read-only rendering. Numbering in this editor-local rendering is provisional
 for a future composed exam output, which may collect and renumber footnotes
 across several Markdown sources.
 
+The local preview and read-only renderer show references as plain superscript
+numbers. They deliberately do not activate the otherwise generated in-page
+links and omit the corresponding return-arrow control because that navigation
+does not work reliably inside the embedded preview. Ordinary Markdown links
+remain active.
+
 The shared Markdown editor exposes the footnote command as an optional
 capability, but it is hidden in Aufgaben, EH, and other Markdown editors for
 now.
