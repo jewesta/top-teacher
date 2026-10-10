@@ -27,7 +27,6 @@ public abstract class AbstractDesigner extends ContextTabContent {
 		toolbar.addClassName("tt-designer-toolbar");
 		toolbar.setAlignItems(Alignment.CENTER);
 		toolbar.setPadding(false);
-		toolbar.setSpacing(false);
 		toolbar.setWidthFull();
 
 		toolbarSummary.addClassName("tt-designer-toolbar-summary");

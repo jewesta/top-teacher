@@ -32,6 +32,7 @@ import de.westarps.topteacher.ApplicationVersion;
 import de.westarps.topteacher.backend.backup.DatabaseBackupScheduler;
 import de.westarps.topteacher.backend.backup.DatabaseBackupService;
 import de.westarps.topteacher.backend.settings.AppSettings;
+import de.westarps.topteacher.ui.component.ActionToolbar;
 import de.westarps.topteacher.ui.component.Buttons;
 import de.westarps.topteacher.ui.component.ClipboardCopyButton;
 import de.westarps.topteacher.ui.component.FormBinders;
@@ -124,14 +125,13 @@ public class DatabaseBackupSettingsTab extends VerticalLayout implements Setting
 		form.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 1));
 		form.add(backupEnabled, backupTargetFolder, backupCron, cronDescription);
 
-		final HorizontalLayout actions = new HorizontalLayout(saveButton, backupNowButton);
+		final HorizontalLayout actions = new ActionToolbar(saveButton, backupNowButton);
 		actions.addClassName("tt-settings-actions");
-		actions.setSpacing(true);
 
 		addClassName("tt-settings-content");
 		setPadding(false);
 		setWidthFull();
-		add(currentDatabaseFile, new Hr(), backupDescription, backupFileNameDescription, form, actions);
+		add(actions, currentDatabaseFile, new Hr(), backupDescription, backupFileNameDescription, form);
 	}
 
 	private Component createCopyCurrentDatabaseFileButton() {

@@ -135,13 +135,15 @@ class ExamResultsEditorTests {
 		editor.setExam(EXAM);
 
 		final Button saveButton = saveButton(editor);
-		final Button discardButton = buttonByAriaLabel(editor, "Änderungen verwerfen");
+		final Button discardButton = buttonByAriaLabel(editor, "Änderungen verwerfen...");
 		final ConfirmDialog discardConfirmation = confirmation(editor, "Änderungen verwerfen?");
 		final MenuBar pdfMenu = pdfMenu(editor);
 		final LoePointStepper adjustment = adjustmentStepper(editor);
 		assertThat(saveButton.isEnabled()).isFalse();
 		assertThat(discardButton.isEnabled()).isFalse();
-		assertThat(discardButton.getText()).isEmpty();
+		assertThat(discardButton.getText()).isEqualTo("Änderungen verwerfen...");
+		assertThat(discardButton.getTooltip().getText()).isEqualTo("Änderungen verwerfen...");
+		assertThat(deleteButton(editor).getTooltip().getText()).isEqualTo("Ergebnisse löschen...");
 		assertThat(discardButton.getIcon()).isInstanceOf(Icon.class).extracting(icon -> ((Icon) icon).getIcon())
 				.isEqualTo(VaadinIcon.ROTATE_LEFT.create().getIcon());
 		assertThat(pdfMenu.isEnabled()).isTrue();
@@ -676,7 +678,7 @@ class ExamResultsEditorTests {
 
 	private static Button deleteButton(final Component root) {
 		return components(root, Button.class).stream()
-				.filter(button -> "Ergebnisse löschen".equals(button.getElement().getAttribute("aria-label")))
+				.filter(button -> "Ergebnisse löschen...".equals(button.getElement().getAttribute("aria-label")))
 				.findFirst().orElseThrow();
 	}
 

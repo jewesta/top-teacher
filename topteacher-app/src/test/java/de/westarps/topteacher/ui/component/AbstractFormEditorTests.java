@@ -17,8 +17,9 @@ class AbstractFormEditorTests {
 
 	@Test
 	void responsiveEditorUsesSharedTwoColumnFormContract() {
+		final Button save = Buttons.save();
 		final AbstractFormEditor editor = AbstractFormEditor.responsive("tt-test-editor",
-				List.of(new TextField("A"), new TextField("B")), List.of(new Button("Speichern")));
+				List.of(new TextField("A"), new TextField("B")), List.of(save));
 
 		assertThat(editor.getClassNames()).contains("tt-editor", "tt-test-editor");
 		assertThat(editor.form().getClassNames()).contains("tt-editor-form");
@@ -27,8 +28,24 @@ class AbstractFormEditorTests {
 		assertThat(editor.form().getResponsiveSteps()).map(FormLayout.ResponsiveStep::toJson)
 				.extracting(step -> step.get("columns").asInt()).containsExactly(1, 2);
 		assertThat(editor.actions().getClassNames()).contains("tt-editor-actions");
+		assertThat(editor.actions()).isInstanceOf(ActionToolbar.class);
+		assertThat(editor.getChildren()).containsExactly(editor.actions(), editor.form());
+		assertThat(save.getText()).isEqualTo("Speichern");
+		assertThat(save.getElement().getAttribute("aria-label")).isEqualTo("Speichern");
 		assertThat(components(editor, FormLayout.class)).hasSize(1);
 		assertThat(components(editor, HorizontalLayout.class)).hasSize(1);
+	}
+
+	@Test
+	void putsAdaptiveCreateActionBeforeLeadingContentAndSingleColumnFields() {
+		final Span description = new Span("Beschreibung");
+		final Button create = Buttons.createOrSave();
+		final AbstractFormEditor editor = AbstractFormEditor.singleColumn("tt-test-editor", List.of(description),
+				List.of(new TextField("Name")), List.of(create));
+
+		assertThat(editor.getChildren()).containsExactly(editor.actions(), description, editor.form());
+		assertThat(create.getText()).isEqualTo("Anlegen");
+		assertThat(create.getTooltip().getText()).isEqualTo("Anlegen");
 	}
 
 	@Test

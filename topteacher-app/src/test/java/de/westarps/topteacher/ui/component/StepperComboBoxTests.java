@@ -10,8 +10,35 @@ import org.junit.jupiter.api.Test;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.combobox.ComboBoxVariant;
 
 class StepperComboBoxTests {
+
+	@Test
+	void adoptsNormalToolbarSizingForItsFieldAndNavigationButtonsWithoutChangingSelection() {
+		final StepperComboBox<String> selector = new StepperComboBox<>();
+		selector.addThemeVariants(ComboBoxVariant.LUMO_SMALL);
+		selector.setItems(List.of("Anna", "Bernd", "Clara"));
+		selector.setValue("Bernd");
+
+		new ActionToolbar(selector);
+
+		assertThat(selector.getValue()).isEqualTo("Bernd");
+		assertThat(components(selector, ComboBox.class).getFirst().getThemeNames())
+				.doesNotContain(ComboBoxVariant.LUMO_SMALL.getVariantName());
+		for (final Button button : components(selector, Button.class)) {
+			assertThat(button.getThemeNames()).contains(ButtonVariant.LUMO_ICON.getVariantName(),
+					ButtonVariant.LUMO_TERTIARY.getVariantName())
+					.doesNotContain(ButtonVariant.LUMO_SMALL.getVariantName(),
+							ButtonVariant.LUMO_TERTIARY_INLINE.getVariantName(), ButtonVariant.LUMO_PRIMARY.getVariantName());
+			assertThat(button.isEnabled()).isTrue();
+			assertThat(button.getText()).isEmpty();
+		}
+		components(selector, Button.class).getFirst().click();
+		assertThat(selector.getValue()).isEqualTo("Anna");
+	}
 
 	@Test
 	void stepsThroughItemsAndUpdatesButtonState() {

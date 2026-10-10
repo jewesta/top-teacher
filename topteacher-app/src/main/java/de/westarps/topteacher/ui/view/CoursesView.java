@@ -54,8 +54,8 @@ public class CoursesView extends SplitListDetailView<Course> {
 	private final Button saveButton = Buttons.createOrSave();
 	private final Button archiveButton = Buttons.archive();
 	private final ComboBox<Lifecycle> bulkLifecycle = new ComboBox<>("Status");
-	private final Button applyLifecycleButton = new Button("Anwenden");
-	private final Button copyAssignmentsButton = Buttons.command("Aus Kurs...", VaadinIcon.COPY);
+	private final Button applyLifecycleButton = Buttons.command("Anwenden", VaadinIcon.CHECK);
+	private final Button copyAssignmentsButton = Buttons.dialogOpener("Aus Kurs", VaadinIcon.COPY);
 	private final Dialog copyAssignmentsDialog = new Dialog();
 	private final ComboBox<Course> sourceCourse = new ComboBox<>("Kurs");
 	private final Binder<AssignmentCopyFormData> assignmentCopyBinder = new Binder<>();
@@ -200,7 +200,6 @@ public class CoursesView extends SplitListDetailView<Course> {
 		bulkLifecycle.setRequiredIndicatorVisible(true);
 		bulkLifecycle.addValueChangeListener(event -> updateBulkApplyButton());
 
-		applyLifecycleButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 		applyLifecycleButton.addClickListener(event -> applyLifecycleToSelectedCourses());
 		updateBulkApplyButton();
 	}

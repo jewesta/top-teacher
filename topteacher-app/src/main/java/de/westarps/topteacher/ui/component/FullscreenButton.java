@@ -82,7 +82,6 @@ public class FullscreenButton extends Button {
 	private void updateButton() {
 		final String label = fullscreenActive ? EXIT_LABEL : ENTER_LABEL;
 		setIcon((fullscreenActive ? VaadinIcon.COMPRESS_SQUARE : VaadinIcon.EXPAND_FULL).create());
-		setAriaLabel(label);
-		setTooltipText(label);
+		Buttons.setIconLabel(this, label);
 	}
 }

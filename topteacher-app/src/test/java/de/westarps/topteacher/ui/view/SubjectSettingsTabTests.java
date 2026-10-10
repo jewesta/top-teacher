@@ -25,6 +25,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import de.westarps.topteacher.backend.repo.SubjectRepository;
 import de.westarps.topteacher.model.Lifecycle;
 import de.westarps.topteacher.model.Subject;
+import de.westarps.topteacher.ui.component.ActionToolbar;
 
 @SuppressWarnings({
 		"rawtypes", "unchecked"
@@ -85,6 +86,10 @@ class SubjectSettingsTabTests {
 		final Button createButton = button(tab, "Anlegen");
 
 		assertThat(createButton.isEnabled()).isFalse();
+		assertThat(createButton.getText()).isEqualTo("Anlegen");
+		final Component toolbar = createButton.getParent().orElseThrow();
+		assertThat(toolbar).isInstanceOf(ActionToolbar.class);
+		assertThat(toolbar.getParent().orElseThrow().getChildren().findFirst()).contains(toolbar);
 
 		name.setValue("Physik");
 
@@ -146,6 +151,8 @@ class SubjectSettingsTabTests {
 		final ComboBox<Lifecycle> lifecycle = comboBox(tab, "Status");
 		assertThat(lifecycle.isRequiredIndicatorVisible()).isTrue();
 		assertThat(lifecycle.isClearButtonVisible()).isFalse();
+		assertThat(button(tab, "Anwenden").getText()).isEqualTo("Anwenden");
+		assertThat(button(tab, "Anwenden").getIcon().getElement().getAttribute("icon")).isEqualTo("vaadin:check");
 	}
 
 	@Test
@@ -173,7 +180,8 @@ class SubjectSettingsTabTests {
 	}
 
 	private static Button button(final Component root, final String text) {
-		return components(root, Button.class).stream().filter(button -> text.equals(button.getText())).findFirst()
+		return components(root, Button.class).stream()
+				.filter(button -> text.equals(button.getElement().getAttribute("aria-label"))).findFirst()
 				.orElseThrow();
 	}
 

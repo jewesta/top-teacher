@@ -391,7 +391,7 @@ class LevelOfExpectationsEditorTests {
 		assertThat(components(editor, TextField.class)).isEmpty();
 		assertThat(components(editor, Span.class).stream().map(Span::getText)).contains(PART.title(), CATEGORY.title(),
 				TASK.title());
-		assertThat(buttonsByAriaLabel(editor, "Löschen")).hasSize(1);
+		assertThat(buttonsByAriaLabel(editor, "Löschen...")).hasSize(1);
 	}
 
 	@Test
@@ -403,7 +403,7 @@ class LevelOfExpectationsEditorTests {
 		editor.setExam(EXAM);
 
 		assertThat(button(editor, "Anforderung hinzufügen").isEnabled()).isFalse();
-		assertThat(buttonsByAriaLabel(editor, "Löschen")).extracting(Button::isEnabled).containsOnly(false);
+		assertThat(buttonsByAriaLabel(editor, "Löschen...")).extracting(Button::isEnabled).containsOnly(false);
 		assertThat(buttonsByAriaLabel(editor, "Nach oben")).extracting(Button::isEnabled).containsOnly(false);
 		assertThat(buttonsByAriaLabel(editor, "Nach unten")).extracting(Button::isEnabled).containsOnly(false);
 		assertThat(buttonsByAriaLabel(editor, "Max. Punkte verringern")).extracting(Button::isEnabled).containsOnly(false);
@@ -434,7 +434,8 @@ class LevelOfExpectationsEditorTests {
 			ui.add(editor);
 			editor.setExam(EXAM);
 			clearInvocations(repository);
-			final Button deleteButton = buttonsByAriaLabel(editor, "Löschen").getFirst();
+			final Button deleteButton = buttonsByAriaLabel(editor, "Löschen...").getFirst();
+			assertThat(deleteButton.getTooltip().getText()).isEqualTo("Löschen...");
 
 			assertThat(deleteButton.getThemeNames()).doesNotContain(ButtonVariant.LUMO_ERROR.getVariantName());
 
@@ -1003,7 +1004,7 @@ class LevelOfExpectationsEditorTests {
 	}
 
 	private static List<Button> discardButtons(final Component root) {
-		return buttonsByAriaLabel(root, "Verwerfen");
+		return buttonsByAriaLabel(root, "Verwerfen...");
 	}
 
 	private static Button button(final Component root, final String text) {

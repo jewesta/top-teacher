@@ -13,6 +13,8 @@ import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 
+import de.westarps.topteacher.ui.component.Buttons;
+
 final class LoeCollapseState {
 
 	private final LoeSectionComponents components;
@@ -138,8 +140,7 @@ final class LoeCollapseState {
 		final String label = opened ? collapseLabel(toggleButton.sectionName())
 				: expandLabel(toggleButton.sectionName());
 		toggleButton.button().setIcon((opened ? VaadinIcon.ANGLE_DOWN : VaadinIcon.ANGLE_RIGHT).create());
-		toggleButton.button().setAriaLabel(label);
-		toggleButton.button().setTooltipText(label);
+		Buttons.setIconLabel(toggleButton.button(), label);
 		toggleButton.button().getElement().setAttribute("aria-expanded", Boolean.toString(opened));
 	}
 
@@ -148,8 +149,7 @@ final class LoeCollapseState {
 		final boolean collapsesAll = allExpanded(detailKeys);
 		final String label = collapsesAll ? collapseLabel : expandLabel;
 		button.setIcon((collapsesAll ? VaadinIcon.ANGLE_DOUBLE_DOWN : VaadinIcon.ANGLE_DOUBLE_RIGHT).create());
-		button.setAriaLabel(label);
-		button.setTooltipText(label);
+		Buttons.setIconLabel(button, label);
 		button.setEnabled(!detailKeys.isEmpty());
 		button.getElement().setAttribute("aria-expanded", Boolean.toString(collapsesAll));
 	}

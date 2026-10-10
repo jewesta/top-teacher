@@ -172,7 +172,6 @@ vaadin-app-layout::part(navbar) {
 	align-items: flex-start;
 	box-sizing: border-box;
 	flex: 0 0 auto;
-	gap: var(--lumo-space-xs);
 	width: 100%;
 }
 
@@ -261,8 +260,55 @@ vaadin-app-layout::part(navbar) {
 	width: 12rem;
 }
 
+.tt-action-toolbar {
+	gap: var(--lumo-space-s);
+}
+
+/* Retain normal control height and icon size, with the compact horizontal
+   spacing of the exam-tree action rows rather than extra icon padding. */
+.tt-action-toolbar .tt-toolbar-action:not(.tt-toolbar-add-action),
+.tt-action-toolbar > vaadin-menu-bar > vaadin-menu-bar-button:not([slot="overflow"]) {
+	min-width: var(--lumo-icon-size-m);
+	padding-inline: 0;
+}
+
+.tt-action-toolbar > vaadin-menu-bar > vaadin-menu-bar-button:not([slot="overflow"]) {
+	margin-inline: 0;
+}
+
+.tt-action-toolbar > .tt-toolbar-action:not(.tt-toolbar-add-action)::part(label),
+.tt-action-toolbar > vaadin-menu-bar .tt-toolbar-menu-label {
+	display: none;
+}
+
+/* Count visible elements, including filters, selectors, and disabled actions.
+   CSS adapts in place when elements are added, removed, hidden, or shown. */
+.tt-action-toolbar:not(:has(> .tt-toolbar-element:not([hidden]) ~ .tt-toolbar-element:not([hidden]))) > .tt-toolbar-action:not(.tt-toolbar-add-action),
+.tt-action-toolbar:not(:has(> .tt-toolbar-element:not([hidden]) ~ .tt-toolbar-element:not([hidden]))) > vaadin-menu-bar {
+	--vaadin-button-tertiary-background: var(--lumo-contrast-5pct);
+}
+
+.tt-action-toolbar:not(:has(> .tt-toolbar-element:not([hidden]) ~ .tt-toolbar-element:not([hidden]))) > .tt-toolbar-action:not(.tt-toolbar-add-action),
+.tt-action-toolbar:not(:has(> .tt-toolbar-element:not([hidden]) ~ .tt-toolbar-element:not([hidden]))) > vaadin-menu-bar > vaadin-menu-bar-button:not([slot="overflow"]) {
+	min-width: calc(var(--lumo-size-m) * 2);
+	padding: 0 calc(var(--lumo-size-m) / 3 + var(--lumo-border-radius-m) / 2);
+}
+
+.tt-action-toolbar:not(:has(> .tt-toolbar-element:not([hidden]) ~ .tt-toolbar-element:not([hidden]))) > .tt-toolbar-action:not(.tt-toolbar-add-action)::part(label),
+.tt-action-toolbar:not(:has(> .tt-toolbar-element:not([hidden]) ~ .tt-toolbar-element:not([hidden]))) > vaadin-menu-bar .tt-toolbar-menu-label {
+	display: inline;
+}
+
+.tt-action-toolbar:not(:has(> .tt-toolbar-element:not([hidden]) ~ .tt-toolbar-element:not([hidden]))) > .tt-toolbar-action:not(.tt-toolbar-add-action)::part(prefix) {
+	margin-left: -0.25em;
+	margin-right: 0.25em;
+}
+
+.tt-action-toolbar:not(:has(> .tt-toolbar-element:not([hidden]) ~ .tt-toolbar-element:not([hidden]))) > vaadin-menu-bar .tt-toolbar-menu-label {
+	margin-inline-start: 0.25em;
+}
+
 .tt-master-toolbar {
-	column-gap: var(--lumo-space-m);
 	flex: 0 0 auto;
 	/* Compensate for top padding of tt-master-list. We usually want the padding,
 	   but the boxes in tt-master-toolbar bring their own top padding which adds up. */
@@ -372,7 +418,6 @@ vaadin-app-layout::part(navbar) {
 	box-sizing: border-box;
 	flex: 0 0 auto;
 	flex-wrap: wrap;
-	gap: var(--lumo-space-s);
 	padding-top: var(--lumo-space-m);
 	width: 100%;
 }
@@ -861,7 +906,6 @@ vaadin-app-layout::part(navbar) {
 
 .tt-eh-actions {
 	flex-wrap: wrap;
-	gap: var(--lumo-space-s);
 }
 
 .tt-eh-summary {

@@ -285,8 +285,23 @@ The combined review pass is intended to provide the following end state:
   [shared layout behavior](../doc/ops/LevelOfExpectations.md#editing-ownership-and-shared-tree-behavior).
 - `Ergebnisse` uses the same right inset and points-column alignment; see
   [result layout](../doc/ops/LevelOfExpectationsResults.md#quick-marking-column).
-- Application toolbars use icons and a uniform neutral background for actions,
-  without primary highlighting, and retain labeled add buttons first.
+- Application toolbars adapt to the number of visible elements: a lone action
+  is a labeled secondary button; multi-element bars use transparent icons.
+  Filters, selectors, and disabled actions count; hidden elements do not.
+  Contextual labeled additions keep their button shape in both modes, without
+  primary highlighting. All action-bar controls, including nested tree
+  add/reorder/delete rows, use normal rather than
+  compact sizing, with download menu triggers matching the other icons.
+  All action bars share the tree rows' compact horizontal spacing without extra
+  icon padding, including those with quick filters; dialog-opening actions
+  consistently use an ellipsis.
+  Form actions are at the top of each tab;
+  `Neu` and `Anlegen` follow the adaptive rule, `Schnellfilter` precedes list actions, and
+  contextual tree additions retain their labels. Used grading scales show a
+  lock with the reason as a tooltip on their editor tab instead of a form
+  message; save and archive stay visible but disabled while locked.
+  `Zurücksetzen` remains an exception. See
+  [application action bars and locks](../doc/ops/ApplicationActions.md).
   Discarding unsaved authoring work now requires confirmation, matching
   Ergebnisse; see
   [shared toolbar and discard behavior](../doc/ops/LevelOfExpectations.md#editing-ownership-and-shared-tree-behavior).

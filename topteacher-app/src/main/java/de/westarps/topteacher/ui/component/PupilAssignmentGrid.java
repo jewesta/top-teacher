@@ -43,7 +43,6 @@ public class PupilAssignmentGrid extends ContextTabContent {
 		toolbar.addClassNames("tt-course-assignment-toolbar", "tt-pupil-assignment-toolbar");
 		toolbar.setAlignItems(Alignment.END);
 		toolbar.setPadding(false);
-		toolbar.setSpacing(true);
 		toolbar.setWidthFull();
 
 		grid.addColumn(row -> row.pupil().surname()).setHeader("Nachname").setAutoWidth(true);

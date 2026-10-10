@@ -12,7 +12,6 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.ColumnTextAlign;
-import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -42,6 +41,8 @@ import de.westarps.topteacher.ui.component.TopTeacherDialogs;
 public class GradingScaleSettingsTab extends SplitListDetailView<GradingScale> implements SettingsTab {
 
 	private static final int DEFAULT_MAX_POINTS = 100;
+	private static final String LOCK_REASON =
+			"Dieser Notenschlüssel wird bereits von Klausuren verwendet und kann nicht mehr geändert werden.";
 	private static final Map<GradeLevel, Integer> DEFAULT_MIN_POINTS = defaultMinPoints();
 
 	private final GradingScaleRepository gradingScaleRepository;
@@ -55,8 +56,6 @@ public class GradingScaleSettingsTab extends SplitListDetailView<GradingScale> i
 	private final Button newButton = createNewButton();
 	private final Button saveButton = Buttons.createOrSave();
 	private final Button archiveButton = Buttons.archive();
-	private final Span lockMessage = new Span(
-			"Dieser Notenschlüssel wird bereits von Klausuren verwendet und kann nicht mehr geändert werden.");
 
 	private GradingScale selectedGradingScale;
 	private List<RangeFormData> rangeRows = List.of();
@@ -138,6 +137,11 @@ public class GradingScaleSettingsTab extends SplitListDetailView<GradingScale> i
 	}
 
 	@Override
+	protected String getEditorLockReason(final GradingScale selectedItem) {
+		return gradingScaleRepository.isUsedByExam(selectedItem.id()) ? LOCK_REASON : null;
+	}
+
+	@Override
 	protected String getMultiEditorStatus(final List<GradingScale> selectedItems) {
 		return selectedItems.size() + " Notenschlüssel ausgewählt";
 	}
@@ -174,21 +178,14 @@ public class GradingScaleSettingsTab extends SplitListDetailView<GradingScale> i
 	}
 
 	private Component createEditorToolbar() {
-		lockMessage.addClassName("tt-settings-description");
-
 		final HorizontalLayout actions = new ActionToolbar(saveButton, archiveButton);
-		actions.addClassNames("tt-editor-actions", "tt-grading-scale-settings-actions");
+		actions.addClassNames("tt-editor-actions", "tt-grading-scale-settings-actions",
+				"tt-grading-scale-settings-detail-toolbar");
 		actions.setAlignItems(Alignment.END);
 		actions.setPadding(false);
-		actions.setSpacing(true);
 
-		final VerticalLayout toolbar = new VerticalLayout(lockMessage, actions);
-		toolbar.addClassName("tt-grading-scale-settings-detail-toolbar");
-		toolbar.setAlignItems(Alignment.START);
-		toolbar.setPadding(false);
-		toolbar.setSpacing(false);
-		toolbar.setWidthFull();
-		return toolbar;
+		actions.setWidthFull();
+		return actions;
 	}
 
 	private Component createEditorForm() {
@@ -327,12 +324,12 @@ public class GradingScaleSettingsTab extends SplitListDetailView<GradingScale> i
 		final boolean editMode = selectedGradingScale != null;
 		selectedLocked = editMode && gradingScaleRepository.isUsedByExam(selectedGradingScale.id());
 		Buttons.setCreateOrSaveMode(saveButton, editMode);
-		archiveButton.setVisible(editMode && selectedGradingScale.lifecycle() == Lifecycle.ACTIVE && !selectedLocked);
+		archiveButton.setVisible(editMode && selectedGradingScale.lifecycle() == Lifecycle.ACTIVE);
+		archiveButton.setEnabled(editMode && !selectedLocked);
 		name.setReadOnly(selectedLocked);
 		maxPoints.setReadOnly(selectedLocked);
 		lifecycle.setVisible(editMode);
 		lifecycle.setReadOnly(selectedLocked);
-		lockMessage.setVisible(selectedLocked);
 		refreshRangeGrids();
 		updateSaveButtonState();
 	}

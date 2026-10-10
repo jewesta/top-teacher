@@ -18,6 +18,7 @@ import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.TextField;
 
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
+import de.westarps.topteacher.ui.component.Buttons;
 
 class SplitListDetailViewTests {
 
@@ -68,7 +69,7 @@ class SplitListDetailViewTests {
 
 	@Test
 	void keepsQuickFilterFirstInListToolbar() {
-		final Button newButton = new Button("Neu");
+		final Button newButton = Buttons.newItem();
 		final TestSplitListDetailView view = new TestSplitListDetailView(newButton);
 
 		final List<Component> toolbarChildren = toolbar(view).getChildren().toList();
@@ -77,6 +78,8 @@ class SplitListDetailViewTests {
 		assertThat(toolbarChildren.getFirst()).isInstanceOf(TextField.class);
 		assertThat(((TextField) toolbarChildren.getFirst()).getLabel()).isEqualTo("Schnellfilter");
 		assertThat(toolbarChildren.get(1)).isSameAs(newButton);
+		assertThat(newButton.getText()).isEqualTo("Neu");
+		assertThat(newButton.getTooltip().getText()).isEqualTo("Neu");
 	}
 
 	@Test

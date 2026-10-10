@@ -40,15 +40,18 @@ class ExamTasksEditorTests {
 	private static final LoePart PART = new LoePart(1, EXAM.id(), "Klausurteil A", 0);
 	private static final LoeCategory CATEGORY = new LoeCategory(2, PART.id(), "Inhalt", "Einordnung", 0);
 	private static final LoeTask TASK = new LoeTask(3, CATEGORY.id(), "Aufgabe 1", "Analysiere den Text.", 5, 0);
+	private UI ui;
 
 	@BeforeEach
 	void createUi() {
-		UI.setCurrent(new UI());
+		ui = new UI();
+		UI.setCurrent(ui);
 	}
 
 	@AfterEach
 	void clearUi() {
 		UI.setCurrent(null);
+		ui = null;
 	}
 
 	@Test
@@ -59,9 +62,10 @@ class ExamTasksEditorTests {
 		final HorizontalLayout toolbar = components(editor, HorizontalLayout.class).stream()
 				.filter(layout -> layout.getClassNames().contains("tt-designer-toolbar")).findFirst().orElseThrow();
 		assertThat(toolbar.getChildren().toList().getFirst()).isSameAs(button(editor, "Klausurteil hinzufügen"));
-		assertThat(saveButton(editor).getText()).isEmpty();
-		final Button discard = buttonByAriaLabel(editor, "Verwerfen");
-		assertThat(discard.getText()).isEmpty();
+		assertThat(saveButton(editor).getText()).isEqualTo("Speichern");
+		final Button discard = buttonByAriaLabel(editor, "Verwerfen...");
+		assertThat(discard.getText()).isEqualTo("Verwerfen...");
+		assertThat(discard.getTooltip().getText()).isEqualTo("Verwerfen...");
 		final TextField title = titleField(editor, TASK.title());
 		title.setValue("Geänderte Aufgabe");
 
@@ -180,7 +184,7 @@ class ExamTasksEditorTests {
 		assertThat(button(editor, "Klausurteil hinzufügen").isEnabled()).isFalse();
 		assertThat(button(editor, "Leistungskategorie hinzufügen").isEnabled()).isFalse();
 		assertThat(button(editor, "Teilaufgabe hinzufügen").isEnabled()).isFalse();
-		assertThat(buttonsByAriaLabel(editor, "Löschen")).extracting(Button::isEnabled).containsOnly(false);
+		assertThat(buttonsByAriaLabel(editor, "Löschen...")).extracting(Button::isEnabled).containsOnly(false);
 		assertThat(buttonsByAriaLabel(editor, "Nach oben")).extracting(Button::isEnabled).containsOnly(false);
 		assertThat(buttonsByAriaLabel(editor, "Nach unten")).extracting(Button::isEnabled).containsOnly(false);
 	}

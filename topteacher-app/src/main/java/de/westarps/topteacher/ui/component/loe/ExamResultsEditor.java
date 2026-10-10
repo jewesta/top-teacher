@@ -62,9 +62,9 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private final LoeSaveController saveController = new LoeSaveController();
 	private final StepperComboBox<Pupil> pupilSelector = new StepperComboBox<>();
 	private final Button saveButton = Buttons.save();
-	private final Button discardButton = Buttons.icon("Änderungen verwerfen", VaadinIcon.ROTATE_LEFT,
+	private final Button discardButton = Buttons.dialogIcon("Änderungen verwerfen", VaadinIcon.ROTATE_LEFT,
 			event -> openDiscardConfirmation());
-	private final Button deleteButton = Buttons.icon("Ergebnisse löschen", VaadinIcon.TRASH,
+	private final Button deleteButton = Buttons.dialogIcon("Ergebnisse löschen", VaadinIcon.TRASH,
 			event -> openDeleteConfirmation());
 	private final Button reloadButton = Buttons.icon("Neu laden", VaadinIcon.REFRESH, event -> refreshFromDatabase());
 	private final MenuBar pdfMenu = new MenuBar();

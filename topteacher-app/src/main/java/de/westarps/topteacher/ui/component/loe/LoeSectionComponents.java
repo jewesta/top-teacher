@@ -20,6 +20,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
 
+import de.westarps.topteacher.ui.component.ActionToolbar;
 import de.westarps.topteacher.ui.component.Buttons;
 import de.westarps.topteacher.ui.component.TopTeacherDialogs;
 import de.westarps.vaadin.markdown.MarkdownEditor;
@@ -197,7 +198,8 @@ final class LoeSectionComponents {
 	}
 
 	Button discardButton() {
-		final Button button = Buttons.reset("Verwerfen", event -> discardConfirmation.open());
+		final Button button = Buttons.dialogOpener("Verwerfen", VaadinIcon.ROTATE_LEFT,
+				event -> discardConfirmation.open());
 		button.addThemeVariants(ButtonVariant.LUMO_SMALL);
 		return saveController.register(button);
 	}
@@ -208,7 +210,7 @@ final class LoeSectionComponents {
 
 	Button commandButton(final String text, final VaadinIcon icon,
 			final ComponentEventListener<ClickEvent<Button>> listener) {
-		final Button button = Buttons.command(text, icon, listener);
+		final Button button = icon == VaadinIcon.PLUS ? Buttons.add(text, listener) : Buttons.command(text, icon, listener);
 		button.addThemeVariants(ButtonVariant.LUMO_SMALL);
 		return button;
 	}
@@ -260,9 +262,10 @@ final class LoeSectionComponents {
 	}
 
 	HorizontalLayout actionRow(final Collection<? extends Component> actionComponents) {
-		final HorizontalLayout actions = new HorizontalLayout();
+		final HorizontalLayout actions = new ActionToolbar();
 		actionComponents.forEach(actions::add);
 		actions.addClassName("tt-eh-actions");
+		actions.setAlignItems(HorizontalLayout.Alignment.CENTER);
 		actions.setPadding(false);
 		return actions;
 	}

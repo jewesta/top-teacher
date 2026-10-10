@@ -179,6 +179,10 @@ public class SplitListDetailView<T> extends VerticalLayout implements HasDynamic
 		return getEditorTabLabel() + " bearbeiten";
 	}
 
+	protected String getEditorLockReason(final T selectedItem) {
+		return null;
+	}
+
 	protected String getMultiEditorStatus(final List<T> selectedItems) {
 		return selectedItems.size() + " ausgewählt";
 	}
@@ -214,7 +218,6 @@ public class SplitListDetailView<T> extends VerticalLayout implements HasDynamic
 		toolbar.addClassName("tt-master-toolbar");
 		toolbar.setAlignItems(Alignment.END);
 		toolbar.setPadding(false);
-		toolbar.setSpacing(false);
 		toolbar.setWidthFull();
 		toolbar.getStyle().set("flex-wrap", "wrap");
 		toolbarComponents.forEach(component -> toolbar.setFlexGrow(0, component));
@@ -281,10 +284,12 @@ public class SplitListDetailView<T> extends VerticalLayout implements HasDynamic
 	}
 
 	private void updateEditorTabStatus(final EditorMode editorMode, final List<T> selectedItems) {
-		final String status = editorStatus(editorMode, selectedItems);
+		final String lockReason = editorMode == EditorMode.SINGLE_SELECT && !selectedItems.isEmpty()
+				? getEditorLockReason(selectedItems.getFirst()) : null;
+		final String status = lockReason == null ? editorStatus(editorMode, selectedItems) : lockReason;
 		editorTab.removeAll();
 		editorTab.setLabel(getEditorTabLabel());
-		editorStatusComponents(editorMode, selectedItems).forEach(editorTab::add);
+		editorStatusComponents(editorMode, selectedItems, status, lockReason != null).forEach(editorTab::add);
 		editorTab.getElement().setAttribute("aria-label", getEditorTabLabel() + ", " + status);
 	}
 
@@ -302,8 +307,8 @@ public class SplitListDetailView<T> extends VerticalLayout implements HasDynamic
 		return editorMode == EditorMode.SINGLE_SELECT && selectedItems.isEmpty();
 	}
 
-	private List<Component> editorStatusComponents(final EditorMode editorMode, final List<T> selectedItems) {
-		final String status = editorStatus(editorMode, selectedItems);
+	private List<Component> editorStatusComponents(final EditorMode editorMode, final List<T> selectedItems,
+			final String status, final boolean locked) {
 		if (editorMode == EditorMode.MULTI_SELECT) {
 			return List.of(editorStatusIcon(VaadinIcon.PENCIL, status),
 					editorStatusCount(selectedItems.size(), status));
@@ -311,7 +316,7 @@ public class SplitListDetailView<T> extends VerticalLayout implements HasDynamic
 		if (selectedItems.isEmpty()) {
 			return List.of(editorStatusIcon(VaadinIcon.PLUS, status));
 		}
-		return List.of(editorStatusIcon(VaadinIcon.PENCIL, status));
+		return List.of(editorStatusIcon(locked ? VaadinIcon.LOCK : VaadinIcon.PENCIL, status));
 	}
 
 	private Icon editorStatusIcon(final VaadinIcon iconType, final String status) {

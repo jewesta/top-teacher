@@ -36,15 +36,18 @@ class ExamMaterialEditorTests {
 	private static final Exam EXAM = new Exam(1, 10, "Klausur", LocalDate.of(2026, 9, 1));
 	private static final LoePart PART = new LoePart(1, EXAM.id(), "Klausurteil A", 0);
 	private static final LoeMaterial MATERIAL = new LoeMaterial(2, PART.id(), "Quelle 1", "Ein Quellentext", 0);
+	private UI ui;
 
 	@BeforeEach
 	void createUi() {
-		UI.setCurrent(new UI());
+		ui = new UI();
+		UI.setCurrent(ui);
 	}
 
 	@AfterEach
 	void clearUi() {
 		UI.setCurrent(null);
+		ui = null;
 	}
 
 	@Test
@@ -54,7 +57,8 @@ class ExamMaterialEditorTests {
 		editor.setExam(EXAM);
 		final TextField title = components(editor, TextField.class).getFirst();
 		title.setValue("Geänderte Quelle");
-		final Button discard = buttonsByAriaLabel(editor, "Verwerfen").getFirst();
+		final Button discard = buttonsByAriaLabel(editor, "Verwerfen...").getFirst();
+		assertThat(discard.getTooltip().getText()).isEqualTo("Verwerfen...");
 
 		discard.click();
 
@@ -103,7 +107,7 @@ class ExamMaterialEditorTests {
 		assertThat(components(editor, MarkdownViewer.class)).extracting(MarkdownViewer::getContent)
 				.containsExactly(MATERIAL.descriptionMarkdown());
 		assertThat(button(editor, "Material hinzufügen").isEnabled()).isFalse();
-		assertThat(buttonsByAriaLabel(editor, "Löschen")).extracting(Button::isEnabled).containsOnly(false);
+		assertThat(buttonsByAriaLabel(editor, "Löschen...")).extracting(Button::isEnabled).containsOnly(false);
 		assertThat(buttonsByAriaLabel(editor, "Nach oben")).extracting(Button::isEnabled).containsOnly(false);
 		assertThat(buttonsByAriaLabel(editor, "Nach unten")).extracting(Button::isEnabled).containsOnly(false);
 	}

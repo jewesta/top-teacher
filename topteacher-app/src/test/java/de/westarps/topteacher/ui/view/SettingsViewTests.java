@@ -28,6 +28,7 @@ import de.westarps.topteacher.backend.backup.DatabaseBackupScheduler;
 import de.westarps.topteacher.backend.backup.DatabaseBackupService;
 import de.westarps.topteacher.backend.settings.AppSettings;
 import de.westarps.topteacher.ui.component.ClipboardCopyButton;
+import de.westarps.topteacher.ui.component.ActionToolbar;
 
 class SettingsViewTests {
 
@@ -49,6 +50,9 @@ class SettingsViewTests {
 		assertThat(form.getResponsiveSteps().getFirst().toJson().get("columns").asInt()).isEqualTo(1);
 		assertThat(button(backupContent, "Speichern").isEnabled()).isFalse();
 		assertThat(button(backupContent, "Jetzt sichern").isEnabled()).isFalse();
+		assertThat(button(backupContent, "Speichern").getText()).isEqualTo("Speichern");
+		assertThat(button(backupContent, "Jetzt sichern").getText()).isEqualTo("Jetzt sichern");
+		assertThat(button(backupContent, "Jetzt sichern").getTooltip().getText()).isEqualTo("Jetzt sichern");
 	}
 
 	@Test
@@ -95,8 +99,9 @@ class SettingsViewTests {
 		final Component suffixComponent = h2File.getSuffixComponent();
 		assertThat(suffixComponent).isInstanceOf(ClipboardCopyButton.class);
 		assertThat(suffixComponent.getElement().getAttribute("aria-label")).isEqualTo("Pfad kopieren");
-		assertThat(backupContent.getChildren().toList().getFirst()).isSameAs(h2File);
-		assertThat(backupContent.getChildren().toList().get(1).getElement().getTag()).isEqualTo("hr");
+		assertThat(backupContent.getChildren().toList().getFirst()).isInstanceOf(ActionToolbar.class);
+		assertThat(backupContent.getChildren().toList().get(1)).isSameAs(h2File);
+		assertThat(backupContent.getChildren().toList().get(2).getElement().getTag()).isEqualTo("hr");
 	}
 
 	@Test
@@ -196,7 +201,8 @@ class SettingsViewTests {
 	}
 
 	private static Button button(final Component root, final String text) {
-		return components(root, Button.class).stream().filter(button -> text.equals(button.getText())).findFirst()
+		return components(root, Button.class).stream()
+				.filter(button -> text.equals(button.getElement().getAttribute("aria-label"))).findFirst()
 				.orElseThrow();
 	}
 

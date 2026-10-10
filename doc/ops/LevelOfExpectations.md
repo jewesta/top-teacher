@@ -228,15 +228,18 @@ All three views share the EH Markdown right inset. Summary point badges and
 maximum-point controls align with the Markdown content's right edge, including
 the exam total above the tree.
 
-Application list and designer toolbars use icon-only action buttons with
-German tooltips and accessible names. Toolbar buttons share the same neutral
-background; none is highlighted as a primary action, including save. Add
-actions retain their plus icon and text and come before other toolbar contents;
-for example, `Klausurteil
-hinzufügen` is first in Aufgaben. Download menu triggers are icon-only, while
-their menu entries, ordinary form buttons, and confirmation buttons remain
-labeled. The same rule applies when a toolbar action switches between creating
-and saving.
+The [shared application action-bar rules](ApplicationActions.md#action-bars)
+apply to list, form, designer, and nested tree action bars. Add/reorder/delete
+rows use normal-sized controls and the shared compact horizontal spacing.
+Point steppers, section-header toggles, and Markdown formatting controls retain
+their existing sizing. Contextual add actions retain their
+plus icon and label; for example, `Klausurteil hinzufügen` is first in Aufgaben.
+Where present, `Schnellfilter` precedes action buttons. `Neu`, `Anlegen`, and
+`Speichern` and download menu triggers show transparent icons in multi-element
+bars; a lone action shows its icon and label as a neutral secondary button.
+Filters, selectors, and disabled actions count toward the number of visible
+elements; hidden elements do not. Contextual additions retain their neutral
+button background in both modes. No toolbar action has primary highlighting.
 
 Discarding unsaved work in Aufgaben, Material, or EH always requires the
 confirmation `Änderungen verwerfen?`, which warns that unsaved changes will be
