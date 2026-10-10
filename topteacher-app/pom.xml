@@ -103,6 +103,14 @@
                     <include>topteacher-build.properties</include>
                 </includes>
             </resource>
+            <resource>
+                <directory>${project.basedir}/..</directory>
+                <targetPath>META-INF</targetPath>
+                <filtering>false</filtering>
+                <includes>
+                    <include>LICENSE.md</include>
+                </includes>
+            </resource>
         </resources>
         <plugins>
             <plugin>

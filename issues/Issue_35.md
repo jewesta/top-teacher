@@ -466,6 +466,10 @@ bundled with their MIT licence and shared by preview masks and vector PDF
 rendering; no GitHub request is made during rendering. See
 [the Markdown specification](../doc/ops/Markdown.md).
 
+TopTeacher's own [MIT licence](../LICENSE.md) now explicitly names Jens Westarp
+as the 2026 copyright holder. Maven metadata declares MIT, and the app packages
+the project licence alongside the unchanged third-party notices.
+
 The settled processing policy is a 10 MiB upload limit, a 40-megapixel decoded
 limit, proportional resizing above 3,000 pixels on the longest side, JPEG
 orientation correction, metadata removal through re-encoding, PNG transparency

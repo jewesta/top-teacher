@@ -272,3 +272,10 @@ Jar und macOS-App können zusammen gebaut werden:
 ```shell
 ./run/package-all.sh /Volumes/topteacher-builds
 ```
+
+# License
+
+TopTeacher! is licensed under the [MIT License](LICENSE.md), copyright
+© 2026 Jens Westarp. The licence notice is also included in the packaged app.
+Third-party assets and dependencies retain their own licences and copyright
+notices.
