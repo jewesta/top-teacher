@@ -283,6 +283,8 @@ The combined review pass is intended to provide the following end state:
   views share the Markdown right inset and aligned points column. See
   [requirements](../doc/ops/LevelOfExpectations.md#requirement) and
   [shared layout behavior](../doc/ops/LevelOfExpectations.md#editing-ownership-and-shared-tree-behavior).
+- `Ergebnisse` uses the same right inset and points-column alignment; see
+  [result layout](../doc/ops/LevelOfExpectationsResults.md#quick-marking-column).
 - `Material` stores ordered title/Markdown entries under exactly one read-only
   exam part.
 - EH shows part, category, task Markdown, and task points as read-only context;

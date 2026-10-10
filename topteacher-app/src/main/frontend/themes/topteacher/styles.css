@@ -346,14 +346,16 @@ vaadin-app-layout::part(navbar) {
 .tt-eh-editor,
 .tt-exam-results-editor {
 	--tt-points-column-width: 10rem;
-}
-
-.tt-eh-editor {
 	--tt-loe-content-right-inset: calc(var(--lumo-space-m) + 3px);
 }
 
-.tt-eh-editor .tt-designer-toolbar-summary .tt-loe-points-cell {
+.tt-eh-editor .tt-designer-toolbar-summary .tt-loe-points-cell,
+.tt-exam-results-editor .tt-designer-toolbar-summary .tt-loe-points-cell {
 	margin-right: var(--tt-loe-content-right-inset);
+}
+
+.tt-exam-results-editor .tt-designer-content {
+	padding-right: calc(var(--tt-loe-content-right-inset) - var(--lumo-space-s));
 }
 
 .tt-fullscreen-target:fullscreen,

@@ -76,6 +76,10 @@ Otherwise it begins `n Kriterien,` and reports the counts that apply:
 The right-hand column provides a compact, top-to-bottom representation of the
 same criterion results.
 
+The Results content uses the same right inset as `Aufgaben`, `Material`, and
+EH. Its exam total, aggregate badges, requirement totals, and point controls
+align with the points column in those views when switching tabs.
+
 - Its top element is the familiar red aggregate badge rather than an editable
   points field.
 - The badge shows the rounded requirement result.
