@@ -296,8 +296,10 @@ The combined review pass is intended to provide the following end state:
   icon padding, including those with quick filters; dialog-opening actions
   consistently use an ellipsis.
   Form actions are at the top of each tab;
-  `Neu` and `Anlegen` follow the adaptive rule, `Schnellfilter` precedes list actions, and
-  contextual tree additions retain their labels. Used grading scales show a
+  `Neu` and `Anlegen` follow the adaptive rule; list bars place `Schnellfilter`
+  first and `Neu` last, after any other filters or selectors. Quick filters
+  consistently use `Suchbegriff`; contextual tree additions retain their
+  labels. Used grading scales show a
   lock with the reason as a tooltip on their editor tab instead of a form
   message; save and archive stay visible but disabled while locked.
   `Zurücksetzen` remains an exception. See

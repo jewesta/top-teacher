@@ -59,7 +59,7 @@ public class CoursesView extends SplitListDetailView<Course> {
 	private final Dialog copyAssignmentsDialog = new Dialog();
 	private final ComboBox<Course> sourceCourse = new ComboBox<>("Kurs");
 	private final Binder<AssignmentCopyFormData> assignmentCopyBinder = new Binder<>();
-	private final PupilAssignmentGrid assignmentGrid = new PupilAssignmentGrid("Schüler:innen suchen");
+	private final PupilAssignmentGrid assignmentGrid = new PupilAssignmentGrid();
 	private FormBinders.DirtySaveButton dirtySaveButton;
 
 	private Course selectedCourse;

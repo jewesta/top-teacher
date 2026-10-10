@@ -47,7 +47,6 @@ public class SubjectSettingsTab extends SplitListDetailView<Subject> implements 
 		super("Fächer", "tt-subject-settings-tab", new MultiSelectionGrid<>(Subject.class, false));
 		this.subjectRepository = subjectRepository;
 
-		getSearchField().setPlaceholder("Fach suchen");
 		configureEditors();
 		initializeView();
 		refreshGrid();

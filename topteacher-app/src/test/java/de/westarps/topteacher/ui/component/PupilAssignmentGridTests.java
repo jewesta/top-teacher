@@ -20,8 +20,15 @@ import de.westarps.topteacher.model.Pupil;
 class PupilAssignmentGridTests {
 
 	@Test
+	void usesTheSharedQuickFilterPlaceholder() {
+		final PupilAssignmentGrid assignmentGrid = new PupilAssignmentGrid();
+
+		assertThat(textField(assignmentGrid, "Schnellfilter").getPlaceholder()).isEqualTo("Suchbegriff");
+	}
+
+	@Test
 	void quickFilterDoesNotMatchTechnicalId() {
-		final PupilAssignmentGrid assignmentGrid = new PupilAssignmentGrid("Schüler:innen suchen");
+		final PupilAssignmentGrid assignmentGrid = new PupilAssignmentGrid();
 		final Pupil pupil = new Pupil(42, "Ada", "Lovelace", Lifecycle.ACTIVE);
 		assignmentGrid.setRows(List.of(pupil), List.of());
 

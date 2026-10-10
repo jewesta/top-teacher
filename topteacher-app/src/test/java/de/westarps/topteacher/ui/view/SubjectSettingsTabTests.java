@@ -110,6 +110,15 @@ class SubjectSettingsTabTests {
 	}
 
 	@Test
+	void usesTheSharedQuickFilterPlaceholder() {
+		final SubjectRepository subjectRepository = mock(SubjectRepository.class);
+		when(subjectRepository.findAll()).thenReturn(List.of());
+		final SubjectSettingsTab tab = new SubjectSettingsTab(subjectRepository);
+
+		assertThat(textField(tab, "Schnellfilter").getPlaceholder()).isEqualTo("Suchbegriff");
+	}
+
+	@Test
 	void quickFilterDoesNotMatchTechnicalId() {
 		final Subject subject = new Subject(42, "Biologie", Lifecycle.ACTIVE);
 		final SubjectRepository subjectRepository = mock(SubjectRepository.class);

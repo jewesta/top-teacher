@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.TabSheet;
@@ -49,7 +50,9 @@ import de.westarps.topteacher.model.loe.LoeCategory;
 import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeTask;
+import de.westarps.topteacher.ui.component.ActionToolbar;
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
+import de.westarps.topteacher.ui.component.QuickFilterField;
 import de.westarps.topteacher.ui.component.loe.ExamTasksEditor;
 
 class ExamsViewDeepLinkTests {
@@ -100,6 +103,20 @@ class ExamsViewDeepLinkTests {
 	@AfterEach
 	void clearUi() {
 		UI.setCurrent(null);
+	}
+
+	@Test
+	void placesTheNewActionAfterBothListFilters() {
+		final ActionToolbar toolbar = components(view, ActionToolbar.class).stream()
+				.filter(component -> component.hasClassName("tt-master-toolbar")).findFirst().orElseThrow();
+		final List<Component> elements = toolbar.getChildren().toList();
+
+		assertThat(elements).hasSize(3);
+		assertThat(elements.get(0)).isInstanceOf(QuickFilterField.class);
+		assertThat(elements.get(1)).isInstanceOf(ComboBox.class);
+		assertThat(((ComboBox<?>) elements.get(1)).getLabel()).isEqualTo("Kurs");
+		assertThat(elements.get(2)).isInstanceOf(Button.class);
+		assertThat(elements.get(2).getElement().getAttribute("aria-label")).isEqualTo("Neu");
 	}
 
 	@Test

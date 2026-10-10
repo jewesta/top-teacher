@@ -128,7 +128,7 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 	private final DatePicker duplicateDate = new DatePicker("Datum");
 	private final ComboBox<Course> duplicateCourse = new ComboBox<>("Kurs");
 	private final Binder<DuplicateExamFormData> duplicateExamBinder = new Binder<>();
-	private final PupilAssignmentGrid pupilAssignmentGrid = new PupilAssignmentGrid("Schüler:innen suchen");
+	private final PupilAssignmentGrid pupilAssignmentGrid = new PupilAssignmentGrid();
 
 	private Course selectedCourse;
 	private Exam selectedExam;
@@ -216,7 +216,7 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 
 	@Override
 	protected List<Component> createListToolbarComponents() {
-		return List.of(newButton, courseFilter);
+		return List.of(courseFilter, newButton);
 	}
 
 	@Override

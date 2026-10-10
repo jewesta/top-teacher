@@ -41,7 +41,12 @@
   and precede the other actions in their action bar. A plus icon alone does
   not imply a permanently labeled add action.
 - Where present, `Schnellfilter` always comes first, before action buttons.
-  Other filters retain their place after those actions.
+  List filters and selectors precede the `Neu` action, which comes last. In
+  Klausuren, the order is `Schnellfilter`, `Kurs`, then `Neu`.
+- Every `Schnellfilter` uses the shared placeholder `Suchbegriff`, including
+  pupil assignments and subject settings. It does not repeat context-specific
+  names or require a wider field to accommodate them. The label remains
+  `Schnellfilter`.
 - Download menu triggers follow the same adaptive rule and match the width and
   height of other icon actions in a multi-element bar. Menu entries and dialog
   buttons keep their labels. Selector navigation buttons remain icon-only.

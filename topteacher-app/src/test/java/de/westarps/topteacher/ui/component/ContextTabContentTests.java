@@ -11,7 +11,7 @@ class ContextTabContentTests {
 	@Test
 	void allContextTabContentsShareTheSameOuterLayout() {
 		final List<ContextTabContent> contents = List.of(new SplitEditorTabContent(),
-				new PupilAssignmentGrid("Schüler:innen suchen"), new TestDesigner());
+				new PupilAssignmentGrid(), new TestDesigner());
 
 		for (final ContextTabContent content : contents) {
 			assertThat(content.getClassNames()).contains("tt-context-tab-content");

@@ -36,8 +36,7 @@ public class PupilAssignmentGrid extends ContextTabContent {
 	private Consumer<Pupil> removeAction = pupil -> {
 	};
 
-	public PupilAssignmentGrid(final String searchPlaceholder) {
-		search.setPlaceholder(searchPlaceholder);
+	public PupilAssignmentGrid() {
 		search.addValueChangeListener(event -> applyFilter());
 
 		toolbar.addClassNames("tt-course-assignment-toolbar", "tt-pupil-assignment-toolbar");
