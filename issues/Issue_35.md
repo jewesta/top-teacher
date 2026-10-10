@@ -77,8 +77,9 @@ independent view state or dirty-state handling.
   the existing pupil and teacher EH result PDFs.
 - Footnotes and line numbering are deferred to a separate issue. They must not
   hold up the initial material-authoring workflow.
-- Managed image uploads and other image-storage work are deferred. The first
-  version of material authoring does not need to solve them.
+- The initial material-authoring version ships without managed images. The
+  agreed image-support follow-up is recorded below; uploads and storage are not
+  implemented yet.
 - Remove the `Notizen` tab and the complete exam-note-section feature. It was
   accidental legacy from the original exam template and must not be repurposed
   as the implementation of `Material`.
@@ -235,7 +236,8 @@ exports, and MCP result summaries.
   material content.
 - Exam-sheet printing and print-specific layout such as page breaks and answer
   space are deferred.
-- Attachments and managed image storage are deferred.
+- Managed image support is planned as the follow-up described below; generic
+  document attachments remain outside that scope.
 - Footnotes and source-text line numbering are deferred.
 
 ## Reimplementation status
@@ -367,10 +369,73 @@ The combined review pass is intended to provide the following end state:
   changing criterion identities or scores. See
   [criterion syntax](../doc/ops/LevelOfExpectations.md#tag-syntax).
 - The editor remains the primary interface; users do not need to learn URI
-  syntax. Future Material image declarations will follow the same named-query
-  convention: `img:<id>?width=75`, with unitless width meaning percentage of
-  available content width and omitted width meaning automatic sizing. Explicit
-  physical units can follow with print support. Image upload/storage is not
-  implemented in this step.
+  syntax. This change prepares the shared declaration convention for images.
 
-Print/export layout, uploads, footnotes, and line numbering remain deferred.
+## Planned image support
+
+### Scope and editor workflow
+
+- Images are supported only in `Material`, not in Aufgaben, EH, or other
+  Markdown fields. Material remains subject-neutral rather than a special
+  language-teaching source-text editor.
+- Keep Markdown as the authoring format. A Material-only image toolbar icon
+  opens a dialog for choosing an image and entering its description/alternative
+  text, with a rendering-width option. Confirmation uploads the image and
+  inserts its Markdown declaration at the cursor.
+- Drag-and-drop is also planned. Dropping an image in Material opens the same
+  dialog with the dropped file prefilled and not replaceable. Whether the drop
+  target can be the editor itself or needs a dedicated area above it remains an
+  implementation question.
+- All Markdown editors must intercept file drops, including editors without
+  image support. Unsupported drops show a clear message instead of allowing
+  the browser to navigate to the file or replace the current page. Those other
+  editors do not receive an image toolbar icon.
+- Image insertion must respect Material's existing first-result lock.
+
+### Storage and limits
+
+- Store image data in the database, rather than relying on external documents
+  or images on the teacher's filesystem.
+- Accept PNG and JPEG only, with upload-size limits. Automatic resizing was
+  discussed to keep database growth manageable; exact limits, resizing
+  thresholds, and the resulting quality policy still need to be specified.
+- Use short opaque IDs containing lowercase letters and digits, such as
+  `4n8k2p7c`, rather than long technical-looking identifiers. The expected number
+  of images is small, but implementation must still guard against collisions;
+  the precise ID-generation policy remains to be chosen.
+
+### Markdown convention and rendering
+
+Use ordinary Markdown image syntax with a TT-interpreted `img:` target and named
+URL query parameters, matching the new criterion convention:
+
+```markdown
+[Nennt drei Präsidenten der USA](crit:1?points=3)
+![Diagramm 1](img:4n8k2p7c?width=75)
+```
+
+- The short ID identifies the stored image; the description is the Markdown
+  alternative text. Use the friendly `img:` scheme without a `tt-img:` prefix.
+- `width=75` means 75 percent of the available content width. No unit means
+  percentage; omitted width means automatic sizing. Preserve the image's aspect
+  ratio and fit it within the available preview/rendering area.
+- Explicit units such as `width=7.5cm` may be introduced later with print
+  support; they are not part of the initial implementation.
+- Attribute syntax such as `![](image.jpg){width=75%}` was considered. The agreed
+  direction is instead URL query parameters for both criteria and images,
+  avoiding two different extension conventions.
+- Showing images in the Markdown preview is feasible. TT must resolve managed
+  image references for its renderer; `img:` and `crit:` are application
+  declarations, not browser navigation protocols.
+- The future pupil printout is the benchmark for sizing behavior. Width should
+  be relative to available page content, not a fixed editor-pane pixel width.
+  Print generation itself remains a later step.
+
+### Implementation status
+
+The preparatory criterion change to `crit:<key>[?points=<value>]` is implemented,
+including editor generation, rendering, validation, and the one-time conversion
+of stored declarations without changing criterion identities or scores. Image
+upload dialogs, drop handling, image persistence, and image rendering are not
+implemented yet. Footnotes, line numbering, and exam-sheet print/export layout
+remain separate follow-up work.
