@@ -25,7 +25,6 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.TabSheet;
-import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.Route;
@@ -196,7 +195,9 @@ class ExamsViewDeepLinkTests {
 		assertThat(tabSheet().getSelectedTab().getLabel()).isEqualTo("Aufgaben");
 		assertThat(levelOfExpectationsStatusIcon()).isEqualTo("vaadin:check");
 
-		components(tasksEditor, IntegerField.class).getFirst().setValue(6);
+		components(tasksEditor, Button.class).stream()
+				.filter(button -> "Max. Punkte erhöhen".equals(button.getElement().getAttribute("aria-label")))
+				.findFirst().orElseThrow().click();
 		components(tasksEditor, Button.class).stream().filter(button -> "Speichern".equals(button.getText()))
 				.findFirst().orElseThrow().click();
 

@@ -761,16 +761,17 @@ vaadin-app-layout::part(navbar) {
 	margin-right: var(--lumo-space-s);
 }
 
-.tt-results-point-stepper {
+.tt-loe-point-stepper {
 	color: var(--lumo-secondary-text-color);
 	margin: 0;
 }
 
-.tt-results-point-stepper:is(:hover, :focus-within, .tt-results-criterion-highlighted) {
+.tt-loe-point-stepper:is(:hover, :focus-within, .tt-results-criterion-highlighted),
+.tt-loe-whole-point-stepper {
 	background: var(--lumo-primary-color-10pct);
 }
 
-.tt-results-point-stepper vaadin-button {
+.tt-loe-point-stepper vaadin-button {
 	font-size: var(--lumo-font-size-s);
 	height: var(--lumo-size-xs);
 	min-width: var(--lumo-size-xs);

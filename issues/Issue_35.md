@@ -261,14 +261,13 @@ The Issue 35 work was planned for these reviewable stages:
    `passend` text.
 
 Current progress: the restart foundation and stage 1 are committed at
-`301ec3c`. The worktree now contains one combined, uncommitted review pass for
-stages 2 through 7. The stages were reapplied together because their domain,
-validation, result, export, MCP, shared-rendering, and lock behavior are tightly
-coupled. The review pass is complete: the full reactor test suite passes with
-397 tests, `git diff --check` reports no issues, and the running application was
-visually checked for the workflow tab order, editable Aufgaben/Material views,
-read-only EH ancestors, explicit collapse controls, concise point-distribution
-labels, half-point handling, and the preserved Issue 32 status tray.
+`301ec3c`; the combined implementation and its follow-up refinements are
+committed through `8b70361`. The stages were reapplied together because their
+domain, validation, result, export, MCP, shared-rendering, and lock behavior are
+tightly coupled. The running application has been visually checked for the
+workflow tab order, editable Aufgaben/Material views, read-only EH ancestors,
+explicit collapse controls, concise point-distribution labels, half-point
+handling, and the preserved Issue 32 status tray.
 
 The combined review pass is intended to provide the following end state:
 
@@ -277,6 +276,9 @@ The combined review pass is intended to provide the following end state:
   infrastructure.
 - `Aufgaben` owns editing for parts, categories, task Markdown, and explicit
   task maximum points.
+- Task maximum points use the shared compact minus/value/plus control with a
+  permanent background in the task summary's point column; see the
+  [operational specification](../doc/ops/LevelOfExpectations.md#task).
 - `Material` stores ordered title/Markdown entries under exactly one read-only
   exam part.
 - EH shows part, category, task Markdown, and task points as read-only context;

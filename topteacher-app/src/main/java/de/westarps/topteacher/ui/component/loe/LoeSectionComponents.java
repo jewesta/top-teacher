@@ -3,6 +3,7 @@ package de.westarps.topteacher.ui.component.loe;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.IntConsumer;
 import java.util.function.Supplier;
 
 import com.vaadin.flow.component.ClickEvent;
@@ -176,6 +177,20 @@ final class LoeSectionComponents {
 
 	LoePercentageBadge percentageBadge(final Supplier<Integer> percentageSupplier) {
 		return new LoePercentageBadge(percentageSupplier);
+	}
+
+	LoeWholePointStepper wholePointStepper(final String label, final int value, final boolean readOnly,
+			final IntConsumer changeHandler) {
+		final LoeWholePointStepper stepper = new LoeWholePointStepper(label);
+		stepper.setValue(value);
+		stepper.setReadOnly(readOnly);
+		stepper.setChangeHandler(updatedValue -> {
+			stepper.setValue(updatedValue);
+			if (changeHandler != null) {
+				changeHandler.accept(updatedValue);
+			}
+		});
+		return stepper;
 	}
 
 	Button saveButton() {

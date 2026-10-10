@@ -41,8 +41,10 @@ distributed below it.
 A task represents an actual exam task and groups its later assessment
 requirements. It has a title, Markdown content, an explicitly assigned integer
 maximum, and a sort order. The task maximum is authored in `Aufgaben`; it is not
-derived from the requirements. Non-bonus requirements subsequently distribute
-that budget in EH, while bonus requirements remain separate.
+derived from the requirements. A compact minus/value/plus control with a
+permanent background edits it in the task summary's point column. Non-bonus
+requirements subsequently distribute that budget in EH, while bonus
+requirements remain separate.
 
 ### Material
 

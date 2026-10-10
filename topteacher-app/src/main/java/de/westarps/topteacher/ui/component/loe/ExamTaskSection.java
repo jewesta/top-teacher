@@ -5,10 +5,7 @@ import java.util.Objects;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 
 import de.westarps.topteacher.model.loe.LoeTask;
@@ -18,7 +15,7 @@ final class ExamTaskSection extends AbstractLoeSection<LoeTask> {
 
 	private final TextField title;
 	private final MarkdownEditor description;
-	private final IntegerField maxPoints;
+	private final LoeWholePointStepper maxPoints;
 	private final Handler handler;
 	private String savedTitle;
 	private String savedDescriptionMarkdown;
@@ -26,13 +23,12 @@ final class ExamTaskSection extends AbstractLoeSection<LoeTask> {
 
 	ExamTaskSection(final LoeTask task, final List<LoeTask> siblings, final LoeSectionComponents components,
 			final Handler handler, final boolean locked) {
-		this(task, siblings, components, handler, fields(task, components), locked);
+		this(task, siblings, components, handler, fields(task, components, locked), locked);
 	}
 
 	private ExamTaskSection(final LoeTask task, final List<LoeTask> siblings, final LoeSectionComponents components,
 			final Handler handler, final Fields fields, final boolean locked) {
-		super(task, "tt-eh-task", components.summary("Aufgabe", fields.title(), fields.pointBadge()),
-				fields.pointBadge(), List.of());
+		super(task, "tt-eh-task", components.summary("Aufgabe", fields.title(), fields.maxPoints()), null, List.of());
 		this.title = fields.title();
 		this.description = fields.description();
 		this.maxPoints = fields.maxPoints();
@@ -42,10 +38,8 @@ final class ExamTaskSection extends AbstractLoeSection<LoeTask> {
 		this.savedMaxPoints = task.maxPoints();
 		title.setReadOnly(locked);
 		description.setEnabled(!locked);
-		maxPoints.setReadOnly(locked);
 		components.trackDirty(title);
 		components.trackDirty(description);
-		components.trackPoints(maxPoints);
 		final Button delete = components.deleteButton("Aufgabe löschen?", () -> handler.delete(task));
 		if (locked) {
 			components.lockCorrectionModeAction(delete);
@@ -53,17 +47,16 @@ final class ExamTaskSection extends AbstractLoeSection<LoeTask> {
 		final Component descriptionBlock = locked
 				? components.markdownViewBlock("Aufgabentext", task.descriptionMarkdown())
 				: components.markdownBlock("Aufgabentext", description);
-		addToBody(descriptionBlock, pointsControl(maxPoints),
+		addToBody(descriptionBlock,
 				editorBlockWithMoveButtons(components, siblings, handler, List.of(), List.of(delete), locked));
 	}
 
-	private static Fields fields(final LoeTask task, final LoeSectionComponents components) {
+	private static Fields fields(final LoeTask task, final LoeSectionComponents components, final boolean locked) {
 		final TextField title = components.summaryTitleField(task.title());
 		final MarkdownEditor description = components.markdownEditor(task.descriptionMarkdown(), "Aufgabentext");
-		final IntegerField maxPoints = maxPoints(task);
-		final LoePointBadge pointBadge = components.pointBadge("Max.",
-				() -> new LoePoints(maxPoints.getValue() == null ? 0 : maxPoints.getValue(), 0));
-		return new Fields(title, description, maxPoints, pointBadge);
+		final LoeWholePointStepper maxPoints = components.wholePointStepper("Max. Punkte", task.maxPoints(), locked,
+				ignored -> components.updatePoints());
+		return new Fields(title, description, maxPoints);
 	}
 
 	@Override
@@ -78,7 +71,7 @@ final class ExamTaskSection extends AbstractLoeSection<LoeTask> {
 	}
 
 	int pendingMaxPoints() {
-		return maxPoints.getValue() == null ? 0 : maxPoints.getValue();
+		return maxPoints.getValue();
 	}
 
 	@Override
@@ -87,7 +80,7 @@ final class ExamTaskSection extends AbstractLoeSection<LoeTask> {
 			Notification.show("Titel ist erforderlich.");
 			return false;
 		}
-		if (maxPoints.getValue() == null || maxPoints.getValue() < 0) {
+		if (maxPoints.getValue() < 0) {
 			Notification.show("Max. Punkte müssen 0 oder größer sein.");
 			return false;
 		}
@@ -99,25 +92,6 @@ final class ExamTaskSection extends AbstractLoeSection<LoeTask> {
 		return true;
 	}
 
-	private static IntegerField maxPoints(final LoeTask task) {
-		final IntegerField maxPoints = new IntegerField();
-		maxPoints.addClassName("tt-eh-requirement-points-field");
-		maxPoints.setMin(0);
-		maxPoints.setStepButtonsVisible(true);
-		maxPoints.setValue(task.maxPoints());
-		return maxPoints;
-	}
-
-	private static HorizontalLayout pointsControl(final IntegerField maxPoints) {
-		final Span label = new Span("Max. Punkte");
-		label.addClassName("tt-field-label");
-		final HorizontalLayout control = new HorizontalLayout(label, maxPoints);
-		control.addClassName("tt-eh-requirement-points-control");
-		control.setPadding(false);
-		control.setSpacing(false);
-		return control;
-	}
-
 	private static String normalized(final String value) {
 		return value == null ? "" : value;
 	}
@@ -127,8 +101,7 @@ final class ExamTaskSection extends AbstractLoeSection<LoeTask> {
 		void save(LoeTask task, String title, String descriptionMarkdown, int maxPoints);
 	}
 
-	private record Fields(TextField title, MarkdownEditor description, IntegerField maxPoints,
-			LoePointBadge pointBadge) {
+	private record Fields(TextField title, MarkdownEditor description, LoeWholePointStepper maxPoints) {
 	}
 }
 

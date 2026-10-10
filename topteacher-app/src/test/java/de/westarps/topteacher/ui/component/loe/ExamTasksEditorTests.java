@@ -18,7 +18,6 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 
 import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
@@ -46,8 +45,16 @@ class ExamTasksEditorTests {
 
 		titleField(editor, TASK.title()).setValue("Aufgabe 1a");
 		markdownEditor(editor, TASK.descriptionMarkdown()).setValue("Analysiere **Material 1**.");
-		components(editor, IntegerField.class).getFirst().setValue(8);
-		assertThat(badgeTexts(editor)).contains("Gesamt: 8 (+0)", "Summe: 8 (+0)", "Max.: 8 (+0)");
+		final Details taskDetails = components(editor, Details.class).getLast();
+		final LoeWholePointStepper points = components(editor, LoeWholePointStepper.class).getFirst();
+		final Button increase = buttonByAriaLabel(points, "Max. Punkte erhöhen");
+		increase.click();
+		increase.click();
+		increase.click();
+		assertThat(taskDetails.isOpened()).isTrue();
+		assertThat(points.getValue()).isEqualTo(8);
+		assertThat(badgeTexts(editor)).contains("Gesamt: 8 (+0)", "Summe: 8 (+0)")
+				.noneMatch(text -> text.startsWith("Max.:"));
 		saveButton(editor).click();
 
 		verify(repository).saveTask(new LoeTask(TASK.id(), TASK.categoryId(), "Aufgabe 1a",
@@ -56,8 +63,24 @@ class ExamTasksEditorTests {
 		verify(repository, never()).findCategoriesByExamId(anyInt());
 		verify(repository, never()).findTasksByExamId(anyInt());
 		assertThat(components(editor, Details.class).getFirst()).isSameAs(partDetails);
-		assertThat(badgeTexts(editor)).contains("Gesamt: 8 (+0)", "Summe: 8 (+0)", "Max.: 8 (+0)");
+		assertThat(badgeTexts(editor)).contains("Gesamt: 8 (+0)", "Summe: 8 (+0)")
+				.noneMatch(text -> text.startsWith("Max.:"));
 		assertThat(saveButton(editor).isEnabled()).isFalse();
+	}
+
+	@Test
+	void placesWholePointStepperInTheSharedTaskSummaryPointsColumn() {
+		final ExamTasksEditor editor = new ExamTasksEditor(repository(false));
+		editor.setExam(EXAM);
+
+		final Details taskDetails = components(editor, Details.class).getLast();
+		final LoeWholePointStepper points = components(editor, LoeWholePointStepper.class).getFirst();
+
+		assertThat(points.getParent()).contains(taskDetails.getSummary());
+		assertThat(points.getClassNames()).contains("tt-loe-points-cell", "tt-results-points-cell",
+				"tt-loe-point-stepper", "tt-loe-whole-point-stepper");
+		assertThat(buttonByAriaLabel(points, "Max. Punkte verringern").isEnabled()).isTrue();
+		assertThat(buttonByAriaLabel(points, "Max. Punkte erhöhen").isEnabled()).isTrue();
 	}
 
 	@Test
@@ -105,7 +128,9 @@ class ExamTasksEditorTests {
 		assertThat(components(editor, MarkdownEditor.class)).isEmpty();
 		assertThat(components(editor, MarkdownViewer.class)).extracting(MarkdownViewer::getContent)
 				.containsExactly(CATEGORY.descriptionMarkdown(), TASK.descriptionMarkdown());
-		assertThat(components(editor, IntegerField.class)).allMatch(IntegerField::isReadOnly);
+		final LoeWholePointStepper points = components(editor, LoeWholePointStepper.class).getFirst();
+		assertThat(buttonByAriaLabel(points, "Max. Punkte verringern").isEnabled()).isFalse();
+		assertThat(buttonByAriaLabel(points, "Max. Punkte erhöhen").isEnabled()).isFalse();
 		assertThat(button(editor, "Klausurteil hinzufügen").isEnabled()).isFalse();
 		assertThat(button(editor, "Leistungskategorie hinzufügen").isEnabled()).isFalse();
 		assertThat(button(editor, "Teilaufgabe hinzufügen").isEnabled()).isFalse();
@@ -174,6 +199,11 @@ class ExamTasksEditorTests {
 	private static Button button(final Component root, final String text) {
 		return components(root, Button.class).stream().filter(button -> text.equals(button.getText())).findFirst()
 				.orElseThrow();
+	}
+
+	private static Button buttonByAriaLabel(final Component root, final String label) {
+		return components(root, Button.class).stream()
+				.filter(button -> label.equals(button.getElement().getAttribute("aria-label"))).findFirst().orElseThrow();
 	}
 
 	private static List<Button> buttonsByAriaLabel(final Component root, final String label) {
