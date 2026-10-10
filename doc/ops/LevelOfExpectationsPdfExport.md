@@ -108,6 +108,10 @@ not resemble interactive checkboxes or controls.
 
 ## Deferred exam-sheet export
 
+GitHub-style Markdown alerts in exported EH content already render as bordered
+boxes with German headings and print-safe symbols. This shared Markdown
+behavior is specified in [Markdown.md](Markdown.md#alerts).
+
 Generating the pupil-facing exam sheet from `Aufgaben` and `Material` is
 outside the current scope. That future output will group content by part and
 place the part's tasks before its materials. Its print layout, image handling,

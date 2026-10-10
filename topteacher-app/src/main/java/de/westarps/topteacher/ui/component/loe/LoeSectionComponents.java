@@ -22,9 +22,11 @@ import com.vaadin.flow.data.value.ValueChangeMode;
 
 import de.westarps.topteacher.ui.component.ActionToolbar;
 import de.westarps.topteacher.ui.component.Buttons;
+import de.westarps.topteacher.ui.component.MarkdownAlertDialog;
 import de.westarps.topteacher.ui.component.TopTeacherDialogs;
 import de.westarps.topteacher.model.loe.LoeMaterialImage;
 import de.westarps.vaadin.markdown.MarkdownEditor;
+import de.westarps.vaadin.markdown.MarkdownToolbarCommand;
 import de.westarps.vaadin.markdown.MarkdownViewer;
 
 final class LoeSectionComponents {
@@ -92,6 +94,9 @@ final class LoeSectionComponents {
 		editor.setPlaceholder(placeholder);
 		editor.setWidthFull();
 		editor.setHeight("14rem");
+		editor.showToolbarCommand(MarkdownToolbarCommand.ALERT);
+		editor.addAlertRequestListener(selection -> new MarkdownAlertDialog(editor.selectedBlockText(selection),
+				(type, text) -> editor.insertAlert(selection, type, text)).open());
 		return editor;
 	}
 

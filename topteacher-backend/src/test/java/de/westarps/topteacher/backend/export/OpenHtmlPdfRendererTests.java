@@ -3,10 +3,12 @@ package de.westarps.topteacher.backend.export;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.Test;
 
@@ -49,6 +51,43 @@ class OpenHtmlPdfRendererTests {
 			assertThat(document.getNumberOfPages()).isEqualTo(2);
 			assertThat(document.getPage(0).getMediaBox().getWidth()).isCloseTo(PDRectangle.A4.getHeight(), offset());
 			assertThat(document.getPage(0).getMediaBox().getHeight()).isCloseTo(PDRectangle.A4.getWidth(), offset());
+		}
+	}
+
+	@Test
+	void rendersAlertBoxesWithAllLabelsAndWrappedContent() throws IOException {
+		final String css;
+		try (var stream = getClass().getResourceAsStream("/templates/export/level-of-expectations.css")) {
+			css = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+		}
+		final Sanitizer sanitizer = new Sanitizer();
+		final StringBuilder content = new StringBuilder();
+		for (final String type : List.of("NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION")) {
+			content.append(sanitizer.markdownToHtml(
+					"> [!" + type + "]\n> **Text** mit mehreren Worten. "
+							+ "Dieser Hinweis darf umbrechen. ".repeat(15) + "Ende " + type + ".",
+					Sanitizer.MarkdownView.PUPIL).value());
+		}
+		final byte[] pdf = renderer.renderA5Pdf("<html><head><style>" + css
+				+ "</style></head><body>" + content + "</body></html>");
+		try (PDDocument document = PDDocument.load(pdf)) {
+			assertThat(new PDFTextStripper().getText(document)).contains("Hinweis", "Tipp", "Wichtig", "Warnung",
+					"Vorsicht", "Ende NOTE.", "Ende TIP.", "Ende IMPORTANT.", "Ende WARNING.", "Ende CAUTION.")
+					.doesNotContain("[!");
+			int vectorIcons = 0;
+			for (final var page : document.getPages()) {
+				for (final var name : page.getResources().getXObjectNames()) {
+					final var object = page.getResources().getXObject(name);
+					assertThat(object).isInstanceOf(PDFormXObject.class);
+					final var form = (PDFormXObject) object;
+					assertThat(form.getResources().getXObjectNames()).isEmpty();
+					try (var stream = form.getContentStream().createInputStream()) {
+						assertThat(stream.readAllBytes()).isNotEmpty();
+					}
+					vectorIcons++;
+				}
+			}
+			assertThat(vectorIcons).isEqualTo(5);
 		}
 	}
 

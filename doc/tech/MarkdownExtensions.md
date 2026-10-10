@@ -40,9 +40,40 @@ whether a drop opens the Material workflow or produces the explanatory
 notification used by all other Markdown surfaces.
 
 This is deliberately a small composition seam, not a general plugin framework.
-A future footnote extension can register independently and be included beside
-`tt-criterion` where needed. It must not be added as a special case inside the
-criterion implementation or the westarps editor.
+Standard footnotes, GitHub-style alerts, and literal numbered blocks belong to
+the reusable Markdown module rather than to either application extension.
+Optional toolbar commands can be enabled independently. TopTeacher owns their
+dialogs and decides which editors offer each command.
+
+`ws-markdown-blocks.ts` transforms recognized blockquote markers before HTML
+sanitization. The preview's `pluginsFilter` moves this transform before the
+library's built-in alert parser so it cannot consume the markers first.
+Literal numbered rows are parsed individually with a neutral
+text prefix so block syntax cannot introduce extra rows; document-level link
+and footnote definitions are included for inline reference resolution. Source
+positions preserve explicitly empty quoted lines. The shared schema permits
+only the required presentation classes. Numbered rows clip excess text and
+observe their available width to report clipping in the preview.
+
+The backend's CommonMark renderer has a matching alert node renderer and
+export CSS. The canonical GitHub Octicons and MIT licence live in
+`assets/markdown-alerts/`. Both modules copy these resources during Maven's
+resource phase, avoiding separate SVG path copies or a backend dependency on
+Vaadin. The shared preview uses the SVGs as CSS masks, inheriting the title
+color and hiding decorative icon spans from assistive technology.
+
+The backend renderer emits empty icon placeholders. `MarkdownAlertIcons`
+clones only the five known bundled SVGs into these placeholders after Markdown
+sanitization and after parsing the final export HTML. XML parsing preserves
+the SVG namespace and case-sensitive `viewBox` attribute. User-provided SVGs
+remain disallowed by the Markdown sanitizer. `OpenHtmlPdfRenderer` registers
+OpenHTMLToPDF's SVG support with the default `BatikSVGDrawer`, whose scripts
+and external-resource requests are disabled. SVGs become vector form objects
+in the PDF, not raster images or font-dependent symbols. Tests cover bundled
+resources, sanitization, and vector objects in actual PDF output.
+
+This does not implement
+the deferred pupil exam-sheet layout or its numbered-text print rendering.
 
 ## Local frontend builds
 

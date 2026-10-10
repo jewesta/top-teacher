@@ -3,5 +3,7 @@ package de.westarps.vaadin.markdown;
 public enum MarkdownToolbarCommand {
 
 	IMAGE,
-	FOOTNOTE
+	FOOTNOTE,
+	ALERT,
+	NUMBERED
 }

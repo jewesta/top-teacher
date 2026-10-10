@@ -111,6 +111,58 @@ public class MarkdownEditor extends AbstractCompositeField<MarkdownEditorCompone
 		}).addEventData("event.detail.name").addEventData("event.detail.selectionEnd");
 	}
 
+	public Registration addAlertRequestListener(final SerializableConsumer<BlockSelection> listener) {
+		Objects.requireNonNull(listener, "listener must not be null");
+		return getElement().addEventListener("markdown-extension-event", event -> {
+			final JsonNode data = event.getEventData();
+			if (!"alert-requested".equals(data.path("event.detail.name").asString(""))) {
+				return;
+			}
+			listener.accept(new BlockSelection(data.path("event.detail.selectionStart").asInt(getValue().length()),
+					data.path("event.detail.selectionEnd").asInt(getValue().length())));
+		}).addEventData("event.detail.name").addEventData("event.detail.selectionStart")
+				.addEventData("event.detail.selectionEnd");
+	}
+
+	public String selectedBlockText(final BlockSelection selection) {
+		final BlockSelection range = blockRange(selection);
+		return getValue().substring(range.start(), range.end());
+	}
+
+	public void insertAlert(final BlockSelection selection, final MarkdownAlertType type, final String text) {
+		Objects.requireNonNull(type, "type must not be null");
+		if (text == null || text.isBlank()) {
+			throw new IllegalArgumentException("alert text must not be blank");
+		}
+		final BlockSelection range = blockRange(selection);
+		final String current = getValue();
+		final String before = current.substring(0, range.start());
+		final String after = current.substring(range.end());
+		final String body = text.strip().replace("\r\n", "\n").replace('\r', '\n')
+				.replace("\n", "\n> ");
+		final String block = "> [!" + type.name() + "]\n> " + body;
+		final String prefix = before.isEmpty() || before.endsWith("\n\n") ? ""
+				: before.endsWith("\n") ? "\n" : "\n\n";
+		final String suffix = after.isEmpty() || after.startsWith("\n\n") ? ""
+				: after.startsWith("\n") ? "\n" : "\n\n";
+		setValue(before + prefix + block + suffix + after);
+		getElement().executeJs("this.focusAt($0)", before.length() + prefix.length() + block.length());
+	}
+
+	private BlockSelection blockRange(final BlockSelection selection) {
+		Objects.requireNonNull(selection, "selection must not be null");
+		final String current = getValue();
+		final int start = Math.max(0, Math.min(selection.start(), current.length()));
+		final int end = Math.max(start, Math.min(selection.end(), current.length()));
+		if (start == end) {
+			return new BlockSelection(start, end);
+		}
+		final int blockStart = start == 0 ? 0 : current.lastIndexOf('\n', start - 1) + 1;
+		final int lastSelected = current.charAt(end - 1) == '\n' ? end - 1 : end;
+		final int nextNewline = current.indexOf('\n', lastSelected);
+		return new BlockSelection(blockStart, nextNewline < 0 ? current.length() : nextNewline);
+	}
+
 	public void insertFootnote(final InsertionPoint insertionPoint, final String text) {
 		Objects.requireNonNull(insertionPoint, "insertionPoint must not be null");
 		if (text == null || text.isBlank()) {
@@ -163,5 +215,8 @@ public class MarkdownEditor extends AbstractCompositeField<MarkdownEditorCompone
 	}
 
 	public record InsertionPoint(int position) {
+	}
+
+	public record BlockSelection(int start, int end) {
 	}
 }

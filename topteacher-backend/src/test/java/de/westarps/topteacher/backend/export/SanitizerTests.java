@@ -41,11 +41,51 @@ class SanitizerTests {
 	}
 
 	@Test
+	void rendersAlertsForPdfWithInlineContentAndWithoutTheMarker() {
+		final String[] types = { "NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION" };
+		final String[] labels = { "Hinweis", "Tipp", "Wichtig", "Warnung", "Vorsicht" };
+		for (int index = 0; index < types.length; index++) {
+			final SafeHtml html = sanitizer.markdownToHtml(
+					"> [!" + types[index] + "]\n> **Text** mit [Link](https://example.com).\n>\n> Weiterer Absatz.",
+					Sanitizer.MarkdownView.PUPIL);
+			assertThat(html.value()).contains("ws-markdown-alert-" + types[index].toLowerCase(), labels[index],
+					"<strong>Text</strong>", "https://example.com", "Weiterer Absatz.")
+					.doesNotContain("[!", "<blockquote>");
+		}
+	}
+
+	@Test
+	void leavesOrdinaryQuotesAndUnknownMarkersAlone() {
+		final SafeHtml html = sanitizer.markdownToHtml(
+				"> Normaler Text\n\n> [!UNKNOWN]\n> Text\n\n```\n> [!TIP]\n```", Sanitizer.MarkdownView.PUPIL);
+		assertThat(html.value()).contains("<blockquote>", "[!UNKNOWN]", "[!TIP]")
+				.doesNotContain("ws-markdown-alert");
+	}
+
+	@Test
+	void retainsCriterionMarksAndSanitizesHtmlInsideAlerts() {
+		final SafeHtml html = sanitizer.markdownToHtml(
+				"> [!IMPORTANT]\n> [Beleg](crit:1) <script>bad()</script>", Sanitizer.MarkdownView.TEACHER);
+		assertThat(html.value()).contains("ws-markdown-alert-important", "tt-criterion", "Beleg")
+				.doesNotContain("<script", "bad()", "crit:");
+	}
+
+	@Test
 	void sanitizesUnsafeHtml() {
 		final SafeHtml html = sanitizer.markdownToHtml("Guter Text<script>alert('x')</script>",
 				Sanitizer.MarkdownView.PUPIL);
 
 		assertThat(html.value()).contains("Guter Text");
 		assertThat(html.value()).doesNotContain("<script", "alert");
+	}
+
+	@Test
+	void doesNotAllowUserProvidedSvgOrImageResources() {
+		final SafeHtml html = sanitizer.markdownToHtml(
+				"> [!NOTE]\n> Text <svg onload=\"bad()\"><image href=\"https://example.com/remote.svg\" />"
+						+ "<path d=\"M0 0\" /></svg><img src=\"data:image/svg+xml,bad\" onerror=\"bad()\">",
+				Sanitizer.MarkdownView.PUPIL);
+		assertThat(html.value()).contains("ws-markdown-alert-icon", "Hinweis", "Text")
+				.doesNotContain("<svg", "<path", "<image", "<img", "onload", "onerror", "bad()", "remote.svg");
 	}
 }

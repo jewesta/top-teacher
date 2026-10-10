@@ -16,7 +16,7 @@ final class MarkdownEditorComponent extends MarkdownComponent {
 
 	private static final int UNLIMITED = -1;
 	private Set<MarkdownToolbarCommand> hiddenToolbarCommands = EnumSet.of(MarkdownToolbarCommand.IMAGE,
-			MarkdownToolbarCommand.FOOTNOTE);
+			MarkdownToolbarCommand.FOOTNOTE, MarkdownToolbarCommand.ALERT, MarkdownToolbarCommand.NUMBERED);
 	private Map<String, ?> extensionState = Map.of();
 
 	MarkdownEditorComponent() {

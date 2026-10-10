@@ -56,6 +56,11 @@ diagrams, data, and similar material handed out with the exam.
 - It is authored in the dedicated `Material` tab.
 - Tasks refer to material in their wording; they do not own or duplicate it.
 
+Material also provides literal source-line numbering using `> [!NUMBERED]`.
+All Markdown editors provide the five GitHub-style alert types through a
+separate toolbar command. Their authoring, preview, and print contracts are
+specified in [Markdown.md](Markdown.md).
+
 #### Footnotes
 
 Editable Material Markdown provides a footnote toolbar command. It opens a

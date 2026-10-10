@@ -433,7 +433,8 @@ URL query parameters, matching the new criterion convention:
 
 ### Implementation status
 
-The criterion change, Material footnotes, and managed-image follow-up are
+The criterion change, Material footnotes, literal line numbering, Markdown
+alerts, and managed-image follow-up are
 implemented. Material now has the image command and shared upload dialog,
 direct file-drop handling, cursor insertion, content-relative width choices,
 session-scoped preview and inspection rendering, immutable deduplicated
@@ -455,11 +456,22 @@ ordinary Markdown links remain active. See the
 [operational specification](../doc/ops/LevelOfExpectations.md#footnotes) for the
 settled behavior.
 
+Literal line numbering uses the agreed `> [!NUMBERED]` blockquote convention,
+preserves authored line breaks including empty lines, and clips excess text
+without deleting it. A separate Material command inserts the block. All current
+Markdown editors offer the five GitHub alerts through their own icon and the
+shared dialog factory. Alerts render in preview, read-only views, and the
+existing EH PDFs. The exact five GitHub Octicons from the issue examples are
+bundled with their MIT licence and shared by preview masks and vector PDF
+rendering; no GitHub request is made during rendering. See
+[the Markdown specification](../doc/ops/Markdown.md).
+
 The settled processing policy is a 10 MiB upload limit, a 40-megapixel decoded
 limit, proportional resizing above 3,000 pixels on the longest side, JPEG
 orientation correction, metadata removal through re-encoding, PNG transparency
 preservation, and 90% JPEG quality. Public image endpoints are deliberately not
 used; previews use active-session resources. See the
 [operational specification](../doc/ops/LevelOfExpectations.md#managed-images)
-for the authoritative behavior. Cross-editor footnote collection, line
-numbering, and exam-sheet print/export layout remain separate follow-up work.
+for the authoritative behavior. Cross-editor footnote collection and
+exam-sheet print/export layout, including numbered text on the printed page,
+remain separate follow-up work.

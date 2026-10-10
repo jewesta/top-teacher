@@ -415,3 +415,26 @@ h4 {
 .tt-grade-scale th {
     background: #ececec;
 }
+
+/* Markdown alerts keep their labels and borders legible in monochrome printouts. */
+.ws-markdown-alert {
+  margin: 1mm 0 2mm;
+  padding: 2mm 3mm;
+  border-left: 0.8mm solid #0969da;
+  background-color: #f6f8fa;
+}
+
+.ws-markdown-alert-tip { border-left-color: #1a7f37; }
+.ws-markdown-alert-important { border-left-color: #8250df; }
+.ws-markdown-alert-warning { border-left-color: #9a6700; }
+.ws-markdown-alert-caution { border-left-color: #cf222e; }
+.ws-markdown-alert-title { font-weight: bold; margin-bottom: 1mm; }
+.ws-markdown-alert-icon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: 0.4em;
+  vertical-align: -0.125em;
+}
+.ws-markdown-alert-icon svg { display: block; width: 1em; height: 1em; }
+.ws-markdown-alert p { margin: 0 0 1mm; }

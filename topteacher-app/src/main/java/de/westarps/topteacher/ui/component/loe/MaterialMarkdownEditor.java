@@ -25,6 +25,7 @@ final class MaterialMarkdownEditor extends MarkdownEditor {
 	MaterialMarkdownEditor(final String value, final Collection<LoeMaterialImage> images) {
 		super(value);
 		showToolbarCommand(MarkdownToolbarCommand.FOOTNOTE);
+		showToolbarCommand(MarkdownToolbarCommand.NUMBERED);
 		setExtensionIds(List.of(EXTENSION_ID));
 		setImages(images);
 	}

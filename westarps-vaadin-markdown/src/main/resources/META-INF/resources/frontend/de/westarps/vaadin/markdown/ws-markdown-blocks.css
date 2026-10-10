@@ -1,0 +1,74 @@
+.wmde-markdown .ws-markdown-alert {
+  --ws-alert-color: #0969da;
+  --ws-alert-icon: url('./icons/note.svg');
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-inline-start: 0.25rem solid var(--ws-alert-color);
+  background: var(--color-canvas-subtle, #f6f8fa);
+}
+
+.wmde-markdown .ws-markdown-alert-tip {
+  --ws-alert-color: #1a7f37;
+  --ws-alert-icon: url('./icons/tip.svg');
+}
+.wmde-markdown .ws-markdown-alert-important {
+  --ws-alert-color: #8250df;
+  --ws-alert-icon: url('./icons/important.svg');
+}
+.wmde-markdown .ws-markdown-alert-warning {
+  --ws-alert-color: #9a6700;
+  --ws-alert-icon: url('./icons/warning.svg');
+}
+.wmde-markdown .ws-markdown-alert-caution {
+  --ws-alert-color: #cf222e;
+  --ws-alert-icon: url('./icons/caution.svg');
+}
+
+.wmde-markdown .ws-markdown-alert-title {
+  margin-bottom: 0.5rem;
+  color: var(--ws-alert-color);
+  font-weight: 600;
+}
+
+.wmde-markdown .ws-markdown-alert-icon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-inline-end: 0.5em;
+  vertical-align: -0.125em;
+  background-color: currentColor;
+  -webkit-mask: var(--ws-alert-icon) center / contain no-repeat;
+  mask: var(--ws-alert-icon) center / contain no-repeat;
+}
+
+.wmde-markdown .ws-markdown-alert > :last-child { margin-bottom: 0; }
+
+.wmde-markdown .ws-markdown-numbered { margin-bottom: 1rem; }
+.wmde-markdown .ws-markdown-numbered-line { line-height: 1.6; min-height: 1.6em; }
+
+.wmde-markdown .ws-markdown-line-number {
+  float: left;
+  width: 2em;
+  color: var(--color-fg-muted, #656d76);
+  font-size: 0.85em;
+  text-align: right;
+  user-select: none;
+}
+
+.wmde-markdown .ws-markdown-line-text {
+  display: block;
+  margin-inline-start: 2.7em;
+  overflow: hidden;
+  white-space: pre;
+}
+
+.wmde-markdown .ws-markdown-numbered-overflow {
+  margin: 0.5rem 0 0;
+  font-size: 0.8em;
+  color: #9a6700;
+}
+
+@media print {
+  .wmde-markdown .ws-markdown-alert { background: transparent; }
+  .wmde-markdown .ws-markdown-numbered-overflow { display: none; }
+}
