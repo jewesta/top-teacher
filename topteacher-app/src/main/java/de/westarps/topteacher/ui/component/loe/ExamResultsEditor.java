@@ -230,7 +230,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private void configurePdfDownload() {
 		pdfMenu.addClassName("tt-pdf-menu");
 		pdfMenu.addThemeVariants(MenuBarVariant.LUMO_SMALL);
-		pdfMenuItem = pdfMenu.addItem("Laden");
+		pdfMenuItem = pdfMenu.addItem("");
 		pdfMenuItem.addComponentAsFirst(VaadinIcon.DOWNLOAD.create());
 		pdfMenuItem.setAriaLabel("Ergebnisbogen herunterladen");
 		pdfMenu.setTooltipText(pdfMenuItem, "Ergebnisbogen herunterladen");

@@ -74,7 +74,7 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 
 	private void configureDownloadMenu() {
 		downloadMenu.addThemeVariants(MenuBarVariant.LUMO_SMALL);
-		final MenuItem downloadItem = downloadMenu.addItem("Laden");
+		final MenuItem downloadItem = downloadMenu.addItem("");
 		downloadItem.addComponentAsFirst(VaadinIcon.DOWNLOAD.create());
 		downloadItem.setAriaLabel("Dateien herunterladen");
 		downloadMenu.setTooltipText(downloadItem, "Dateien herunterladen");

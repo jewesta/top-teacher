@@ -100,7 +100,7 @@ class ExamEvaluationViewerTests {
 		assertThat(grid.getColumns().subList(3, grid.getColumns().size())).noneMatch(Grid.Column::isFrozen);
 		assertThat(itemCount(grid)).isEqualTo(2);
 		final MenuItem downloadItem = components(viewer, MenuBar.class).getFirst().getItems().getFirst();
-		assertThat(downloadItem.getText()).isEqualTo("Laden");
+		assertThat(downloadItem.getText()).isEmpty();
 		assertThat(iconName(downloadItem)).isEqualTo(VaadinIcon.DOWNLOAD.create().getIcon());
 		assertThat(downloadItem.getSubMenu().getItems().stream().map(MenuItem::getText)).containsExactly(
 				"Punktetabelle", "Alle Ergebnisbögen (Schüler:innen-Version)",

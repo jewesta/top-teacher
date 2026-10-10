@@ -146,7 +146,7 @@ class ExamResultsEditorTests {
 				.isEqualTo(VaadinIcon.ROTATE_LEFT.create().getIcon());
 		assertThat(pdfMenu.isEnabled()).isTrue();
 		final MenuItem pdfMenuItem = pdfMenu.getItems().getFirst();
-		assertThat(pdfMenuItem.getText()).isEqualTo("Laden");
+		assertThat(pdfMenuItem.getText()).isEmpty();
 		assertThat(iconName(pdfMenuItem)).isEqualTo(VaadinIcon.DOWNLOAD.create().getIcon());
 		assertThat(pdfMenuItem.getSubMenu().getItems().stream().map(MenuItem::getText))
 				.containsExactly("Ergebnisbogen (Schüler:innen-Version)", "Ergebnisbogen (Lehrer:innen-Version)");
@@ -669,7 +669,8 @@ class ExamResultsEditorTests {
 	}
 
 	private static Button saveButton(final Component root) {
-		return components(root, Button.class).stream().filter(button -> "Speichern".equals(button.getText()))
+		return components(root, Button.class).stream()
+				.filter(button -> "Speichern".equals(button.getElement().getAttribute("aria-label")))
 				.findFirst().orElseThrow();
 	}
 

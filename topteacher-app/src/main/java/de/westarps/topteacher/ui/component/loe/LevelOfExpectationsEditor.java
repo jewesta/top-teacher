@@ -2,7 +2,9 @@ package de.westarps.topteacher.ui.component.loe;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import com.vaadin.flow.component.Component;
@@ -71,6 +73,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 	private final Span breadcrumb = new Span();
 	private List<LoeReadOnlySection<LoePart>> partSections = List.of();
 	private List<LoeRequirementSection> requirementSections = List.of();
+	private final Map<Integer, LoeAllocationMessage> taskAllocationMessages = new HashMap<>();
 	private boolean correctionMode;
 	private Integer gradingScaleMaxPoints;
 	private ValidationResults<LoeValidationTarget> validationResults = ValidationResults.pass();
@@ -151,6 +154,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 		examPointsBadge = null;
 		partSections = List.of();
 		requirementSections = new ArrayList<>();
+		taskAllocationMessages.clear();
 		resetDesigner();
 		if (exam == null) {
 			correctionMode = false;
@@ -207,7 +211,8 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 
 		examPointsBadge = components.pointBadge("Gesamt", this::pointsForExam);
 		breadcrumb.addClassName("tt-designer-breadcrumb");
-		toolbar().add(save, discard, collapseState.toggleAllButton(allDetailKeys()), fullscreenButton, reload);
+		toolbar().add(save, discard, collapseState.toggleAllButton(allDetailKeys()), fullscreenButton,
+				components.discardConfirmation(), reload);
 		toolbarSummary().add(breadcrumb, examPointsBadge);
 		toolbarSummary().expand(breadcrumb);
 		viewport.bindBreadcrumb(breadcrumb, "EH", "Erwartungshorizont");
@@ -247,6 +252,8 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 				.map(this::createRequirementSection).toList();
 		final LoePointDistributionBadge pointBadge = components.pointDistributionBadge(task.maxPoints(),
 				() -> distributedPointsForTask(task));
+		final LoeAllocationMessage allocationMessage = new LoeAllocationMessage("tt-eh-task-allocation-message");
+		taskAllocationMessages.put(task.id(), allocationMessage);
 		final Button addRequirement = components.commandButton("Anforderung hinzufügen", VaadinIcon.PLUS,
 				event -> addRequirement(task));
 		if (correctionMode) {
@@ -255,7 +262,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 		final Component description = components.markdownViewBlock("Aufgabentext", task.descriptionMarkdown());
 		final Component actions = components.editorBlock(addRequirement);
 		final LoeReadOnlySection<LoeTask> section = new LoeReadOnlySection<>(task, "tt-eh-task",
-				components.summary("Aufgabe", components.summaryTitle(task.title()), pointBadge), pointBadge,
+				components.summary("Aufgabe", components.summaryTitle(task.title()), allocationMessage, pointBadge), pointBadge,
 				List.of(description, actions), requirementSections);
 		section.setId(taskValidationTargetId(task.id()));
 		collapseState.configure(section.getContent(), detailKey("task", task.id()),
@@ -519,6 +526,9 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 			final ValidationResults<LoeValidationTarget> allocationResults = gradingScaleMaxPoints == null
 					? LoeValidator.validate(tasks, pendingRequirements)
 					: LoeValidator.validate(gradingScaleMaxPoints, tasks, pendingRequirements);
+			taskAllocationMessages.forEach((taskId, message) -> message.setValidation(allocationResults.getResults().stream()
+					.filter(result -> result.getTarget().equals(LoeValidationTarget.taskPoints(taskId)))
+					.flatMap(result -> result.getResults().stream()).toList()));
 			requirementSections.forEach(section -> section.setCriterionValidation(section.hasValidMaxPoints()
 					? allocationResults.getResults().stream()
 							.filter(result -> result.getTarget().equals(

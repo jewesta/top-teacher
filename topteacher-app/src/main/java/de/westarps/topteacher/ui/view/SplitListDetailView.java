@@ -24,6 +24,7 @@ import com.vaadin.flow.data.provider.DataProvider;
 import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.router.HasDynamicTitle;
 
+import de.westarps.topteacher.ui.component.ActionToolbar;
 import de.westarps.topteacher.ui.component.Buttons;
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
 import de.westarps.topteacher.ui.component.QuickFilterField;
@@ -209,7 +210,7 @@ public class SplitListDetailView<T> extends VerticalLayout implements HasDynamic
 			toolbarComponents.add(searchField);
 		}
 		toolbarComponents.addAll(createListToolbarComponents());
-		final HorizontalLayout toolbar = new HorizontalLayout(toolbarComponents.toArray(Component[]::new));
+		final HorizontalLayout toolbar = new ActionToolbar(toolbarComponents.toArray(Component[]::new));
 		toolbar.addClassName("tt-master-toolbar");
 		toolbar.setAlignItems(Alignment.END);
 		toolbar.setPadding(false);

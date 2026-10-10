@@ -1,7 +1,6 @@
 package de.westarps.topteacher.ui.component.loe;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 
 import com.vaadin.flow.component.Component;
@@ -31,7 +30,7 @@ final class LoeRequirementSection extends Composite<VerticalLayout> implements L
 	private final MarkdownEditor descriptionEditor;
 	private final LoeWholePointStepper maxPoints;
 	private final Button bonusButton;
-	private final Span allocationMessage;
+	private final LoeAllocationMessage allocationMessage;
 	private final Component summary;
 	private final Component description;
 	private final Component actions;
@@ -47,13 +46,14 @@ final class LoeRequirementSection extends Composite<VerticalLayout> implements L
 		this(requirement, components, handler,
 				components.requirementDescriptionEditor(requirement.descriptionMarkdown(), "Beschreibung"),
 				requirementNumber, components.wholePointStepper("Max. Punkte", requirement.maxPoints(), correctionMode,
-						ignored -> components.updatePoints()), bonusButton(), allocationMessage(), siblings,
+						ignored -> components.updatePoints()), bonusButton(),
+				new LoeAllocationMessage("tt-eh-requirement-allocation-message"), siblings,
 				correctionMode);
 	}
 
 	private LoeRequirementSection(final LoeRequirement requirement, final LoeSectionComponents components,
 			final Handler handler, final MarkdownEditor descriptionEditor, final String requirementNumber,
-			final LoeWholePointStepper maxPoints, final Button bonusButton, final Span allocationMessage,
+			final LoeWholePointStepper maxPoints, final Button bonusButton, final LoeAllocationMessage allocationMessage,
 			final List<LoeRequirement> siblings, final boolean correctionMode) {
 		this.requirement = requirement;
 		this.handler = handler;
@@ -118,17 +118,7 @@ final class LoeRequirementSection extends Composite<VerticalLayout> implements L
 	}
 
 	void setCriterionValidation(final List<TestResult> results) {
-		if (results.isEmpty()) {
-			allocationMessage.setText("");
-			allocationMessage.setVisible(false);
-			allocationMessage.getElement().removeAttribute("data-severity");
-			return;
-		}
-		final TestResult result = results.getFirst();
-		allocationMessage.getElement().setAttribute("data-severity",
-				result.severity().name().toLowerCase(Locale.ROOT));
-		allocationMessage.setText(result.message());
-		allocationMessage.setVisible(true);
+		allocationMessage.setValidation(results);
 	}
 
 	@Override
@@ -205,13 +195,6 @@ final class LoeRequirementSection extends Composite<VerticalLayout> implements L
 		control.setPadding(false);
 		control.setSpacing(false);
 		return control;
-	}
-
-	private static Span allocationMessage() {
-		final Span message = new Span();
-		message.addClassName("tt-eh-requirement-allocation-message");
-		message.setVisible(false);
-		return message;
 	}
 
 	private static void stopSummaryToggle(final Component component) {

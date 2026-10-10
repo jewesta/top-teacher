@@ -116,7 +116,8 @@ public class ExamMaterialEditor extends AbstractDesigner {
 		final Button reload = saveController.registerClean(
 				components.iconButton("Neu laden", VaadinIcon.REFRESH, event -> viewport.refreshPreservingPosition(this::refresh)));
 		breadcrumb.addClassName("tt-designer-breadcrumb");
-		toolbar().add(save, discard, collapseState.toggleAllButton(allDetailKeys()), fullscreenButton, reload);
+		toolbar().add(save, discard, collapseState.toggleAllButton(allDetailKeys()), fullscreenButton,
+				components.discardConfirmation(), reload);
 		toolbarSummary().add(breadcrumb);
 		toolbarSummary().expand(breadcrumb);
 		viewport.bindBreadcrumb(breadcrumb, "Material", "Material");

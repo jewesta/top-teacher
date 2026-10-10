@@ -179,7 +179,7 @@ class LevelOfExpectationsEditorTests {
 		assertThat(discardButtons(editor)).extracting(Button::isEnabled).containsOnly(true);
 		assertThat(components(editor, StatusTray.class).getFirst().getItems())
 				.anySatisfy(result -> assertThat(result.message())
-						.isEqualTo("Aufgabe 1: Erwartungshorizont: Ordne einen Punkt weniger zu."));
+						.isEqualTo("Aufgabe 1: Ordne Anforderungen einen Punkt weniger zu."));
 		verify(repository, never()).saveRequirement(any());
 	}
 
@@ -314,7 +314,7 @@ class LevelOfExpectationsEditorTests {
 		setRequirementMaxPoints(editor, 4);
 
 		assertThat(badgeTexts(editor)).contains("Summe: 5 (+0)", "Gesamt: 5 (+0)", "100 %",
-				"Verteilt: 4 / 5 (+0) · 1 offen");
+				"Verteilt: 4 / 5 (+0)");
 		assertThat(components(editor, Details.class).getFirst()).isSameAs(partDetails);
 
 		final List<Button> saveButtons = saveButtons(editor);
@@ -441,7 +441,9 @@ class LevelOfExpectationsEditorTests {
 			deleteButton.click();
 
 			verify(repository, never()).deleteRequirement(REQUIREMENT.id());
-			final ConfirmDialog confirmation = components(ui, ConfirmDialog.class).getFirst();
+			final ConfirmDialog confirmation = components(ui, ConfirmDialog.class).stream()
+					.filter(dialog -> "Anforderung löschen?".equals(dialog.getElement().getProperty("header")))
+					.findFirst().orElseThrow();
 			assertThat(confirmation.isOpened()).isTrue();
 			assertThat(confirmation.getElement().getProperty("header")).isEqualTo("Anforderung löschen?");
 
@@ -483,6 +485,16 @@ class LevelOfExpectationsEditorTests {
 
 			discardButton.click();
 
+			final ConfirmDialog confirmation = components(editor, ConfirmDialog.class).getFirst();
+			assertThat(confirmation.isOpened()).isTrue();
+			assertThat(requirementDescription.getValue()).isEqualTo("Nutzt die korrekte Zeitform und präzise Wortwahl.");
+			assertThat(editor.hasUnsavedChanges()).isTrue();
+			confirmation.close();
+			assertThat(editor.hasUnsavedChanges()).isTrue();
+			discardButton.click();
+			ComponentUtil.fireEvent(confirmation, new ConfirmDialog.ConfirmEvent(confirmation, false));
+
+			assertThat(confirmation.isOpened()).isFalse();
 			assertThat(markdownEditor(editor, savedDescription).getValue()).isEqualTo(savedDescription);
 			assertThat(saveButtons(editor)).extracting(Button::isEnabled).containsOnly(false);
 			assertThat(discardButtons(editor)).extracting(Button::isEnabled).containsOnly(false);
@@ -500,25 +512,86 @@ class LevelOfExpectationsEditorTests {
 
 		assertThat(badgeTexts(editor)).contains("Summe: 5 (+4)", "Gesamt: 5 (+4)", "100 %",
 				"Verteilt: 5 / 5 (+4)");
+		assertThat(components(editor, LoeAllocationMessage.class).stream()
+				.filter(message -> message.getClassNames().contains("tt-eh-task-allocation-message")))
+				.allSatisfy(message -> assertThat(message.isVisible()).isFalse());
 	}
 
 	@Test
-	void showsOpenAndExcessRequirementPointsAgainstTheTaskBudget() {
+	void showsTaskPointMismatchBesideDistributionBadgeAndUpdatesLive() {
 		final LoeRequirement openRequirement = new LoeRequirement(REQUIREMENT.id(), REQUIREMENT.taskId(),
 				REQUIREMENT.descriptionMarkdown(), 3, false, REQUIREMENT.sortOrder());
-		final LevelOfExpectationsEditor openEditor = new LevelOfExpectationsEditor(
+		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(
 				repositoryWithFixedTaskBudget(openRequirement, 5));
-		openEditor.setExam(EXAM);
+		editor.setExam(EXAM);
+		final LoeAllocationMessage message = components(editor, LoeAllocationMessage.class).stream()
+				.filter(component -> component.getClassNames().contains("tt-eh-task-allocation-message"))
+				.findFirst().orElseThrow();
+		final LoePointDistributionBadge badge = components(editor, LoePointDistributionBadge.class).getFirst();
+		final Details taskDetails = components(editor, Details.class).getLast();
+		final Component summary = badge.getParent().orElseThrow();
+		final List<Component> summaryChildren = summary.getChildren().toList();
 
-		assertThat(badgeTexts(openEditor)).contains("Verteilt: 3 / 5 (+0) · 2 offen");
+		assertThat(message.getClassNames()).contains("tt-eh-allocation-message");
+		assertThat(message.getParent().orElseThrow()).isSameAs(summary);
+		assertThat(summaryChildren.indexOf(message)).isEqualTo(summaryChildren.indexOf(badge) - 1);
+		assertThat(message.isVisible()).isTrue();
+		assertThat(message.getText()).isEqualTo("Ordne Anforderungen weitere 2 Punkte zu.");
+		assertThat(message.getElement().getAttribute("data-severity")).isEqualTo("warning");
+		assertThat(badge.getText()).isEqualTo("Verteilt: 3 / 5 (+0)");
+		assertThat(components(editor, StatusTray.class).getFirst().getItems())
+				.anySatisfy(result -> assertThat(result.message()).isEqualTo("Aufgabe 1: " + message.getText()));
 
-		final LoeRequirement excessRequirement = new LoeRequirement(REQUIREMENT.id(), REQUIREMENT.taskId(),
-				REQUIREMENT.descriptionMarkdown(), 7, false, REQUIREMENT.sortOrder());
-		final LevelOfExpectationsEditor excessEditor = new LevelOfExpectationsEditor(
-				repositoryWithFixedTaskBudget(excessRequirement, 5));
-		excessEditor.setExam(EXAM);
+		setRequirementMaxPoints(editor, 4);
 
-		assertThat(badgeTexts(excessEditor)).contains("Verteilt: 7 / 5 (+0) · 2 zu viel");
+		assertThat(message.getText()).isEqualTo("Ordne Anforderungen einen weiteren Punkt zu.");
+		assertThat(components(editor, StatusTray.class).getFirst().getItems())
+				.anySatisfy(result -> assertThat(result.message())
+						.isEqualTo("Aufgabe 1: Ordne Anforderungen einen weiteren Punkt zu."));
+		assertThat(badge.getText()).isEqualTo("Verteilt: 4 / 5 (+0)");
+
+		setRequirementMaxPoints(editor, 5);
+
+		assertThat(message.isVisible()).isFalse();
+		assertThat(message.getText()).isEmpty();
+		assertThat(message.getElement().getAttribute("data-severity")).isNull();
+		assertThat(badge.getText()).isEqualTo("Verteilt: 5 / 5 (+0)");
+
+		setRequirementMaxPoints(editor, 7);
+
+		assertThat(message.isVisible()).isTrue();
+		assertThat(message.getText()).isEqualTo("Ordne Anforderungen 2 Punkte weniger zu.");
+		assertThat(message.getElement().getAttribute("data-severity")).isEqualTo("error");
+		assertThat(badge.getText()).isEqualTo("Verteilt: 7 / 5 (+0)");
+		assertThat(saveButtons(editor)).allSatisfy(button -> assertThat(button.isEnabled()).isFalse());
+		assertThat(components(editor, StatusTray.class).getFirst().getItems())
+				.anySatisfy(result -> assertThat(result.message()).isEqualTo("Aufgabe 1: " + message.getText()));
+
+		bonusButtons(editor).getFirst().click();
+
+		assertThat(message.getText()).isEqualTo("Ordne Anforderungen weitere 5 Punkte zu.");
+		assertThat(message.getElement().getAttribute("data-severity")).isEqualTo("warning");
+		assertThat(badge.getText()).isEqualTo("Verteilt: 0 / 5 (+7)");
+		assertThat(saveButtons(editor)).allSatisfy(button -> assertThat(button.isEnabled()).isTrue());
+		assertThat(components(editor, Details.class).getLast()).isSameAs(taskDetails);
+		assertThat(taskDetails.isOpened()).isTrue();
+		assertThat(components(editor, LoePointDistributionBadge.class).getFirst()).isSameAs(badge);
+	}
+
+	@Test
+	void updatesTaskAllocationMessagesOnlyForTheirOwnTask() {
+		final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repositoryWithTwoPartHierarchy());
+		editor.setExam(EXAM);
+		final List<LoeAllocationMessage> messages = components(editor, LoeAllocationMessage.class).stream()
+				.filter(message -> message.getClassNames().contains("tt-eh-task-allocation-message")).toList();
+
+		assertThat(messages).hasSize(2).allSatisfy(message -> assertThat(message.isVisible()).isFalse());
+
+		setRequirementMaxPoints(editor, 4);
+
+		assertThat(messages.getFirst().isVisible()).isTrue();
+		assertThat(messages.getFirst().getText()).isEqualTo("Ordne Anforderungen einen weiteren Punkt zu.");
+		assertThat(messages.getLast().isVisible()).isFalse();
 	}
 
 	@Test
@@ -914,7 +987,7 @@ class LevelOfExpectationsEditorTests {
 	}
 
 	private static List<Button> saveButtons(final Component root) {
-		return components(root, Button.class).stream().filter(button -> "Speichern".equals(button.getText())).toList();
+		return buttonsByAriaLabel(root, "Speichern");
 	}
 
 	private static void setRequirementMaxPoints(final Component root, final int value) {
@@ -930,7 +1003,7 @@ class LevelOfExpectationsEditorTests {
 	}
 
 	private static List<Button> discardButtons(final Component root) {
-		return components(root, Button.class).stream().filter(button -> "Verwerfen".equals(button.getText())).toList();
+		return buttonsByAriaLabel(root, "Verwerfen");
 	}
 
 	private static Button button(final Component root, final String text) {

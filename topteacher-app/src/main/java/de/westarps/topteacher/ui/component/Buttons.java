@@ -28,6 +28,27 @@ public final class Buttons {
 		return button;
 	}
 
+	public static boolean isAdd(final Button button) {
+		return button.getIcon() != null
+				&& "vaadin:plus".equals(button.getIcon().getElement().getAttribute("icon"));
+	}
+
+	public static void configureToolbarAction(final Button button) {
+		button.addClassName("tt-toolbar-action");
+		button.removeThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_TERTIARY,
+				ButtonVariant.LUMO_TERTIARY_INLINE);
+		if (isAdd(button)) {
+			button.removeThemeVariants(ButtonVariant.LUMO_ICON);
+			return;
+		}
+		if (!button.getText().isBlank()) {
+			button.setAriaLabel(button.getText());
+			button.setTooltipText(button.getText());
+			button.setText("");
+		}
+		button.addThemeVariants(ButtonVariant.LUMO_ICON);
+	}
+
 	public static Button primary(final String text, final VaadinIcon icon) {
 		final Button button = command(text, icon);
 		button.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -99,5 +120,10 @@ public final class Buttons {
 	public static void setCreateOrSaveMode(final Button button, final boolean editMode) {
 		button.setText(editMode ? "Speichern" : "Anlegen");
 		button.setIcon((editMode ? VaadinIcon.CHECK : VaadinIcon.PLUS).create());
+		if (button.getClassNames().contains("tt-toolbar-action")) {
+			button.setAriaLabel(button.getText());
+			button.setTooltipText(button.getText());
+			configureToolbarAction(button);
+		}
 	}
 }

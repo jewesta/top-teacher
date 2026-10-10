@@ -29,6 +29,7 @@ import de.westarps.topteacher.model.GradingScale;
 import de.westarps.topteacher.model.GradingScaleRange;
 import de.westarps.topteacher.model.Lifecycle;
 import de.westarps.topteacher.ui.component.AbstractFormEditor;
+import de.westarps.topteacher.ui.component.ActionToolbar;
 import de.westarps.topteacher.ui.component.Buttons;
 import de.westarps.topteacher.ui.component.FormBinders;
 import de.westarps.topteacher.ui.component.GradingScaleRangeGridGroup;
@@ -175,7 +176,7 @@ public class GradingScaleSettingsTab extends SplitListDetailView<GradingScale> i
 	private Component createEditorToolbar() {
 		lockMessage.addClassName("tt-settings-description");
 
-		final HorizontalLayout actions = new HorizontalLayout(saveButton, archiveButton);
+		final HorizontalLayout actions = new ActionToolbar(saveButton, archiveButton);
 		actions.addClassNames("tt-editor-actions", "tt-grading-scale-settings-actions");
 		actions.setAlignItems(Alignment.END);
 		actions.setPadding(false);

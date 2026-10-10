@@ -12,12 +12,18 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.ComponentUtil;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 
 import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
@@ -34,6 +40,46 @@ class ExamTasksEditorTests {
 	private static final LoePart PART = new LoePart(1, EXAM.id(), "Klausurteil A", 0);
 	private static final LoeCategory CATEGORY = new LoeCategory(2, PART.id(), "Inhalt", "Einordnung", 0);
 	private static final LoeTask TASK = new LoeTask(3, CATEGORY.id(), "Aufgabe 1", "Analysiere den Text.", 5, 0);
+
+	@BeforeEach
+	void createUi() {
+		UI.setCurrent(new UI());
+	}
+
+	@AfterEach
+	void clearUi() {
+		UI.setCurrent(null);
+	}
+
+	@Test
+	void placesLabeledAddActionFirstAndConfirmsDiscardingTaskChanges() {
+		final LevelOfExpectationsRepository repository = repository(false);
+		final ExamTasksEditor editor = new ExamTasksEditor(repository);
+		editor.setExam(EXAM);
+		final HorizontalLayout toolbar = components(editor, HorizontalLayout.class).stream()
+				.filter(layout -> layout.getClassNames().contains("tt-designer-toolbar")).findFirst().orElseThrow();
+		assertThat(toolbar.getChildren().toList().getFirst()).isSameAs(button(editor, "Klausurteil hinzufügen"));
+		assertThat(saveButton(editor).getText()).isEmpty();
+		final Button discard = buttonByAriaLabel(editor, "Verwerfen");
+		assertThat(discard.getText()).isEmpty();
+		final TextField title = titleField(editor, TASK.title());
+		title.setValue("Geänderte Aufgabe");
+
+		discard.click();
+
+		final ConfirmDialog confirmation = components(editor, ConfirmDialog.class).getFirst();
+		assertThat(confirmation.isOpened()).isTrue();
+		assertThat(title.getValue()).isEqualTo("Geänderte Aufgabe");
+		confirmation.close();
+		assertThat(editor.hasUnsavedChanges()).isTrue();
+		discard.click();
+		ComponentUtil.fireEvent(confirmation, new ConfirmDialog.ConfirmEvent(confirmation, false));
+
+		assertThat(confirmation.isOpened()).isFalse();
+		assertThat(editor.hasUnsavedChanges()).isFalse();
+		assertThat(titleField(editor, TASK.title()).getValue()).isEqualTo(TASK.title());
+		verify(repository, never()).saveTask(org.mockito.ArgumentMatchers.any());
+	}
 
 	@Test
 	void savesTaskContentAndPointsWithoutRebuildingTheTree() {
@@ -193,7 +239,7 @@ class ExamTasksEditorTests {
 	}
 
 	private static Button saveButton(final Component root) {
-		return button(root, "Speichern");
+		return buttonByAriaLabel(root, "Speichern");
 	}
 
 	private static Button button(final Component root, final String text) {

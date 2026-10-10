@@ -285,6 +285,11 @@ The combined review pass is intended to provide the following end state:
   [shared layout behavior](../doc/ops/LevelOfExpectations.md#editing-ownership-and-shared-tree-behavior).
 - `Ergebnisse` uses the same right inset and points-column alignment; see
   [result layout](../doc/ops/LevelOfExpectationsResults.md#quick-marking-column).
+- Application toolbars use icons and a uniform neutral background for actions,
+  without primary highlighting, and retain labeled add buttons first.
+  Discarding unsaved authoring work now requires confirmation, matching
+  Ergebnisse; see
+  [shared toolbar and discard behavior](../doc/ops/LevelOfExpectations.md#editing-ownership-and-shared-tree-behavior).
 - `Material` stores ordered title/Markdown entries under exactly one read-only
   exam part.
 - EH shows part, category, task Markdown, and task points as read-only context;
@@ -302,7 +307,11 @@ The combined review pass is intended to provide the following end state:
   longer toggle a section, and mixed scopes continue to offer expansion until
   every child is expanded.
 - Point-distribution indicators use the concise numeric relationship and do not
-  add the redundant `passend` text.
+  add the redundant `passend` text. Missing/excess task allocations use the same
+  inline yellow/red message bars as requirement validation instead of trailing
+  `offen`/`zu viel` text. Task messages explicitly ask for requirement-point
+  allocation; location labels appear only in Status, not in the task header. See
+  [validation presentation](../doc/ops/LevelOfExpectations.md#validation-presentation).
 - The accidental legacy Notes feature has been removed end-to-end, including
   its persistence, export, and MCP surfaces.
 

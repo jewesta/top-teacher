@@ -100,8 +100,9 @@ sum(regular requirement maxima for a task) = that task's maximum
 - Regular and bonus totals are displayed separately, for example
   `Summe: 98 (+ 2)`.
 - A task's distribution indicator uses the concise `n / m` relationship,
-  supplemented by remaining or excess points where needed. An exact match does
-  not add a redundant `passend` label.
+  with bonus points in parentheses. Allocation warnings and errors appear in
+  a separate inline message bar, not as trailing text inside the badge. An exact
+  match does not add a redundant `passend` label.
 - EH and Results use the same aggregate-points badge. Its label is left-aligned.
   Regular points are right-aligned to a fixed axis, while bonus points are
   left-aligned beyond it. Fixed-width number slots keep changing values from
@@ -227,6 +228,22 @@ All three views share the EH Markdown right inset. Summary point badges and
 maximum-point controls align with the Markdown content's right edge, including
 the exam total above the tree.
 
+Application list and designer toolbars use icon-only action buttons with
+German tooltips and accessible names. Toolbar buttons share the same neutral
+background; none is highlighted as a primary action, including save. Add
+actions retain their plus icon and text and come before other toolbar contents;
+for example, `Klausurteil
+hinzufügen` is first in Aufgaben. Download menu triggers are icon-only, while
+their menu entries, ordinary form buttons, and confirmation buttons remain
+labeled. The same rule applies when a toolbar action switches between creating
+and saving.
+
+Discarding unsaved work in Aufgaben, Material, or EH always requires the
+confirmation `Änderungen verwerfen?`, which warns that unsaved changes will be
+lost. `Abbrechen` or dismissing the dialog preserves all pending changes;
+only confirming `Verwerfen` reloads the saved state. Discard stays disabled
+while the editor is clean.
+
 - `Aufgaben` is the sole editor for parts, performance categories, task titles,
   task Markdown, task maxima, and their order.
 - `Material` edits ordered material below read-only part headings.
@@ -273,11 +290,22 @@ designer.
 - Its badge shows the number of messages and the most severe message level.
 - Exam-level allocation messages are not links because they have no single edit
   target.
-- Task-distribution messages identify and link to the affected task.
+- Task-distribution messages identify and link to the affected task. Their action
+  explicitly refers to requirements, for example:
+  `Aufgabe 1: Ordne Anforderungen einen weiteren Punkt zu.`
 - Requirement-specific messages identify their task and requirement. Activating
   one expands, scrolls to, and briefly emphasizes the affected requirement.
 - Missing allocations are warnings. Excess allocations and malformed values are
   errors.
+- A task with missing or excess regular requirement points shows the validation
+  message immediately before its distribution badge. It shares the requirement
+  message component and styling: yellow for missing points, red for excess
+  points. It uses the same validator result as the status tray, but shows only
+  the action without a task or `Erwartungshorizont` location prefix, for example:
+  `Ordne Anforderungen einen weiteren Punkt zu.`
+  Pending requirement maxima and bonus changes update the message
+  in place; it disappears when regular points match the task maximum. The badge
+  stays aligned with the shared points column.
 - A requirement with criterion validation findings shows the first finding
   inline immediately before its maximum-point control. This uses the same
   validator result as the status tray, without repeating the requirement label.

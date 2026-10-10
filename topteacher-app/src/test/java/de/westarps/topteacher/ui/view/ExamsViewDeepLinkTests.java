@@ -198,7 +198,8 @@ class ExamsViewDeepLinkTests {
 		components(tasksEditor, Button.class).stream()
 				.filter(button -> "Max. Punkte erhöhen".equals(button.getElement().getAttribute("aria-label")))
 				.findFirst().orElseThrow().click();
-		components(tasksEditor, Button.class).stream().filter(button -> "Speichern".equals(button.getText()))
+		components(tasksEditor, Button.class).stream()
+				.filter(button -> "Speichern".equals(button.getElement().getAttribute("aria-label")))
 				.findFirst().orElseThrow().click();
 
 		assertThat(tabSheet().getSelectedTab().getLabel()).isEqualTo("Aufgaben");

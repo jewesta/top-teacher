@@ -718,10 +718,6 @@ vaadin-app-layout::part(navbar) {
 	width: 2ch;
 }
 
-.tt-loe-distribution-status {
-	color: var(--lumo-secondary-text-color);
-}
-
 .tt-loe-point-number {
 	display: inline-block;
 	text-align: right;
@@ -978,7 +974,7 @@ vaadin-app-layout::part(navbar) {
 	gap: var(--lumo-space-s);
 }
 
-.tt-eh-requirement-allocation-message {
+.tt-eh-allocation-message {
 	align-items: center;
 	background-color: var(--tt-eh-allocation-background);
 	border-inline-start: 0.25rem solid var(--tt-eh-allocation-color);
@@ -993,12 +989,12 @@ vaadin-app-layout::part(navbar) {
 	white-space: normal;
 }
 
-.tt-eh-requirement-allocation-message[data-severity="warning"] {
+.tt-eh-allocation-message[data-severity="warning"] {
 	--tt-eh-allocation-background: var(--lumo-warning-color-10pct, hsla(43, 100%, 50%, 0.1));
 	--tt-eh-allocation-color: var(--lumo-warning-color, hsl(43, 100%, 40%));
 }
 
-.tt-eh-requirement-allocation-message[data-severity="error"] {
+.tt-eh-allocation-message[data-severity="error"] {
 	--tt-eh-allocation-background: var(--lumo-error-color-10pct);
 	--tt-eh-allocation-color: var(--lumo-error-color);
 }

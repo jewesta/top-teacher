@@ -27,7 +27,7 @@ public class PupilAssignmentGrid extends ContextTabContent {
 			.thenComparing(row -> row.pupil().id());
 
 	private final QuickFilterField search = new QuickFilterField();
-	private final HorizontalLayout toolbar = new HorizontalLayout(search);
+	private final HorizontalLayout toolbar = new ActionToolbar(search);
 	private final Grid<AssignmentRow> grid = new Grid<>(AssignmentRow.class, false);
 
 	private ListDataProvider<AssignmentRow> dataProvider = DataProvider.ofCollection(List.of());

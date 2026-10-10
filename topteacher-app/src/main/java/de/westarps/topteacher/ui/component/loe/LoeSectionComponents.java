@@ -12,6 +12,7 @@ import com.vaadin.flow.component.ComponentEventListener;
 import com.vaadin.flow.component.HasValue;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -20,6 +21,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
 
 import de.westarps.topteacher.ui.component.Buttons;
+import de.westarps.topteacher.ui.component.TopTeacherDialogs;
 import de.westarps.vaadin.markdown.MarkdownEditor;
 import de.westarps.vaadin.markdown.MarkdownViewer;
 
@@ -28,6 +30,7 @@ final class LoeSectionComponents {
 	static final String CORRECTION_MODE_TOOLTIP = "Korrekturmodus: Ergebnisse vorhanden. Struktur, Punkte und Kriterien sind gesperrt.";
 
 	private final LoeSaveController saveController;
+	private final ConfirmDialog discardConfirmation = new ConfirmDialog();
 	private Runnable valueChangeHandler = () -> {
 	};
 	private Runnable pointsChangeHandler = () -> {
@@ -35,6 +38,10 @@ final class LoeSectionComponents {
 
 	LoeSectionComponents(final LoeSaveController saveController) {
 		this.saveController = saveController;
+		TopTeacherDialogs.configureDiscardConfirmation(discardConfirmation, "Änderungen verwerfen?", () -> {
+			discardConfirmation.close();
+			saveController.discard();
+		});
 	}
 
 	void setValueChangeHandler(final Runnable valueChangeHandler) {
@@ -121,22 +128,12 @@ final class LoeSectionComponents {
 		return block;
 	}
 
-	Component summary(final String type, final Component title, final Component pointBadge) {
-		final Span typeLabel = new Span(type);
-		typeLabel.addClassName("tt-eh-summary-type");
-
-		final HorizontalLayout summary = new HorizontalLayout(typeLabel, title, pointBadge);
-		summary.addClassName("tt-eh-summary");
-		summary.setPadding(false);
-		summary.setWidthFull();
-		return summary;
-	}
-
-	Component summary(final String type, final Component title) {
+	Component summary(final String type, final Component title, final Component... controls) {
 		final Span typeLabel = new Span(type);
 		typeLabel.addClassName("tt-eh-summary-type");
 
 		final HorizontalLayout summary = new HorizontalLayout(typeLabel, title);
+		summary.add(controls);
 		summary.addClassName("tt-eh-summary");
 		summary.setPadding(false);
 		summary.setWidthFull();
@@ -200,9 +197,13 @@ final class LoeSectionComponents {
 	}
 
 	Button discardButton() {
-		final Button button = Buttons.reset("Verwerfen", event -> saveController.discard());
+		final Button button = Buttons.reset("Verwerfen", event -> discardConfirmation.open());
 		button.addThemeVariants(ButtonVariant.LUMO_SMALL);
 		return saveController.register(button);
+	}
+
+	ConfirmDialog discardConfirmation() {
+		return discardConfirmation;
 	}
 
 	Button commandButton(final String text, final VaadinIcon icon,

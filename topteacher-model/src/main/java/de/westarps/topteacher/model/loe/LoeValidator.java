@@ -95,10 +95,10 @@ public final class LoeValidator {
 			final int difference = task.maxPoints() - assignedPoints;
 			if (difference > 0) {
 				results.add(ValidationResult.warning(LoeValidationTarget.taskPoints(task.id()),
-						"Erwartungshorizont: " + assignMorePoints(difference)));
+						assignMoreRequirementPoints(difference)));
 			} else if (difference < 0) {
 				results.add(ValidationResult.error(LoeValidationTarget.taskPoints(task.id()),
-						"Erwartungshorizont: " + assignFewerPoints(-difference)));
+						assignFewerRequirementPoints(-difference)));
 			}
 		}
 	}
@@ -144,6 +144,16 @@ public final class LoeValidator {
 
 	private static String assignFewerPoints(final int points) {
 		return points == 1 ? "Ordne einen Punkt weniger zu." : "Ordne " + points + " Punkte weniger zu.";
+	}
+
+	private static String assignMoreRequirementPoints(final int points) {
+		return points == 1 ? "Ordne Anforderungen einen weiteren Punkt zu."
+				: "Ordne Anforderungen weitere " + points + " Punkte zu.";
+	}
+
+	private static String assignFewerRequirementPoints(final int points) {
+		return points == 1 ? "Ordne Anforderungen einen Punkt weniger zu."
+				: "Ordne Anforderungen " + points + " Punkte weniger zu.";
 	}
 
 	private static String assignMoreCriterionPointUnits(final int pointUnits) {

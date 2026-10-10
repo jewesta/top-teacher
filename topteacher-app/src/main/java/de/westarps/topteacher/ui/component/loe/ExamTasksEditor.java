@@ -210,7 +210,8 @@ public class ExamTasksEditor extends AbstractDesigner {
 		}
 		examPointsBadge = components.pointBadge("Gesamt", () -> new LoePoints(totalTaskPoints(), 0));
 		breadcrumb.addClassName("tt-designer-breadcrumb");
-		toolbar().add(save, discard, addPart, collapseState.toggleAllButton(allDetailKeys()), fullscreenButton, reload);
+		toolbar().add(addPart, save, discard, collapseState.toggleAllButton(allDetailKeys()), fullscreenButton,
+				components.discardConfirmation(), reload);
 		toolbarSummary().add(breadcrumb, examPointsBadge);
 		toolbarSummary().expand(breadcrumb);
 		viewport.bindBreadcrumb(breadcrumb, "Aufgaben", "Aufgaben");

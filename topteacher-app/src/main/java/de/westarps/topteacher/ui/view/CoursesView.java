@@ -9,6 +9,7 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -54,7 +55,7 @@ public class CoursesView extends SplitListDetailView<Course> {
 	private final Button archiveButton = Buttons.archive();
 	private final ComboBox<Lifecycle> bulkLifecycle = new ComboBox<>("Status");
 	private final Button applyLifecycleButton = new Button("Anwenden");
-	private final Button copyAssignmentsButton = new Button("Aus Kurs...");
+	private final Button copyAssignmentsButton = Buttons.command("Aus Kurs...", VaadinIcon.COPY);
 	private final Dialog copyAssignmentsDialog = new Dialog();
 	private final ComboBox<Course> sourceCourse = new ComboBox<>("Kurs");
 	private final Binder<AssignmentCopyFormData> assignmentCopyBinder = new Binder<>();

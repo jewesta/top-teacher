@@ -12,10 +12,15 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.ComponentUtil;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.textfield.TextField;
 
@@ -32,6 +37,41 @@ class ExamMaterialEditorTests {
 	private static final LoePart PART = new LoePart(1, EXAM.id(), "Klausurteil A", 0);
 	private static final LoeMaterial MATERIAL = new LoeMaterial(2, PART.id(), "Quelle 1", "Ein Quellentext", 0);
 
+	@BeforeEach
+	void createUi() {
+		UI.setCurrent(new UI());
+	}
+
+	@AfterEach
+	void clearUi() {
+		UI.setCurrent(null);
+	}
+
+	@Test
+	void confirmsDiscardingMaterialChangesAndPreservesThemOnCancel() {
+		final LevelOfExpectationsRepository repository = repository(false);
+		final ExamMaterialEditor editor = new ExamMaterialEditor(repository);
+		editor.setExam(EXAM);
+		final TextField title = components(editor, TextField.class).getFirst();
+		title.setValue("Geänderte Quelle");
+		final Button discard = buttonsByAriaLabel(editor, "Verwerfen").getFirst();
+
+		discard.click();
+
+		final ConfirmDialog confirmation = components(editor, ConfirmDialog.class).getFirst();
+		assertThat(confirmation.isOpened()).isTrue();
+		assertThat(title.getValue()).isEqualTo("Geänderte Quelle");
+		confirmation.close();
+		assertThat(editor.hasUnsavedChanges()).isTrue();
+		discard.click();
+		ComponentUtil.fireEvent(confirmation, new ConfirmDialog.ConfirmEvent(confirmation, false));
+
+		assertThat(confirmation.isOpened()).isFalse();
+		assertThat(editor.hasUnsavedChanges()).isFalse();
+		assertThat(components(editor, TextField.class).getFirst().getValue()).isEqualTo(MATERIAL.title());
+		verify(repository, never()).saveMaterial(org.mockito.ArgumentMatchers.any());
+	}
+
 	@Test
 	void savesMaterialWithoutRebuildingTheTree() {
 		final LevelOfExpectationsRepository repository = repository(false);
@@ -42,14 +82,14 @@ class ExamMaterialEditorTests {
 
 		components(editor, TextField.class).getFirst().setValue("Quelle A");
 		components(editor, MarkdownEditor.class).getFirst().setValue("Ein **wichtiger** Quellentext");
-		button(editor, "Speichern").click();
+		buttonsByAriaLabel(editor, "Speichern").getFirst().click();
 
 		verify(repository).saveMaterial(new LoeMaterial(MATERIAL.id(), MATERIAL.partId(), "Quelle A",
 				"Ein **wichtiger** Quellentext", MATERIAL.sortOrder()));
 		verify(repository, never()).findPartsByExamId(anyInt());
 		verify(repository, never()).findMaterialsByExamId(anyInt());
 		assertThat(components(editor, Details.class).getFirst()).isSameAs(partDetails);
-		assertThat(button(editor, "Speichern").isEnabled()).isFalse();
+		assertThat(buttonsByAriaLabel(editor, "Speichern").getFirst().isEnabled()).isFalse();
 	}
 
 	@Test

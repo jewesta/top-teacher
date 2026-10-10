@@ -102,7 +102,7 @@ class LoeValidatorTests {
 
 		assertThat(results.messages(ValidationSeverity.WARNING)).containsExactly(
 				"Aufgaben: Ordne einen weiteren Punkt zu.",
-				"Erwartungshorizont: Ordne einen weiteren Punkt zu.");
+				"Ordne Anforderungen einen weiteren Punkt zu.");
 		assertThat(results.getTargets()).containsExactly(LoeValidationTarget.totalPoints(),
 				LoeValidationTarget.taskPoints(firstTask.id()));
 	}
@@ -115,7 +115,7 @@ class LoeValidatorTests {
 		final var results = LoeValidator.validate(List.of(task), List.of(requirement));
 
 		assertThat(results.messages(ValidationSeverity.ERROR))
-				.containsExactly("Erwartungshorizont: Ordne einen Punkt weniger zu.");
+				.containsExactly("Ordne Anforderungen einen Punkt weniger zu.");
 		assertThat(results.getTargets()).containsExactly(LoeValidationTarget.taskPoints(task.id()));
 	}
 

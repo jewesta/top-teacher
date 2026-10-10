@@ -20,9 +20,6 @@ final class LoePointDistributionBadge extends LoeBadge {
 	@Override
 	public void refreshBadges() {
 		final LoePoints distributed = distributedPointsSupplier.get();
-		final int difference = taskMaxPoints - distributed.regular();
-		final String status = difference > 0 ? difference + " offen"
-				: difference < 0 ? -difference + " zu viel" : "";
 
 		final Span caption = text("Verteilt: ");
 		caption.addClassName("tt-loe-aggregate-points-label");
@@ -31,13 +28,8 @@ final class LoePointDistributionBadge extends LoeBadge {
 		values.add(number(distributed.regular(), "tt-loe-distribution-regular"), text(" / "),
 				number(taskMaxPoints, "tt-loe-distribution-regular"), text(" (+"),
 				number(distributed.bonus(), "tt-loe-distribution-bonus"), text(")"));
-		if (!status.isEmpty()) {
-			final Span statusText = text(" \u00b7 " + status);
-			statusText.addClassName("tt-loe-distribution-status");
-			values.add(statusText);
-		}
 		final String accessibleText = "Verteilt: " + distributed.regular() + " / " + taskMaxPoints + " (+"
-				+ distributed.bonus() + ")" + (status.isEmpty() ? "" : " \u00b7 " + status);
+				+ distributed.bonus() + ")";
 		setBadgeComponents(accessibleText, caption, values);
 	}
 
