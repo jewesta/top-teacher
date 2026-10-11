@@ -53,6 +53,7 @@ import de.westarps.topteacher.model.loe.LoeTask;
 import de.westarps.topteacher.ui.component.ActionToolbar;
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
 import de.westarps.topteacher.ui.component.QuickFilterField;
+import de.westarps.topteacher.ui.component.loe.ExamMaterialEditor;
 import de.westarps.topteacher.ui.component.loe.ExamTasksEditor;
 
 class ExamsViewDeepLinkTests {
@@ -134,7 +135,7 @@ class ExamsViewDeepLinkTests {
 
 		assertThat(selectedExams()).containsExactly(EXAM);
 		assertThat(tabSheet().getSelectedTab().getLabel()).isEqualTo("Klausur");
-		assertThat(tabLabels()).containsExactly("Klausur", "Schüler:innen", "Aufgaben", "Material", "EH",
+		assertThat(tabLabels()).containsExactly("Klausur", "Schüler:innen", "Material", "Aufgaben", "EH",
 				"Ergebnisse", "Auswertung", "Notenschlüssel");
 	}
 
@@ -150,6 +151,23 @@ class ExamsViewDeepLinkTests {
 		view.beforeEnter(event(Map.of("examId", EXAM.id().toString(), "section", ExamsView.MATERIAL_SECTION)));
 
 		assertThat(tabSheet().getSelectedTab().getLabel()).isEqualTo("Material");
+	}
+
+	@Test
+	void refreshesTasksAfterAddingAPartFromMaterial() {
+		when(levelOfExpectations.nextPartSortOrder(EXAM.id())).thenReturn(1);
+		when(levelOfExpectations.savePart(any()))
+				.thenReturn(new LoePart(70, EXAM.id(), "Klausurteil B", 1));
+		view.beforeEnter(event(Map.of("examId", EXAM.id().toString(), "section", ExamsView.MATERIAL_SECTION)));
+		attachToCurrentUi();
+		final ExamMaterialEditor materialEditor = materialEditor();
+
+		components(materialEditor, Button.class).stream()
+				.filter(button -> "Klausurteil hinzufügen".equals(button.getText())).findFirst().orElseThrow().click();
+		org.mockito.Mockito.clearInvocations(levelOfExpectations);
+		tabSheet().setSelectedTab(tab("Aufgaben"));
+
+		verify(levelOfExpectations, atLeastOnce()).findPartsByExamId(EXAM.id());
 	}
 
 	@Test
@@ -304,6 +322,10 @@ class ExamsViewDeepLinkTests {
 
 	private ExamTasksEditor tasksEditor() {
 		return (ExamTasksEditor) tabSheet().getComponent(tab("Aufgaben"));
+	}
+
+	private ExamMaterialEditor materialEditor() {
+		return (ExamMaterialEditor) tabSheet().getComponent(tab("Material"));
 	}
 
 	private void attachToCurrentUi() {

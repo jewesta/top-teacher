@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
@@ -23,6 +24,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.details.Details;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 
 import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
@@ -82,6 +84,7 @@ class ExamMaterialEditorTests {
 		clearInvocations(repository);
 		RepositoryDesignTestSupport.rejectDesignWrites(repository, 4, 5);
 
+		button(editor, "Klausurteil hinzufügen").click();
 		button(editor, "Material hinzufügen").click();
 		final Details firstMaterial = components(editor, Details.class).get(1);
 		buttonsByAriaLabel(firstMaterial, "Nach unten").getFirst().click();
@@ -91,10 +94,47 @@ class ExamMaterialEditorTests {
 		ComponentUtil.fireEvent(confirmation, new ConfirmDialog.ConfirmEvent(confirmation, false));
 
 		verify(repository, never()).saveMaterial(any());
+		verify(repository, never()).savePart(any());
 		verify(repository, never()).moveMaterial(any(), anyInt());
 		verify(repository, never()).deleteMaterial(anyInt());
 		verify(repository, never()).findMaterialsByExamId(anyInt());
 		assertThat(components(editor, Details.class)).hasSize(3);
+	}
+
+	@Test
+	void addsTheFirstPartFromMaterialWithoutCreatingTaskContent() {
+		final LevelOfExpectationsRepository repository = repository(false);
+		final LoePart createdPart = new LoePart(7, EXAM.id(), "Klausurteil A", 0);
+		when(repository.findPartsByExamId(EXAM.id())).thenReturn(List.of());
+		when(repository.findMaterialsByExamId(EXAM.id())).thenReturn(List.of());
+		when(repository.nextPartSortOrder(EXAM.id())).thenReturn(0);
+		when(repository.savePart(any())).thenReturn(createdPart);
+		final ExamMaterialEditor editor = new ExamMaterialEditor(repository);
+		final AtomicInteger materialChanges = new AtomicInteger();
+		final AtomicInteger structureChanges = new AtomicInteger();
+		editor.setChangeHandler(materialChanges::incrementAndGet);
+		editor.setStructureChangeHandler(structureChanges::incrementAndGet);
+		editor.setExam(EXAM);
+		assertThat(components(editor, Button.class)).noneMatch(button -> "Material hinzufügen".equals(button.getText()));
+
+		button(editor, "Klausurteil hinzufügen").click();
+
+		verify(repository).savePart(new LoePart(null, EXAM.id(), "Klausurteil A", 0));
+		verify(repository, never()).saveCategory(any());
+		verify(repository, never()).saveTask(any());
+		assertThat(structureChanges).hasValue(1);
+		assertThat(materialChanges).hasValue(0);
+	}
+
+	@Test
+	void placesThePartActionFirstInTheMaterialToolbar() {
+		final ExamMaterialEditor editor = new ExamMaterialEditor(repository(false));
+
+		editor.setExam(EXAM);
+
+		final HorizontalLayout toolbar = components(editor, HorizontalLayout.class).stream()
+				.filter(layout -> layout.hasClassName("tt-designer-toolbar")).findFirst().orElseThrow();
+		assertThat(toolbar.getChildren().toList().getFirst()).isSameAs(button(editor, "Klausurteil hinzufügen"));
 	}
 
 	@Test
@@ -153,6 +193,7 @@ class ExamMaterialEditorTests {
 		assertThat(components(editor, MarkdownEditor.class)).isEmpty();
 		assertThat(components(editor, MarkdownViewer.class)).extracting(MarkdownViewer::getContent)
 				.containsExactly(MATERIAL.descriptionMarkdown());
+		assertThat(button(editor, "Klausurteil hinzufügen").isEnabled()).isFalse();
 		assertThat(button(editor, "Material hinzufügen").isEnabled()).isFalse();
 		assertThat(buttonsByAriaLabel(editor, "Löschen...")).extracting(Button::isEnabled).containsOnly(false);
 		assertThat(buttonsByAriaLabel(editor, "Nach oben")).extracting(Button::isEnabled).containsOnly(false);

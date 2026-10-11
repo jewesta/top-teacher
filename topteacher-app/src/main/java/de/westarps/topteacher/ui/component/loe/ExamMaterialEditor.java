@@ -69,6 +69,8 @@ public class ExamMaterialEditor extends AbstractDesigner {
 	private long loadedRevision;
 	private Runnable changeHandler = () -> {
 	};
+	private Runnable structureChangeHandler = () -> {
+	};
 
 	public ExamMaterialEditor(final LevelOfExpectationsRepository repository) {
 		super("tt-eh-editor");
@@ -100,6 +102,11 @@ public class ExamMaterialEditor extends AbstractDesigner {
 		} : changeHandler;
 	}
 
+	public void setStructureChangeHandler(final Runnable structureChangeHandler) {
+		this.structureChangeHandler = structureChangeHandler == null ? () -> {
+		} : structureChangeHandler;
+	}
+
 	public boolean hasUnsavedChanges() {
 		return isDirty();
 	}
@@ -125,7 +132,7 @@ public class ExamMaterialEditor extends AbstractDesigner {
 			return null;
 		});
 		if (parts.isEmpty()) {
-			content().add(emptyState("Lege zuerst im Reiter Aufgaben einen Klausurteil an."));
+			content().add(emptyState("Noch keine Klausurteile angelegt."));
 		} else {
 			partSections = parts.stream().map(this::createPartSection).toList();
 			partSections.forEach(content()::add);
@@ -140,8 +147,13 @@ public class ExamMaterialEditor extends AbstractDesigner {
 		final Button discard = components.discardButton();
 		final Button reload = saveController.registerClean(
 				components.iconButton("Neu laden", VaadinIcon.REFRESH, event -> viewport.refreshPreservingPosition(this::refresh)));
+		final Button addPart = components.commandButton("Klausurteil hinzufügen", VaadinIcon.PLUS,
+				event -> addPart());
+		if (locked) {
+			components.lockCorrectionModeAction(addPart);
+		}
 		breadcrumb.addClassName("tt-designer-breadcrumb");
-		toolbar().add(save, discard, collapseState.toggleAllButton(allDetailKeys()), fullscreenButton,
+		toolbar().add(addPart, save, discard, collapseState.toggleAllButton(allDetailKeys()), fullscreenButton,
 				components.discardConfirmation(), reload);
 		toolbarSummary().add(breadcrumb);
 		toolbarSummary().expand(breadcrumb);
@@ -164,6 +176,17 @@ public class ExamMaterialEditor extends AbstractDesigner {
 				"Klausurteil", part.title());
 		DesignerViewport.mark(section, detailKey("part", part.id()), part.title());
 		return section;
+	}
+
+	private void addPart() {
+		runStructureChange(() -> {
+			final int sortOrder = repository.nextPartSortOrder(exam.id());
+			final LoePart part = repository
+					.savePart(new LoePart(null, exam.id(), "Klausurteil " + partLetter(sortOrder), sortOrder));
+			refresh();
+			viewport.scrollTo(detailKey("part", part.id()));
+			notifyStructureChanged();
+		});
 	}
 
 	private LoeMaterialSection createMaterialSection(final LoeMaterial material) {
@@ -287,10 +310,18 @@ public class ExamMaterialEditor extends AbstractDesigner {
 		changeHandler.run();
 	}
 
+	private void notifyStructureChanged() {
+		structureChangeHandler.run();
+	}
+
 	private static Component emptyState(final String text) {
 		final Span state = new Span(text);
 		state.addClassName("tt-empty-state");
 		return state;
+	}
+
+	private static String partLetter(final int index) {
+		return String.valueOf((char) ('A' + Math.min(index, 25)));
 	}
 }
 

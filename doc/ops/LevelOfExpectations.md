@@ -340,7 +340,7 @@ presentation rules; no fork of the underlying editor is required.
 
 ## Editing ownership and shared tree behavior
 
-The exam tabs follow the authoring workflow `Aufgaben` → `Material` → `EH`.
+The exam tabs follow the authoring workflow `Material` → `Aufgaben` → `EH`.
 The former `Notizen` tab and its exam-note persistence are no longer part of
 the application.
 
@@ -361,7 +361,8 @@ standard gap before the Markdown block; task sections retain the same bottom
 inset as EH requirements.
 Point steppers, section-header toggles, and Markdown formatting controls retain
 their existing sizing. Contextual add actions retain their
-plus icon and label; for example, `Klausurteil hinzufügen` is first in Aufgaben.
+plus icon and label; for example, `Klausurteil hinzufügen` is first in Material
+and Aufgaben.
 Where present, `Schnellfilter` precedes action buttons. `Neu`, `Anlegen`, and
 `Speichern` and download menu triggers show transparent icons in multi-element
 bars; a lone action shows its icon and label as a neutral secondary button.
@@ -377,12 +378,15 @@ while the editor is clean.
 
 In `Aufgaben`, adding, reordering, or deleting tree nodes requires saving or
 discarding pending changes first, including changes only to `Abschlusstext`.
-These actions must not silently reload away unsaved content.
+Creating a part or changing material structure in `Material` has the same
+dirty-state guard. These actions must not silently reload away unsaved content.
 
-- `Aufgaben` is the sole editor for parts, performance categories, task titles,
-  task Markdown, task maxima, their order, and the exam closing text.
+- `Material` and `Aufgaben` can create parts. `Aufgaben` edits part titles and
+  order, deletes parts, and edits performance categories, task titles, task
+  Markdown, task maxima, their order, and the exam closing text.
 - `Material` edits ordered material and its managed images below read-only part
-  headings.
+  headings. Without a part it offers only `Klausurteil hinzufügen`; material
+  can be added after that parent exists.
 - EH renders part, category, and task data as read-only context and edits only
   requirements.
 - Each section header has an explicit control for that section and, when the

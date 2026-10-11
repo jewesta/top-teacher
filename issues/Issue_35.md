@@ -114,7 +114,7 @@ The three tabs configure the shared tree differently:
 | Tab | Tree | Editable levels |
 | --- | --- | --- |
 | `Aufgaben` | Part > Category > Task | Part, category, and task |
-| `Material` | Part > Material | Material only; part is read-only |
+| `Material` | Part > Material | Part creation and material; existing part headings are read-only |
 | `EH` | Part > Category > Task > Requirement | Requirement only; all ancestors are read-only |
 
 The shared infrastructure should own the common designer shell, nested section
@@ -799,3 +799,26 @@ star glyph at `var(--lumo-size-m)` in both dimensions, giving the overlaid
 number more visible star around it without widening every requirement row. The
 explicit square size avoids the grid resolving a percentage width against the
 number. Live verification resolves the Lumo token to 36 x 36 px.
+
+## Material-first authoring - 11 October 2026
+
+Switched the exam authoring tabs to `Material` → `Aufgaben` → `EH`. Material
+now offers `Klausurteil hinzufügen` as its first toolbar action, including when
+the exam has no parts; material remains unavailable until a part exists. A part
+created from Material has no implicit performance category or task. Opening
+Aufgaben continues to establish its required default children.
+
+Material-originated part creation invalidates the other structure-dependent
+views without refreshing the active Material editor a second time. Existing
+part headings remain read-only in Material; naming, reordering and deletion
+stay in Aufgaben.
+
+The MCP contract is unchanged. `apply_exam_content_changes` already expresses
+the same relationship with an ordered `CREATE_PART` followed by
+`CREATE_MATERIAL` using that part's ID or request-local `clientKey`; both may be
+sent in one atomic batch.
+
+Verification: the 24 focused Material/tab tests and all 706 Maven tests passed;
+`git diff --check` passed. The running demo was restarted with its existing
+database. DOM inspection confirmed `Material` before `Aufgaben` and the new
+first toolbar action, disabled as expected for the demo exam with results.

@@ -87,6 +87,7 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 		PUPILS,
 		TASKS,
 		MATERIAL,
+		MATERIAL_STRUCTURE,
 		LEVEL_OF_EXPECTATIONS,
 		RESULTS
 	}
@@ -464,6 +465,13 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 		refreshRegistry.registerDependency(ExamContextChange.TASKS, ExamContextTarget.LEVEL_OF_EXPECTATIONS);
 		refreshRegistry.registerDependency(ExamContextChange.TASKS, ExamContextTarget.RESULTS);
 		refreshRegistry.registerDependency(ExamContextChange.TASKS, ExamContextTarget.EVALUATION);
+		refreshRegistry.registerDependency(ExamContextChange.MATERIAL_STRUCTURE, ExamContextTarget.TASKS);
+		refreshRegistry.registerDependency(ExamContextChange.MATERIAL_STRUCTURE,
+				ExamContextTarget.LEVEL_OF_EXPECTATIONS_TAB_LABEL);
+		refreshRegistry.registerDependency(ExamContextChange.MATERIAL_STRUCTURE,
+				ExamContextTarget.LEVEL_OF_EXPECTATIONS);
+		refreshRegistry.registerDependency(ExamContextChange.MATERIAL_STRUCTURE, ExamContextTarget.RESULTS);
+		refreshRegistry.registerDependency(ExamContextChange.MATERIAL_STRUCTURE, ExamContextTarget.EVALUATION);
 		refreshRegistry.registerDependency(ExamContextChange.LEVEL_OF_EXPECTATIONS,
 				ExamContextTarget.LEVEL_OF_EXPECTATIONS_TAB_LABEL);
 		refreshRegistry.registerDependency(ExamContextChange.LEVEL_OF_EXPECTATIONS, ExamContextTarget.RESULTS);
@@ -478,6 +486,8 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 
 		examTasksEditor.setChangeHandler(() -> refreshRegistry.publish(ExamContextChange.TASKS));
 		examMaterialEditor.setChangeHandler(() -> refreshRegistry.publish(ExamContextChange.MATERIAL));
+		examMaterialEditor
+				.setStructureChangeHandler(() -> refreshRegistry.publish(ExamContextChange.MATERIAL_STRUCTURE));
 		levelOfExpectationsEditor
 				.setChangeHandler(() -> refreshRegistry.publish(ExamContextChange.LEVEL_OF_EXPECTATIONS));
 		levelOfExpectationsEditor.setDesignStateChangeHandler(this::updateLevelOfExpectationsTabLabel);
@@ -677,8 +687,8 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 
 		if (levelOfExpectationsTab == null) {
 			pupilsTab = getContextTabs().add("Schüler:innen", pupilAssignmentGrid);
-			tasksTab = getContextTabs().add("Aufgaben", examTasksEditor);
 			materialTab = getContextTabs().add("Material", examMaterialEditor);
+			tasksTab = getContextTabs().add("Aufgaben", examTasksEditor);
 			levelOfExpectationsTab = getContextTabs().add(new Span("EH"), levelOfExpectationsEditor);
 			resultsTab = getContextTabs().add("Ergebnisse", examResultsEditor);
 			evaluationTab = getContextTabs().add("Auswertung", examEvaluationViewer);
