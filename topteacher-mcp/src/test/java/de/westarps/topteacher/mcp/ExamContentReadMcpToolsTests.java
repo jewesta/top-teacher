@@ -361,6 +361,8 @@ class ExamContentReadMcpToolsTests extends FullMcpAccessTest {
 		final byte[] bytes = png();
 		final LoeMaterialImage stored = new LoeMaterialImage("7q3m6r9t", "a".repeat(64), "image/png", 2, 3, bytes.length, bytes);
 		when(design.findMaterialByExamIdAndId(7, 15)).thenReturn(Optional.of(new LoeMaterial(15, 11, "Quelle", markdown, 0)));
+		when(design.findMaterialImageMetadataByIds(Set.of("7q3m6r9t"))).thenReturn(List.of(
+				new LoeMaterialImageMetadata("7q3m6r9t", "image/png", 2, 3, bytes.length)));
 		when(design.findMaterialImagesByIds(Set.of("7q3m6r9t"))).thenAnswer(invocation -> {
 			assertThat(reading).isTrue();
 			return List.of(stored);
@@ -434,6 +436,31 @@ class ExamContentReadMcpToolsTests extends FullMcpAccessTest {
 
 		assertThat(view.material().descriptionMarkdown()).isEqualTo(markdown);
 		assertThat(view.faithfulRender().status()).isEqualTo("unavailable");
+		verifyNoInteractions(renderer);
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "pixels", "bytes" })
+	void excessiveAggregateImageMetadataPreservesMarkdownWithoutLoadingPixels(final String exceededBudget) {
+		final String markdown = "Original material\n\n![Erstes Bild](img:7q3m6r9t)\n\n![Zweites Bild](img:4n8k2p7c)";
+		final int dimension = exceededBudget.equals("pixels") ? 3_000 : 10;
+		final long byteSize = exceededBudget.equals("bytes") ? FaithfulMarkdownRenderer.MAX_SOURCE_IMAGE_BYTES / 2 + 1 : 100;
+		final Set<String> imageIds = Set.of("7q3m6r9t", "4n8k2p7c");
+		when(design.findMaterialByExamIdAndId(7, 15)).thenReturn(Optional.of(new LoeMaterial(15, 11, "Quelle", markdown, 0)));
+		when(design.findMaterialImageMetadataByIds(imageIds)).thenReturn(List.of(
+				new LoeMaterialImageMetadata("7q3m6r9t", "image/png", dimension, dimension, byteSize),
+				new LoeMaterialImageMetadata("4n8k2p7c", "image/png", dimension, dimension, byteSize)));
+
+		final var result = tools.getMaterial(7, 15, true);
+		final MaterialContentView view = (MaterialContentView) result.structuredContent();
+
+		assertThat(result.isError()).isFalse();
+		assertThat(view.material().descriptionMarkdown()).isEqualTo(markdown);
+		assertThat(view.material().images()).hasSize(2);
+		assertThat(view.faithfulRender().status()).isEqualTo("unavailable");
+		assertThat(view.faithfulRender().message()).contains("original Markdown");
+		assertThat(result.content()).singleElement().isInstanceOf(TextContent.class);
+		verify(design, never()).findMaterialImagesByIds(any());
 		verifyNoInteractions(renderer);
 	}
 

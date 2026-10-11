@@ -705,17 +705,27 @@ isolation. `git diff --check` passed. The MCP inventory now contains 33 tools.
 
 The four focused content reads now offer explicitly requested PNG output
 through `includeFaithfulRender`, while ordinary reads retain their structured
-Markdown response. Rendering reuses the existing Vaadin viewer and extensions;
-render failures preserve the text response. The authoritative contract is
+Markdown response; render failures preserve that text. The authoritative
+contract is
 [the optional render specification](../doc/ops/Mcp.md#optional-faithful-png-output),
-with component and browser lifecycle guidance in
+with implementation guidance in
 [MarkdownExtensions.md](../doc/tech/MarkdownExtensions.md#mcp-faithful-rendering).
 
-Verification: the required Maven reactor suite passed with 688 tests and no
-failures, including the explicitly enabled real-browser capture check. The
-browser check covers the shared viewers, managed material images and isolated
-successive renders; HTTP checks cover the optional flag and text fallback.
-`git diff --check` passed. A live MCP call returned the demo's first material
-as a 960 × 594 PNG in about two seconds, and the user confirmed its appearance.
-The local demo was restarted with its existing database and tokens and exposes
-33 MCP tools with the new render option.
+The renderer now uses direct OpenHTMLToPDF Java2D output for
+focused fragments only. The existing EH export pipeline remains unchanged;
+the MCP flag and text-fallback contract are preserved. This removes the browser
+dependency and avoids an intermediate PDF. The preview uses print-like
+typography rather than claiming exact PDF line wrapping.
+
+Verification: `mvn -pl topteacher-app -am test` passed with 703 tests,
+including 24 direct fragment/conversion checks and metadata budget checks
+that reject oversized image collections before loading image bytes.
+`git diff --check` passed. An initial run hit the existing weak-reference UI
+test flake; its unrelated code remains unchanged.
+
+The local demo was restarted with its existing database and tokens. All four
+focused reads returned native PNG content through the live MCP; omission of
+the optional flag still returned text only. The sample material rendered in
+0.32 seconds and its requirements in 0.04 seconds on this development machine.
+Visual inspection confirmed images, alerts, literal numbering and criterion
+highlights. The runtime classpath no longer includes Playwright.

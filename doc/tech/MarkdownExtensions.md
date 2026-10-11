@@ -81,51 +81,69 @@ the deferred pupil exam-sheet layout or its numbered-text print rendering.
 
 ## MCP faithful rendering
 
-The optional PNG output of focused MCP reads renders the same Vaadin
-`MarkdownViewer` components used by TopTeacher. Material uses
-`MaterialMarkdownViewer` and the existing `tt-material-image` extension;
-requirements use `MarkdownViewer` with the shared `tt-criterion` extension in
-`DEFAULT` mode, without result-entry controls. Common Markdown,
-alerts, footnotes and literal numbered lines continue through the reusable
-viewer. Do not add a separate server-side Markdown parser or reproduce the
-viewer CSS for this path. The exam editors and their established layout remain
+The optional PNG output of focused MCP reads is a confined fragment renderer
+for one task, material, requirement set or exam closing text. It uses
+OpenHTMLToPDF's `openhtmltopdf-java2d` module, version `1.0.10`, to paint HTML
+directly to an in-memory Java2D image and encode PNG bytes. There is no
+intermediate PDF, browser, JavaScript runtime or browser installation step.
+The existing EH PDF export pipeline and the exam editors' layout remain
 unchanged.
 
+The isolated CommonMark fragment processor supports TopTeacher's Markdown
+extensions, including managed material images, requirement criteria, alerts,
+footnotes and literal numbered source lines. It reuses bundled print fonts and
+related assets without modifying the existing EH Markdown/export classes.
+The fragment's print-like typography is
+independent of the Vaadin viewer's layout. Line wrapping at its fixed image
+width need not match an existing EH PDF or pupil exam sheet; do not describe
+this preview as a pixel-identical export.
+
+Keep literal `[!NUMBERED]` rows non-wrapping, including their original source
+whitespace. Check the laid-out numbered table's width before allocating the
+PNG canvas; an over-wide row must produce the ordinary text fallback.
+Paragraphs and code may wrap long tokens within the fragment width.
+
 The MCP boundary captures the requested text, metadata and referenced images
-under the existing exam-design read guard, then releases it before browser
-work. An internal ephemeral-ticket view assembles the selected viewer with
-that immutable snapshot. The view is separate from the user's live exam UI;
-rendering neither navigates that UI nor changes its editor state. The ticket
-and snapshot are removed when the render finishes, including failure paths.
+under the existing exam-design read guard, then releases it before render
+work. The immutable snapshot supplies all requested content; rendering does
+not read further exam state or alter the user's live UI. Source images and PNG
+bytes stay in memory, with no image or PNG scratch files or durable exports.
 
-Java Playwright controls one lazy, reusable browser on a single worker, with a
-fresh browser context for each request. The browser visits the ticket view, waits
-for viewer content and images, and captures its content as PNG bytes. The
-fresh context prevents session state from carrying into later renders. The
-application retains PNG bytes in memory only; browser profile scratch files
-may use the operating system's temporary directory. No exam content is stored
-as a durable render artifact.
+Keep one active render with no waiting queue; reject additional requests while
+the worker is occupied. Check input size and the
+aggregate decoded-image pixel budget before loading images, apply a separate
+12000000-pixel budget to scaled images before layout, counting every image
+occurrence conservatively, and constrain the
+Java2D canvas before allocating it. Continuous Java2D output derives its
+height from the laid-out content, so a page-size declaration alone is not a
+height bound. The image is limited to 960 pixels in width, 12000 pixels in
+height and 8 MiB of PNG output. Reject over-limit content cleanly instead of
+clipping or downscaling it silently. Only an explicit
+`includeFaithfulRender=true` invokes the renderer; ordinary focused reads
+retain their structured response with no render metadata or image bytes.
 
-The browser must be installed separately. Use installed Chrome or an explicitly
-configured supported executable/channel; automatic browser downloads are
-disabled. The browser initializes only for `includeFaithfulRender=true`, so
-ordinary focused reads do not require it. A missing browser or failed
-initialization produces unavailable render metadata alongside the original
-Markdown. Keep browser failures and installation paths out of user-visible
-messages.
+The request deadline is configured by `tt.mcp.render.timeout-seconds`,
+defaulting to `30` and bounded from `5` to `60`. A timeout returns the ordinary
+text fallback, but the worker remains occupied until that job exits. This
+prevents two renders from allocating bitmaps at the same time even if a
+library operation takes time to respond to interruption. Use the existing
+bundled Frugal Sans fonts under
+`templates/frugal-sans` rather than relying on machine-specific system fonts.
 
-| Property | Default | Meaning |
-| --- | --- | --- |
-| `tt.mcp.render.browser-executable` | Unset | Absolute path to an existing installed browser executable. |
-| `tt.mcp.render.browser-channel` | `chrome` | Installed browser channel used for launch. |
-| `tt.mcp.render.timeout-seconds` | `30` | Request deadline in seconds, bounded from 5 to 60. |
+The fragment installs a snapshot-only image decoder on its own renderer
+context. It reads approved managed-image bytes through
+`MemoryCacheImageInputStream`; PNG encoding uses a bounded memory output
+stream. Do not change ImageIO's global cache setting, which could affect the
+existing EH export or other image consumers. URI resolution rejects resources
+outside the selected snapshot; bundled alert SVGs are inserted directly.
+Keep intrinsic image dimensions and relative width rules for layout rather
+than fixing width and height against the document's outer width. Narrower
+containers must retain the image's aspect ratio; count their possible scaled
+rasters before rendering as well.
 
-The render worker has a bounded queue and a request deadline. Capture is
-limited to 960 pixels in width, 12000 pixels in height and 8 MiB of PNG output;
-an over-limit render must fail cleanly instead of clipping or downscaling the
-content silently. Close each request's context and release its ticket on
-success, error or timeout; shut down the browser and worker with the
-application. The functional response contract belongs in
+Keep internal render errors out of user-visible messages and preserve the
+original Markdown when a preview cannot be produced. The functional response
+contract belongs in
 [Mcp.md](../ops/Mcp.md#optional-faithful-png-output).
 
 ## Local frontend builds

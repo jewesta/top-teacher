@@ -13,18 +13,9 @@ import de.westarps.vaadin.markdown.MarkdownViewer;
 @JsModule("./tt-material-image-markdown.tsx")
 final class MaterialMarkdownViewer extends MarkdownViewer {
 
-	private final MaterialImageResources resources;
-
 	MaterialMarkdownViewer(final String content, final Collection<LoeMaterialImage> images) {
 		super(content);
-		resources = new MaterialImageResources(this);
 		setExtensionIds(List.of(MaterialMarkdownEditor.EXTENSION_ID));
-		setExtensionState(Map.of("materialImages", resources.register(images)));
-	}
-
-	void releaseResources() {
-		resources.unregister();
-		setExtensionState(Map.of());
-		setContent("");
+		setExtensionState(Map.of("materialImages", new MaterialImageResources(this).register(images)));
 	}
 }

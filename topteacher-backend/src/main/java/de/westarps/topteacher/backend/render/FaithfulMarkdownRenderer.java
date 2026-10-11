@@ -5,8 +5,11 @@ import java.util.Objects;
 
 import de.westarps.topteacher.model.loe.LoeMaterialImage;
 
-/** Browser implementations render the same components as the application preview. */
+/** Renders focused Markdown fragments with print-oriented styling. */
 public interface FaithfulMarkdownRenderer {
+	int MAX_SOURCE_IMAGES = 100;
+	long MAX_SOURCE_IMAGE_BYTES = 32L * 1024 * 1024;
+	long MAX_SOURCE_IMAGE_PIXELS = 12_000_000;
 
 	RenderedPng render(RenderRequest request);
 

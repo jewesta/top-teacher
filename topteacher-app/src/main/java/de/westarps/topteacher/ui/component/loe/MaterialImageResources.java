@@ -45,7 +45,7 @@ final class MaterialImageResources {
 		return state;
 	}
 
-	void unregister() {
+	private void unregister() {
 		registrations.forEach(StreamRegistration::unregister);
 		registrations.clear();
 	}

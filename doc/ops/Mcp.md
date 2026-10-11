@@ -102,7 +102,7 @@ separately with `get_material_image`, using that exam, material and image ID.
 
 `get_task`, `get_material`, `get_exam_footer` and `get_task_requirements` accept
 optional `includeFaithfulRender`, defaulting to `false`. Omission and `false`
-retain the ordinary structured-content response without browser rendering or
+retain the ordinary structured-content response without rendering or
 image bytes. `get_exam_structure` remains a content-free outline and has no
 render option.
 
@@ -110,10 +110,17 @@ When the user asks to see the rendered content, set `includeFaithfulRender` to
 `true` on the selected focused read. TopTeacher retains the same original
 Markdown, identifiers, revision and permissions, and adds native MCP
 `image/png` content on success. The client can display that image inline. This
-uses TopTeacher's existing Markdown viewer and its applicable Material and EH
-extensions, including managed images, criteria, alerts, footnotes and literal
-numbered source lines. It does not introduce a second Markdown dialect or
-promise pupil exam-sheet layout.
+renders only the selected task, material, requirements or closing-text
+fragment, with TopTeacher's supported Markdown extensions and managed images.
+The PNG uses print-like typography based on existing bundled assets. It is a
+content preview, with its own line wrapping at the fixed image width; it does
+not promise the exact appearance of an exported PDF or pupil exam sheet. The
+existing EH export and its layout remain unchanged.
+
+Ordinary paragraphs and code wrap long tokens. Literal `[!NUMBERED]` source
+rows retain the [non-wrapping Markdown behavior](Markdown.md#literal-numbered-source-lines).
+If a numbered row exceeds the fragment's content width, rendering returns the
+structured-text fallback instead of clipping or rewrapping that row.
 
 The optional `faithfulRender` metadata is absent when rendering was not
 requested. On success it contains `status: "rendered"`, `mimeType:
@@ -122,26 +129,32 @@ the JSON text content; the original structured content remains available.
 When no image can be produced, the metadata contains `status: "unavailable"`
 and `message: "Faithful PNG rendering is unavailable. The original Markdown
 is still available."` without image content. A rendering failure,
-missing installed browser, timeout or capacity limit preserves the structured
+timeout or capacity limit preserves the structured
 Markdown response without a PNG; clients should show the text and that
 message. Exam lookup and node-ownership failures remain tool errors and do not
 render content from another exam.
 
 The PNG has a width of 960 pixels and a maximum height of 12000 pixels, with an
 8 MiB output limit. A rendered height or PNG size exceeding these limits is
-reported as unavailable rather than silently truncated. Rendering is bounded
-to approximately 30 seconds per request and uses a bounded queue. The text,
-revision and referenced
-image snapshot are captured consistently before rendering; browser work does
-not hold the exam-design lock. PNG bytes are returned in memory rather than
-saved as durable exports.
+reported as unavailable rather than silently truncated. Rendering uses one
+active worker with no waiting queue; another request receives the unavailable
+fallback immediately while it is busy. Input limits are 201 sections, 200000
+combined title/Markdown characters, 100 source images, 32 MiB of compressed
+source-image data and 12000000 decoded source-image pixels across distinct
+images, plus a separate 12000000-pixel budget for scaled images, counting each
+image occurrence. Encoded image dimensions and scaled-image geometry are
+checked before raster decoding and layout. The
+request deadline defaults to 30 seconds. A timed-out render continues to
+occupy the worker until it exits, preventing overlapping bitmap allocations.
+The text, revision and referenced image snapshot are captured consistently
+before rendering; render work does
+not hold the exam-design lock. Source-image decoding and PNG encoding use
+memory streams; no image or PNG scratch files are created. PNG bytes are
+returned in memory rather than saved as durable exports.
 
-Rendering requires an installed browser. The optional
-`tt.mcp.render.browser-executable` selects an existing browser path;
-`tt.mcp.render.browser-channel` defaults to `chrome`.
-`tt.mcp.render.timeout-seconds` defaults to 30 and accepts values from 5 to 60.
-TopTeacher does not download a browser automatically. Browser setup and
-component reuse are described in
+Rendering uses OpenHTMLToPDF's Java2D output directly, without an intermediate
+PDF, browser or JavaScript runtime. Implementation and resource limits are
+described in
 [the renderer implementation notes](../tech/MarkdownExtensions.md#mcp-faithful-rendering).
 
 ### Complete exam and EH reads

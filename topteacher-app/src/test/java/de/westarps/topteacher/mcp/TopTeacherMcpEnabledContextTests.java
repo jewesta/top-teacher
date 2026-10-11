@@ -15,6 +15,8 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
+import de.westarps.topteacher.backend.render.FaithfulMarkdownRenderer;
+import de.westarps.topteacher.backend.render.Java2DFaithfulMarkdownRenderer;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.spec.McpSchema;
 
@@ -28,6 +30,9 @@ class TopTeacherMcpEnabledContextTests {
 
 	@Autowired
 	private McpSyncServer mcpServer;
+
+	@Autowired
+	private FaithfulMarkdownRenderer renderer;
 
 	@DynamicPropertySource
 	static void mcpProperties(final DynamicPropertyRegistry registry) {
@@ -45,6 +50,7 @@ class TopTeacherMcpEnabledContextTests {
 				"get_pupil_result", "get_task", "get_task_requirements", "import_material_image", "list_course_pupils", "list_courses", "list_exam_pupils",
 				"list_exams", "list_pupils", "remove_pupils_from_course", "remove_pupils_from_exam", "save_pupil_result", "update_exam", "update_pupil");
 		assertThat(mcpBearerTokenFilter.getUrlPatterns()).containsExactlyInAnyOrder("/mcp", "/mcp/*");
+		assertThat(renderer).isInstanceOf(Java2DFaithfulMarkdownRenderer.class);
 	}
 
 	private static Path tokenFile() {

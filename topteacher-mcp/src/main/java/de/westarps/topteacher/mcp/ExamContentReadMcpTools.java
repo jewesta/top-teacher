@@ -80,13 +80,13 @@ public class ExamContentReadMcpTools {
 	}
 
 	@McpTool(name = "get_task", title = "Get one exam task",
-			description = "Read one pupil-facing task's original Markdown and points. Optionally include a faithful PNG for inline display. Discover IDs with get_exam_structure. A missing task or one belonging to another exam is rejected. Requirements and unrelated exam content are omitted.",
+			description = "Read one pupil-facing task's original Markdown and points. Optionally include a PNG fragment with print styling for inline display. Discover IDs with get_exam_structure. A missing task or one belonging to another exam is rejected. Requirements and unrelated exam content are omitted.",
 			generateOutputSchema = false, annotations = @McpTool.McpAnnotations(readOnlyHint = true,
 					destructiveHint = false, idempotentHint = true, openWorldHint = false))
 	public CallToolResult getTask(
 			@McpToolParam(description = "Exam ID from list_exams.") final int examId,
 			@McpToolParam(description = "Task ID belonging to this exam from get_exam_structure or get_exam.") final int taskId,
-			@McpToolParam(required = false, description = "Include a faithful PNG of this content. Defaults to false; original Markdown is always returned.") final @Nullable Boolean includeFaithfulRender) {
+			@McpToolParam(required = false, description = "Include a PNG fragment of this content with print styling. Defaults to false; original Markdown is always returned.") final @Nullable Boolean includeFaithfulRender) {
 		final var snapshot = taskSnapshot(examId, taskId, Boolean.TRUE.equals(includeFaithfulRender));
 		return result(snapshot, (view, render) -> new TaskContentView(view.examId(), view.revision(), view.permissions(),
 				view.task(), render));
@@ -107,13 +107,13 @@ public class ExamContentReadMcpTools {
 	}
 
 	@McpTool(name = "get_material", title = "Get one exam material",
-			description = "Read one material's original Markdown and referenced image metadata. Optionally include a faithful PNG with its referenced images. Retrieve original image pixels with get_material_image. Discover IDs with get_exam_structure. A missing material or one belonging to another exam is rejected. Other materials are omitted.",
+			description = "Read one material's original Markdown and referenced image metadata. Optionally include a PNG fragment with print styling and its referenced images. Retrieve original image pixels with get_material_image. Discover IDs with get_exam_structure. A missing material or one belonging to another exam is rejected. Other materials are omitted.",
 			generateOutputSchema = false, annotations = @McpTool.McpAnnotations(readOnlyHint = true,
 					destructiveHint = false, idempotentHint = true, openWorldHint = false))
 	public CallToolResult getMaterial(
 			@McpToolParam(description = "Exam ID from list_exams.") final int examId,
 			@McpToolParam(description = "Material ID belonging to this exam from get_exam_structure or get_exam.") final int materialId,
-			@McpToolParam(required = false, description = "Include a faithful PNG of this material and its referenced images. Defaults to false; original Markdown is always returned.") final @Nullable Boolean includeFaithfulRender) {
+			@McpToolParam(required = false, description = "Include a PNG fragment of this material and its referenced images with print styling. Defaults to false; original Markdown is always returned.") final @Nullable Boolean includeFaithfulRender) {
 		final var snapshot = materialSnapshot(examId, materialId, Boolean.TRUE.equals(includeFaithfulRender));
 		return result(snapshot, (view, render) -> new MaterialContentView(view.examId(), view.revision(), view.permissions(),
 				view.material(), render));
@@ -138,17 +138,17 @@ public class ExamContentReadMcpTools {
 					material.id(), material.partId(), material.title(), material.descriptionMarkdown(), material.sortOrder(),
 					images));
 			return snapshot(view, render, () -> List.of(new Section(material.title(), material.descriptionMarkdown(), Variant.MATERIAL)),
-					() -> referencedImages(imageIds));
+					() -> referencedImages(imageIds, images));
 		});
 	}
 
 	@McpTool(name = "get_exam_footer", title = "Get exam closing text",
-			description = "Read only the exam's original closing/footer Markdown, revision and permissions. Optionally include a faithful PNG. Empty text is returned as an empty string. No task, material or assessment content is loaded.",
+			description = "Read only the exam's original closing/footer Markdown, revision and permissions. Optionally include a PNG fragment with print styling. Empty text is returned as an empty string. No task, material or assessment content is loaded.",
 			generateOutputSchema = false, annotations = @McpTool.McpAnnotations(readOnlyHint = true,
 					destructiveHint = false, idempotentHint = true, openWorldHint = false))
 	public CallToolResult getExamFooter(
 			@McpToolParam(description = "Exam ID from list_exams.") final int examId,
-			@McpToolParam(required = false, description = "Include a faithful PNG of the closing text. Defaults to false; original Markdown is always returned.") final @Nullable Boolean includeFaithfulRender) {
+			@McpToolParam(required = false, description = "Include a PNG fragment of the closing text with print styling. Defaults to false; original Markdown is always returned.") final @Nullable Boolean includeFaithfulRender) {
 		final var snapshot = footerSnapshot(examId, Boolean.TRUE.equals(includeFaithfulRender));
 		return result(snapshot, (view, render) -> new ExamFooterView(view.examId(), view.revision(), view.permissions(),
 				view.footerMarkdown(), render));
@@ -167,13 +167,13 @@ public class ExamContentReadMcpTools {
 	}
 
 	@McpTool(name = "get_task_requirements", title = "Get requirements for one exam task",
-			description = "Read one task's ordered level-of-expectations requirements and active criteria, with read-only task identity and points. Optionally include a faithful PNG of the canonical requirements. Pupil-facing task Markdown and other tasks' requirements are omitted. A missing task or one belonging to another exam is rejected.",
+			description = "Read one task's ordered level-of-expectations requirements and active criteria, with read-only task identity and points. Optionally include a PNG fragment of the canonical requirements with print styling. Pupil-facing task Markdown and other tasks' requirements are omitted. A missing task or one belonging to another exam is rejected.",
 			generateOutputSchema = false, annotations = @McpTool.McpAnnotations(readOnlyHint = true,
 					destructiveHint = false, idempotentHint = true, openWorldHint = false))
 	public CallToolResult getTaskRequirements(
 			@McpToolParam(description = "Exam ID from list_exams.") final int examId,
 			@McpToolParam(description = "Task ID belonging to this exam from get_exam_structure or get_exam.") final int taskId,
-			@McpToolParam(required = false, description = "Include a faithful PNG of these requirements and criteria. Defaults to false; canonical Markdown is always returned.") final @Nullable Boolean includeFaithfulRender) {
+			@McpToolParam(required = false, description = "Include a PNG fragment of these requirements and criteria with print styling. Defaults to false; canonical Markdown is always returned.") final @Nullable Boolean includeFaithfulRender) {
 		final var snapshot = requirementsSnapshot(examId, taskId, Boolean.TRUE.equals(includeFaithfulRender));
 		return result(snapshot, (view, render) -> new TaskRequirementsContentView(view.examId(), view.revision(), view.permissions(),
 				view.task(), view.requirements(), render));
@@ -237,9 +237,25 @@ public class ExamContentReadMcpTools {
 				.orElseThrow(() -> new IllegalArgumentException("Task does not exist in exam " + examId + ": " + taskId));
 	}
 
-	private List<LoeMaterialImage> referencedImages(final Set<String> imageIds) {
+	private List<LoeMaterialImage> referencedImages(final Set<String> imageIds, final List<ImageReferenceView> metadata) {
 		if (imageIds.isEmpty()) {
 			return List.of();
+		}
+		if (imageIds.size() > FaithfulMarkdownRenderer.MAX_SOURCE_IMAGES || metadata.size() != imageIds.size()) {
+			throw new IllegalStateException("Referenced material images exceed the rendering budget or are unavailable.");
+		}
+		long bytes = 0;
+		long pixels = 0;
+		for (final ImageReferenceView image : metadata) {
+			if (image.byteSize() < 1 || image.pixelWidth() < 1 || image.pixelHeight() < 1) {
+				throw new IllegalStateException("Referenced material image metadata is unavailable.");
+			}
+			bytes += image.byteSize();
+			pixels += (long) image.pixelWidth() * image.pixelHeight();
+			if (bytes > FaithfulMarkdownRenderer.MAX_SOURCE_IMAGE_BYTES
+					|| pixels > FaithfulMarkdownRenderer.MAX_SOURCE_IMAGE_PIXELS) {
+				throw new IllegalStateException("Referenced material images exceed the rendering budget.");
+			}
 		}
 		final List<LoeMaterialImage> images = design.findMaterialImagesByIds(imageIds).stream()
 				.filter(image -> imageIds.contains(image.id())).sorted(Comparator.comparing(LoeMaterialImage::id)).toList();

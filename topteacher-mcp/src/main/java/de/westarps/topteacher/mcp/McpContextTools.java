@@ -66,7 +66,7 @@ public class McpContextTools {
 						"Absolute client paths resolve directly in LOCAL mode or through configured shares in REMOTE mode. Server roots are not disclosed."),
 				List.of("Discover course/options and permitted pupil IDs; create the exam shell, author Aufgaben/Material/footer, then EH against existing task IDs. Adding a task never creates requirements.",
 						"For selected content, locate IDs with get_exam_structure, then use get_task, get_material, get_exam_footer or get_task_requirements. Use aggregate reads for a complete design and readiness diagnostics.",
-						"Focused content reads accept optional includeFaithfulRender=true for a PNG from the same application preview. Omit it for ordinary text reads; request it only when faithful visual rendering is needed.",
+						"Focused content reads accept optional includeFaithfulRender=true for a PNG fragment rendered with print styling. Omit it for ordinary text reads; request it when formatted visual content is needed. Original Markdown is always returned.",
 						"Use current revision and unique requestId for atomic authoring. Retry identical requests with the same key. Omitted fields stay unchanged; deletion/reordering is explicit.",
 						"Capabilities do not override archive, validation or first-result locks. Check get_exam permissions/diagnostics before editing or result entry.",
 						full ? "Full access may maintain pupil names; academic writes still address existing pupils by stable IDs."
