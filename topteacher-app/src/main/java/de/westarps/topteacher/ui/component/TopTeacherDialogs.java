@@ -18,9 +18,21 @@ public final class TopTeacherDialogs {
 	private TopTeacherDialogs() {
 	}
 
-	public static Dialog create(final String title, final Component content, final Component buttonBar) {
+	public static Dialog create(final String title) {
 		final Dialog dialog = new Dialog();
 		dialog.addClassName("tt-dialog");
+		dialog.add(header(title));
+		dialog.setDraggable(true);
+		return dialog;
+	}
+
+	public static Dialog create(final String title, final Component content, final Component buttonBar) {
+		final Dialog dialog = create(title);
+		dialog.add(content, buttonBar);
+		return dialog;
+	}
+
+	private static Component header(final String title) {
 		final HorizontalLayout header = new HorizontalLayout();
 		header.addClassName("tt-dialog-header");
 		header.setAlignItems(Alignment.CENTER);
@@ -30,10 +42,7 @@ public final class TopTeacherDialogs {
 		final Span headerText = new Span(title);
 		headerText.addClassName("tt-dialog-header-text");
 		header.add(headerText);
-
-		dialog.add(header, content, buttonBar);
-		dialog.setDraggable(true);
-		return dialog;
+		return header;
 	}
 
 	public static HorizontalLayout buttonBar(final Button cancelButton, final Button... actionButtons) {
@@ -70,6 +79,25 @@ public final class TopTeacherDialogs {
 		return dialog;
 	}
 
+	public static ConfirmDialog discardConfirmation(final String header, final Runnable confirmAction) {
+		final ConfirmDialog dialog = new ConfirmDialog();
+		configureDiscardConfirmation(dialog, header, confirmAction);
+		return dialog;
+	}
+
+	public static ConfirmDialog acknowledgement(final String header, final String text,
+			final Runnable confirmAction) {
+		final ConfirmDialog dialog = new ConfirmDialog();
+		dialog.setHeader(header);
+		dialog.setText(text);
+		dialog.setConfirmText("OK");
+		dialog.addConfirmListener(event -> {
+			dialog.close();
+			confirmAction.run();
+		});
+		return dialog;
+	}
+
 	public static ConfirmDialog archiveConfirmation(final String header, final String firstParagraph,
 			final String secondParagraph, final Runnable confirmAction) {
 		final ConfirmDialog dialog = new ConfirmDialog();
@@ -77,13 +105,13 @@ public final class TopTeacherDialogs {
 		return dialog;
 	}
 
-	public static void configureDeleteConfirmation(final ConfirmDialog dialog, final String header,
+	private static void configureDeleteConfirmation(final ConfirmDialog dialog, final String header,
 			final Runnable confirmAction) {
 		configureDestructiveConfirmation(dialog, header, "Diese Aktion kann nicht rückgängig gemacht werden.",
 				"Löschen", confirmAction);
 	}
 
-	public static void configureDiscardConfirmation(final ConfirmDialog dialog, final String header,
+	private static void configureDiscardConfirmation(final ConfirmDialog dialog, final String header,
 			final Runnable confirmAction) {
 		configureDestructiveConfirmation(dialog, header, "Die nicht gespeicherten Änderungen gehen verloren.",
 				"Verwerfen", confirmAction);
@@ -97,10 +125,13 @@ public final class TopTeacherDialogs {
 		dialog.setCancelText("Abbrechen");
 		dialog.setConfirmText(confirmText);
 		dialog.setConfirmButtonTheme("error primary");
-		dialog.addConfirmListener(event -> confirmAction.run());
+		dialog.addConfirmListener(event -> {
+			dialog.close();
+			confirmAction.run();
+		});
 	}
 
-	public static void configureArchiveConfirmation(final ConfirmDialog dialog, final String header,
+	private static void configureArchiveConfirmation(final ConfirmDialog dialog, final String header,
 			final String firstParagraph, final String secondParagraph, final Runnable confirmAction) {
 		dialog.setHeader(header);
 		dialog.removeAll();
@@ -113,7 +144,10 @@ public final class TopTeacherDialogs {
 		dialog.setCancelText("Abbrechen");
 		dialog.setConfirmText("Archivieren");
 		dialog.setConfirmButtonTheme("primary");
-		dialog.addConfirmListener(event -> confirmAction.run());
+		dialog.addConfirmListener(event -> {
+			dialog.close();
+			confirmAction.run();
+		});
 	}
 
 	private static Component paragraphs(final String firstParagraph, final String secondParagraph) {

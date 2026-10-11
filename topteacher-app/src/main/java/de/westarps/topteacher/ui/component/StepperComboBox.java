@@ -76,6 +76,16 @@ public class StepperComboBox<T> extends Composite<HorizontalLayout> implements H
 		comboBox.addThemeVariants(themeVariants);
 	}
 
+	void configureToolbar() {
+		comboBox.removeThemeVariants(ComboBoxVariant.LUMO_SMALL);
+		for (final Button button : List.of(previousButton, nextButton)) {
+			button.removeThemeVariants(ButtonVariant.LUMO_SMALL);
+			Buttons.configureToolbarAction(button);
+			/* Navigation stays icon-only; the selector is one toolbar element. */
+			button.setText("");
+		}
+	}
+
 	@Override
 	public void setEnabled(final boolean enabled) {
 		HasEnabled.super.setEnabled(enabled);

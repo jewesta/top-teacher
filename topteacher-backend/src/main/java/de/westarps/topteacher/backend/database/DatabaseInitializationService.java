@@ -58,8 +58,8 @@ public class DatabaseInitializationService {
 		    ('Sport')
 		""";
 	private static final List<String> BUSINESS_TABLES = List.of("pupil", "course", "course_pupil", "exam", "exam_pupil",
-			"eh_part", "eh_category", "eh_task", "eh_requirement", "eh_criterion", "eh_criterion_result",
-			"eh_requirement_result", "exam_note_section");
+			"eh_part", "eh_category", "eh_task", "loe_material", "loe_material_image", "eh_requirement", "eh_criterion",
+			"eh_criterion_result", "eh_requirement_result");
 
 	private final AppSettings appSettings;
 	private final DataSource dataSource;
@@ -171,6 +171,7 @@ public class DatabaseInitializationService {
 			from information_schema.tables
 			where table_schema = 'PUBLIC'
 			  and table_type = 'BASE TABLE'
+			  and table_name not in ('MCP_ACCESS_TOKEN', 'MCP_SECURITY_STATE')
 			order by table_name
 			""")) {
 			while (resultSet.next()) {

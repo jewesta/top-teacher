@@ -4,6 +4,8 @@ The Results view records one pupil's performance against a level of
 expectations. Criteria support the marker's judgement, but they are not a hard
 gate: freely awarded points can credit valid work that does not match a
 predefined criterion, or provide the entire result when no criteria exist.
+Results may be recorded only after the task budgets and their regular
+requirement distributions form a valid, complete design.
 
 The underlying assessment structure and criterion syntax are specified in
 [LevelOfExpectations.md](LevelOfExpectations.md). PDF presentation is specified
@@ -48,8 +50,8 @@ text.
 
 - The criterion pill displays awarded points rather than the internal
   criterion key.
-- It uses the same visual styling as the EH pill and stays adjacent to its
-  checkbox. Its width follows its current value.
+- It uses the same visual styling as the EH pill. Inline order is criterion
+  text, checkbox, points pill; the pill's width follows its current value.
 - Its accessible description includes the criterion identity, awarded value,
   and available value.
 - Clicking the pill opens a Vaadin popover below it, with an arrow pointing up
@@ -74,24 +76,38 @@ Otherwise it begins `n Kriterien,` and reports the counts that apply:
 The right-hand column provides a compact, top-to-bottom representation of the
 same criterion results.
 
-- Its top element is the familiar red aggregate badge rather than an editable
+The Results content uses the same right inset as `Aufgaben`, `Material`, and
+EH. Its exam total, aggregate badges, requirement totals, and point controls
+align with the points column in those views when switching tabs.
+
+- Its top element is the shared blue aggregate badge rather than an editable
   points field.
 - The badge shows the rounded requirement result.
 - When rounding changes the raw result, the badge tooltip explains the raw and
   rounded values.
-- Every criterion row contains its three-state checkbox left-aligned with a
-  small inset, followed by an always-visible compact minus/plus control.
-- Aggregate badges, requirement totals, criterion controls, and freely awarded
-  controls share one points-cell width and height. EH and Results use the same
-  aggregate badge: `Summe` or `Gesamt` is left-aligned; regular points end at a
-  shared axis, and bonus points begin to its right. Requirement totals end at
-  the same axis. Compact control values remain centered between equally spaced
-  minus and plus buttons.
-- Only aggregate badges and requirement totals have a permanent red-tinted
-  background. Point steppers are transparent at rest; hover, keyboard focus,
-  or the linked criterion highlight adds the tint without a border.
-- The `Frei vergebene Punkte` label uses the same secondary text styling as the
-  `n von m Punkten` label. Partial inline checkboxes show a dash.
+- Each requirement total, criterion row, and freely awarded points row uses two
+  columns: a checkbox/status slot followed by the points badge or control.
+  The first column is checkbox-sized with a small breathing margin; it contains
+  the criterion's three-state checkbox where applicable and remains empty
+  otherwise. No new status icons are shown yet.
+- Aggregate badges and requirement totals share the narrower fixed badge width,
+  a centered plain number, and the existing right edge. They show no visible
+  labels, ratios, or separate bonus totals. Criterion and freely awarded
+  controls use that same points width and center their value between minus and
+  plus, like task and requirement controls in Aufgaben/EH. The overall marking
+  column follows the compact status slot plus gap and points width; its right
+  edge remains fixed. All point cells share the same height.
+- Badges and point controls have a permanent blue-tinted background. Criterion
+  and freely awarded points controls use a lighter tint than aggregate badges
+  and the task/requirement controls in Aufgaben/EH. On criterion rows only,
+  hover, keyboard focus, or the linked criterion highlight adds the
+  existing translucent red tint across the whole row, including its checkbox
+  slot. The points control retains its translucent blue layer over that row
+  highlight. Read-only totals and freely awarded points have no row highlight
+  because they have no corresponding criterion text.
+- Labels use `n von m Pkt.` and `Frei vergebene Pkt.` in the same secondary
+  text styling to fit the compact column. Their tooltips and accessible labels
+  retain the full wording. Partial inline checkboxes show a dash.
 - Changes made in either the text or quick-marking column update the other
   representation immediately.
 
@@ -149,23 +165,48 @@ field starts at two lines and grows with its content without a row limit.
 
 ## Regular and bonus aggregation
 
-Rounded requirement results are aggregated separately for regular and bonus
-requirements.
+Rounded regular and bonus requirement results are combined only within their
+own task before contributing to higher-level aggregates.
 
-- Regular results contribute directly to the exam result.
-- Bonus results remain visible separately.
-- Applicable bonus points are capped so the effective result cannot exceed the
-  grading-scale maximum.
+- Regular results contribute to the result of their task.
+- Bonus requirements show their achieved points normally and retain the bonus
+  star. Their points are not shown as a separate subtotal in aggregate badges.
+- Within each task, regular and bonus results are combined only after every
+  requirement has applied its own half-up rounding. The effective task result
+  is then capped at the task's explicit maximum:
+
+  ```text
+  effective task result = min(task maximum,
+                              rounded regular results + rounded bonus results)
+  ```
+
+- The effective exam result is the sum of the effective task results. The cap
+  is not applied only once at exam level; surplus bonus points from one task
+  cannot compensate for missing points in another task.
 - Pending edits update requirement, task, category, part, and exam badges
   immediately.
+
+For example, if a 60-point task receives 58 regular plus five bonus points, it
+contributes 60 points. A separate 40-point task with 35 points contributes 35,
+so the effective exam result is 95. The task badges display 60 and 35, and the
+exam badge displays 95; individual requirement awards remain visible. This
+display uses the existing calculation rules, including requirement-local
+rounding, without changing result limits or grading.
 
 ## Editing and saving
 
 Result changes are collected for the selected pupil and saved together.
 
+The result toolbar follows the shared icon-only action convention, including
+save and download, while download menu entries remain labeled. Every discard
+action requires confirmation; canceling preserves the pupil's pending results.
+
 - Save is enabled only while the selected pupil has pending valid changes.
 - Discard restores criterion values, freely awarded points,
   and comments to their persisted state.
 - Switching or refreshing must not silently lose dirty edits.
-- Once any result exists for an exam, the corresponding level of expectations
-  enters its locked structural state.
+- Once any result exists for an exam, `Aufgaben` and `Material` become
+  read-only. EH ancestors were already read-only there; its requirement editor
+  enters correction mode and permits only changes that preserve task
+  assignment, maxima, bonus status, order, and criterion identities and point
+  values.

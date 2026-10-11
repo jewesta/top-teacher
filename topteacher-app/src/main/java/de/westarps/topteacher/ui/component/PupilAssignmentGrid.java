@@ -27,7 +27,7 @@ public class PupilAssignmentGrid extends ContextTabContent {
 			.thenComparing(row -> row.pupil().id());
 
 	private final QuickFilterField search = new QuickFilterField();
-	private final HorizontalLayout toolbar = new HorizontalLayout(search);
+	private final HorizontalLayout toolbar = new ActionToolbar(search);
 	private final Grid<AssignmentRow> grid = new Grid<>(AssignmentRow.class, false);
 
 	private ListDataProvider<AssignmentRow> dataProvider = DataProvider.ofCollection(List.of());
@@ -36,14 +36,12 @@ public class PupilAssignmentGrid extends ContextTabContent {
 	private Consumer<Pupil> removeAction = pupil -> {
 	};
 
-	public PupilAssignmentGrid(final String searchPlaceholder) {
-		search.setPlaceholder(searchPlaceholder);
+	public PupilAssignmentGrid() {
 		search.addValueChangeListener(event -> applyFilter());
 
 		toolbar.addClassNames("tt-course-assignment-toolbar", "tt-pupil-assignment-toolbar");
 		toolbar.setAlignItems(Alignment.END);
 		toolbar.setPadding(false);
-		toolbar.setSpacing(true);
 		toolbar.setWidthFull();
 
 		grid.addColumn(row -> row.pupil().surname()).setHeader("Nachname").setAutoWidth(true);

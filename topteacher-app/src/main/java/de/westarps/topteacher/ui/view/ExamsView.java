@@ -21,7 +21,6 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.textfield.TextField;
@@ -42,6 +41,7 @@ import de.westarps.topteacher.model.ExamNumber;
 import de.westarps.topteacher.model.GradingScale;
 import de.westarps.topteacher.model.Lifecycle;
 import de.westarps.topteacher.model.Pupil;
+import de.westarps.topteacher.model.loe.LoeValidator;
 import de.westarps.topteacher.ui.MainLayout;
 import de.westarps.topteacher.ui.component.AbstractFormEditor;
 import de.westarps.topteacher.ui.component.Buttons;
@@ -50,9 +50,11 @@ import de.westarps.topteacher.ui.component.GradingScaleViewer;
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
 import de.westarps.topteacher.ui.component.PupilAssignmentGrid;
 import de.westarps.topteacher.ui.component.RefreshRegistry;
+import de.westarps.topteacher.ui.component.TopTeacherDialogs;
 import de.westarps.topteacher.ui.component.loe.ExamEvaluationViewer;
-import de.westarps.topteacher.ui.component.loe.ExamNotesEditor;
+import de.westarps.topteacher.ui.component.loe.ExamMaterialEditor;
 import de.westarps.topteacher.ui.component.loe.ExamResultsEditor;
+import de.westarps.topteacher.ui.component.loe.ExamTasksEditor;
 import de.westarps.topteacher.ui.component.loe.LevelOfExpectationsEditor;
 import de.westarps.topteacher.ui.component.loe.LevelOfExpectationsEditor.DesignState;
 import de.westarps.topteacher.ui.component.loe.LoeNavigationTarget;
@@ -66,6 +68,8 @@ import de.westarps.topteacher.ui.component.loe.LoeNavigationTarget;
 public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterObserver {
 
 	public static final String ROUTE = "exams";
+	public static final String TASKS_SECTION = "tasks";
+	public static final String MATERIAL_SECTION = "material";
 	public static final String LEVEL_OF_EXPECTATIONS_SECTION = "level-of-expectations";
 	public static final String RESULTS_SECTION = "results";
 
@@ -81,12 +85,17 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 
 	private enum ExamContextChange {
 		PUPILS,
+		TASKS,
+		MATERIAL,
+		MATERIAL_STRUCTURE,
 		LEVEL_OF_EXPECTATIONS,
 		RESULTS
 	}
 
 	private enum ExamContextTarget {
 		PUPILS,
+		TASKS,
+		MATERIAL,
 		LEVEL_OF_EXPECTATIONS_TAB_LABEL,
 		LEVEL_OF_EXPECTATIONS,
 		RESULTS,
@@ -97,8 +106,9 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 	private final ExamRepository examRepository;
 	private final LevelOfExpectationsRepository levelOfExpectationsRepository;
 	private final GradingScaleRepository gradingScaleRepository;
+	private final ExamTasksEditor examTasksEditor;
+	private final ExamMaterialEditor examMaterialEditor;
 	private final LevelOfExpectationsEditor levelOfExpectationsEditor;
-	private final ExamNotesEditor examNotesEditor;
 	private final ExamResultsEditor examResultsEditor;
 	private final ExamEvaluationViewer examEvaluationViewer;
 	private final GradingScaleViewer gradingScaleViewer;
@@ -114,12 +124,12 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 	private final Button newButton = createNewButton();
 	private final Button saveButton = Buttons.createOrSave();
 	private final Button duplicateButton = Buttons.duplicateOpener();
-	private final Dialog duplicateDialog = new Dialog();
+	private final Dialog duplicateDialog = TopTeacherDialogs.create("Klausur duplizieren");
 	private final TextField duplicateTitle = new TextField("Titel");
 	private final DatePicker duplicateDate = new DatePicker("Datum");
 	private final ComboBox<Course> duplicateCourse = new ComboBox<>("Kurs");
 	private final Binder<DuplicateExamFormData> duplicateExamBinder = new Binder<>();
-	private final PupilAssignmentGrid pupilAssignmentGrid = new PupilAssignmentGrid("Schüler:innen suchen");
+	private final PupilAssignmentGrid pupilAssignmentGrid = new PupilAssignmentGrid();
 
 	private Course selectedCourse;
 	private Exam selectedExam;
@@ -129,11 +139,15 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 	private List<Object> originalEditorValues = List.of();
 	private Set<Integer> originalCreationPupilIds = Set.of();
 	private Tab pupilsTab;
+	private Tab tasksTab;
+	private Tab materialTab;
 	private Tab levelOfExpectationsTab;
-	private Tab notesTab;
 	private Tab resultsTab;
 	private Tab evaluationTab;
 	private Tab gradingScaleTab;
+	private boolean restoringCourseSelection;
+	private boolean restoringExamSelection;
+	private boolean restoringContextTabSelection;
 
 	public ExamsView(final CourseRepository courseRepository, final ExamRepository examRepository,
 			final LevelOfExpectationsRepository levelOfExpectationsRepository,
@@ -143,9 +157,10 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 		this.examRepository = examRepository;
 		this.levelOfExpectationsRepository = levelOfExpectationsRepository;
 		this.gradingScaleRepository = gradingScaleRepository;
+		this.examTasksEditor = new ExamTasksEditor(levelOfExpectationsRepository);
+		this.examMaterialEditor = new ExamMaterialEditor(levelOfExpectationsRepository);
 		this.levelOfExpectationsEditor = new LevelOfExpectationsEditor(levelOfExpectationsRepository,
 				gradingScaleRepository);
-		this.examNotesEditor = new ExamNotesEditor(levelOfExpectationsRepository);
 		this.examResultsEditor = new ExamResultsEditor(courseRepository, examRepository, levelOfExpectationsRepository,
 				gradingScaleRepository);
 		this.examEvaluationViewer = new ExamEvaluationViewer(courseRepository, examRepository,
@@ -202,7 +217,7 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 
 	@Override
 	protected List<Component> createListToolbarComponents() {
-		return List.of(newButton, courseFilter);
+		return List.of(courseFilter, newButton);
 	}
 
 	@Override
@@ -242,6 +257,15 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 
 	@Override
 	protected void onEditorModeChanged(final EditorMode editorMode, final List<Exam> selectedItems) {
+		final Exam requestedExam = selectedItems.size() == 1 ? selectedItems.getFirst() : null;
+		if (!restoringExamSelection && hasUnsavedContextChanges() && !sameExam(selectedExam, requestedExam)) {
+			restoreExamSelection();
+			Notification.show("Speichere oder verwirf zuerst die ungespeicherten Änderungen.");
+			return;
+		}
+		if (restoringExamSelection) {
+			return;
+		}
 		if (editorMode == EditorMode.MULTI_SELECT) {
 			removeExamContextTabs();
 			showMultiSelectEditor(selectedItems);
@@ -259,6 +283,14 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 		courseFilter.setItemLabelGenerator(Course::getDisplayName);
 		courseFilter.setRequiredIndicatorVisible(true);
 		courseFilter.addValueChangeListener(event -> {
+			if (!restoringCourseSelection && hasUnsavedContextChanges()
+					&& !java.util.Objects.equals(selectedCourse, event.getValue())) {
+				restoringCourseSelection = true;
+				courseFilter.setValue(selectedCourse);
+				restoringCourseSelection = false;
+				Notification.show("Speichere oder verwirf zuerst die ungespeicherten Änderungen.");
+				return;
+			}
 			selectedCourse = event.getValue();
 			clearSelection();
 			clearSingleEditor();
@@ -270,11 +302,16 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 
 	private void openDeepLink(final int examId, final String section, final Integer pupilId,
 			final LoeNavigationTarget target) {
+		if (hasUnsavedContextChanges() && (selectedExam == null || !selectedExam.id().equals(examId))) {
+			Notification.show("Speichere oder verwirf zuerst die ungespeicherten Änderungen.");
+			return;
+		}
 		if (pupilId != null && !RESULTS_SECTION.equals(section)) {
 			throw new IllegalArgumentException(
 					"Eine Schüler:innen-ID kann nur mit dem Bereich Ergebnisse geöffnet werden.");
 		}
-		if (section != null && !LEVEL_OF_EXPECTATIONS_SECTION.equals(section) && !RESULTS_SECTION.equals(section)) {
+		if (section != null && !TASKS_SECTION.equals(section) && !MATERIAL_SECTION.equals(section)
+				&& !LEVEL_OF_EXPECTATIONS_SECTION.equals(section) && !RESULTS_SECTION.equals(section)) {
 			throw new IllegalArgumentException("Unbekannter Klausurbereich: " + section);
 		}
 		if (target != null && !LEVEL_OF_EXPECTATIONS_SECTION.equals(section) && !RESULTS_SECTION.equals(section)) {
@@ -294,6 +331,14 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 
 		courseFilter.setValue(course);
 		getGrid().select(exam);
+		if (TASKS_SECTION.equals(section)) {
+			getContextTabs().setSelectedTab(tasksTab);
+			return;
+		}
+		if (MATERIAL_SECTION.equals(section)) {
+			getContextTabs().setSelectedTab(materialTab);
+			return;
+		}
 		if (LEVEL_OF_EXPECTATIONS_SECTION.equals(section)) {
 			getContextTabs().setSelectedTab(levelOfExpectationsTab);
 			if (target != null && !levelOfExpectationsEditor.focusRequirement(target)) {
@@ -376,6 +421,10 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 		examBinder.addValueChangeListener(event -> updateSaveButtonState());
 
 		newButton.addClickListener(event -> {
+			if (hasUnsavedContextChanges()) {
+				Notification.show("Speichere oder verwirf zuerst die ungespeicherten Änderungen.");
+				return;
+			}
 			clearSelection();
 			clearSingleEditor();
 			removeExamContextTabs();
@@ -395,15 +444,34 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 
 	private void configureRefreshRegistry() {
 		refreshRegistry.registerTarget(ExamContextTarget.PUPILS, this::refreshPupilAssignments);
+		refreshRegistry.registerTarget(ExamContextTarget.TASKS, () -> examTasksEditor.setExam(selectedExam),
+				() -> !examTasksEditor.hasUnsavedChanges());
+		refreshRegistry.registerTarget(ExamContextTarget.MATERIAL, () -> examMaterialEditor.setExam(selectedExam),
+				() -> !examMaterialEditor.hasUnsavedChanges());
 		refreshRegistry.registerEagerTarget(ExamContextTarget.LEVEL_OF_EXPECTATIONS_TAB_LABEL,
 				() -> updateLevelOfExpectationsTabLabel(selectedExam));
 		refreshRegistry.registerTarget(ExamContextTarget.LEVEL_OF_EXPECTATIONS,
-				() -> levelOfExpectationsEditor.setExam(selectedExam));
-		refreshRegistry.registerTarget(ExamContextTarget.RESULTS, () -> examResultsEditor.setExam(selectedExam));
+				() -> levelOfExpectationsEditor.setExam(selectedExam),
+				() -> !levelOfExpectationsEditor.hasUnsavedChanges());
+		refreshRegistry.registerTarget(ExamContextTarget.RESULTS, () -> examResultsEditor.setExam(selectedExam),
+				() -> !examResultsEditor.hasUnsavedChanges());
 		refreshRegistry.registerTarget(ExamContextTarget.EVALUATION, () -> examEvaluationViewer.setExam(selectedExam));
 
 		refreshRegistry.registerDependency(ExamContextChange.PUPILS, ExamContextTarget.RESULTS);
 		refreshRegistry.registerDependency(ExamContextChange.PUPILS, ExamContextTarget.EVALUATION);
+		refreshRegistry.registerDependency(ExamContextChange.TASKS, ExamContextTarget.MATERIAL);
+		refreshRegistry.registerDependency(ExamContextChange.TASKS,
+				ExamContextTarget.LEVEL_OF_EXPECTATIONS_TAB_LABEL);
+		refreshRegistry.registerDependency(ExamContextChange.TASKS, ExamContextTarget.LEVEL_OF_EXPECTATIONS);
+		refreshRegistry.registerDependency(ExamContextChange.TASKS, ExamContextTarget.RESULTS);
+		refreshRegistry.registerDependency(ExamContextChange.TASKS, ExamContextTarget.EVALUATION);
+		refreshRegistry.registerDependency(ExamContextChange.MATERIAL_STRUCTURE, ExamContextTarget.TASKS);
+		refreshRegistry.registerDependency(ExamContextChange.MATERIAL_STRUCTURE,
+				ExamContextTarget.LEVEL_OF_EXPECTATIONS_TAB_LABEL);
+		refreshRegistry.registerDependency(ExamContextChange.MATERIAL_STRUCTURE,
+				ExamContextTarget.LEVEL_OF_EXPECTATIONS);
+		refreshRegistry.registerDependency(ExamContextChange.MATERIAL_STRUCTURE, ExamContextTarget.RESULTS);
+		refreshRegistry.registerDependency(ExamContextChange.MATERIAL_STRUCTURE, ExamContextTarget.EVALUATION);
 		refreshRegistry.registerDependency(ExamContextChange.LEVEL_OF_EXPECTATIONS,
 				ExamContextTarget.LEVEL_OF_EXPECTATIONS_TAB_LABEL);
 		refreshRegistry.registerDependency(ExamContextChange.LEVEL_OF_EXPECTATIONS, ExamContextTarget.RESULTS);
@@ -411,17 +479,37 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 		refreshRegistry.registerDependency(ExamContextChange.RESULTS,
 				ExamContextTarget.LEVEL_OF_EXPECTATIONS_TAB_LABEL);
 		refreshRegistry.registerDependency(ExamContextChange.RESULTS, ExamContextTarget.PUPILS);
+		refreshRegistry.registerDependency(ExamContextChange.RESULTS, ExamContextTarget.TASKS);
+		refreshRegistry.registerDependency(ExamContextChange.RESULTS, ExamContextTarget.MATERIAL);
 		refreshRegistry.registerDependency(ExamContextChange.RESULTS, ExamContextTarget.LEVEL_OF_EXPECTATIONS);
 		refreshRegistry.registerDependency(ExamContextChange.RESULTS, ExamContextTarget.EVALUATION);
 
+		examTasksEditor.setChangeHandler(() -> refreshRegistry.publish(ExamContextChange.TASKS));
+		examMaterialEditor.setChangeHandler(() -> refreshRegistry.publish(ExamContextChange.MATERIAL));
+		examMaterialEditor
+				.setStructureChangeHandler(() -> refreshRegistry.publish(ExamContextChange.MATERIAL_STRUCTURE));
 		levelOfExpectationsEditor
 				.setChangeHandler(() -> refreshRegistry.publish(ExamContextChange.LEVEL_OF_EXPECTATIONS));
 		levelOfExpectationsEditor.setDesignStateChangeHandler(this::updateLevelOfExpectationsTabLabel);
 		examResultsEditor.setChangeHandler(() -> refreshRegistry.publish(ExamContextChange.RESULTS));
 		getContextTabs().addSelectedChangeListener(event -> {
+			if (restoringContextTabSelection) {
+				return;
+			}
+			final ExamContextTarget previousTarget = examContextTarget(event.getPreviousTab());
+			if (hasUnsavedChanges(previousTarget)) {
+				restoringContextTabSelection = true;
+				getContextTabs().setSelectedTab(event.getPreviousTab());
+				restoringContextTabSelection = false;
+				Notification.show("Speichere oder verwirf zuerst die ungespeicherten Änderungen.");
+				return;
+			}
 			final ExamContextTarget selectedTarget = selectedExamContextTarget();
-			if (selectedTarget != null) {
-				refreshRegistry.refreshIfStale(selectedTarget);
+			if (selectedTarget != null && !refreshRegistry.refreshIfStale(selectedTarget)) {
+				restoringContextTabSelection = true;
+				getContextTabs().setSelectedTab(event.getPreviousTab());
+				restoringContextTabSelection = false;
+				Notification.show("Speichere oder verwirf zuerst die ungespeicherten Änderungen im Zielreiter.");
 			}
 		});
 	}
@@ -495,8 +583,6 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 	}
 
 	private void configureDuplicateDialog() {
-		duplicateDialog.setHeaderTitle("Klausur duplizieren");
-
 		duplicateTitle.setRequiredIndicatorVisible(true);
 		duplicateTitle.setWidthFull();
 
@@ -512,15 +598,13 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 
 		final Button cancelButton = new Button("Abbrechen", event -> duplicateDialog.close());
 		final Button applyButton = Buttons.duplicate(event -> duplicateExam());
-		final HorizontalLayout actions = new HorizontalLayout(cancelButton, applyButton);
-		actions.setPadding(false);
-		actions.setSpacing(true);
 
-		final VerticalLayout content = new VerticalLayout(duplicateTitle, duplicateDate, duplicateCourse, actions);
+		final VerticalLayout content = new VerticalLayout(duplicateTitle, duplicateDate, duplicateCourse);
+		content.addClassName("tt-dialog-content");
 		content.setPadding(false);
 		content.setSpacing(true);
 		content.setWidth("28rem");
-		duplicateDialog.add(content);
+		duplicateDialog.add(content, TopTeacherDialogs.buttonBar(cancelButton, applyButton));
 	}
 
 	private void openDuplicateDialog() {
@@ -548,7 +632,7 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 		final String duplicateExamTitle = nextAvailableTitle(formData.getCourse().id(), formData.getTitle());
 		final Exam duplicatedExam = examRepository.save(new Exam(null, formData.getCourse().id(), duplicateExamTitle,
 				formData.getDate(), null, selectedExam.gradingScaleId()));
-		levelOfExpectationsRepository.copyDesignAndNotes(selectedExam.id(), duplicatedExam.id());
+		levelOfExpectationsRepository.copyDesign(selectedExam.id(), duplicatedExam.id());
 
 		duplicateDialog.close();
 		if (!formData.getCourse().id().equals(selectedCourse.id())) {
@@ -603,17 +687,19 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 
 		if (levelOfExpectationsTab == null) {
 			pupilsTab = getContextTabs().add("Schüler:innen", pupilAssignmentGrid);
+			materialTab = getContextTabs().add("Material", examMaterialEditor);
+			tasksTab = getContextTabs().add("Aufgaben", examTasksEditor);
 			levelOfExpectationsTab = getContextTabs().add(new Span("EH"), levelOfExpectationsEditor);
-			notesTab = getContextTabs().add("Notizen", examNotesEditor);
 			resultsTab = getContextTabs().add("Ergebnisse", examResultsEditor);
 			evaluationTab = getContextTabs().add("Auswertung", examEvaluationViewer);
 			gradingScaleTab = getContextTabs().add("Notenschlüssel", gradingScaleViewer);
 		}
 
 		refreshPupilAssignments();
+		examTasksEditor.setExam(exam);
+		examMaterialEditor.setExam(exam);
 		levelOfExpectationsEditor.setExam(exam);
 		updateLevelOfExpectationsTabLabel(exam);
-		examNotesEditor.setExam(exam);
 		examResultsEditor.setExam(exam);
 		examEvaluationViewer.setExam(exam);
 		gradingScaleViewer.setExam(exam);
@@ -621,10 +707,15 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 	}
 
 	private void removeExamContextTabs() {
+		if (hasUnsavedContextChanges()) {
+			Notification.show("Speichere oder verwirf zuerst die ungespeicherten Änderungen.");
+			return;
+		}
 		if (pupilsTab == null) {
 			pupilAssignmentGrid.setRows(List.of(), List.of());
+			examTasksEditor.setExam(null);
+			examMaterialEditor.setExam(null);
 			levelOfExpectationsEditor.setExam(null);
-			examNotesEditor.setExam(null);
 			examResultsEditor.setExam(null);
 			examEvaluationViewer.setExam(null);
 			gradingScaleViewer.setExam(null);
@@ -633,54 +724,111 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 		}
 
 		if (getContextTabs().getSelectedTab() == pupilsTab
+				|| getContextTabs().getSelectedTab() == tasksTab
+				|| getContextTabs().getSelectedTab() == materialTab
 				|| getContextTabs().getSelectedTab() == levelOfExpectationsTab
-				|| getContextTabs().getSelectedTab() == notesTab || getContextTabs().getSelectedTab() == resultsTab
+				|| getContextTabs().getSelectedTab() == resultsTab
 				|| getContextTabs().getSelectedTab() == evaluationTab
 				|| getContextTabs().getSelectedTab() == gradingScaleTab) {
 			getContextTabs().setSelectedIndex(0);
 		}
 		getContextTabs().remove(pupilsTab);
+		getContextTabs().remove(tasksTab);
+		getContextTabs().remove(materialTab);
 		getContextTabs().remove(levelOfExpectationsTab);
-		getContextTabs().remove(notesTab);
 		getContextTabs().remove(resultsTab);
 		getContextTabs().remove(evaluationTab);
 		getContextTabs().remove(gradingScaleTab);
 		pupilsTab = null;
+		tasksTab = null;
+		materialTab = null;
 		levelOfExpectationsTab = null;
-		notesTab = null;
 		resultsTab = null;
 		evaluationTab = null;
 		gradingScaleTab = null;
 		pupilAssignmentGrid.setRows(List.of(), List.of());
+		examTasksEditor.setExam(null);
+		examMaterialEditor.setExam(null);
 		levelOfExpectationsEditor.setExam(null);
-		examNotesEditor.setExam(null);
 		examResultsEditor.setExam(null);
 		examEvaluationViewer.setExam(null);
 		gradingScaleViewer.setExam(null);
 		refreshRegistry.clear();
 	}
 
+	private boolean hasUnsavedContextChanges() {
+		return examTasksEditor.hasUnsavedChanges() || examMaterialEditor.hasUnsavedChanges()
+				|| levelOfExpectationsEditor.hasUnsavedChanges() || examResultsEditor.hasUnsavedChanges();
+	}
+
+	private boolean hasUnsavedChanges(final ExamContextTarget target) {
+		if (target == null) {
+			return false;
+		}
+		return switch (target) {
+			case TASKS -> examTasksEditor.hasUnsavedChanges();
+			case MATERIAL -> examMaterialEditor.hasUnsavedChanges();
+			case LEVEL_OF_EXPECTATIONS -> levelOfExpectationsEditor.hasUnsavedChanges();
+			case RESULTS -> examResultsEditor.hasUnsavedChanges();
+			default -> false;
+		};
+	}
+
+	private void restoreExamSelection() {
+		restoringExamSelection = true;
+		getGrid().deselectAll();
+		if (selectedExam != null) {
+			getGrid().select(selectedExam);
+		}
+		restoringExamSelection = false;
+	}
+
+	private static boolean sameExam(final Exam first, final Exam second) {
+		return first == null ? second == null : second != null && first.id().equals(second.id());
+	}
+
 	private ExamContextTarget selectedExamContextTarget() {
-		final Tab selectedTab = getContextTabs().getSelectedTab();
-		if (selectedTab == pupilsTab) {
+		return examContextTarget(getContextTabs().getSelectedTab());
+	}
+
+	private ExamContextTarget examContextTarget(final Tab tab) {
+		if (tab == pupilsTab) {
 			return ExamContextTarget.PUPILS;
 		}
-		if (selectedTab == levelOfExpectationsTab) {
+		if (tab == tasksTab) {
+			return ExamContextTarget.TASKS;
+		}
+		if (tab == materialTab) {
+			return ExamContextTarget.MATERIAL;
+		}
+		if (tab == levelOfExpectationsTab) {
 			return ExamContextTarget.LEVEL_OF_EXPECTATIONS;
 		}
-		if (selectedTab == resultsTab) {
+		if (tab == resultsTab) {
 			return ExamContextTarget.RESULTS;
 		}
-		if (selectedTab == evaluationTab) {
+		if (tab == evaluationTab) {
 			return ExamContextTarget.EVALUATION;
 		}
 		return null;
 	}
 
 	private void updateLevelOfExpectationsTabLabel(final Exam exam) {
-		final DesignState state = exam != null && levelOfExpectationsRepository.hasResultsForExam(exam.id())
-				? DesignState.LOCKED
-				: levelOfExpectationsEditor.getDesignState();
+		final DesignState state;
+		if (exam == null) {
+			state = DesignState.INCOMPLETE;
+		} else if (levelOfExpectationsRepository.hasResultsForExam(exam.id())) {
+			state = DesignState.LOCKED;
+		} else {
+			final var tasks = levelOfExpectationsRepository.findTasksByExamId(exam.id());
+			final var requirements = levelOfExpectationsRepository.findRequirementsByExamId(exam.id());
+			final var validationResults = exam.gradingScaleId() == null
+					? LoeValidator.validate(tasks, requirements)
+					: gradingScaleRepository.findById(exam.gradingScaleId())
+							.map(scale -> LoeValidator.validate(scale.maxPoints(), tasks, requirements))
+							.orElseGet(() -> LoeValidator.validate(tasks, requirements));
+			state = validationResults.hasAny() ? DesignState.INCOMPLETE : DesignState.COMPLETE;
+		}
 		updateLevelOfExpectationsTabLabel(state);
 	}
 
@@ -688,6 +836,8 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 		if (levelOfExpectationsTab == null) {
 			return;
 		}
+		updateLockableTabLabel(tasksTab, "Aufgaben", state == DesignState.LOCKED);
+		updateLockableTabLabel(materialTab, "Material", state == DesignState.LOCKED);
 
 		final String statusLabel = switch (state) {
 			case INCOMPLETE -> "Unvollständig";
@@ -703,6 +853,18 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 		levelOfExpectationsTab.setLabel("EH");
 		levelOfExpectationsTab.add(levelOfExpectationsStatusIcon(statusIcon, statusLabel));
 		levelOfExpectationsTab.getElement().setAttribute("aria-label", "EH, " + statusLabel + ".");
+	}
+
+	private void updateLockableTabLabel(final Tab tab, final String label, final boolean locked) {
+		if (tab == null) {
+			return;
+		}
+		tab.removeAll();
+		tab.setLabel(label);
+		if (locked) {
+			tab.add(levelOfExpectationsStatusIcon(VaadinIcon.LOCK, "Gesperrt: Ergebnisse vorhanden"));
+		}
+		tab.getElement().setAttribute("aria-label", locked ? label + ", gesperrt: Ergebnisse vorhanden." : label);
 	}
 
 	private Icon levelOfExpectationsStatusIcon(final VaadinIcon iconType, final String statusLabel) {

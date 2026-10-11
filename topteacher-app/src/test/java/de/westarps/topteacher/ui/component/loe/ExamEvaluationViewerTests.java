@@ -56,12 +56,12 @@ class ExamEvaluationViewerTests {
 	private static final Pupil SECOND_PUPIL = new Pupil(21, "Berta", "Ergebnis", Lifecycle.ACTIVE);
 	private static final LoePart PART = new LoePart(1, EXAM.id(), "Klausurteil A", 0);
 	private static final LoeCategory CATEGORY = new LoeCategory(2, PART.id(), "Inhalt", "", 0);
-	private static final LoeTask TASK = new LoeTask(3, CATEGORY.id(), "Teilaufgabe 1", 0);
+	private static final LoeTask TASK = new LoeTask(3, CATEGORY.id(), "Teilaufgabe 1", "", 5, 0);
 	private static final LoeRequirement REQUIREMENT = new LoeRequirement(4, TASK.id(), "Anforderung", 5, false, 0);
 	private static final LoeRequirement BONUS_REQUIREMENT = new LoeRequirement(5, TASK.id(), "Bonus", 2, true, 1);
 	private static final LoePart SECOND_PART = new LoePart(6, EXAM.id(), "Klausurteil B", 1);
 	private static final LoeCategory SECOND_CATEGORY = new LoeCategory(7, SECOND_PART.id(), "Sprache", "", 0);
-	private static final LoeTask SECOND_TASK = new LoeTask(8, SECOND_CATEGORY.id(), "Teilaufgabe 2", 0);
+	private static final LoeTask SECOND_TASK = new LoeTask(8, SECOND_CATEGORY.id(), "Teilaufgabe 2", "", 2, 0);
 	private static final LoeRequirement SECOND_REQUIREMENT = new LoeRequirement(9, SECOND_TASK.id(),
 			"Zweite Anforderung", 2, false, 0);
 
@@ -100,7 +100,7 @@ class ExamEvaluationViewerTests {
 		assertThat(grid.getColumns().subList(3, grid.getColumns().size())).noneMatch(Grid.Column::isFrozen);
 		assertThat(itemCount(grid)).isEqualTo(2);
 		final MenuItem downloadItem = components(viewer, MenuBar.class).getFirst().getItems().getFirst();
-		assertThat(downloadItem.getText()).isEqualTo("Laden");
+		assertThat(downloadItem.getText()).isEmpty();
 		assertThat(iconName(downloadItem)).isEqualTo(VaadinIcon.DOWNLOAD.create().getIcon());
 		assertThat(downloadItem.getSubMenu().getItems().stream().map(MenuItem::getText)).containsExactly(
 				"Punktetabelle", "Alle Ergebnisbögen (Schüler:innen-Version)",

@@ -35,7 +35,7 @@ import de.westarps.topteacher.model.SchoolYear;
 import de.westarps.topteacher.model.Subject;
 
 @ExtendWith(MockitoExtension.class)
-class ExamWriteMcpToolsTests {
+class ExamWriteMcpToolsTests extends FullMcpAccessTest {
 
 	@Mock
 	private CourseRepository courses;
@@ -53,7 +53,7 @@ class ExamWriteMcpToolsTests {
 
 	@BeforeEach
 	void setUp() {
-		tools = new ExamWriteMcpTools(courses, exams, gradingScales, levelOfExpectations);
+		tools = ExamWriteTestSupport.tools(courses, exams, gradingScales, levelOfExpectations);
 	}
 
 	@Test
@@ -64,10 +64,10 @@ class ExamWriteMcpToolsTests {
 		when(courses.findById(course.id())).thenReturn(Optional.of(course));
 		when(courses.findPupils(course.id())).thenReturn(List.of(active, archived));
 		when(exams.existsByCourseIdAndTitle(course.id(), "1. Klausur")).thenReturn(false);
-		when(exams.save(any(Exam.class), anyCollection())).thenAnswer(invocation -> withId(invocation.getArgument(0)));
+		when(exams.save(any(Exam.class), anyCollection())).thenAnswer(invocation -> savedExam(invocation.getArgument(0)));
 		prepareResult(active);
 
-		final var result = tools.createExam(course.id(), " 1. Klausur ", "2026-11-03", null, null, null);
+		final var result = tools.createExam(course.id(), " 1. Klausur ", "2026-11-03", null, null, null, "create-main");
 
 		assertThat(result.status()).isEqualTo(ExamWriteStatus.CREATED);
 		assertThat(result.exam().gradingScaleId()).isEqualTo(course.gradingScaleId());
@@ -92,11 +92,11 @@ class ExamWriteMcpToolsTests {
 		when(courses.findPupils(course.id())).thenReturn(List.of(originalPupil, makeupPupil));
 		when(exams.findById(originalExam.id())).thenReturn(Optional.of(originalExam));
 		when(exams.findPupils(originalExam.id())).thenReturn(List.of(originalPupil));
-		when(exams.save(any(Exam.class), anyCollection())).thenAnswer(invocation -> withId(invocation.getArgument(0)));
+		when(exams.save(any(Exam.class), anyCollection())).thenAnswer(invocation -> savedExam(invocation.getArgument(0)));
 		prepareResult(makeupPupil);
 
 		final var result = tools.createExam(course.id(), "Nachschreibeklausur", "2026-10-12", null, originalExam.id(),
-				null);
+				null, "create-makeup");
 
 		assertThat(result.exam().originalExamId()).isEqualTo(originalExam.id());
 		final ArgumentCaptor<Exam> exam = ArgumentCaptor.forClass(Exam.class);
@@ -112,10 +112,10 @@ class ExamWriteMcpToolsTests {
 		final GradingScale override = new GradingScale(12, "Short exam", 30, Lifecycle.ACTIVE);
 		when(courses.findById(course.id())).thenReturn(Optional.of(course));
 		when(gradingScales.findById(override.id())).thenReturn(Optional.of(override));
-		when(exams.save(any(Exam.class), anyCollection())).thenAnswer(invocation -> withId(invocation.getArgument(0)));
+		when(exams.save(any(Exam.class), anyCollection())).thenAnswer(invocation -> savedExam(invocation.getArgument(0)));
 		prepareResult();
 
-		final var result = tools.createExam(course.id(), "Kurztest", "2026-10-12", override.id(), null, List.of());
+		final var result = tools.createExam(course.id(), "Kurztest", "2026-10-12", override.id(), null, List.of(), "create-short");
 
 		assertThat(result.exam().gradingScaleId()).isEqualTo(override.id());
 		assertThat(result.pupils()).isEmpty();
@@ -130,7 +130,7 @@ class ExamWriteMcpToolsTests {
 		when(exams.save(any(Exam.class))).thenAnswer(invocation -> invocation.getArgument(0));
 		prepareResult();
 
-		final var result = tools.updateExam(current.id(), "New", "2026-10-12");
+		final var result = tools.updateExam(current.id(), "New", "2026-10-12", 0, "update");
 
 		assertThat(result.status()).isEqualTo(ExamWriteStatus.UPDATED);
 		final ArgumentCaptor<Exam> updated = ArgumentCaptor.forClass(Exam.class);
@@ -145,8 +145,33 @@ class ExamWriteMcpToolsTests {
 		when(courses.findById(course.id())).thenReturn(Optional.of(course));
 		when(exams.existsByCourseIdAndTitle(course.id(), "Duplicate")).thenReturn(true);
 
-		assertThatThrownBy(() -> tools.createExam(course.id(), "Duplicate", "2026-10-12", null, null, null))
+		assertThatThrownBy(() -> tools.createExam(course.id(), "Duplicate", "2026-10-12", null, null, null, "duplicate"))
 				.isInstanceOf(IllegalArgumentException.class).hasMessageContaining("already exists");
+	}
+
+	@Test
+	void duplicatesDesignWithAnExplicitEmptyRosterAndNoMakeupRelationship() {
+		final Course course = course(Lifecycle.ACTIVE);
+		final Exam source = new Exam(20, course.id(), "Source", LocalDate.of(2026, 10, 10), 4, course.gradingScaleId());
+		when(exams.findById(source.id())).thenReturn(Optional.of(source));
+		when(courses.findById(course.id())).thenReturn(Optional.of(course));
+		when(courses.findPupils(course.id())).thenReturn(List.of(pupil(7, Lifecycle.ACTIVE)));
+		when(exams.save(any(Exam.class), anyCollection())).thenAnswer(invocation -> savedExam(invocation.getArgument(0)));
+		prepareResult();
+
+		final var result = tools.duplicateExam(source.id(), 0, "Copy", "2026-10-12", List.of(), "copy");
+
+		assertThat(result.exam().originalExamId()).isNull();
+		assertThat(result.pupils()).isEmpty();
+		verify(levelOfExpectations).copyDesign(source.id(), 11);
+		verify(exams).save(any(Exam.class), org.mockito.ArgumentMatchers.eq(List.of()));
+	}
+
+	@Test
+	void duplicationNeverInfersPupilSelection() {
+		assertThatThrownBy(() -> tools.duplicateExam(20, 0, "Copy", "2026-10-12", null, "copy"))
+				.isInstanceOf(NullPointerException.class).hasMessageContaining("explicitly");
+		org.mockito.Mockito.verifyNoInteractions(exams, courses);
 	}
 
 	private void prepareResult(final Pupil... pupils) {
@@ -155,8 +180,10 @@ class ExamWriteMcpToolsTests {
 		when(levelOfExpectations.hasResultsForExam(11)).thenReturn(false);
 	}
 
-	private static Exam withId(final Exam exam) {
-		return new Exam(11, exam.courseId(), exam.title(), exam.date(), exam.originalExamId(), exam.gradingScaleId());
+	private Exam savedExam(final Exam exam) {
+		final Exam saved = new Exam(11, exam.courseId(), exam.title(), exam.date(), exam.originalExamId(), exam.gradingScaleId());
+		when(exams.findById(saved.id())).thenReturn(Optional.of(saved));
+		return saved;
 	}
 
 	private static Pupil pupil(final int id, final Lifecycle lifecycle) {

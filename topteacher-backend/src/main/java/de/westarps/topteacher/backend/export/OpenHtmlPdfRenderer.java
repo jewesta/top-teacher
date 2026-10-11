@@ -23,6 +23,7 @@ import org.jsoup.nodes.Document.OutputSettings.Syntax;
 import org.springframework.stereotype.Component;
 
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
+import com.openhtmltopdf.svgsupport.BatikSVGDrawer;
 import com.openhtmltopdf.util.XRLog;
 
 @Component
@@ -41,9 +42,11 @@ public class OpenHtmlPdfRenderer implements PdfRenderer {
 
 	@Override
 	public byte[] renderA5Pdf(final String html) {
-		try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+		try (ByteArrayOutputStream output = new ByteArrayOutputStream();
+				BatikSVGDrawer svgDrawer = new BatikSVGDrawer()) {
 			final PdfRendererBuilder builder = new PdfRendererBuilder();
 			builder.useFastMode();
+			builder.useSVGDrawer(svgDrawer);
 			builder.withHtmlContent(toXhtml(html), TEMPLATE_BASE_URI);
 			builder.toStream(output);
 			builder.run();
@@ -93,6 +96,7 @@ public class OpenHtmlPdfRenderer implements PdfRenderer {
 
 	private static String toXhtml(final String html) {
 		final Document document = Jsoup.parse(html == null ? "" : html);
+		MarkdownAlertIcons.embedIn(document);
 		document.outputSettings().syntax(Syntax.xml).escapeMode(org.jsoup.nodes.Entities.EscapeMode.xhtml)
 				.charset(StandardCharsets.UTF_8).prettyPrint(false);
 		return document.html();

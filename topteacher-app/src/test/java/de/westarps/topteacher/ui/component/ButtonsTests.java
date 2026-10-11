@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.icon.VaadinIcon;
 
 class ButtonsTests {
 
@@ -32,11 +33,11 @@ class ButtonsTests {
 	}
 
 	@Test
-	void createsNewButtonWithStarIcon() {
+	void createsNewButtonWithPlusIcon() {
 		final Button button = Buttons.newItem();
 
 		assertThat(button.getText()).isEqualTo("Neu");
-		assertThat(icon(button)).isEqualTo("vaadin:star");
+		assertThat(icon(button)).isEqualTo("vaadin:plus");
 	}
 
 	@Test
@@ -84,6 +85,58 @@ class ButtonsTests {
 		assertThat(customReset.getText()).isEqualTo("Verwerfen");
 		assertThat(icon(customReset)).isEqualTo("vaadin:rotate-left");
 		assertThat(customReset.getThemeNames()).doesNotContain(ButtonVariant.LUMO_ERROR.getVariantName());
+	}
+
+	@Test
+	void dialogOpenersKeepOneEllipsisInLabelsTooltipsAndAccessibleNames() {
+		final Button withoutIcon = Buttons.dialogOpener("Datei auswählen");
+		final Button labeled = Buttons.dialogOpener("Verwerfen", VaadinIcon.ROTATE_LEFT, event -> { });
+		final Button alreadyMarked = Buttons.dialogOpener("Aus Kurs...", VaadinIcon.COPY);
+		final Button unicodeMarked = Buttons.dialogOpener("Aus Kurs…", VaadinIcon.COPY);
+		final Button iconOnly = Buttons.dialogIcon("Ergebnisse löschen", VaadinIcon.TRASH, event -> { });
+		final Button delete = Buttons.deleteIcon("Löschen", "Löschen?", () -> { });
+
+		assertThat(withoutIcon.getText()).isEqualTo("Datei auswählen...");
+		assertThat(withoutIcon.getIcon()).isNull();
+		assertThat(labeled.getText()).isEqualTo("Verwerfen...");
+		assertThat(alreadyMarked.getText()).isEqualTo("Aus Kurs...");
+		assertThat(unicodeMarked.getText()).isEqualTo("Aus Kurs…");
+		assertThat(iconOnly.getElement().getAttribute("aria-label")).isEqualTo("Ergebnisse löschen...");
+		assertThat(iconOnly.getTooltip().getText()).isEqualTo("Ergebnisse löschen...");
+		assertThat(delete.getTooltip().getText()).isEqualTo("Löschen...");
+
+		new ActionToolbar(labeled, alreadyMarked, unicodeMarked, iconOnly, delete);
+
+		assertThat(labeled.getText()).isEqualTo("Verwerfen...");
+		assertThat(labeled.getTooltip().getText()).isEqualTo("Verwerfen...");
+		assertThat(labeled.getElement().getAttribute("aria-label")).isEqualTo("Verwerfen...");
+		assertThat(alreadyMarked.getTooltip().getText()).isEqualTo("Aus Kurs...");
+		assertThat(unicodeMarked.getTooltip().getText()).isEqualTo("Aus Kurs…");
+	}
+
+	@Test
+	void updatesAdaptiveLabelsWithoutAddingTextToStandaloneIconControls() {
+		final Button action = Buttons.icon("Ausklappen", VaadinIcon.ANGLE_DOWN, event -> { });
+		final Button inline = Buttons.icon("Ausklappen", VaadinIcon.ANGLE_DOWN, event -> { });
+		new ActionToolbar(action);
+
+		Buttons.setIconLabel(action, "Einklappen");
+		Buttons.setIconLabel(inline, "Einklappen");
+
+		assertThat(action.getText()).isEqualTo("Einklappen");
+		assertThat(action.getTooltip().getText()).isEqualTo("Einklappen");
+		assertThat(action.getAriaLabel()).contains("Einklappen");
+		assertThat(inline.getText()).isEmpty();
+		assertThat(inline.getTooltip().getText()).isEqualTo("Einklappen");
+	}
+
+	@Test
+	void directActionsAndFinalConfirmationButtonsDoNotUseEllipses() {
+		assertThat(Buttons.newItem().getText()).isEqualTo("Neu");
+		assertThat(Buttons.save().getText()).isEqualTo("Speichern");
+		assertThat(Buttons.createOrSave().getText()).isEqualTo("Anlegen");
+		assertThat(Buttons.duplicate(event -> { }).getText()).isEqualTo("Duplizieren");
+		assertThat(Buttons.reset().getText()).isEqualTo("Zurücksetzen");
 	}
 
 	private static String icon(final Button button) {

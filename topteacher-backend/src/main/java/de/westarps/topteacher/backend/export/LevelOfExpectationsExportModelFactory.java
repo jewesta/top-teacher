@@ -19,7 +19,6 @@ import de.westarps.topteacher.model.ExamNumber;
 import de.westarps.topteacher.model.GradingScale;
 import de.westarps.topteacher.model.GradingScaleRange;
 import de.westarps.topteacher.model.Pupil;
-import de.westarps.topteacher.model.loe.ExamNoteSection;
 import de.westarps.topteacher.model.loe.LoeCategory;
 import de.westarps.topteacher.model.loe.LoeCriterion;
 import de.westarps.topteacher.model.loe.LoeCriterionResult;
@@ -80,17 +79,8 @@ public class LevelOfExpectationsExportModelFactory {
 										requirementsByTaskId, criteriaByRequirementId, resultsByRequirementId,
 										resultsByCriterionId, view))
 								.toList();
-		final List<NoteSection> notes = teacherView ? sorted(data.noteSections(),
-				Comparator.comparingInt(ExamNoteSection::sortOrder).thenComparing(ExamNoteSection::id,
-						Comparator.nullsLast(Integer::compareTo)))
-								.stream()
-								.map(noteSection -> new NoteSection(noteSection.title(),
-										sanitizer.markdownToHtml(noteSection.descriptionMarkdown(), view)))
-								.toList()
-				: List.of();
-
 		return new LevelOfExpectationsExportModel(data.course(), data.exam(), data.examNumber(), data.pupil(),
-				data.gradingScale(), data.gradingScaleRanges(), PointSummary.sum(parts, Part::points), parts, notes,
+				data.gradingScale(), data.gradingScaleRanges(), PointSummary.sum(parts, Part::points), parts,
 				teacherView, teacherView && showWatermark);
 	}
 
@@ -130,7 +120,10 @@ public class LevelOfExpectationsExportModelFactory {
 			exportRequirements.add(createRequirement(requirements.get(index), criteriaByRequirementId,
 					resultsByRequirementId, resultsByCriterionId, view, index + 1));
 		}
-		return new Task(task.title(), PointSummary.sum(exportRequirements, Requirement::points), exportRequirements);
+		final PointSummary requirementPoints = PointSummary.sum(exportRequirements, Requirement::points);
+		final PointSummary taskPoints = new PointSummary(task.maxPoints(), requirementPoints.bonusMaxPoints(),
+				requirementPoints.achievedPoints(), requirementPoints.bonusAchievedPoints());
+		return new Task(task.title(), taskPoints, exportRequirements);
 	}
 
 	private Requirement createRequirement(final LoeRequirement requirement,
@@ -180,16 +173,7 @@ public class LevelOfExpectationsExportModelFactory {
 			GradingScale gradingScale, List<GradingScaleRange> gradingScaleRanges, List<LoePart> parts,
 			List<LoeCategory> categories, List<LoeTask> tasks, List<LoeRequirement> requirements,
 			List<LoeRequirementResult> requirementResults, List<LoeCriterion> criteria,
-			List<LoeCriterionResult> criterionResults, List<ExamNoteSection> noteSections) {
-
-		public LevelOfExpectationsExportData(final Course course, final Exam exam, final ExamNumber examNumber,
-				final Pupil pupil, final GradingScale gradingScale, final List<GradingScaleRange> gradingScaleRanges,
-				final List<LoePart> parts, final List<LoeCategory> categories, final List<LoeTask> tasks,
-				final List<LoeRequirement> requirements, final List<LoeRequirementResult> requirementResults,
-				final List<ExamNoteSection> noteSections) {
-			this(course, exam, examNumber, pupil, gradingScale, gradingScaleRanges, parts, categories, tasks,
-					requirements, requirementResults, List.of(), List.of(), noteSections);
-		}
+			List<LoeCriterionResult> criterionResults) {
 
 		public LevelOfExpectationsExportData {
 			course = Objects.requireNonNull(course, "course must not be null");
@@ -205,13 +189,12 @@ public class LevelOfExpectationsExportModelFactory {
 			requirementResults = copy(requirementResults);
 			criteria = copy(criteria);
 			criterionResults = copy(criterionResults);
-			noteSections = copy(noteSections);
 		}
 	}
 
 	public record LevelOfExpectationsExportModel(Course course, Exam exam, ExamNumber examNumber, Pupil pupil,
 			GradingScale gradingScale, List<GradingScaleRange> gradingScaleRanges, PointSummary points,
-			List<Part> parts, List<NoteSection> noteSections, boolean showBonusPointBreakdown, boolean showWatermark) {
+			List<Part> parts, boolean showBonusPointBreakdown, boolean showWatermark) {
 
 		public LevelOfExpectationsExportModel {
 			course = Objects.requireNonNull(course, "course must not be null");
@@ -222,7 +205,6 @@ public class LevelOfExpectationsExportModelFactory {
 			gradingScaleRanges = copy(gradingScaleRanges);
 			points = Objects.requireNonNull(points, "points must not be null");
 			parts = copy(parts);
-			noteSections = copy(noteSections);
 		}
 
 		public String courseDisplayName() {
@@ -253,7 +235,9 @@ public class LevelOfExpectationsExportModelFactory {
 		}
 
 		public String totalGradeDisplayName() {
-			final int effectiveAchievedPoints = points.effectiveAchievedPoints(gradingScale.maxPoints());
+			final int effectiveAchievedPoints = parts.stream().flatMap(part -> part.categories().stream())
+					.flatMap(category -> category.tasks().stream())
+					.mapToInt(task -> task.points().effectiveAchievedPoints(task.points().maxPoints())).sum();
 			return gradingScaleRanges.stream()
 					.filter(range -> range.minPoints() <= effectiveAchievedPoints
 							&& effectiveAchievedPoints <= range.maxPoints())
@@ -377,14 +361,6 @@ public class LevelOfExpectationsExportModelFactory {
 		}
 	}
 
-	public record NoteSection(String title, SafeHtml description) {
-
-		public NoteSection {
-			title = requireText(title, "title must not be blank");
-			description = Objects.requireNonNull(description, "description must not be null");
-		}
-	}
-
 	public record PointSummary(int maxPoints, int bonusMaxPoints, int achievedPoints, int bonusAchievedPoints) {
 
 		public PointSummary {
@@ -418,8 +394,7 @@ public class LevelOfExpectationsExportModelFactory {
 			if (maxPoints < 0) {
 				throw new IllegalArgumentException("maxPoints must not be negative");
 			}
-			final int applicableBonusPoints = Math.min(bonusAchievedPoints, Math.max(0, maxPoints - achievedPoints));
-			return achievedPoints + applicableBonusPoints;
+			return Math.min(maxPoints, totalAchievedPoints());
 		}
 
 		private static String displayName(final int points, final int bonusPoints) {

@@ -48,11 +48,11 @@ class ExamEvaluationExcelExportServiceTests {
 	private static final Pupil PUPIL = new Pupil(20, "Anna", "Ergebnis", Lifecycle.ACTIVE);
 	private static final LoePart PART = new LoePart(1, EXAM.id(), "Klausurteil A", 0);
 	private static final LoeCategory CATEGORY = new LoeCategory(2, PART.id(), "Inhalt", "", 0);
-	private static final LoeTask TASK = new LoeTask(3, CATEGORY.id(), "Teilaufgabe 1", 0);
+	private static final LoeTask TASK = new LoeTask(3, CATEGORY.id(), "Teilaufgabe 1", "", 5, 0);
 	private static final LoeRequirement REQUIREMENT = new LoeRequirement(4, TASK.id(), "Anforderung", 5, false, 0);
 	private static final LoePart SECOND_PART = new LoePart(5, EXAM.id(), "Klausurteil B", 1);
 	private static final LoeCategory SECOND_CATEGORY = new LoeCategory(6, SECOND_PART.id(), "Sprache", "", 0);
-	private static final LoeTask SECOND_TASK = new LoeTask(7, SECOND_CATEGORY.id(), "Teilaufgabe 2", 0);
+	private static final LoeTask SECOND_TASK = new LoeTask(7, SECOND_CATEGORY.id(), "Teilaufgabe 2", "", 2, 0);
 	private static final LoeRequirement SECOND_REQUIREMENT = new LoeRequirement(8, SECOND_TASK.id(),
 			"Zweite Anforderung", 2, false, 0);
 

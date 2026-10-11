@@ -1,7 +1,6 @@
 package de.westarps.topteacher.ui.component.loe;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 
 import com.vaadin.flow.component.Component;
@@ -14,7 +13,6 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.IntegerField;
 
 import de.westarps.topteacher.model.loe.LoeCriterion;
 import de.westarps.topteacher.model.loe.LoeCriterionParser;
@@ -30,9 +28,9 @@ final class LoeRequirementSection extends Composite<VerticalLayout> implements L
 	private final LoeRequirement requirement;
 	private final Handler handler;
 	private final MarkdownEditor descriptionEditor;
-	private final IntegerField maxPoints;
+	private final LoeWholePointStepper maxPoints;
 	private final Button bonusButton;
-	private final Span allocationMessage;
+	private final LoeAllocationMessage allocationMessage;
 	private final Component summary;
 	private final Component description;
 	private final Component actions;
@@ -47,13 +45,15 @@ final class LoeRequirementSection extends Composite<VerticalLayout> implements L
 			final boolean correctionMode) {
 		this(requirement, components, handler,
 				components.requirementDescriptionEditor(requirement.descriptionMarkdown(), "Beschreibung"),
-				requirementNumber, maxPoints(requirement), bonusButton(), allocationMessage(), siblings,
+				requirementNumber, components.wholePointStepper("Max. Punkte", requirement.maxPoints(), correctionMode,
+						ignored -> components.updatePoints()), bonusButton(),
+				new LoeAllocationMessage("tt-eh-requirement-allocation-message"), siblings,
 				correctionMode);
 	}
 
 	private LoeRequirementSection(final LoeRequirement requirement, final LoeSectionComponents components,
 			final Handler handler, final MarkdownEditor descriptionEditor, final String requirementNumber,
-			final IntegerField maxPoints, final Button bonusButton, final Span allocationMessage,
+			final LoeWholePointStepper maxPoints, final Button bonusButton, final LoeAllocationMessage allocationMessage,
 			final List<LoeRequirement> siblings, final boolean correctionMode) {
 		this.requirement = requirement;
 		this.handler = handler;
@@ -70,10 +70,8 @@ final class LoeRequirementSection extends Composite<VerticalLayout> implements L
 		this.savedMaxPoints = requirement.maxPoints();
 		this.savedBonus = requirement.bonus();
 		updateBonusButton();
-		maxPoints.setEnabled(!correctionMode);
 		bonusButton.setEnabled(!correctionMode);
 		components.trackDirty(descriptionEditor);
-		components.trackPoints(maxPoints);
 		bonusButton.addClickListener(event -> {
 			bonus = !bonus;
 			updateBonusButton();
@@ -90,7 +88,7 @@ final class LoeRequirementSection extends Composite<VerticalLayout> implements L
 
 	@Override
 	protected VerticalLayout initContent() {
-		final VerticalLayout editor = new VerticalLayout(summary, description, actions);
+		final VerticalLayout editor = new VerticalLayout(summary, actions, description);
 		editor.addClassName("tt-eh-requirement");
 		editor.setPadding(false);
 		editor.setWidthFull();
@@ -120,17 +118,7 @@ final class LoeRequirementSection extends Composite<VerticalLayout> implements L
 	}
 
 	void setCriterionValidation(final List<TestResult> results) {
-		if (results.isEmpty()) {
-			allocationMessage.setText("");
-			allocationMessage.setVisible(false);
-			allocationMessage.getElement().removeAttribute("data-severity");
-			return;
-		}
-		final TestResult result = results.getFirst();
-		allocationMessage.getElement().setAttribute("data-severity",
-				result.severity().name().toLowerCase(Locale.ROOT));
-		allocationMessage.setText(result.message());
-		allocationMessage.setVisible(true);
+		allocationMessage.setValidation(results);
 	}
 
 	@Override
@@ -144,7 +132,7 @@ final class LoeRequirementSection extends Composite<VerticalLayout> implements L
 		if (!isDirty()) {
 			return true;
 		}
-		if (maxPoints.getValue() == null || maxPoints.getValue() < 0) {
+		if (maxPoints.getValue() < 0) {
 			Notification.show("Max. Punkte müssen 0 oder größer sein.");
 			return false;
 		}
@@ -163,19 +151,8 @@ final class LoeRequirementSection extends Composite<VerticalLayout> implements L
 		return true;
 	}
 
-	private static IntegerField maxPoints(final LoeRequirement requirement) {
-		final IntegerField maxPoints = new IntegerField();
-		maxPoints.addClassName("tt-eh-requirement-points-field");
-		maxPoints.getElement().setAttribute("aria-label", "Max. Punkte");
-		maxPoints.setMin(0);
-		maxPoints.setStepButtonsVisible(true);
-		maxPoints.setValue(requirement.maxPoints());
-		stopSummaryToggle(maxPoints);
-		return maxPoints;
-	}
-
 	private boolean validMaxPoints() {
-		return maxPoints.getValue() != null && maxPoints.getValue() >= 0;
+		return maxPoints.getValue() >= 0;
 	}
 
 	private static Button bonusButton() {
@@ -196,7 +173,7 @@ final class LoeRequirementSection extends Composite<VerticalLayout> implements L
 		bonusButton.getElement().setAttribute("aria-pressed", String.valueOf(bonus));
 	}
 
-	private static HorizontalLayout headerControls(final Span allocationMessage, final IntegerField maxPoints) {
+	private static HorizontalLayout headerControls(final Span allocationMessage, final LoeWholePointStepper maxPoints) {
 		final HorizontalLayout controls = new HorizontalLayout(maxPointsControl(allocationMessage, maxPoints));
 		controls.addClassName("tt-eh-requirement-header-controls");
 		controls.setPadding(false);
@@ -212,22 +189,12 @@ final class LoeRequirementSection extends Composite<VerticalLayout> implements L
 		return control;
 	}
 
-	private static HorizontalLayout maxPointsControl(final Span allocationMessage, final IntegerField maxPoints) {
-		final Span label = new Span("Max. Punkte");
-		label.addClassName("tt-field-label");
-
-		final HorizontalLayout control = new HorizontalLayout(allocationMessage, label, maxPoints);
+	private static HorizontalLayout maxPointsControl(final Span allocationMessage, final LoeWholePointStepper maxPoints) {
+		final HorizontalLayout control = new HorizontalLayout(allocationMessage, maxPoints);
 		control.addClassName("tt-eh-requirement-points-control");
 		control.setPadding(false);
 		control.setSpacing(false);
 		return control;
-	}
-
-	private static Span allocationMessage() {
-		final Span message = new Span();
-		message.addClassName("tt-eh-requirement-allocation-message");
-		message.setVisible(false);
-		return message;
 	}
 
 	private static void stopSummaryToggle(final Component component) {

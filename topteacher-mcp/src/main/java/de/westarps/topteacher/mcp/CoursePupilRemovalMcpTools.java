@@ -8,16 +8,21 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.mcp.CourseMcpTools.CoursePupilView;
 import de.westarps.topteacher.mcp.CourseMcpTools.CourseView;
 import de.westarps.topteacher.mcp.CoursePupilRemovalWriter.RemovalResult;
+import de.westarps.topteacher.mcp.security.McpAccessContext;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.Lifecycle;
 import de.westarps.topteacher.model.Pupil;
@@ -53,6 +58,7 @@ public class CoursePupilRemovalMcpTools {
 					description = "Pupil IDs obtained from list_course_pupils. Duplicate IDs are ignored.") final List<Integer> pupilIds,
 			@McpToolParam(required = false,
 					description = "Decision from a previous NEEDS_RESOLUTION result. Use SKIP to keep locked pupils and remove the others, or CANCEL to remove nobody.") final LockedPupilAction lockedPupilAction) {
+		McpAccessContext.accessLevel();
 		final Course course = activeCourse(courseId);
 		final List<Integer> requestedPupilIds = validatePupilIds(pupilIds);
 		final Map<Integer, Pupil> assignedPupils = assignedPupils(courseId);
@@ -65,7 +71,7 @@ public class CoursePupilRemovalMcpTools {
 				.filter(pupil -> removalLocks.containsKey(pupil.id()))
 				.map(pupil -> lockedPupilView(pupil, removalLocks.get(pupil.id()))).toList();
 
-		final LockedPupilAction action = resolveAction(context, lockedPupils, lockedPupilAction);
+		final LockedPupilAction action = resolveAction(context, lockedPupils, lockedPupilAction, assignedPupils);
 		if (!lockedPupils.isEmpty() && action == null) {
 			return result(CoursePupilRemovalStatus.NEEDS_RESOLUTION,
 					"No database changes were made. Ask the user whether locked pupils should be skipped or the entire removal should be cancelled, then call this tool again with lockedPupilAction.",
@@ -117,7 +123,8 @@ public class CoursePupilRemovalMcpTools {
 	}
 
 	private static LockedPupilAction resolveAction(final McpSyncRequestContext context,
-			final List<LockedCoursePupilView> lockedPupils, final LockedPupilAction suppliedAction) {
+			final List<LockedCoursePupilView> lockedPupils, final LockedPupilAction suppliedAction,
+			final Map<Integer, Pupil> assignedPupils) {
 		if (lockedPupils.isEmpty() || suppliedAction != null) {
 			return suppliedAction;
 		}
@@ -125,7 +132,7 @@ public class CoursePupilRemovalMcpTools {
 			return null;
 		}
 		final ElicitResult result = context
-				.elicit(ElicitFormRequest.builder(elicitationMessage(lockedPupils), elicitationSchema()).build());
+				.elicit(ElicitFormRequest.builder(elicitationMessage(lockedPupils, assignedPupils), elicitationSchema()).build());
 		if (result.action() != ElicitResult.Action.ACCEPT) {
 			return LockedPupilAction.CANCEL;
 		}
@@ -156,7 +163,8 @@ public class CoursePupilRemovalMcpTools {
 		return requestedSchema;
 	}
 
-	private static String elicitationMessage(final List<LockedCoursePupilView> lockedPupils) {
+	private static String elicitationMessage(final List<LockedCoursePupilView> lockedPupils,
+			final Map<Integer, Pupil> assignedPupils) {
 		final StringBuilder message = new StringBuilder(
 				"Einige Schüler:innen sind bereits Klausuren dieses Kurses zugeordnet und können nicht entfernt werden: ");
 		for (int index = 0; index < lockedPupils.size(); index++) {
@@ -164,7 +172,7 @@ public class CoursePupilRemovalMcpTools {
 				message.append("; ");
 			}
 			final LockedCoursePupilView pupil = lockedPupils.get(index);
-			message.append(pupil.name()).append(' ').append(pupil.surname()).append(" (ID ").append(pupil.id())
+			message.append(PupilNamePseudonymizer.displayName(assignedPupils.get(pupil.id()))).append(" (ID ").append(pupil.id())
 					.append(')');
 		}
 		return message.append(". Wähle SKIP oder CANCEL.").toString();
@@ -197,11 +205,15 @@ public class CoursePupilRemovalMcpTools {
 	}
 
 	private static CoursePupilView pupilView(final Pupil pupil) {
-		return new CoursePupilView(pupil.id(), pupil.name(), pupil.surname(), pupil.lifecycle().name());
+		final var identity = PupilNamePseudonymizer.identity(pupil);
+		return new CoursePupilView(pupil.id(), identity.displayName(), identity.identityRepresentation(),
+				identity.name(), identity.surname(), pupil.lifecycle().name());
 	}
 
 	private static LockedCoursePupilView lockedPupilView(final Pupil pupil, final String reason) {
-		return new LockedCoursePupilView(pupil.id(), pupil.name(), pupil.surname(), pupil.lifecycle().name(), reason,
+		final var identity = PupilNamePseudonymizer.identity(pupil);
+		return new LockedCoursePupilView(pupil.id(), identity.displayName(), identity.identityRepresentation(),
+				identity.name(), identity.surname(), pupil.lifecycle().name(), reason,
 				ALLOWED_ACTIONS);
 	}
 
@@ -217,7 +229,9 @@ public class CoursePupilRemovalMcpTools {
 		CANCELLED
 	}
 
-	public record LockedCoursePupilView(int id, String name, String surname, String lifecycle, String reason,
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record LockedCoursePupilView(int id, String displayName, String identityRepresentation, @Nullable String name,
+			@Nullable String surname, String lifecycle, String reason,
 			List<String> allowedActions) {
 
 		public LockedCoursePupilView {

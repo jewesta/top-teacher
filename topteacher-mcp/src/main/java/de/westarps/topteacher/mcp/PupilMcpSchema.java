@@ -3,6 +3,10 @@ package de.westarps.topteacher.mcp;
 import java.util.List;
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 /**
  * Shared MCP input and output types for pupil operations.
  */
@@ -69,11 +73,15 @@ public final class PupilMcpSchema {
 		}
 	}
 
-	public record ExistingPupilView(int id, String name, String surname, String lifecycle, String latestSchoolClass,
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record ExistingPupilView(int id, String displayName, String identityRepresentation, @Nullable String name,
+			@Nullable String surname, String lifecycle, String latestSchoolClass,
 			String latestSchoolClassDisplayName) {
 	}
 
-	public record PupilView(int id, String name, String surname, String lifecycle, String latestSchoolClass,
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record PupilView(int id, String displayName, String identityRepresentation, @Nullable String name,
+			@Nullable String surname, String lifecycle, String latestSchoolClass,
 			String latestSchoolClassDisplayName) {
 	}
 

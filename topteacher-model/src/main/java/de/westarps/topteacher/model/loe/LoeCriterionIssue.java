@@ -8,6 +8,7 @@ public record LoeCriterionIssue(Kind kind, String label) {
 		INVALID_KEY,
 		INVALID_LABEL,
 		INVALID_POINTS,
+		INVALID_PARAMETERS,
 		DUPLICATE_KEY
 	}
 

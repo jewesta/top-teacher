@@ -1,11 +1,13 @@
 package de.westarps.topteacher.backend.settings;
 
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.springframework.stereotype.Component;
 
 import de.westarps.topteacher.backend.repo.SettingsRepository;
+import de.westarps.topteacher.model.InstallationLocation;
 
 @Component
 public class AppSettings {
@@ -21,6 +23,8 @@ public class AppSettings {
 	public static final String TT_EVENT_DATABASE_BACKUP_ERROR_KEY = "tt.event.database.backup.error";
 	public static final String TT_DATABASE_INITIALIZATION_COMPLETED_KEY = "tt.database.initialization.completed";
 	public static final boolean TT_DATABASE_INITIALIZATION_COMPLETED_DEFAULT = false;
+	public static final String TT_FILE_ACCESS_INSTALLATION_LOCATION_KEY = "tt.file_access.installation_location";
+	public static final InstallationLocation TT_FILE_ACCESS_INSTALLATION_LOCATION_DEFAULT = InstallationLocation.LOCAL;
 
 	private final SettingsRepository settingsRepository;
 
@@ -83,6 +87,17 @@ public class AppSettings {
 
 	public void saveTtDatabaseInitializationCompleted(final boolean completed) {
 		settingsRepository.save(TT_DATABASE_INITIALIZATION_COMPLETED_KEY, Boolean.toString(completed));
+	}
+
+	public InstallationLocation ttFileAccessInstallationLocation() {
+		return settingsRepository.findValue(TT_FILE_ACCESS_INSTALLATION_LOCATION_KEY)
+				.map(value -> InstallationLocation.valueOf(value.trim().toUpperCase(Locale.ROOT)))
+				.orElse(TT_FILE_ACCESS_INSTALLATION_LOCATION_DEFAULT);
+	}
+
+	public void saveTtFileAccessInstallationLocation(final InstallationLocation location) {
+		settingsRepository.save(TT_FILE_ACCESS_INSTALLATION_LOCATION_KEY,
+				Objects.requireNonNull(location, "location").name());
 	}
 
 	private static boolean parseBoolean(final String key, final String value) {

@@ -2,8 +2,6 @@ package de.westarps.topteacher.ui.component.loe;
 
 import java.util.function.Supplier;
 
-import com.vaadin.flow.component.html.Span;
-
 final class LoePointBadge extends LoeBadge {
 
 	private final String label;
@@ -23,22 +21,9 @@ final class LoePointBadge extends LoeBadge {
 	}
 
 	private void setPointBadge(final LoePoints points) {
-		final Span caption = text(label + ": ");
-		caption.addClassName("tt-loe-aggregate-points-label");
-		final Span values = new Span();
-		values.addClassName("tt-loe-aggregate-points-values");
-		values.add(number(String.valueOf(points.regular()), "tt-loe-point-regular"), text("\u00a0"), text("(+"),
-				number(String.valueOf(points.bonus()), "tt-loe-point-bonus"), text(")"));
-		setBadgeComponents(label + ": " + points.regular() + " (+" + points.bonus() + ")", caption, values);
-	}
-
-	private static Span text(final String text) {
-		return new Span(text);
-	}
-
-	private static Span number(final String text, final String widthClassName) {
-		final Span span = new Span(text);
-		span.addClassNames("tt-loe-point-number", widthClassName);
-		return span;
+		setBadgeText(String.valueOf(points.total()));
+		final String description = label + ": " + points.total() + " Punkte";
+		getContent().getElement().setAttribute("aria-label", description);
+		getContent().getElement().setAttribute("title", description);
 	}
 }

@@ -22,13 +22,14 @@ public class Sanitizer {
 
 	private static final String CRITERION_DESTINATION_PREFIX = LoeCriterionParser.TAG_NAMESPACE + ":";
 	private static final Safelist SAFE_HTML = Safelist.basic()
-			.addTags("h1", "h2", "h3", "h4", "h5", "h6", "mark", "span").addAttributes("mark", "class")
+			.addTags("h1", "h2", "h3", "h4", "h5", "h6", "mark", "span", "div")
+			.addAttributes("div", "class").addAttributes("mark", "class")
 			.addAttributes("span", "class");
 	private static final OutputSettings OUTPUT_SETTINGS = new OutputSettings().prettyPrint(false);
 
 	private final Parser parser = Parser.builder().build();
 	private final org.commonmark.renderer.html.HtmlRenderer markdownRenderer = org.commonmark.renderer.html.HtmlRenderer
-			.builder().build();
+			.builder().nodeRendererFactory(MarkdownAlertHtmlRenderer::new).build();
 
 	public SafeHtml markdownToHtml(final String markdown, final MarkdownView view) {
 		return markdownToHtml(markdown, view, ignored -> CriterionMark.NONE);
@@ -90,7 +91,7 @@ public class Sanitizer {
 	}
 
 	private static String criterionKey(final String criterionTarget) {
-		final int valueSeparator = criterionTarget.indexOf('/');
+		final int valueSeparator = criterionTarget.indexOf('?');
 		return valueSeparator < 0 ? criterionTarget : criterionTarget.substring(0, valueSeparator);
 	}
 

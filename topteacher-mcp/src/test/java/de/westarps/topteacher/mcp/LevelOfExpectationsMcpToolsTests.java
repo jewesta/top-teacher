@@ -1,109 +1,113 @@
 package de.westarps.topteacher.mcp;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import de.westarps.topteacher.backend.authoring.ExamAuthoringService;
+import de.westarps.topteacher.backend.authoring.ExamDesignGuard;
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.ExamRepository;
 import de.westarps.topteacher.backend.repo.GradingScaleRepository;
 import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
-import de.westarps.topteacher.mcp.LevelOfExpectationsMcpTools.CategoryDraft;
-import de.westarps.topteacher.mcp.LevelOfExpectationsMcpTools.LevelOfExpectationsView;
-import de.westarps.topteacher.mcp.LevelOfExpectationsMcpTools.NoteSectionDraft;
-import de.westarps.topteacher.mcp.LevelOfExpectationsMcpTools.PartDraft;
-import de.westarps.topteacher.mcp.LevelOfExpectationsMcpTools.RequirementDraft;
-import de.westarps.topteacher.mcp.LevelOfExpectationsMcpTools.TaskDraft;
+import de.westarps.topteacher.mcp.security.McpAccessContext;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.CoursePeriod;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.Lifecycle;
+import de.westarps.topteacher.model.McpAccessLevel;
 import de.westarps.topteacher.model.SchoolClass;
 import de.westarps.topteacher.model.SchoolYear;
 import de.westarps.topteacher.model.Subject;
-import de.westarps.topteacher.model.loe.ExamNoteSection;
+import de.westarps.topteacher.model.loe.LevelOfExpectationsCommand;
 import de.westarps.topteacher.model.loe.LoeCategory;
+import de.westarps.topteacher.model.loe.LoeCriterion;
 import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeTask;
 
-class LevelOfExpectationsMcpToolsTests {
+class LevelOfExpectationsMcpToolsTests extends FullMcpAccessTest {
 
 	private final CourseRepository courses = mock(CourseRepository.class);
 	private final ExamRepository exams = mock(ExamRepository.class);
 	private final GradingScaleRepository gradingScales = mock(GradingScaleRepository.class);
-	private final LevelOfExpectationsRepository levelOfExpectations = mock(LevelOfExpectationsRepository.class);
-	private final LevelOfExpectationsMcpTools tools = new LevelOfExpectationsMcpTools(courses, exams, gradingScales,
-			levelOfExpectations);
-
-	private final Exam exam = new Exam(7, 3, "Klausur", LocalDate.of(2026, 9, 18), null, null);
-	private final Course course = new Course(3, SchoolClass.CLS_Q1, new Subject(2, "Englisch", Lifecycle.ACTIVE),
-			new SchoolYear(2026), CoursePeriod.FULL_YEAR, Lifecycle.ACTIVE, 5);
+	private final LevelOfExpectationsRepository design = mock(LevelOfExpectationsRepository.class);
+	private final ExamDesignGuard guard = mock(ExamDesignGuard.class);
+	private final ExamAuthoringService authoring = mock(ExamAuthoringService.class);
+	private final ExamDesignMcpSupport support = new ExamDesignMcpSupport(courses, exams, gradingScales, design, guard);
+	private final LevelOfExpectationsMcpTools tools = new LevelOfExpectationsMcpTools(support, authoring);
 
 	@BeforeEach
-	void setUpContext() {
-		when(exams.findById(exam.id())).thenReturn(Optional.of(exam));
-		when(courses.findById(course.id())).thenReturn(Optional.of(course));
+	void setUpDesign() {
+		when(exams.findById(7)).thenReturn(Optional.of(new Exam(7, 3, "Klausur", LocalDate.of(2026, 9, 18))));
+		when(courses.findById(3)).thenReturn(Optional.of(new Course(3, SchoolClass.CLS_Q1,
+				new Subject(2, "Englisch", Lifecycle.ACTIVE), new SchoolYear(2026), CoursePeriod.FULL_YEAR,
+				Lifecycle.ACTIVE, 5)));
+		when(design.findPartsByExamId(7)).thenReturn(List.of(new LoePart(11, 7, "Teil A", 0)));
+		when(design.findCategoriesByExamId(7)).thenReturn(List.of(new LoeCategory(12, 11, "Inhalt", "Beschreibung", 0)));
+		when(design.findTasksByExamId(7)).thenReturn(List.of(new LoeTask(13, 12, "Aufgabe 1", "Aufgabentext", 5, 0)));
+		when(guard.revision(7)).thenReturn(4L);
+		doAnswer(invocation -> ((Supplier<?>) invocation.getArgument(1)).get()).when(guard).read(anyInt(), any());
 	}
 
 	@Test
-	void createsANestedDesignAndDerivesSortOrderFromTheRequest() {
-		when(levelOfExpectations.savePart(any())).thenReturn(new LoePart(11, exam.id(), "Teil A", 0));
-		when(levelOfExpectations.saveCategory(any())).thenReturn(new LoeCategory(12, 11, "Inhalt", "Beschreibung", 0));
-		when(levelOfExpectations.saveTask(any())).thenReturn(new LoeTask(13, 12, "Aufgabe 1", 0));
-		when(levelOfExpectations.saveRequirement(any()))
-				.thenReturn(new LoeRequirement(14, 13, "Erreicht [das Ziel](eh:1).", 5, false, 0));
-		when(levelOfExpectations.saveNoteSection(any()))
-				.thenReturn(new ExamNoteSection(15, exam.id(), "Hinweis", "Notiz", 0));
+	void returnsRequirementsOnlyAgainstExistingTaskIdsWithReadOnlyContext() {
+		when(design.findRequirementsByExamId(7)).thenReturn(List.of(new LoeRequirement(14, 13,
+				"Erreicht [das Ziel](crit:1?points=5).", 5, false, 0)));
+		when(design.findActiveCriteriaByExamId(7)).thenReturn(List.of(new LoeCriterion(16, 14, "1", "Ziel", 10, 0, true)));
 
-		final RequirementDraft requirement = new RequirementDraft("Erreicht [das Ziel](eh:1).", 5, false);
-		final List<PartDraft> parts = List.of(new PartDraft("Teil A", List.of(new CategoryDraft("Inhalt",
-				"Beschreibung", List.of(new TaskDraft("Aufgabe 1", List.of(requirement)))))));
+		final var result = tools.getLevelOfExpectations(7);
 
-		final LevelOfExpectationsView result = tools.createLevelOfExpectations(exam.id(), parts,
-				List.of(new NoteSectionDraft("Hinweis", "Notiz")));
-
-		assertThat(result.exam().id()).isEqualTo(exam.id());
-		verify(levelOfExpectations).savePart(new LoePart(null, exam.id(), "Teil A", 0));
-		verify(levelOfExpectations).saveCategory(new LoeCategory(null, 11, "Inhalt", "Beschreibung", 0));
-		verify(levelOfExpectations).saveTask(new LoeTask(null, 12, "Aufgabe 1", 0));
-		verify(levelOfExpectations)
-				.saveRequirement(new LoeRequirement(null, 13, "Erreicht [das Ziel](eh:1).", 5, false, 0));
-		verify(levelOfExpectations).saveNoteSection(new ExamNoteSection(null, exam.id(), "Hinweis", "Notiz", 0));
+		assertThat(result.examId()).isEqualTo(7);
+		assertThat(result.revision()).isEqualTo(4);
+		assertThat(result.points().requirementsMatchTasks()).isTrue();
+		assertThat(result.tasks()).singleElement().satisfies(task -> {
+			assertThat(task.taskId()).isEqualTo(13);
+			assertThat(task.partId()).isEqualTo(11);
+			assertThat(task.requirements()).singleElement().satisfies(requirement -> {
+				assertThat(requirement.id()).isEqualTo(14);
+				assertThat(requirement.criteria().getFirst().pointUnits()).isEqualTo(10);
+			});
+		});
 	}
 
 	@Test
-	void refusesToOverwriteAnExistingDesign() {
-		when(levelOfExpectations.findPartsByExamId(exam.id()))
-				.thenReturn(List.of(new LoePart(11, exam.id(), "Vorhanden", 0)));
+	void exposesIncompleteAllocationsAndFirstResultCorrectionPermissions() {
+		when(design.hasResultsForExam(7)).thenReturn(true);
 
-		assertThatThrownBy(
-				() -> tools.createLevelOfExpectations(exam.id(), List.of(new PartDraft("Neu", List.of())), List.of()))
-						.isInstanceOf(IllegalStateException.class)
-						.hasMessageContaining("already has a level of expectations");
+		final var result = tools.getLevelOfExpectations(7);
 
-		verify(levelOfExpectations, never()).savePart(any());
+		assertThat(result.correctionMode()).isTrue();
+		assertThat(result.permissions().canEditExamContent()).isFalse();
+		assertThat(result.permissions().canEditLevelOfExpectationsStructure()).isFalse();
+		assertThat(result.permissions().canCorrectRequirementText()).isTrue();
+		assertThat(result.points().requirementsMatchTasks()).isFalse();
+		assertThat(result.diagnostics()).anySatisfy(finding -> {
+			assertThat(finding.code()).isEqualTo("TASK_POINTS");
+			assertThat(finding.nodeId()).isEqualTo(13);
+		});
 	}
 
 	@Test
-	void rejectsAnUnboundedDraftBeforeWritingAnything() {
-		final String oversizedTitle = "x".repeat(501);
-
-		assertThatThrownBy(() -> tools.createLevelOfExpectations(exam.id(),
-				List.of(new PartDraft(oversizedTitle, List.of())), List.of()))
-						.isInstanceOf(IllegalArgumentException.class).hasMessageContaining("part title");
-
-		verify(levelOfExpectations, never()).savePart(any());
+	void delegatesTypedRequirementChangesWithRevisionAndRetryKeyInBothModes() {
+		final List<LevelOfExpectationsCommand> commands = List.of(new LevelOfExpectationsCommand(
+				LevelOfExpectationsCommand.Type.CREATE_REQUIREMENT, null, "requirement", 13, null, "Text", 5,
+				false, null, null));
+		try (McpAccessContext.Scope ignored = McpAccessContext.open(McpAccessLevel.PSEUDONYMIZED)) {
+			tools.applyLevelOfExpectationsChanges(7, 4, "eh-key", commands);
+		}
+		verify(authoring).applyLevelOfExpectationsChanges(7, 4, "eh-key", commands);
 	}
 }

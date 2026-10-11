@@ -1,9 +1,11 @@
 # Level of Expectations PDF Export
 
-The level-of-expectations PDF presents one pupil's assessment as a static,
-printable document. It uses the assessment structure defined in
-[LevelOfExpectations.md](LevelOfExpectations.md) and the awarded values defined
-in [LevelOfExpectationsResults.md](LevelOfExpectationsResults.md).
+The level-of-expectations PDF presents one pupil's completed assessment as a
+static, printable document. It is a result document, not the future pupil exam
+sheet made from task and material content. It uses the assessment structure
+defined in [LevelOfExpectations.md](LevelOfExpectations.md) and the awarded
+values defined in
+[LevelOfExpectationsResults.md](LevelOfExpectationsResults.md).
 
 ## Variants
 
@@ -19,7 +21,6 @@ hierarchy and show the rounded achieved result for every requirement.
 | Criterion result indicators | No | Yes |
 | Adjustment breakdown | No | Yes, when non-zero |
 | Requirement comments | No | Yes |
-| Exam notes | No | Yes |
 | Grading scale | Yes | Yes |
 | Draft or teacher watermark | No | Optional |
 
@@ -27,8 +28,9 @@ hierarchy and show the rounded achieved result for every requirement.
 
 The existing compact table structure remains authoritative. Requirements keep
 their number, text, maximum, and achieved-result cells. Task summaries retain
-their existing position, and bonus points remain visibly separate from regular
-points, including the existing parenthetical presentation where applicable.
+their existing position and use the task's explicitly authored maximum. Bonus
+points remain visibly separate from regular points, including the existing
+parenthetical presentation where applicable.
 
 The PDF must use the same requirement-local rounding as the Results view:
 
@@ -42,6 +44,22 @@ same rule. Only the rounded requirement result contributes to task, category,
 part, exam, grading, and export totals. No half point is aggregated beyond its
 requirement.
 
+## Effective totals and grades
+
+All exported totals and grade calculations use the same task boundary as the
+Results and Evaluation views.
+
+```text
+effective task result = min(task maximum,
+                            rounded regular results + rounded bonus results)
+effective exam result = sum(effective task results)
+```
+
+The export still presents regular and bonus awards separately. The cap affects
+the effective task and exam result used for grading; it does not hide the
+recorded awards. Bonus points from one task therefore cannot compensate for
+missing points in another task.
+
 ## Pupil version
 
 The pupil version is a clean assessment document rather than a reproduction of
@@ -50,7 +68,7 @@ the marker controls.
 - Criterion annotations are removed while their text remains in the document.
 - No criterion identity, point pill, checkbox state, or status symbol is shown.
 - The existing achieved-result cell contains the rounded requirement result.
-- Adjustment details, requirement comments, and teacher notes are omitted.
+- Adjustment details and requirement comments are omitted.
 
 ## Teacher version
 
@@ -69,8 +87,7 @@ introducing another table column.
   German comma form for a half point, for example
   `Frei vergebene Punkte: +0,5`.
 - The requirement comment remains in the neighboring requirement-text cell.
-- Existing teacher-only note sections and the optional watermark remain
-  available.
+- The optional watermark remains available.
 
 The status symbol and awarded-value pill are explanatory output only. They must
 not resemble interactive checkboxes or controls.
@@ -88,3 +105,24 @@ not resemble interactive checkboxes or controls.
   within their existing cells rather than overlap neighboring content.
 - PDF output must contain no controls, popovers, hover behavior, or internal
   criterion keys.
+
+## Deferred exam-sheet export
+
+GitHub-style Markdown alerts in exported EH content already render as bordered
+boxes with German headings and print-safe symbols. This shared Markdown
+behavior is specified in [Markdown.md](Markdown.md#alerts).
+
+Generating the pupil-facing exam sheet from `Aufgaben` and `Material` is
+outside the current scope. That future output starts with the exam heading and
+groups all pupil-facing Aufgaben content and Material by part. A part begins
+with its heading and ordered material on separate pages, followed by the
+performance categories, their descriptions, task titles, and task text in tree
+order. Each subsequent part starts on a new page. The optional exam-level
+`Abschlusstext` appears exactly once at the end, outside every part; empty
+closing text is omitted. It is not a repeated page footer and does not change
+the existing EH result PDFs.
+
+Detailed print layout, image handling, footnotes, line numbering, and any
+separate teacher variant remain deferred; this does not remove or change the
+existing pupil and teacher variants of the level-of-expectations result PDF
+described above.

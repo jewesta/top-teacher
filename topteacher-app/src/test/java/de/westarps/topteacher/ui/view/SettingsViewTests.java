@@ -5,6 +5,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
@@ -28,6 +30,7 @@ import de.westarps.topteacher.backend.backup.DatabaseBackupScheduler;
 import de.westarps.topteacher.backend.backup.DatabaseBackupService;
 import de.westarps.topteacher.backend.settings.AppSettings;
 import de.westarps.topteacher.ui.component.ClipboardCopyButton;
+import de.westarps.topteacher.ui.component.ActionToolbar;
 
 class SettingsViewTests {
 
@@ -35,20 +38,24 @@ class SettingsViewTests {
 	private Path tempDir;
 
 	@Test
-	void wrapsBackupSettingsInATabAndUsesOneColumnForm() {
+	void wrapsBackupSettingsInSystemSettingsAndUsesOneColumnForm() {
 		final SettingsView view = view("", false, "0 0 2 * * *");
 
 		final TabSheet tabSheet = components(view, TabSheet.class).getFirst();
-		final Component backupContent = tabSheet.getComponent(tabSheet.getSelectedTab());
+		final Component backupContent = backupContent(view);
 		final FormLayout form = components(backupContent, FormLayout.class).getFirst();
 
 		assertThat(view.getPageTitle()).isEqualTo("Einstellungen");
 		assertThat(tabSheet.getTabCount()).isEqualTo(1);
-		assertThat(tabSheet.getTabAt(0).getLabel()).isEqualTo("Sicherung");
+		assertThat(tabSheet.getTabAt(0).getLabel()).isEqualTo("Systemeinstellungen");
+		assertThat(((DatabaseBackupSettingsTab) backupContent).label()).isEqualTo("Datenbank > Sicherung");
 		assertThat(form.getResponsiveSteps()).hasSize(1);
 		assertThat(form.getResponsiveSteps().getFirst().toJson().get("columns").asInt()).isEqualTo(1);
 		assertThat(button(backupContent, "Speichern").isEnabled()).isFalse();
 		assertThat(button(backupContent, "Jetzt sichern").isEnabled()).isFalse();
+		assertThat(button(backupContent, "Speichern").getText()).isEqualTo("Speichern");
+		assertThat(button(backupContent, "Jetzt sichern").getText()).isEqualTo("Jetzt sichern");
+		assertThat(button(backupContent, "Jetzt sichern").getTooltip().getText()).isEqualTo("Jetzt sichern");
 	}
 
 	@Test
@@ -83,8 +90,9 @@ class SettingsViewTests {
 	}
 
 	@Test
-	void showsCurrentH2FileAsReadOnlyCopyableField() {
+	void showsCurrentH2FileAsReadOnlyCopyableFieldWithItsSize() throws IOException {
 		final Path databaseFile = tempDir.resolve("topteacher");
+		Files.write(Path.of(databaseFile + ".mv.db"), new byte[1_572_864]);
 		final SettingsView view = view("", false, "0 0 2 * * *", databaseFile);
 		final Component backupContent = backupContent(view);
 
@@ -92,11 +100,13 @@ class SettingsViewTests {
 
 		assertThat(h2File.isReadOnly()).isTrue();
 		assertThat(h2File.getValue()).isEqualTo(databaseFile + ".mv.db");
+		assertThat(h2File.getHelperText()).isEqualTo("Dateigröße: 1,50 MB");
 		final Component suffixComponent = h2File.getSuffixComponent();
 		assertThat(suffixComponent).isInstanceOf(ClipboardCopyButton.class);
 		assertThat(suffixComponent.getElement().getAttribute("aria-label")).isEqualTo("Pfad kopieren");
-		assertThat(backupContent.getChildren().toList().getFirst()).isSameAs(h2File);
-		assertThat(backupContent.getChildren().toList().get(1).getElement().getTag()).isEqualTo("hr");
+		assertThat(backupContent.getChildren().toList().getFirst()).isInstanceOf(ActionToolbar.class);
+		assertThat(backupContent.getChildren().toList().get(1)).isSameAs(h2File);
+		assertThat(backupContent.getChildren().toList().get(2).getElement().getTag()).isEqualTo("hr");
 	}
 
 	@Test
@@ -116,8 +126,8 @@ class SettingsViewTests {
 		final DatabaseBackupScheduler backupScheduler = mock(DatabaseBackupScheduler.class);
 		final DatabaseBackupService backupService = mock(DatabaseBackupService.class);
 		when(backupService.backUpNow()).thenReturn(tempDir.resolve("topteacher-db.zip"));
-		final SettingsView view = new SettingsView(List.of(new DatabaseBackupSettingsTab(appSettings, backupService,
-				backupScheduler, databaseEnvironment(tempDir.resolve("topteacher")))));
+		final SettingsView view = new SettingsView(List.of(new SystemSettingsTab(List.of(new DatabaseBackupSettingsTab(
+				appSettings, backupService, backupScheduler, databaseEnvironment(tempDir.resolve("topteacher")))))));
 		final Component backupContent = backupContent(view);
 		final UI ui = new UI();
 		UI.setCurrent(ui);
@@ -168,9 +178,9 @@ class SettingsViewTests {
 
 	private static SettingsView view(final String targetFolder, final boolean scheduleEnabled, final String cron,
 			final Path databaseFile) {
-		return new SettingsView(List.of(new DatabaseBackupSettingsTab(settings(targetFolder, scheduleEnabled, cron),
-				mock(DatabaseBackupService.class), mock(DatabaseBackupScheduler.class),
-				databaseEnvironment(databaseFile))));
+		return new SettingsView(List.of(new SystemSettingsTab(List.of(new DatabaseBackupSettingsTab(
+				settings(targetFolder, scheduleEnabled, cron), mock(DatabaseBackupService.class),
+				mock(DatabaseBackupScheduler.class), databaseEnvironment(databaseFile))))));
 	}
 
 	private static AppSettings settings(final String targetFolder, final boolean scheduleEnabled, final String cron) {
@@ -191,12 +201,14 @@ class SettingsViewTests {
 	}
 
 	private static Component backupContent(final SettingsView view) {
-		final TabSheet tabSheet = components(view, TabSheet.class).getFirst();
-		return tabSheet.getComponent(tabSheet.getSelectedTab());
+		final TabSheet settingsTabs = components(view, TabSheet.class).getFirst();
+		final Component systemSettings = settingsTabs.getComponent(settingsTabs.getSelectedTab());
+		return components(systemSettings, DatabaseBackupSettingsTab.class).getFirst();
 	}
 
 	private static Button button(final Component root, final String text) {
-		return components(root, Button.class).stream().filter(button -> text.equals(button.getText())).findFirst()
+		return components(root, Button.class).stream()
+				.filter(button -> text.equals(button.getElement().getAttribute("aria-label"))).findFirst()
 				.orElseThrow();
 	}
 

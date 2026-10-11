@@ -1,8 +1,11 @@
 package de.westarps.topteacher.mcp;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -33,6 +36,7 @@ public class CoursePupilAssignmentWriter {
 
 	@Transactional
 	public AssignmentResult assign(final int courseId, final List<ResolvedPupil> resolvedPupils) {
+		PupilNamePseudonymizer.requireIdentityWrite();
 		Objects.requireNonNull(resolvedPupils, "resolvedPupils");
 		final Course course = courses.findById(courseId)
 				.orElseThrow(() -> new IllegalArgumentException("Course does not exist: " + courseId));
@@ -60,6 +64,39 @@ public class CoursePupilAssignmentWriter {
 				List.copyOf(alreadyAssignedPupils.values()));
 	}
 
+	@Transactional
+	public AssignmentResult assignExisting(final int courseId, final List<Integer> pupilIds) {
+		PupilNamePseudonymizer.isPseudonymized();
+		final List<Integer> validatedIds = ExamWriteMcpTools.pupilIds(pupilIds, false);
+		final Course course = courses.findById(courseId)
+				.orElseThrow(() -> new IllegalArgumentException("Course does not exist: " + courseId));
+		if (course.lifecycle() != Lifecycle.ACTIVE) {
+			throw new IllegalArgumentException("Archived course can not receive new pupil assignments: " + courseId);
+		}
+		final LinkedHashMap<Integer, Pupil> requestedPupils = new LinkedHashMap<>();
+		for (final int pupilId : validatedIds) {
+			final Pupil pupil = pupils.findById(pupilId)
+					.orElseThrow(() -> new IllegalArgumentException("Pupil does not exist: " + pupilId));
+			if (pupil.lifecycle() != Lifecycle.ACTIVE) {
+				throw new IllegalArgumentException("Archived pupil can not be newly assigned: " + pupilId);
+			}
+			requestedPupils.put(pupilId, pupil);
+		}
+		final Set<Integer> currentIds = courses.findPupils(courseId).stream().map(Pupil::id)
+				.collect(Collectors.toSet());
+		final ArrayList<Pupil> assigned = new ArrayList<>();
+		final ArrayList<Pupil> alreadyAssigned = new ArrayList<>();
+		for (final Pupil pupil : requestedPupils.values()) {
+			if (currentIds.contains(pupil.id())) {
+				alreadyAssigned.add(pupil);
+			} else {
+				courses.assignPupil(courseId, pupil.id());
+				assigned.add(pupil);
+			}
+		}
+		return new AssignmentResult(course, assigned, alreadyAssigned);
+	}
+
 	private LinkedHashMap<Integer, Pupil> validateReusedPupils(final List<ResolvedPupil> resolvedPupils) {
 		final LinkedHashMap<Integer, Pupil> reusedPupils = new LinkedHashMap<>();
 		for (final ResolvedPupil resolvedPupil : resolvedPupils) {
@@ -70,7 +107,7 @@ public class CoursePupilAssignmentWriter {
 					() -> new IllegalArgumentException("Pupil does not exist: " + resolvedPupil.existingPupilId()));
 			if (!existing.name().equals(resolvedPupil.name()) || !existing.surname().equals(resolvedPupil.surname())) {
 				throw new IllegalArgumentException("Pupil " + existing.id() + " no longer has the expected exact name: "
-						+ resolvedPupil.name() + " " + resolvedPupil.surname());
+						+ PupilNamePseudonymizer.displayName(resolvedPupil.name(), resolvedPupil.surname()));
 			}
 			if (existing.lifecycle() != Lifecycle.ACTIVE) {
 				throw new IllegalArgumentException("Archived pupil can not be newly assigned: " + existing.id());

@@ -107,7 +107,7 @@ Wichtige Properties:
 | `spring.h2.console.enabled` | `true` | Aktiviert die H2-Konsole. Für produktiven Betrieb kann sie per `false` deaktiviert werden. |
 | `spring.h2.console.path` | `/h2-console` | Pfad der H2-Konsole relativ zum Context Path. |
 
-Beim ersten Start führt TopTeacher durch die Datenbank-Initialisierung. Dabei kann eine leere Datenbank mit Basisdaten oder eine Datenbank mit Demodaten angelegt werden. Später kann die Datenbank in den Einstellungen im Tab `Zurücksetzen` erneut initialisiert werden.
+Beim ersten Start führt TopTeacher durch die Datenbank-Initialisierung. Dabei kann eine leere Datenbank mit Basisdaten oder eine Datenbank mit Demodaten angelegt werden. Später kann die Datenbank unter `Einstellungen` → `Systemeinstellungen` → `Datenbank > Zurücksetzen` erneut initialisiert werden.
 
 ### Linux helper script
 
@@ -131,30 +131,52 @@ Streamable HTTP. It is disabled by default. When enabled, the endpoint is
 `http://localhost:8081/top-teacher/mcp` and every request requires a bearer
 token.
 
-Store the token outside the repository in a file readable only by its owner. It
-must contain exactly one UTF-8 line with at least 32 characters. For example:
+Create a named token under `Systemeinstellungen` → `MCP > Sicherheit`. New
+tokens default to pseudonymized access. Copy the credential when it is created;
+TopTeacher displays it only once and stores only its hash in the database.
+Tokens can be revoked immediately, given an optional expiry date, or switched
+between full and pseudonymized access. See
+[system settings](doc/ops/SystemSettings.md#mcp-access-and-pupil-pseudonymization).
 
-```shell
-umask 077
-openssl rand -hex 32 > /absoluter/pfad/topteacher-mcp-token
-```
-
-Enable MCP through environment variables when using one of the bundled start
-scripts:
+Enable MCP through the environment when using one of the bundled start scripts:
 
 ```shell
 TT_MCP_ENABLED=true \
-TT_MCP_TOKEN_FILE=/absoluter/pfad/topteacher-mcp-token \
 ./run/start-dev.sh /Users/<Benutzername>/Documents/<top-teacher-db>
 ```
 
-The AI client must use the endpoint URL and the HTTP header
-`Authorization: Bearer <token from the file>`.
+The AI client uses the endpoint URL and HTTP header
+`Authorization: Bearer <token copied from TopTeacher>`.
+
+Existing installations may retain `TT_MCP_TOKEN_FILE` for the first enabled
+startup after upgrading. Its credential is imported once as a full-access token;
+subsequent authentication uses the database and the old file can be removed.
+A revoked imported token is never restored from that file on restart.
+
+Pupil responses expose stable IDs, `displayName`, and `identityRepresentation`
+(`FULL_NAME` or `INITIALS`). Real `name` and `surname` fields occur only under
+full access. Pseudonymized discovery searches initials or IDs rather than real
+names. Pupil creation/import/renaming and real-name matching are unavailable;
+other existing operations remain available under their normal domain rules.
+Course creation/assignment use `pupilIds` instead of name-bearing rosters.
+Users must remove names from arbitrary comments, material and uploaded work
+before sharing them with the AI; those contents are not automatically redacted.
+
+The exam-first workflow is: discover `get_mcp_context` and the
+`get_markdown_guide`, create an exam shell, author Aufgaben/Material/closing
+text, attach EH requirements to existing task IDs, and record results.
+Academic operations work in both access modes. Typed mutation batches preserve
+stable IDs, support incremental additions/reordering, and use shared revision
+checks and retry keys. See the authoritative
+[MCP contract](doc/ops/Mcp.md) for payloads, limits, image exchange and locks.
 
 The MCP server currently exposes these tools:
 
 | Tool | Action |
 | --- | --- |
+| `get_mcp_context` | Read the token's effective capabilities, workflow, limits and guide version. |
+| `get_markdown_guide` | Read TT's versioned custom Markdown rules and complete examples. |
+| `get_exam_authoring_options` | List active grading scales, authoring commands and limits. |
 | `list_courses` | List active or archived courses. |
 | `list_course_pupils` | List the pupils currently assigned to a course; archived pupils are included only when explicitly requested. |
 | `get_course_creation_options` | Read the valid school classes, course periods, active subjects, and active grading scales. |
@@ -166,13 +188,19 @@ The MCP server currently exposes these tools:
 | `update_pupil` | Change a pupil's first name, surname, or both. |
 | `list_exams` | List the exams of a course. |
 | `create_exam` | Create a main or makeup exam with an initial active pupil roster. |
+| `duplicate_exam` | Copy the academic design into a new main exam with an explicitly selected pupil roster, without results. |
 | `update_exam` | Change an exam's title, date, or both without changing its relationships. |
+| `get_exam` | Read pupil-facing tasks, material, closing text, image metadata, revision, permissions and diagnostics. |
+| `apply_exam_content_changes` | Atomically add/edit/delete/reorder content with stable IDs and explicit commands. |
+| `import_material_image` | Import a path-resolved PNG/JPEG and its material reference atomically. |
+| `get_material_image` | Receive stored pixels as native Base64 MCP image content. |
 | `assign_pupils_to_exam` | Assign existing active course pupils to an exam. |
 | `remove_pupils_from_exam` | Remove pupils from an exam unless results lock their assignments. |
-| `get_level_of_expectations` | Read a complete level of expectations. |
-| `create_level_of_expectations` | Create a complete level of expectations for a blank exam without overwriting anything. |
+| `get_level_of_expectations` | Read requirements and criteria against the shared task tree. |
+| `apply_level_of_expectations_changes` | Atomically author requirements without creating a second task hierarchy. |
 | `list_exam_pupils` | List the pupils assigned to an exam. |
 | `get_pupil_result` | Read one pupil's result for an exam. |
+| `save_pupil_result` | Atomically save targeted requirement/criterion assessments for an assigned pupil. |
 | `create_database_backup` | Create a database backup in TopTeacher's configured target folder and report when backup is unavailable. |
 
 Archived pupils are historical records throughout TopTeacher. They are hidden
@@ -183,7 +211,7 @@ and latest-class information; archived pupils are visible only through an
 explicit `ARCHIVED` or `ALL` scope. The MCP interface does not expose a way to
 change lifecycle state.
 
-Exact active pupil-name matches are never merged automatically. The
+With full access, exact active pupil-name matches are never merged automatically. The
 course-creation tool requires an explicit `REUSE`, `CREATE`, or `SKIP` decision;
 assigning pupils to an existing course uses the same decisions. A uniquely
 named active pupil who is already assigned satisfies the request without a
@@ -217,6 +245,11 @@ exams receive the active course pupils who are not assigned to the original
 exam. Supplying an explicit empty list creates an empty exam. Exam updates are
 limited to title and date and retain the existing course, grading scale, makeup
 relationship, level of expectations, pupil assignments, and results.
+Creation requires a course-scoped `requestId`; metadata updates require a
+current `expectedRevision` and an exam-scoped `requestId`. Duplication copies
+tasks/material/footer/EH into the same course with new IDs, never results or
+source assignments; `initialPupilIds` is required and can explicitly be empty.
+The old combined `create_level_of_expectations` tool is removed.
 
 Exam-pupil assignment and removal use exact IDs from `list_course_pupils` and
 `list_exam_pupils`. Assignment is active-only and idempotent. Removal follows
@@ -232,8 +265,8 @@ result with TopTeacher's error message instead of a generic protocol error.
 ### LM Studio
 
 In LM Studio, open `Program` → `Install` → `Edit mcp.json` and add TopTeacher as
-a remote MCP server. Replace the placeholder with the token stored in the
-credential file:
+a remote MCP server. Replace the placeholder with the credential copied when
+creating a token in TopTeacher's settings:
 
 ```json
 {
@@ -241,7 +274,7 @@ credential file:
     "topteacher": {
       "url": "http://127.0.0.1:8081/top-teacher/mcp",
       "headers": {
-        "Authorization": "Bearer <token from the file>"
+        "Authorization": "Bearer <token copied from TopTeacher>"
       }
     }
   }
@@ -272,3 +305,10 @@ Jar und macOS-App können zusammen gebaut werden:
 ```shell
 ./run/package-all.sh /Volumes/topteacher-builds
 ```
+
+# License
+
+TopTeacher! is licensed under the [MIT License](LICENSE.md), copyright
+© 2026 Jens Westarp. The licence notice is also included in the packaged app.
+Third-party assets and dependencies retain their own licences and copyright
+notices.

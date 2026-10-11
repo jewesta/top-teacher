@@ -4,6 +4,7 @@
 	--lumo-primary-color-10pct: hsla(350, 48%, 34%, 0.1);
 	--lumo-primary-text-color: hsl(350, 54%, 30%);
 	--lumo-primary-contrast-color: #fff;
+	--tt-bonus-color: hsl(45, 100%, 58%);
 	/* Prevent horizontal trackpad swipes from triggering browser history navigation. */
 	overscroll-behavior-x: contain;
 }
@@ -11,6 +12,16 @@
 vaadin-button:not([disabled]),
 vaadin-tab:not([disabled]) {
 	cursor: pointer;
+}
+
+vaadin-combo-box-item::part(checkmark)::before,
+vaadin-multi-select-combo-box-item::part(checkmark)::before,
+vaadin-select-item::part(checkmark)::before {
+	content: "\2022";
+	font-family: var(--lumo-font-family);
+	background: none;
+	mask: none;
+	text-align: center;
 }
 
 vaadin-app-layout::part(drawer) {
@@ -172,7 +183,6 @@ vaadin-app-layout::part(navbar) {
 	align-items: flex-start;
 	box-sizing: border-box;
 	flex: 0 0 auto;
-	gap: var(--lumo-space-xs);
 	width: 100%;
 }
 
@@ -221,6 +231,191 @@ vaadin-app-layout::part(navbar) {
 	padding-top: var(--lumo-space-m);
 }
 
+vaadin-upload.tt-material-image-upload {
+	--vaadin-upload-background: transparent;
+	--vaadin-upload-border-width: 0;
+	--vaadin-upload-padding: 0;
+	background: transparent;
+}
+
+vaadin-upload.tt-material-image-upload[dragover-valid] {
+	--vaadin-upload-background: transparent;
+	background: transparent;
+}
+
+vaadin-upload.tt-material-image-upload::part(primary-buttons) {
+	align-items: center;
+	flex-direction: row-reverse;
+	width: 100%;
+}
+
+vaadin-upload.tt-material-image-upload::part(drop-label) {
+	flex: 1 1 auto;
+	flex-direction: row-reverse;
+	min-width: 0;
+}
+
+.tt-material-image-upload-separator {
+	color: var(--lumo-secondary-text-color);
+	flex: 0 0 auto;
+	white-space: nowrap;
+}
+
+.tt-material-image-drop-target {
+	align-items: center;
+	border: 1px dashed var(--lumo-contrast-20pct);
+	border-radius: var(--lumo-border-radius-m);
+	box-sizing: border-box;
+	display: flex;
+	flex: 1 1 auto;
+	gap: var(--lumo-space-s);
+	justify-content: center;
+	min-height: 7rem;
+	min-width: 0;
+	padding: var(--lumo-space-l);
+	text-align: center;
+}
+
+.tt-material-image-options {
+	gap: var(--lumo-space-l);
+}
+
+.tt-material-image-preview-stage {
+	align-items: center;
+	background-color: var(--lumo-contrast-5pct);
+	border-radius: var(--lumo-border-radius-m);
+	box-sizing: border-box;
+	display: flex;
+	justify-content: center;
+	padding: var(--lumo-space-m);
+	width: 100%;
+}
+
+.tt-material-image-preview-page {
+	aspect-ratio: 210 / 297;
+	background-color: white;
+	border: 1px solid var(--lumo-contrast-20pct);
+	box-shadow: var(--lumo-box-shadow-xs);
+	box-sizing: border-box;
+	position: relative;
+	width: min(100%, 15.56rem);
+}
+
+.tt-material-image-preview-content {
+	display: flex;
+	flex-direction: column;
+	inset: 2.357% 3.333%;
+	justify-content: center;
+	overflow: hidden;
+	position: absolute;
+}
+
+.tt-material-image-preview-image {
+	display: block;
+	height: auto;
+	max-height: 100%;
+	max-width: 100%;
+	object-fit: contain;
+}
+
+.tt-material-image-width-field {
+	min-width: 0;
+}
+
+.tt-material-image-options-label {
+	color: var(--lumo-secondary-text-color);
+	display: block;
+	font-size: var(--lumo-font-size-s);
+	font-weight: 500;
+	line-height: 1;
+	padding-bottom: var(--lumo-space-xs);
+	padding-left: var(--lumo-space-xs);
+}
+
+.tt-material-image-width-control {
+	align-items: center;
+	display: flex;
+	gap: var(--lumo-space-s);
+	height: var(--lumo-size-m);
+}
+
+.tt-material-image-width-slider {
+	accent-color: var(--lumo-primary-color);
+	min-width: 0;
+}
+
+.tt-material-image-width-value {
+	color: var(--lumo-body-text-color);
+	flex: 0 0 3.25rem;
+	font-variant-numeric: tabular-nums;
+	text-align: right;
+}
+
+vaadin-custom-field.tt-segmented-control-field {
+	--tt-segmented-control-height: var(--lumo-size-m);
+	--tt-segmented-control-segment-height: var(--lumo-size-s);
+}
+
+vaadin-custom-field.tt-segmented-control-field::part(input-fields) {
+	align-items: stretch;
+	display: flex;
+	height: var(--tt-segmented-control-height);
+}
+
+.tt-segmented-control {
+	align-items: center;
+	background-color: var(--lumo-contrast-10pct);
+	border-radius: var(--lumo-border-radius-m);
+	box-sizing: border-box;
+	display: grid;
+	gap: var(--lumo-space-xs);
+	grid-auto-columns: minmax(0, 1fr);
+	grid-auto-flow: column;
+	height: var(--tt-segmented-control-height);
+	padding: 0 var(--lumo-space-xs);
+	width: 100%;
+}
+
+vaadin-button.tt-segmented-control-button {
+	--lumo-button-size: var(--tt-segmented-control-segment-height);
+	--vaadin-button-height: var(--tt-segmented-control-segment-height);
+	--vaadin-button-padding: 0 var(--lumo-space-m);
+	background-color: transparent;
+	border-radius: var(--lumo-border-radius-s);
+	box-shadow: none;
+	height: var(--tt-segmented-control-segment-height);
+	margin: 0;
+	min-width: 0;
+	width: 100%;
+}
+
+vaadin-button.tt-segmented-control-button-selected {
+	background-color: var(--lumo-primary-color);
+	color: var(--lumo-primary-contrast-color);
+	font-weight: 600;
+}
+
+vaadin-button.tt-segmented-control-button-selected[disabled] {
+	background-color: var(--lumo-contrast-20pct);
+	color: var(--lumo-body-text-color);
+	font-weight: 500;
+}
+
+.tt-segmented-control-inactive {
+	background-color: transparent;
+	border: 1px dashed var(--lumo-contrast-30pct);
+}
+
+.tt-segmented-control-inactive vaadin-button.tt-segmented-control-button[disabled] {
+	cursor: default;
+	pointer-events: auto;
+}
+
+vaadin-upload.tt-material-image-upload[dragover-valid] .tt-material-image-drop-target {
+	background: var(--lumo-contrast-5pct);
+	border-color: var(--lumo-primary-color);
+}
+
 .tt-settings-form {
 	width: 100%;
 }
@@ -233,6 +428,93 @@ vaadin-app-layout::part(navbar) {
 .tt-settings-cron-description {
 	color: var(--lumo-secondary-text-color);
 	font-size: var(--lumo-font-size-s);
+}
+
+.tt-system-settings-list {
+	gap: 0;
+}
+
+.tt-system-settings-navigation {
+	min-height: 0;
+}
+
+.tt-system-settings-section-host {
+	box-sizing: border-box;
+	height: 100%;
+	min-height: 0;
+	overflow: auto;
+	padding: var(--lumo-space-m);
+	width: 100%;
+}
+
+.tt-file-access-settings-content,
+.tt-mcp-security-settings-content,
+.tt-file-access-mapping-list,
+.tt-mcp-token-list {
+	gap: var(--lumo-space-m);
+}
+
+.tt-settings-line-item {
+	/* Vaadin field/button baselines follow the input, independent of validation text. */
+	align-items: baseline;
+}
+
+.tt-settings-line-item-fields {
+	flex-wrap: wrap;
+	min-width: 0;
+}
+
+.tt-settings-line-item-actions {
+	flex: 0 0 auto;
+}
+
+.tt-file-access-mapping-row vaadin-text-field {
+	flex: 1 1 18rem;
+	min-width: 14rem;
+}
+
+.tt-mcp-token-row {
+	gap: var(--lumo-space-xs);
+}
+
+.tt-mcp-token-name {
+	flex: 0 0 13.5rem;
+	width: 13.5rem;
+}
+
+.tt-mcp-token-access {
+	flex: 0 0 10.5rem;
+	width: 10.5rem;
+}
+
+.tt-mcp-token-expiry {
+	flex: 0 0 11rem;
+	width: 11rem;
+}
+
+.tt-mcp-token-metadata {
+	color: var(--lumo-secondary-text-color);
+	font-size: var(--lumo-font-size-s);
+}
+
+.tt-mcp-token-row-revoked {
+	opacity: 0.7;
+}
+
+.tt-mcp-token-credential-dialog {
+	max-width: min(42rem, calc(100vw - 2 * var(--lumo-space-m)));
+}
+
+.tt-mcp-token-credential {
+	font-family: var(--lumo-font-family-monospace, monospace);
+}
+
+.tt-file-access-remove {
+	flex: 0 0 auto;
+}
+
+.tt-file-access-empty-state {
+	padding-block: var(--lumo-space-m);
 }
 
 .tt-master-data-view {
@@ -261,8 +543,55 @@ vaadin-app-layout::part(navbar) {
 	width: 12rem;
 }
 
+.tt-action-toolbar {
+	gap: var(--lumo-space-s);
+}
+
+/* Retain normal control height and icon size, with the compact horizontal
+   spacing of the exam-tree action rows rather than extra icon padding. */
+.tt-action-toolbar .tt-toolbar-action:not(.tt-toolbar-add-action),
+.tt-action-toolbar > vaadin-menu-bar > vaadin-menu-bar-button:not([slot="overflow"]) {
+	min-width: var(--lumo-icon-size-m);
+	padding-inline: 0;
+}
+
+.tt-action-toolbar > vaadin-menu-bar > vaadin-menu-bar-button:not([slot="overflow"]) {
+	margin-inline: 0;
+}
+
+.tt-action-toolbar > .tt-toolbar-action:not(.tt-toolbar-add-action)::part(label),
+.tt-action-toolbar > vaadin-menu-bar .tt-toolbar-menu-label {
+	display: none;
+}
+
+/* Count visible elements, including filters, selectors, and disabled actions.
+   CSS adapts in place when elements are added, removed, hidden, or shown. */
+.tt-action-toolbar:not(:has(> .tt-toolbar-element:not([hidden]) ~ .tt-toolbar-element:not([hidden]))) > .tt-toolbar-action:not(.tt-toolbar-add-action),
+.tt-action-toolbar:not(:has(> .tt-toolbar-element:not([hidden]) ~ .tt-toolbar-element:not([hidden]))) > vaadin-menu-bar {
+	--vaadin-button-tertiary-background: var(--lumo-contrast-5pct);
+}
+
+.tt-action-toolbar:not(:has(> .tt-toolbar-element:not([hidden]) ~ .tt-toolbar-element:not([hidden]))) > .tt-toolbar-action:not(.tt-toolbar-add-action),
+.tt-action-toolbar:not(:has(> .tt-toolbar-element:not([hidden]) ~ .tt-toolbar-element:not([hidden]))) > vaadin-menu-bar > vaadin-menu-bar-button:not([slot="overflow"]) {
+	min-width: calc(var(--lumo-size-m) * 2);
+	padding: 0 calc(var(--lumo-size-m) / 3 + var(--lumo-border-radius-m) / 2);
+}
+
+.tt-action-toolbar:not(:has(> .tt-toolbar-element:not([hidden]) ~ .tt-toolbar-element:not([hidden]))) > .tt-toolbar-action:not(.tt-toolbar-add-action)::part(label),
+.tt-action-toolbar:not(:has(> .tt-toolbar-element:not([hidden]) ~ .tt-toolbar-element:not([hidden]))) > vaadin-menu-bar .tt-toolbar-menu-label {
+	display: inline;
+}
+
+.tt-action-toolbar:not(:has(> .tt-toolbar-element:not([hidden]) ~ .tt-toolbar-element:not([hidden]))) > .tt-toolbar-action:not(.tt-toolbar-add-action)::part(prefix) {
+	margin-left: -0.25em;
+	margin-right: 0.25em;
+}
+
+.tt-action-toolbar:not(:has(> .tt-toolbar-element:not([hidden]) ~ .tt-toolbar-element:not([hidden]))) > vaadin-menu-bar .tt-toolbar-menu-label {
+	margin-inline-start: 0.25em;
+}
+
 .tt-master-toolbar {
-	column-gap: var(--lumo-space-m);
 	flex: 0 0 auto;
 	/* Compensate for top padding of tt-master-list. We usually want the padding,
 	   but the boxes in tt-master-toolbar bring their own top padding which adds up. */
@@ -346,6 +675,25 @@ vaadin-app-layout::part(navbar) {
 .tt-eh-editor,
 .tt-exam-results-editor {
 	--tt-points-column-width: 10rem;
+	--tt-points-badge-width: 6rem;
+	--tt-points-badge-background: hsla(214, 90%, 52%, 0.12);
+	--tt-points-badge-color: hsl(214, 65%, 40%);
+	--tt-loe-content-right-inset: calc(var(--lumo-space-m) + 3px);
+}
+
+.tt-exam-results-editor {
+	--tt-points-status-width: var(--lumo-size-s);
+	--tt-points-column-width: calc(var(--tt-points-status-width) + var(--lumo-space-s) + var(--tt-points-badge-width));
+	--tt-points-control-background: hsla(214, 90%, 80%, 0.12);
+}
+
+.tt-eh-editor .tt-designer-toolbar-summary .tt-loe-points-cell,
+.tt-exam-results-editor .tt-designer-toolbar-summary .tt-loe-points-cell {
+	margin-right: var(--tt-loe-content-right-inset);
+}
+
+.tt-exam-results-editor .tt-designer-content {
+	padding-right: calc(var(--tt-loe-content-right-inset) - var(--lumo-space-s));
 }
 
 .tt-fullscreen-target:fullscreen,
@@ -362,7 +710,6 @@ vaadin-app-layout::part(navbar) {
 	box-sizing: border-box;
 	flex: 0 0 auto;
 	flex-wrap: wrap;
-	gap: var(--lumo-space-s);
 	padding-top: var(--lumo-space-m);
 	width: 100%;
 }
@@ -492,9 +839,13 @@ vaadin-app-layout::part(navbar) {
 	width: 100%;
 }
 
-.tt-eh-details>vaadin-details-summary {
+.tt-eh-details>.tt-eh-details-summary {
 	background: var(--lumo-contrast-5pct);
+	border-radius: var(--lumo-border-radius-m);
+	box-sizing: border-box;
+	cursor: default;
 	padding: var(--lumo-space-s);
+	width: 100%;
 }
 
 .tt-eh-details::part(content) {
@@ -510,10 +861,6 @@ vaadin-app-layout::part(navbar) {
 }
 
 .tt-eh-part::part(content) {
-	padding-right: 0;
-}
-
-.tt-exam-note-section::part(content) {
 	padding-right: 0;
 }
 
@@ -590,6 +937,36 @@ vaadin-app-layout::part(navbar) {
 	padding: 0 var(--lumo-space-xs);
 }
 
+.tt-results-requirement-number.tt-results-bonus-number {
+	background: transparent;
+	border-radius: 0;
+	display: inline-grid;
+	height: calc(var(--lumo-size-xs) + var(--lumo-space-s));
+	min-width: calc(var(--lumo-size-xs) + var(--lumo-space-s));
+	padding: 0;
+	place-items: center;
+	width: calc(var(--lumo-size-xs) + var(--lumo-space-s));
+}
+
+.tt-results-bonus-star,
+.tt-results-bonus-number-text {
+	grid-area: 1 / 1;
+}
+
+.tt-results-bonus-star {
+	color: var(--tt-bonus-color);
+	height: var(--lumo-size-m);
+	width: var(--lumo-size-m);
+}
+
+.tt-results-bonus-number-text {
+	color: hsl(214, 35%, 21%);
+	font-size: var(--lumo-font-size-s);
+	font-weight: 700;
+	line-height: 1;
+	z-index: 1;
+}
+
 .tt-results-requirement-marker {
 	align-items: center;
 	background: var(--lumo-contrast-5pct);
@@ -638,11 +1015,6 @@ vaadin-app-layout::part(navbar) {
 	width: calc(var(--tt-points-column-width) + var(--lumo-space-s) + var(--lumo-space-s));
 }
 
-.tt-results-bonus-icon {
-	color: hsl(43, 86%, 42%);
-	flex: 0 0 auto;
-}
-
 .tt-results-points-control {
 	align-items: stretch;
 	height: 100%;
@@ -660,51 +1032,26 @@ vaadin-app-layout::part(navbar) {
 	height: var(--lumo-size-s);
 	margin-left: auto;
 	margin-right: var(--lumo-space-s);
-	width: var(--tt-points-column-width, 10rem);
+	width: var(--tt-points-badge-width, 6rem);
 }
 
 .tt-results-points-cell {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) 3ch 5ch;
+	grid-template-columns: minmax(0, 1fr) 3ch minmax(0, 1fr);
 }
 
 .tt-loe-aggregate-points,
-.tt-results-requirement-total {
-	background: var(--lumo-primary-color-10pct);
-	color: var(--lumo-primary-text-color);
+.tt-results-requirement-total,
+.tt-eh-percentage {
+	background: var(--tt-points-badge-background);
+	color: var(--tt-points-badge-color);
 }
 
 .tt-loe-aggregate-points {
 	display: inline-flex;
-	justify-content: space-between;
-	padding: 0 var(--lumo-space-xs);
-}
-
-.tt-loe-aggregate-points-label {
-	flex: 0 0 auto;
-}
-
-.tt-loe-aggregate-points-values {
-	align-items: center;
-	display: inline-flex;
 	font-variant-numeric: tabular-nums;
-	justify-content: flex-end;
-	white-space: nowrap;
-}
-
-.tt-loe-point-number {
-	display: inline-block;
-	text-align: right;
-}
-
-.tt-loe-point-regular {
-	margin-right: var(--lumo-space-s);
-	width: 3ch;
-}
-
-.tt-loe-point-bonus {
-	text-align: left;
-	width: 2ch;
+	justify-content: center;
+	padding: 0 var(--lumo-space-xs);
 }
 
 .tt-results-points-cell-leading,
@@ -715,13 +1062,11 @@ vaadin-app-layout::part(navbar) {
 }
 
 .tt-results-points-cell-leading {
-	justify-content: flex-end;
-	padding-right: var(--lumo-space-m);
+	justify-content: center;
 }
 
 .tt-results-points-cell-trailing {
-	justify-content: flex-end;
-	padding-right: var(--lumo-space-xs);
+	justify-content: center;
 }
 
 .tt-results-points-cell-value {
@@ -733,24 +1078,48 @@ vaadin-app-layout::part(navbar) {
 
 .tt-results-requirement-total {
 	cursor: default;
-	margin: 0;
+	grid-template-columns: 1fr;
+	margin: 0 0 0 auto;
 }
 
-.tt-results-requirement-total .tt-results-points-cell-value {
-	justify-self: end;
-	margin-right: var(--lumo-space-s);
+.tt-results-requirement-total .tt-results-points-cell-leading,
+.tt-results-requirement-total .tt-results-points-cell-trailing {
+	display: none;
 }
 
-.tt-results-point-stepper {
+.tt-loe-point-stepper {
+	background: var(--tt-points-control-background, var(--tt-points-badge-background));
 	color: var(--lumo-secondary-text-color);
 	margin: 0;
 }
 
-.tt-results-point-stepper:is(:hover, :focus-within, .tt-results-criterion-highlighted) {
+.tt-results-points-row {
+	align-items: center;
+	border-radius: var(--lumo-border-radius-s);
+	display: grid;
+	flex: 0 0 auto;
+	gap: var(--lumo-space-s);
+	grid-template-columns: var(--tt-points-status-width) var(--tt-points-badge-width);
+	height: var(--lumo-size-s);
+	width: var(--tt-points-column-width);
+}
+
+.tt-results-points-status {
+	align-items: center;
+	display: flex;
+	justify-content: center;
+	min-width: 0;
+}
+
+.tt-results-points-row > .tt-loe-points-cell {
+	margin: 0;
+}
+
+.tt-results-criterion-checkbox-row:is(:hover, :focus-within, .tt-results-criterion-highlighted) {
 	background: var(--lumo-primary-color-10pct);
 }
 
-.tt-results-point-stepper vaadin-button {
+.tt-loe-point-stepper vaadin-button {
 	font-size: var(--lumo-font-size-s);
 	height: var(--lumo-size-xs);
 	min-width: var(--lumo-size-xs);
@@ -763,6 +1132,12 @@ vaadin-app-layout::part(navbar) {
 	padding-top: var(--lumo-space-s);
 }
 
+.tt-results-adjustment-icon {
+	color: var(--lumo-secondary-text-color);
+	height: var(--lumo-icon-size-s);
+	width: var(--lumo-icon-size-s);
+}
+
 .tt-results-points-field {
 	max-width: 100%;
 	min-width: 0;
@@ -773,8 +1148,7 @@ vaadin-app-layout::part(navbar) {
 	min-width: 0;
 }
 
-.tt-results-points-text,
-.tt-results-adjustment-label {
+.tt-results-points-text {
 	align-self: flex-start;
 	color: var(--lumo-secondary-text-color);
 	font-size: var(--lumo-font-size-xs);
@@ -783,14 +1157,6 @@ vaadin-app-layout::part(navbar) {
 .tt-results-criteria-checklist {
 	gap: var(--lumo-space-xs);
 	margin-top: var(--lumo-space-s);
-}
-
-.tt-results-criterion-checkbox-row {
-	margin: 0;
-}
-
-.tt-results-criterion-checkbox-row .tt-results-points-cell-leading {
-	justify-content: space-between;
 }
 
 .tt-results-criterion-badge {
@@ -832,15 +1198,22 @@ vaadin-app-layout::part(navbar) {
 	gap: var(--lumo-space-s);
 }
 
+.tt-eh-task .tt-eh-section-content:has(> .tt-eh-editor-block) {
+	padding-bottom: var(--lumo-space-m);
+}
+
 .tt-eh-actions {
 	flex-wrap: wrap;
-	gap: var(--lumo-space-s);
 }
 
 .tt-eh-summary {
 	align-items: center;
 	gap: var(--lumo-space-s);
 	min-width: 0;
+}
+
+.tt-eh-header-toggle {
+	flex: 0 0 auto;
 }
 
 .tt-eh-summary-type {
@@ -874,10 +1247,8 @@ vaadin-app-layout::part(navbar) {
 
 .tt-eh-percentage {
 	align-items: center;
-	background: var(--lumo-primary-color-10pct);
 	border-radius: var(--lumo-border-radius-s);
 	box-sizing: border-box;
-	color: var(--lumo-primary-text-color);
 	display: inline-flex;
 	flex: 0 0 auto;
 	font-size: var(--lumo-font-size-s);
@@ -887,16 +1258,25 @@ vaadin-app-layout::part(navbar) {
 	padding: 0 var(--lumo-space-s);
 }
 
-.tt-eh-part > vaadin-details-summary .tt-loe-aggregate-points {
-	margin-right: -1px;
+.tt-eh-part {
+	--tt-loe-section-right-border: 1px;
 }
 
-.tt-eh-category > vaadin-details-summary .tt-loe-aggregate-points {
-	margin-right: -2px;
+.tt-eh-category {
+	--tt-loe-section-right-border: 2px;
 }
 
-.tt-eh-task > vaadin-details-summary .tt-loe-aggregate-points {
-	margin-right: -3px;
+.tt-eh-task {
+	--tt-loe-section-right-border: 3px;
+}
+
+.tt-eh-details > .tt-eh-details-summary .tt-loe-points-cell {
+	margin-right: calc(var(--tt-loe-content-right-inset) - var(--tt-loe-section-right-border) - var(--lumo-space-s));
+}
+
+.tt-eh-section-content > .tt-markdown-block {
+	box-sizing: border-box;
+	padding-right: calc(var(--tt-loe-content-right-inset) - var(--tt-loe-section-right-border));
 }
 
 .tt-eh-summary-with-percentage .tt-loe-aggregate-points {
@@ -934,7 +1314,7 @@ vaadin-app-layout::part(navbar) {
 	gap: var(--lumo-space-s);
 }
 
-.tt-eh-requirement-allocation-message {
+.tt-eh-allocation-message {
 	align-items: center;
 	background-color: var(--tt-eh-allocation-background);
 	border-inline-start: 0.25rem solid var(--tt-eh-allocation-color);
@@ -949,12 +1329,12 @@ vaadin-app-layout::part(navbar) {
 	white-space: normal;
 }
 
-.tt-eh-requirement-allocation-message[data-severity="warning"] {
+.tt-eh-allocation-message[data-severity="warning"] {
 	--tt-eh-allocation-background: var(--lumo-warning-color-10pct, hsla(43, 100%, 50%, 0.1));
 	--tt-eh-allocation-color: var(--lumo-warning-color, hsl(43, 100%, 40%));
 }
 
-.tt-eh-requirement-allocation-message[data-severity="error"] {
+.tt-eh-allocation-message[data-severity="error"] {
 	--tt-eh-allocation-background: var(--lumo-error-color-10pct);
 	--tt-eh-allocation-color: var(--lumo-error-color);
 }
@@ -964,15 +1344,16 @@ vaadin-app-layout::part(navbar) {
 }
 
 .tt-eh-bonus-toggle-active {
-	color: hsl(43, 86%, 42%);
-}
-
-.tt-eh-requirement-points-field {
-	width: 7.5rem;
+	color: var(--tt-bonus-color);
 }
 
 .tt-markdown-block {
 	gap: var(--lumo-space-xs);
+}
+
+.tt-exam-footer {
+	box-sizing: border-box;
+	padding-right: var(--tt-loe-content-right-inset);
 }
 
 .tt-field-label {

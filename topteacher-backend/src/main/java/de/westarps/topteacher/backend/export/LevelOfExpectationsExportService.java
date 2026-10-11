@@ -133,7 +133,6 @@ public class LevelOfExpectationsExportService {
 				levelOfExpectationsRepository.findRequirementsByExamId(examId),
 				levelOfExpectationsRepository.findRequirementResultsByExamAndPupil(examId, pupilId),
 				levelOfExpectationsRepository.findActiveCriteriaByExamId(examId),
-				levelOfExpectationsRepository.findCriterionResultsByExamAndPupil(examId, pupilId),
-				levelOfExpectationsRepository.findNoteSectionsByExamId(examId));
+				levelOfExpectationsRepository.findCriterionResultsByExamAndPupil(examId, pupilId));
 	}
 }

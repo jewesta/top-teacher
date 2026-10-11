@@ -16,6 +16,7 @@ import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.ExamRepository;
 import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.mcp.CourseMcpTools.CourseView;
+import de.westarps.topteacher.mcp.security.McpAccessContext;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.ExamNumber;
@@ -45,6 +46,7 @@ public class ExamMcpTools {
 					destructiveHint = false, idempotentHint = true, openWorldHint = false))
 	public ExamListView listExams(
 			@McpToolParam(description = "Course ID returned by list_courses.") final int courseId) {
+		McpAccessContext.accessLevel();
 		final Course course = courses.findById(courseId)
 				.orElseThrow(() -> new IllegalArgumentException("Course does not exist: " + courseId));
 		final Map<Integer, ExamNumber> numbers = exams.findNumbersByCourseId(courseId);
@@ -60,6 +62,7 @@ public class ExamMcpTools {
 					destructiveHint = false, idempotentHint = true, openWorldHint = false))
 	public ExamPupilListView listExamPupils(
 			@McpToolParam(description = "Exam ID returned by list_exams.") final int examId) {
+		McpAccessContext.accessLevel();
 		exams.findById(examId).orElseThrow(() -> new IllegalArgumentException("Exam does not exist: " + examId));
 		return new ExamPupilListView(examId, exams.findPupils(examId).stream().map(ExamMcpTools::pupilView).toList());
 	}
@@ -71,7 +74,9 @@ public class ExamMcpTools {
 	}
 
 	static PupilView pupilView(final Pupil pupil) {
-		return new PupilView(pupil.id(), pupil.name(), pupil.surname(), pupil.lifecycle().name());
+		final var identity = PupilNamePseudonymizer.identity(pupil);
+		return new PupilView(pupil.id(), identity.displayName(), identity.identityRepresentation(),
+				identity.name(), identity.surname(), pupil.lifecycle().name());
 	}
 
 	public record ExamListView(CourseView course, List<ExamView> exams) {
@@ -94,6 +99,8 @@ public class ExamMcpTools {
 		}
 	}
 
-	public record PupilView(int id, String name, String surname, String lifecycle) {
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record PupilView(int id, String displayName, String identityRepresentation, @Nullable String name,
+			@Nullable String surname, String lifecycle) {
 	}
 }

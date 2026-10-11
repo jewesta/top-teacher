@@ -67,8 +67,7 @@ class LevelOfExpectationsExportServiceTests {
 		assertThat(html).contains("GESAMTPUNKTZAHL KLAUSUR");
 		assertThat(html).doesNotContain("16 (+ 4)", "14 (+ 2)", "105 (+ 6)", "150 (+ 6)");
 		assertThat(html).contains("ungenügend");
-		assertThat(html).doesNotContain("eh:", "tt-criterion", "tt-criterion-badge");
-		assertThat(html).doesNotContain("Klares Fazit", "Notiz: ");
+		assertThat(html).doesNotContain("crit:", "tt-criterion", "tt-criterion-badge");
 	}
 
 	@Test
@@ -95,7 +94,6 @@ class LevelOfExpectationsExportServiceTests {
 		assertThat(html).contains("tt-criterion-marker");
 		assertThat(html).contains("Robshaws Gesamtargumentation");
 		assertThat(html).contains("16 (+ 4)", "14 (+ 2)", "105 (+ 6)", "150 (+ 6)");
-		assertThat(html).doesNotContain("Klares Fazit", "Notiz: ");
 	}
 
 	@Test
@@ -131,7 +129,7 @@ class LevelOfExpectationsExportServiceTests {
 	}
 
 	@Test
-	void omitsTeacherNotesWhenDemoHasNoNotesInTeacherLevelOfExpectationsPdf() throws IOException {
+	void rendersDemoTeacherLevelOfExpectationsAsPdf() throws IOException {
 		final DemoSelection demo = findDemoSelection();
 
 		final byte[] pdf = exportService
@@ -139,8 +137,7 @@ class LevelOfExpectationsExportServiceTests {
 
 		try (PDDocument document = PDDocument.load(pdf)) {
 			final String text = new PDFTextStripper().getText(document);
-			assertThat(text).contains("Lehrer:innen-Version");
-			assertThat(text).doesNotContain("Klares Fazit", "Notiz:");
+			assertThat(text).contains("Lehrer:innen-Version", "GESAMTPUNKTZAHL KLAUSUR");
 		}
 	}
 

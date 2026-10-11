@@ -18,6 +18,7 @@ import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.TextField;
 
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
+import de.westarps.topteacher.ui.component.Buttons;
 
 class SplitListDetailViewTests {
 
@@ -68,7 +69,7 @@ class SplitListDetailViewTests {
 
 	@Test
 	void keepsQuickFilterFirstInListToolbar() {
-		final Button newButton = new Button("Neu");
+		final Button newButton = Buttons.newItem();
 		final TestSplitListDetailView view = new TestSplitListDetailView(newButton);
 
 		final List<Component> toolbarChildren = toolbar(view).getChildren().toList();
@@ -77,6 +78,8 @@ class SplitListDetailViewTests {
 		assertThat(toolbarChildren.getFirst()).isInstanceOf(TextField.class);
 		assertThat(((TextField) toolbarChildren.getFirst()).getLabel()).isEqualTo("Schnellfilter");
 		assertThat(toolbarChildren.get(1)).isSameAs(newButton);
+		assertThat(newButton.getText()).isEqualTo("Neu");
+		assertThat(newButton.getTooltip().getText()).isEqualTo("Neu");
 	}
 
 	@Test
@@ -115,23 +118,35 @@ class SplitListDetailViewTests {
 	}
 
 	@Test
-	void updatesEditorTabStatusIconForCreateEditAndMultiSelectModes() {
+	void showsOnlyExceptionalEditorTabIndicatorsAndKeepsAccessibleModeDescriptions() {
 		final TestSplitListDetailView view = new TestSplitListDetailView();
 		view.grid().setItems(List.of("Ada", "Grace"));
 
-		assertThat(editorStatusIconNames(view)).containsExactly("vaadin:star");
+		assertThat(editorStatusIconNames(view)).containsExactly("vaadin:plus");
 		assertThat(editorTab(view).getElement().getAttribute("aria-label")).isEqualTo("Test, Neue Test-Zeile");
 
 		view.grid().select("Ada");
 
-		assertThat(editorStatusIconNames(view)).containsExactly("vaadin:pencil");
+		assertThat(editorStatusIconNames(view)).isEmpty();
 		assertThat(editorTab(view).getElement().getAttribute("aria-label")).isEqualTo("Test, Ada bearbeiten");
 
 		view.grid().select("Grace");
 
-		assertThat(editorStatusIconNames(view)).containsExactly("vaadin:pencil");
+		assertThat(editorStatusIconNames(view)).isEmpty();
 		assertThat(editorStatusCount(view)).isEqualTo("2");
 		assertThat(editorTab(view).getElement().getAttribute("aria-label")).isEqualTo("Test, 2 Test-Zeilen ausgewählt");
+
+		view.grid().deselect("Grace");
+
+		assertThat(editorStatusIconNames(view)).isEmpty();
+		assertThat(editorTab(view).getChildren()).noneMatch(component -> component.hasClassName("tt-tab-status-count"));
+		assertThat(editorTab(view).getElement().getAttribute("aria-label")).isEqualTo("Test, Ada bearbeiten");
+
+		view.grid().deselectAll();
+
+		assertThat(editorStatusIconNames(view)).containsExactly("vaadin:plus");
+		assertThat(editorTab(view).getChildren()).noneMatch(component -> component.hasClassName("tt-tab-status-count"));
+		assertThat(editorTab(view).getElement().getAttribute("aria-label")).isEqualTo("Test, Neue Test-Zeile");
 	}
 
 	@Test

@@ -1,5 +1,7 @@
 package de.westarps.topteacher.model.loe;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -12,10 +14,11 @@ import de.westarps.topteacher.model.loe.LoeCriterionIssue.Kind;
 
 public final class LoeCriterionParser {
 
-	public static final String TAG_NAMESPACE = "eh";
+	public static final String TAG_NAMESPACE = "crit";
+	public static final String POINTS_PARAMETER = "points";
 
 	private static final Pattern CRITERION_PATTERN = Pattern
-			.compile("\\[([^\\]\\n]+)]\\(" + TAG_NAMESPACE + ":([^\\s)]+)\\)");
+			.compile("(?<!!)\\[([^\\]\\n]+)]\\(" + TAG_NAMESPACE + ":([^\\s)]+)\\)");
 	private static final Pattern CRITERION_KEY_PATTERN = Pattern.compile("[1-9]\\d*");
 
 	private LoeCriterionParser() {
@@ -39,9 +42,8 @@ public final class LoeCriterionParser {
 			tagCount++;
 			final String label = label(matcher.group(1));
 			final String target = matcher.group(2).trim();
-			final int separatorIndex = target.indexOf('/');
+			final int separatorIndex = target.indexOf('?');
 			final String criterionKey = separatorIndex < 0 ? target : target.substring(0, separatorIndex);
-			final String pointValue = separatorIndex < 0 ? null : target.substring(separatorIndex + 1);
 
 			if (label.isBlank()) {
 				issues.add(new LoeCriterionIssue(Kind.INVALID_LABEL, ""));
@@ -56,8 +58,15 @@ public final class LoeCriterionParser {
 				continue;
 			}
 
+			final String pointValue;
+			try {
+				pointValue = separatorIndex < 0 ? null : pointValue(target.substring(separatorIndex + 1));
+			} catch (final IllegalArgumentException exception) {
+				issues.add(new LoeCriterionIssue(Kind.INVALID_PARAMETERS, label));
+				continue;
+			}
 			final OptionalInt pointUnits = pointValue == null ? OptionalInt.of(LoePointUnits.UNITS_PER_POINT)
-					: pointValue.contains("/") ? OptionalInt.empty() : LoePointUnits.parsePositive(pointValue);
+					: LoePointUnits.parsePositive(pointValue);
 			if (pointUnits.isEmpty()) {
 				issues.add(new LoeCriterionIssue(Kind.INVALID_POINTS, label));
 				continue;
@@ -66,6 +75,19 @@ public final class LoeCriterionParser {
 					criteria.size(), true));
 		}
 		return new LoeCriterionParseResult(criteria, issues, tagCount);
+	}
+
+	private static String pointValue(final String query) {
+		final int separatorIndex = query.indexOf('=');
+		if (separatorIndex < 0 || query.contains("&") || query.contains("#")
+				|| !POINTS_PARAMETER.equals(decodeQueryValue(query.substring(0, separatorIndex)))) {
+			throw new IllegalArgumentException("Invalid criterion query parameters");
+		}
+		return decodeQueryValue(query.substring(separatorIndex + 1));
+	}
+
+	private static String decodeQueryValue(final String value) {
+		return URLDecoder.decode(value, StandardCharsets.UTF_8);
 	}
 
 	private static String label(final String markdownLabel) {

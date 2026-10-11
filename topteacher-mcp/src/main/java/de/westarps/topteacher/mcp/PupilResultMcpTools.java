@@ -6,16 +6,20 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import de.westarps.topteacher.backend.repo.ExamRepository;
 import de.westarps.topteacher.backend.repo.GradingScaleRepository;
 import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.backend.repo.PupilRepository;
 import de.westarps.topteacher.mcp.ExamMcpTools.PupilView;
+import de.westarps.topteacher.mcp.security.McpAccessContext;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.GradingScale;
 import de.westarps.topteacher.model.Pupil;
@@ -24,6 +28,7 @@ import de.westarps.topteacher.model.loe.LoeCriterionResult;
 import de.westarps.topteacher.model.loe.LoePointRules;
 import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeRequirementResult;
+import de.westarps.topteacher.model.loe.LoeTask;
 
 /**
  * MCP operations for reading pupil results.
@@ -52,6 +57,11 @@ public class PupilResultMcpTools {
 	public PupilResultView getPupilResult(
 			@McpToolParam(description = "Exam ID returned by list_exams.") final int examId,
 			@McpToolParam(description = "Pupil ID returned by list_exam_pupils.") final int pupilId) {
+		McpAccessContext.accessLevel();
+		return levelOfExpectations.withDesignRead(examId, () -> readPupilResult(examId, pupilId));
+	}
+
+	private PupilResultView readPupilResult(final int examId, final int pupilId) {
 		final Exam exam = exams.findById(examId)
 				.orElseThrow(() -> new IllegalArgumentException("Exam does not exist: " + examId));
 		if (!exams.hasPupil(examId, pupilId)) {
@@ -60,6 +70,7 @@ public class PupilResultMcpTools {
 		final Pupil pupil = pupils.findById(pupilId)
 				.orElseThrow(() -> new IllegalArgumentException("Pupil does not exist: " + pupilId));
 		final List<LoeRequirement> requirements = levelOfExpectations.findRequirementsByExamId(examId);
+		final List<LoeTask> tasks = levelOfExpectations.findTasksByExamId(examId);
 		final List<LoeCriterion> criteria = levelOfExpectations.findActiveCriteriaByExamId(examId);
 		final Map<Integer, LoeRequirementResult> requirementResults = levelOfExpectations
 				.findRequirementResultsByExamAndPupil(examId, pupilId).stream()
@@ -73,10 +84,11 @@ public class PupilResultMcpTools {
 		final List<CriterionResultView> criterionViews = criteria.stream()
 				.map(criterion -> criterionResultView(criterion, criterionResults.get(criterion.id()))).toList();
 		return new PupilResultView(examId, ExamMcpTools.pupilView(pupil),
-				resultSummary(exam, requirements, requirementResults), requirementViews, criterionViews);
+				resultSummary(exam, tasks, requirements, requirementResults), requirementViews, criterionViews);
 	}
 
-	private ResultSummaryView resultSummary(final Exam exam, final List<LoeRequirement> requirements,
+	private ResultSummaryView resultSummary(final Exam exam, final List<LoeTask> tasks,
+			final List<LoeRequirement> requirements,
 			final Map<Integer, LoeRequirementResult> results) {
 		final int regularPoints = requirements.stream().filter(requirement -> !requirement.bonus())
 				.mapToInt(requirement -> achievedPoints(requirement, results)).sum();
@@ -90,11 +102,11 @@ public class PupilResultMcpTools {
 			return new ResultSummaryView(regularPoints, bonusPoints, null, "", false);
 		}
 		final LoePointRules pointRules = new LoePointRules(gradingScale);
-		if (!pointRules.regularMaxPointsMatch(requirements)) {
+		if (!pointRules.validDesign(tasks, requirements)) {
 			return new ResultSummaryView(regularPoints, bonusPoints, null, "", false);
 		}
 		try {
-			final int effectivePoints = pointRules.cappedAchievedTotal(requirements,
+			final int effectivePoints = pointRules.cappedAchievedTotal(tasks, requirements,
 					requirement -> achievedPoints(requirement, results));
 			final String grade = gradingScales.findRangesByGradingScaleId(gradingScale.id()).stream()
 					.filter(range -> range.minPoints() <= effectivePoints && effectivePoints <= range.maxPoints())
@@ -135,7 +147,8 @@ public class PupilResultMcpTools {
 		}
 	}
 
-	public record ResultSummaryView(int regularPoints, int bonusPoints, Integer effectivePoints, String grade,
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record ResultSummaryView(int regularPoints, int bonusPoints, @Nullable Integer effectivePoints, String grade,
 			boolean gradingAvailable) {
 	}
 

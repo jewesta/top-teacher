@@ -14,6 +14,8 @@ import {
   type MarkdownExtensionContext,
 } from '@vaadin/flow-frontend/de/westarps/vaadin/markdown/ws-markdown-extensions';
 import './tt-criterion-markdown.css';
+import { CRITERION_NAMESPACE, criterionTarget, parseCriterionTarget } from './tt-criterion-reference';
+import { allowClassNames } from './tt-markdown-sanitize';
 
 type MarkdownNode = {
   type: string;
@@ -33,7 +35,6 @@ type MarkdownTagValueOption = {
 type MarkdownTagValueSelectorOptions = {
   options: MarkdownTagValueOption[];
   defaultValue: string;
-  separator: string;
   toolbarIconText: string;
   customOptionLabel: string;
   customOptionAriaLabel: string;
@@ -65,13 +66,12 @@ type CriterionAward = {
 };
 
 const criterionTag: MarkdownTagOptions = {
-  namespace: 'eh',
+  namespace: CRITERION_NAMESPACE,
   toolbarLabel: 'Kriterium mit Punkten markieren',
   idGenerator: 'NEXT_NUMBER',
   valueSelector: {
     options: ['0,5', '1', '1,5', '2', '2,5', '3', '3,5', '4'].map((value) => ({ value, label: value })),
     defaultValue: '1',
-    separator: '/',
     toolbarIconText: 'P',
     customOptionLabel: '4+',
     customOptionAriaLabel: 'Andere Punktzahl eingeben',
@@ -217,10 +217,9 @@ function applyTagValue(
       api.setSelectionRange(existingTag.value);
       return;
     }
-    replaceTagTarget(api, existingTag, tagTarget(
+    replaceTagTarget(api, existingTag, criterionTarget(
       state.text.slice(existingTag.key.start, existingTag.key.end),
       chosenValue,
-      selector,
       custom,
     ));
     if (custom) {
@@ -243,23 +242,11 @@ function applyTagValue(
     selectedText,
     selection,
     prefix: '[',
-    suffix: `](${tag.namespace}:${tagTarget(key, chosenValue, selector, custom)})`,
+    suffix: `](${tag.namespace}:${criterionTarget(key, chosenValue, custom)})`,
   });
   if (custom) {
     selectCurrentTagValue(api, tag);
   }
-}
-
-function tagTarget(
-  key: string,
-  chosenValue: string,
-  selector: MarkdownTagValueSelectorOptions,
-  custom: boolean,
-): string {
-  if (!custom && equivalentValue(chosenValue, selector.defaultValue)) {
-    return key;
-  }
-  return `${key}${selector.separator}${chosenValue}`;
 }
 
 function replaceTagTarget(api: TextAreaTextApi, tag: TagRange, target: string) {
@@ -299,7 +286,8 @@ function tagValue(
   tag: TagRange,
   selector: MarkdownTagValueSelectorOptions,
 ): string {
-  return tag.value ? markdown.slice(tag.value.start, tag.value.end) : selector.defaultValue;
+  const reference = parseCriterionTarget(markdown.slice(tag.target.start, tag.target.end));
+  return reference.validParameters ? reference.pointValue ?? selector.defaultValue : selector.customPlaceholder;
 }
 
 function equivalentValue(left: string, right: string): boolean {
@@ -325,11 +313,8 @@ function tagSanitizeSchema(schema: typeof defaultSchema, tagRenderMode: Markdown
         'value',
       ],
       mark: [...(schema.attributes?.mark ?? []), ['className', 'tt-criterion-highlight']],
-      span: [
-        ...(schema.attributes?.span ?? []),
-        ['className', 'tt-criterion', 'tt-criterion-badge'],
-        'dataCriterionKey',
-      ],
+      span: [...allowClassNames(schema.attributes?.span, 'tt-criterion', 'tt-criterion-badge'),
+        'dataCriterionKey'],
       button: [
         ...(schema.attributes?.button ?? []),
         ['className', 'tt-criterion-badge', 'tt-criterion-point-button'],
@@ -351,9 +336,8 @@ function tagAtSelection(markdown: string, selection: TextRange, tag: MarkdownTag
     const fullEnd = fullStart + match[0].length;
     const targetStart = fullStart + match[0].lastIndexOf(`${tag.namespace}:`) + tag.namespace.length + 1;
     const targetEnd = targetStart + targetText.length;
-    const separatorIndex = tag.valueSelector ? targetText.indexOf(tag.valueSelector.separator) : -1;
-    const keyEnd = separatorIndex < 0 ? targetEnd : targetStart + separatorIndex;
-    const valueStart = separatorIndex < 0 ? -1 : keyEnd + tag.valueSelector!.separator.length;
+    const reference = parseCriterionTarget(targetText);
+    const keyEnd = targetStart + reference.key.length;
 
     if (isSelectionInsideTag(selection, { start: fullStart, end: fullEnd })
         || isSameSelection(selection, { start: fullStart, end: fullEnd })) {
@@ -362,7 +346,10 @@ function tagAtSelection(markdown: string, selection: TextRange, tag: MarkdownTag
         label: { start: labelStart, end: labelEnd },
         target: { start: targetStart, end: targetEnd },
         key: { start: targetStart, end: keyEnd },
-        value: valueStart < 0 ? undefined : { start: valueStart, end: targetEnd },
+        value: reference.valueRange ? {
+          start: targetStart + reference.valueRange.start,
+          end: targetStart + reference.valueRange.end,
+        } : undefined,
       };
     }
   }
@@ -480,7 +467,7 @@ function tagNode(
             className: ['tt-criterion-highlight'],
           },
         },
-        children: [...children, badgeNode, ...(checkboxNode ? [checkboxNode] : [])],
+        children: [...children, ...(checkboxNode ? [checkboxNode] : []), badgeNode],
       },
     ],
   };
@@ -491,13 +478,13 @@ function tagReference(target: string, tag: MarkdownTagOptions): { key: string; d
   if (!selector) {
     return { key: target, displayValue: target };
   }
-  const separatorIndex = target.indexOf(selector.separator);
-  if (separatorIndex < 0) {
-    return { key: target, displayValue: optionLabel(selector.defaultValue, selector) };
-  }
-  const key = target.slice(0, separatorIndex);
-  const value = target.slice(separatorIndex + selector.separator.length);
-  return { key, displayValue: optionLabel(value, selector) };
+  const reference = parseCriterionTarget(target);
+  return {
+    key: reference.key,
+    displayValue: reference.validParameters
+      ? optionLabel(reference.pointValue ?? selector.defaultValue, selector)
+      : selector.customPlaceholder,
+  };
 }
 
 function optionLabel(value: string, selector: MarkdownTagValueSelectorOptions): string {
@@ -541,9 +528,9 @@ function nextTagId(markdown: string, tag: MarkdownTagOptions): string {
 
 function nextNumberTagId(markdown: string, tag: MarkdownTagOptions): number {
   let nextId = 1;
-  for (const match of markdown.matchAll(tagUrlPattern(tag))) {
-    const target = match[1] ?? '';
-    const value = tag.valueSelector ? target.split(tag.valueSelector.separator, 1)[0] ?? '' : target;
+  for (const match of markdown.matchAll(tagMarkdownPattern(tag))) {
+    const target = match[2] ?? '';
+    const value = parseCriterionTarget(target).key;
     if (!numericTagIdPattern.test(value)) {
       continue;
     }
@@ -555,16 +542,12 @@ function nextNumberTagId(markdown: string, tag: MarkdownTagOptions): number {
   return nextId;
 }
 
-function tagUrlPattern(tag: MarkdownTagOptions): RegExp {
-  return new RegExp(`\\(${escapedNamespace(tag)}:([^\\s)]+)\\)`, 'g');
-}
-
 function tagUrlExactPattern(tag: MarkdownTagOptions): RegExp {
   return new RegExp(`^${escapedNamespace(tag)}:([^\\s)]+)$`);
 }
 
 function tagMarkdownPattern(tag: MarkdownTagOptions): RegExp {
-  return new RegExp(`\\[([^\\]\\n]*)\\]\\(${escapedNamespace(tag)}:([^\\s)]+)\\)`, 'g');
+  return new RegExp(`(?<!!)\\[([^\\]\\n]*)\\]\\(${escapedNamespace(tag)}:([^\\s)]+)\\)`, 'g');
 }
 
 function escapedNamespace(tag: MarkdownTagOptions): string {

@@ -7,7 +7,7 @@
     <parent>
         <groupId>de.westarps.topteacher</groupId>
         <artifactId>topteacher</artifactId>
-        <version>1.2.0</version>
+        <version>1.3.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -44,6 +44,24 @@
         </dependency>
 
         <dependency>
+            <groupId>org.commonmark</groupId>
+            <artifactId>commonmark-ext-footnotes</artifactId>
+            <version>0.28.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.commonmark</groupId>
+            <artifactId>commonmark-ext-gfm-tables</artifactId>
+            <version>0.28.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.commonmark</groupId>
+            <artifactId>commonmark-ext-gfm-strikethrough</artifactId>
+            <version>0.28.0</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.jsoup</groupId>
             <artifactId>jsoup</artifactId>
             <version>1.22.2</version>
@@ -52,6 +70,18 @@
         <dependency>
             <groupId>com.openhtmltopdf</groupId>
             <artifactId>openhtmltopdf-pdfbox</artifactId>
+            <version>1.0.10</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.openhtmltopdf</groupId>
+            <artifactId>openhtmltopdf-java2d</artifactId>
+            <version>1.0.10</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.openhtmltopdf</groupId>
+            <artifactId>openhtmltopdf-svg-support</artifactId>
             <version>1.0.10</version>
         </dependency>
 
@@ -79,4 +109,19 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <resource>
+                <directory>${project.basedir}/../assets/markdown-alerts</directory>
+                <targetPath>templates/export/markdown-alerts</targetPath>
+                <excludes>
+                    <exclude>README.md</exclude>
+                </excludes>
+            </resource>
+        </resources>
+    </build>
 </project>

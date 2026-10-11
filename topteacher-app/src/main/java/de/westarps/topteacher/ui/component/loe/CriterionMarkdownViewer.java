@@ -26,6 +26,12 @@ final class CriterionMarkdownViewer extends MarkdownViewer {
 		super(content);
 		setExtensionIds(List.of(CriterionMarkdownEditor.EXTENSION_ID));
 		updateExtensionState();
+		getElement().addEventListener("markdown-extension-event", event -> {
+			if ("file-drop".equals(event.getEventData().path("event.detail.name").asString(""))) {
+				com.vaadin.flow.component.notification.Notification.show(
+						"Hier können keine Dateien eingefügt werden. Bilder kannst Du im Material hinzufügen.");
+			}
+		}).addEventData("event.detail.name");
 	}
 
 	Set<String> getCheckedCriterionKeys() {

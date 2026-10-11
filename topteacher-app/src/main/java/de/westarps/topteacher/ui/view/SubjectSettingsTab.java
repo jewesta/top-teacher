@@ -6,8 +6,8 @@ import org.springframework.core.annotation.Order;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
@@ -37,7 +37,7 @@ public class SubjectSettingsTab extends SplitListDetailView<Subject> implements 
 	private final Button saveButton = Buttons.createOrSave();
 	private final Button archiveButton = Buttons.archive();
 	private final ComboBox<Lifecycle> bulkLifecycle = new ComboBox<>("Status");
-	private final Button applyLifecycleButton = new Button("Anwenden");
+	private final Button applyLifecycleButton = Buttons.command("Anwenden", VaadinIcon.CHECK);
 	private FormBinders.DirtySaveButton dirtySaveButton;
 
 	private Subject selectedSubject;
@@ -47,7 +47,6 @@ public class SubjectSettingsTab extends SplitListDetailView<Subject> implements 
 		super("Fächer", "tt-subject-settings-tab", new MultiSelectionGrid<>(Subject.class, false));
 		this.subjectRepository = subjectRepository;
 
-		getSearchField().setPlaceholder("Fach suchen");
 		configureEditors();
 		initializeView();
 		refreshGrid();
@@ -152,7 +151,6 @@ public class SubjectSettingsTab extends SplitListDetailView<Subject> implements 
 		bulkLifecycle.setRequiredIndicatorVisible(true);
 		bulkLifecycle.addValueChangeListener(event -> updateBulkApplyButton());
 
-		applyLifecycleButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 		applyLifecycleButton.addClickListener(event -> applyLifecycleToSelectedSubjects());
 		updateBulkApplyButton();
 	}

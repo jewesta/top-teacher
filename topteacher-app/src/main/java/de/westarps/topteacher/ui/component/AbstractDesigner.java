@@ -16,7 +16,7 @@ import de.westarps.vaadin.tray.StatusTrayController;
 
 public abstract class AbstractDesigner extends ContextTabContent {
 
-	private final HorizontalLayout toolbar = new HorizontalLayout();
+	private final HorizontalLayout toolbar = new ActionToolbar();
 	private final HorizontalLayout toolbarSummary = new HorizontalLayout();
 	private final VerticalLayout content = new VerticalLayout();
 	private final StatusTray statusTray = new StatusTray("Status");
@@ -27,7 +27,6 @@ public abstract class AbstractDesigner extends ContextTabContent {
 		toolbar.addClassName("tt-designer-toolbar");
 		toolbar.setAlignItems(Alignment.CENTER);
 		toolbar.setPadding(false);
-		toolbar.setSpacing(false);
 		toolbar.setWidthFull();
 
 		toolbarSummary.addClassName("tt-designer-toolbar-summary");

@@ -35,6 +35,7 @@ public class PupilUpdateConflictResolver {
 
 	public ResolutionOutcome resolve(final McpSyncRequestContext context, final Pupil current, final String name,
 			final String surname, final PupilUpdateDuplicateAction suppliedAction) {
+		PupilNamePseudonymizer.requireIdentityWrite();
 		final boolean nameChanged = !current.name().equals(name) || !current.surname().equals(surname);
 		final List<Pupil> exactMatches = current.lifecycle() == Lifecycle.ACTIVE && nameChanged
 				? pupils.findActiveByExactName(name, surname).stream()
@@ -91,9 +92,10 @@ public class PupilUpdateConflictResolver {
 	}
 
 	private static String elicitationMessage(final PupilUpdateConflictView conflict) {
-		final StringBuilder message = new StringBuilder("Die Umbenennung von ").append(conflict.currentName())
-				.append(' ').append(conflict.currentSurname()).append(" in ").append(conflict.requestedName())
-				.append(' ').append(conflict.requestedSurname())
+		final StringBuilder message = new StringBuilder("Die Umbenennung von ")
+				.append(PupilNamePseudonymizer.displayName(conflict.currentName(), conflict.currentSurname()))
+				.append(" in ")
+				.append(PupilNamePseudonymizer.displayName(conflict.requestedName(), conflict.requestedSurname()))
 				.append(" erzeugt eine Namensgleichheit. Vorhandene aktive Treffer: ");
 		for (int index = 0; index < conflict.existingPupils().size(); index++) {
 			if (index > 0) {
@@ -112,11 +114,13 @@ public class PupilUpdateConflictResolver {
 			final List<Pupil> exactMatches, final Map<Integer, SchoolClass> latestSchoolClasses) {
 		final List<ExistingPupilView> existingPupils = exactMatches.stream().map(existing -> {
 			final SchoolClass latestSchoolClass = latestSchoolClasses.get(existing.id());
-			return new ExistingPupilView(existing.id(), existing.name(), existing.surname(),
+			final var identity = PupilNamePseudonymizer.identity(existing);
+			return new ExistingPupilView(existing.id(), identity.displayName(), identity.identityRepresentation(), identity.name(), identity.surname(),
 					existing.lifecycle().name(), latestSchoolClass == null ? "" : latestSchoolClass.name(),
 					latestSchoolClass == null ? "" : latestSchoolClass.getDisplayName());
 		}).toList();
-		return new PupilUpdateConflictView(current.id(), current.name(), current.surname(), name, surname,
+		return new PupilUpdateConflictView(current.id(), PupilNamePseudonymizer.firstName(current), PupilNamePseudonymizer.surname(current),
+				PupilNamePseudonymizer.firstName(name, surname), PupilNamePseudonymizer.surname(name, surname),
 				existingPupils,
 				List.of(PupilUpdateDuplicateAction.UPDATE_ANYWAY.name(), PupilUpdateDuplicateAction.CANCEL.name()));
 	}

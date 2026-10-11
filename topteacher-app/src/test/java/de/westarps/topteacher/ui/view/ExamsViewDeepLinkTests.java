@@ -2,6 +2,7 @@ package de.westarps.topteacher.ui.view;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -10,19 +11,27 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.TabSheet;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteAlias;
 import com.vaadin.flow.router.RouteParameters;
+import com.vaadin.flow.server.VaadinSession;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.ExamRepository;
@@ -41,7 +50,11 @@ import de.westarps.topteacher.model.loe.LoeCategory;
 import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeTask;
+import de.westarps.topteacher.ui.component.ActionToolbar;
 import de.westarps.topteacher.ui.component.MultiSelectionGrid;
+import de.westarps.topteacher.ui.component.QuickFilterField;
+import de.westarps.topteacher.ui.component.loe.ExamMaterialEditor;
+import de.westarps.topteacher.ui.component.loe.ExamTasksEditor;
 
 class ExamsViewDeepLinkTests {
 
@@ -51,21 +64,24 @@ class ExamsViewDeepLinkTests {
 			Lifecycle.ACTIVE, GRADING_SCALE.id());
 	private static final Exam EXAM = new Exam(40, COURSE.id(), "Klausur", LocalDate.of(2026, 9, 19), null,
 			GRADING_SCALE.id());
+	private static final Exam SECOND_EXAM = new Exam(41, COURSE.id(), "Zweite Klausur", LocalDate.of(2026, 10, 19),
+			null, GRADING_SCALE.id());
 	private static final Pupil FIRST_PUPIL = new Pupil(50, "Ada", "Lovelace", Lifecycle.ACTIVE);
 	private static final Pupil SECOND_PUPIL = new Pupil(51, "Grace", "Hopper", Lifecycle.ACTIVE);
 	private static final LoePart PART = new LoePart(60, EXAM.id(), "Klausurteil A", 0);
 	private static final LoeCategory CATEGORY = new LoeCategory(61, PART.id(), "Inhalt", "", 0);
-	private static final LoeTask TASK = new LoeTask(62, CATEGORY.id(), "Teilaufgabe 1", 0);
+	private static final LoeTask TASK = new LoeTask(62, CATEGORY.id(), "Teilaufgabe 1", "", 5, 0);
 	private static final LoeRequirement REQUIREMENT = new LoeRequirement(63, TASK.id(), "Anforderung", 5, false, 0);
 
 	private final CourseRepository courses = mock(CourseRepository.class);
 	private final ExamRepository exams = mock(ExamRepository.class);
-	private final LevelOfExpectationsRepository levelOfExpectations = mock(LevelOfExpectationsRepository.class);
+	private final LevelOfExpectationsRepository levelOfExpectations = de.westarps.topteacher.ui.component.loe.RepositoryDesignTestSupport.mockRepository();
 	private final GradingScaleRepository gradingScales = mock(GradingScaleRepository.class);
 	private ExamsView view;
 
 	@BeforeEach
 	void setUp() {
+		UI.setCurrent(new UI());
 		when(courses.findActive()).thenReturn(List.of(COURSE));
 		when(courses.findById(COURSE.id())).thenReturn(Optional.of(COURSE));
 		when(courses.findPupils(COURSE.id())).thenReturn(List.of(FIRST_PUPIL, SECOND_PUPIL));
@@ -85,6 +101,25 @@ class ExamsViewDeepLinkTests {
 		view = new ExamsView(courses, exams, levelOfExpectations, gradingScales);
 	}
 
+	@AfterEach
+	void clearUi() {
+		UI.setCurrent(null);
+	}
+
+	@Test
+	void placesTheNewActionAfterBothListFilters() {
+		final ActionToolbar toolbar = components(view, ActionToolbar.class).stream()
+				.filter(component -> component.hasClassName("tt-master-toolbar")).findFirst().orElseThrow();
+		final List<Component> elements = toolbar.getChildren().toList();
+
+		assertThat(elements).hasSize(3);
+		assertThat(elements.get(0)).isInstanceOf(QuickFilterField.class);
+		assertThat(elements.get(1)).isInstanceOf(ComboBox.class);
+		assertThat(((ComboBox<?>) elements.get(1)).getLabel()).isEqualTo("Kurs");
+		assertThat(elements.get(2)).isInstanceOf(Button.class);
+		assertThat(elements.get(2).getElement().getAttribute("aria-label")).isEqualTo("Neu");
+	}
+
 	@Test
 	void routeKeepsTheExamListAndAddsOptionalDeepLinkSegments() {
 		assertThat(ExamsView.class.getAnnotation(Route.class).value()).isEqualTo("exams/:examId?/:section?/:pupilId?");
@@ -100,6 +135,39 @@ class ExamsViewDeepLinkTests {
 
 		assertThat(selectedExams()).containsExactly(EXAM);
 		assertThat(tabSheet().getSelectedTab().getLabel()).isEqualTo("Klausur");
+		assertThat(tabLabels()).containsExactly("Klausur", "Schüler:innen", "Material", "Aufgaben", "EH",
+				"Ergebnisse", "Auswertung", "Notenschlüssel");
+	}
+
+	@Test
+	void opensTasksForAnExam() {
+		view.beforeEnter(event(Map.of("examId", EXAM.id().toString(), "section", ExamsView.TASKS_SECTION)));
+
+		assertThat(tabSheet().getSelectedTab().getLabel()).isEqualTo("Aufgaben");
+	}
+
+	@Test
+	void opensMaterialForAnExam() {
+		view.beforeEnter(event(Map.of("examId", EXAM.id().toString(), "section", ExamsView.MATERIAL_SECTION)));
+
+		assertThat(tabSheet().getSelectedTab().getLabel()).isEqualTo("Material");
+	}
+
+	@Test
+	void refreshesTasksAfterAddingAPartFromMaterial() {
+		when(levelOfExpectations.nextPartSortOrder(EXAM.id())).thenReturn(1);
+		when(levelOfExpectations.savePart(any()))
+				.thenReturn(new LoePart(70, EXAM.id(), "Klausurteil B", 1));
+		view.beforeEnter(event(Map.of("examId", EXAM.id().toString(), "section", ExamsView.MATERIAL_SECTION)));
+		attachToCurrentUi();
+		final ExamMaterialEditor materialEditor = materialEditor();
+
+		components(materialEditor, Button.class).stream()
+				.filter(button -> "Klausurteil hinzufügen".equals(button.getText())).findFirst().orElseThrow().click();
+		org.mockito.Mockito.clearInvocations(levelOfExpectations);
+		tabSheet().setSelectedTab(tab("Aufgaben"));
+
+		verify(levelOfExpectations, atLeastOnce()).findPartsByExamId(EXAM.id());
 	}
 
 	@Test
@@ -118,6 +186,8 @@ class ExamsViewDeepLinkTests {
 				.thenReturn(Optional.of(new GradingScale(GRADING_SCALE.id(), "Leer", 0, Lifecycle.ACTIVE)));
 		when(levelOfExpectations.findRequirementsByExamId(EXAM.id()))
 				.thenReturn(List.of(new LoeRequirement(REQUIREMENT.id(), TASK.id(), "", 0, false, 0)));
+		when(levelOfExpectations.findTasksByExamId(EXAM.id()))
+				.thenReturn(List.of(new LoeTask(TASK.id(), TASK.categoryId(), TASK.title(), "", 0, TASK.sortOrder())));
 		view = new ExamsView(courses, exams, levelOfExpectations, gradingScales);
 
 		view.beforeEnter(
@@ -139,6 +209,68 @@ class ExamsViewDeepLinkTests {
 		assertThat(levelOfExpectationsStatusIcon()).isEqualTo("vaadin:lock");
 		assertThat(tabSheet().getSelectedTab().getElement().getAttribute("aria-label"))
 				.isEqualTo("EH, Eingeschränkt bearbeitbar (Korrekturmodus).");
+	}
+
+	@Test
+	void updatesTheLevelOfExpectationsTabFromSavedTaskPointsWhileTasksStayActive() {
+		final GradingScale fivePointScale = new GradingScale(GRADING_SCALE.id(), "Fünf Punkte", 5,
+				Lifecycle.ACTIVE);
+		final AtomicReference<LoeTask> storedTask = new AtomicReference<>(TASK);
+		when(gradingScales.findById(GRADING_SCALE.id())).thenReturn(Optional.of(fivePointScale));
+		when(levelOfExpectations.findTasksByExamId(EXAM.id())).thenAnswer(invocation -> List.of(storedTask.get()));
+		when(levelOfExpectations.saveTask(any())).thenAnswer(invocation -> {
+			final LoeTask savedTask = invocation.getArgument(0);
+			storedTask.set(savedTask);
+			return savedTask;
+		});
+		view = new ExamsView(courses, exams, levelOfExpectations, gradingScales);
+		view.beforeEnter(event(Map.of("examId", EXAM.id().toString(), "section", ExamsView.TASKS_SECTION)));
+		final ExamTasksEditor tasksEditor = tasksEditor();
+
+		assertThat(tabSheet().getSelectedTab().getLabel()).isEqualTo("Aufgaben");
+		assertThat(levelOfExpectationsStatusIcon()).isEqualTo("vaadin:check");
+
+		components(tasksEditor, Button.class).stream()
+				.filter(button -> "Max. Punkte erhöhen".equals(button.getElement().getAttribute("aria-label")))
+				.findFirst().orElseThrow().click();
+		components(tasksEditor, Button.class).stream()
+				.filter(button -> "Speichern".equals(button.getElement().getAttribute("aria-label")))
+				.findFirst().orElseThrow().click();
+
+		assertThat(tabSheet().getSelectedTab().getLabel()).isEqualTo("Aufgaben");
+		assertThat(levelOfExpectationsStatusIcon()).isEqualTo("vaadin:hourglass");
+	}
+
+	@Test
+	void keepsTheDirtySourceTabSelectedWhenAnotherTabIsRequested() {
+		view.beforeEnter(event(Map.of("examId", EXAM.id().toString(), "section", ExamsView.TASKS_SECTION)));
+		attachToCurrentUi();
+		final ExamTasksEditor tasksEditor = tasksEditor();
+		components(tasksEditor, TextField.class).stream().filter(field -> TASK.title().equals(field.getValue()))
+				.findFirst().orElseThrow().setValue("Ungespeicherte Aufgabe");
+
+		tabSheet().setSelectedTab(tab("Material"));
+
+		assertThat(tabSheet().getSelectedTab().getLabel()).isEqualTo("Aufgaben");
+		assertThat(tasksEditor.hasUnsavedChanges()).isTrue();
+	}
+
+	@Test
+	void keepsTheSelectedExamWhenItsSourceTabHasUnsavedChanges() {
+		when(exams.findByCourseId(COURSE.id())).thenReturn(List.of(EXAM, SECOND_EXAM));
+		when(exams.findMainExamsByCourseId(COURSE.id())).thenReturn(List.of(EXAM, SECOND_EXAM));
+		view = new ExamsView(courses, exams, levelOfExpectations, gradingScales);
+		view.beforeEnter(event(Map.of("examId", EXAM.id().toString(), "section", ExamsView.TASKS_SECTION)));
+		attachToCurrentUi();
+		final ExamTasksEditor tasksEditor = tasksEditor();
+		components(tasksEditor, TextField.class).stream().filter(field -> TASK.title().equals(field.getValue()))
+				.findFirst().orElseThrow().setValue("Ungespeicherte Aufgabe");
+
+		grid().select(SECOND_EXAM);
+
+		assertThat(selectedExams()).containsExactly(EXAM);
+		assertThat(tabSheet().getSelectedTab().getLabel()).isEqualTo("Aufgaben");
+		assertThat(tasksEditor.hasUnsavedChanges()).isTrue();
 	}
 
 	@Test
@@ -182,6 +314,32 @@ class ExamsViewDeepLinkTests {
 		return components(view, TabSheet.class).getFirst();
 	}
 
+	private Tab tab(final String label) {
+		final TabSheet tabSheet = tabSheet();
+		return IntStream.range(0, tabSheet.getTabCount()).mapToObj(tabSheet::getTabAt)
+				.filter(tab -> label.equals(tab.getLabel())).findFirst().orElseThrow();
+	}
+
+	private ExamTasksEditor tasksEditor() {
+		return (ExamTasksEditor) tabSheet().getComponent(tab("Aufgaben"));
+	}
+
+	private ExamMaterialEditor materialEditor() {
+		return (ExamMaterialEditor) tabSheet().getComponent(tab("Material"));
+	}
+
+	private void attachToCurrentUi() {
+		final UI ui = new UI();
+		ui.getInternals().setSession(mock(VaadinSession.class));
+		UI.setCurrent(ui);
+		ui.add(view);
+	}
+
+	private List<String> tabLabels() {
+		final TabSheet tabSheet = tabSheet();
+		return IntStream.range(0, tabSheet.getTabCount()).mapToObj(index -> tabSheet.getTabAt(index).getLabel()).toList();
+	}
+
 	private String levelOfExpectationsStatusIcon() {
 		final TabSheet tabSheet = tabSheet();
 		for (int index = 0; index < tabSheet.getTabCount(); index++) {
@@ -197,8 +355,12 @@ class ExamsViewDeepLinkTests {
 
 	@SuppressWarnings("unchecked")
 	private List<Exam> selectedExams() {
-		return ((MultiSelectionGrid<Exam>) components(view, MultiSelectionGrid.class).getFirst()).getSelectedItems()
-				.stream().toList();
+		return grid().getSelectedItems().stream().toList();
+	}
+
+	@SuppressWarnings("unchecked")
+	private MultiSelectionGrid<Exam> grid() {
+		return (MultiSelectionGrid<Exam>) components(view, MultiSelectionGrid.class).getFirst();
 	}
 
 	private static <T extends Component> List<T> components(final Component root, final Class<T> type) {

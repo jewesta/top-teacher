@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import de.westarps.topteacher.mcp.ExamMcpTools.PupilView;
 import de.westarps.topteacher.mcp.ExamPupilWriter.AssignmentResult;
+import de.westarps.topteacher.mcp.security.McpAccessContext;
 
 /**
  * MCP operation for assigning existing course pupils to an exam.
@@ -31,6 +32,7 @@ public class ExamPupilAssignmentMcpTools {
 	public ExamPupilAssignmentResult assignPupilsToExam(
 			@McpToolParam(description = "Exam ID obtained from list_exams.") final int examId, @McpToolParam(
 					description = "Active pupil IDs obtained from list_course_pupils. Duplicate IDs are ignored.") final List<Integer> pupilIds) {
+		McpAccessContext.accessLevel();
 		final List<Integer> validatedPupilIds = ExamWriteMcpTools.pupilIds(pupilIds, false);
 		final AssignmentResult assignment = writer.assign(examId, validatedPupilIds);
 		final ExamPupilAssignmentStatus status = assignment.assignedPupils().isEmpty()

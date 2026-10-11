@@ -55,13 +55,14 @@ public class PupilMcpTools {
 	}
 
 	@McpTool(name = "list_pupils", title = "List pupils",
-			description = "List pupils, optionally filtered by a case-insensitive name fragment. The default scope is ACTIVE. Use ARCHIVED or ALL only when the user explicitly asks for archived historical records.",
+			description = "List pupils, optionally filtered by a case-insensitive name fragment with full access, or by initials and pupil ID with pseudonymized access. The default scope is ACTIVE. Use ARCHIVED or ALL only when the user explicitly asks for archived historical records.",
 			generateOutputSchema = true, annotations = @McpTool.McpAnnotations(readOnlyHint = true,
 					destructiveHint = false, idempotentHint = true, openWorldHint = false))
 	public PupilListResult listPupils(@McpToolParam(required = false,
-			description = "Optional case-insensitive fragment matched against first-name/last-name and last-name/first-name text.") final String query,
+			description = "Optional case-insensitive fragment. Full access searches real names; pseudonymized access searches only surname-first initials and stable pupil IDs.") final String query,
 			@McpToolParam(required = false,
 					description = "ACTIVE by default. ARCHIVED returns only archived pupils; ALL returns both.") final PupilListScope scope) {
+		PupilNamePseudonymizer.isPseudonymized();
 		final String normalizedQuery = normalizedQuery(query);
 		final PupilListScope effectiveScope = scope == null ? PupilListScope.ACTIVE : scope;
 		final Map<Integer, SchoolClass> latestSchoolClasses = pupils.findLatestSchoolClassByPupilId();
@@ -79,6 +80,7 @@ public class PupilMcpTools {
 			description = "Pupils to create. entryKey must be unique and stable across a retry.") final List<PupilDraft> pupilDrafts,
 			@McpToolParam(required = false,
 					description = "CREATE or SKIP decisions from a previous NEEDS_RESOLUTION result.") final List<PupilConflictResolution> resolutions) {
+		PupilNamePseudonymizer.requireIdentityWrite();
 		final List<PupilDraft> validatedDrafts = validateDrafts(pupilDrafts);
 		final ResolutionOutcome resolution = createConflictResolver.resolveWithoutReuse(context, validatedDrafts,
 				resolutions);
@@ -115,6 +117,7 @@ public class PupilMcpTools {
 					description = "New surname. Omit to keep the existing surname.") final String surname,
 			@McpToolParam(required = false,
 					description = "Decision from a previous NEEDS_CONFIRMATION result. Use UPDATE_ANYWAY or CANCEL.") final PupilUpdateDuplicateAction duplicateNameAction) {
+		PupilNamePseudonymizer.requireIdentityWrite();
 		if (name == null && surname == null) {
 			throw new IllegalArgumentException("name or surname must be supplied");
 		}
@@ -177,6 +180,10 @@ public class PupilMcpTools {
 		if (query.isEmpty()) {
 			return true;
 		}
+		if (PupilNamePseudonymizer.isPseudonymized()) {
+			return PupilNamePseudonymizer.displayName(pupil).toLowerCase(Locale.ROOT).contains(query)
+					|| String.valueOf(pupil.id()).equals(query);
+		}
 		final String firstNameFirst = (pupil.name() + " " + pupil.surname()).toLowerCase(Locale.ROOT);
 		final String surnameFirst = (pupil.surname() + " " + pupil.name()).toLowerCase(Locale.ROOT);
 		return firstNameFirst.contains(query) || surnameFirst.contains(query);
@@ -191,7 +198,9 @@ public class PupilMcpTools {
 
 	private static PupilView view(final Pupil pupil, final Map<Integer, SchoolClass> latestSchoolClasses) {
 		final SchoolClass latestSchoolClass = latestSchoolClasses.get(pupil.id());
-		return new PupilView(pupil.id(), pupil.name(), pupil.surname(), pupil.lifecycle().name(),
+		final var identity = PupilNamePseudonymizer.identity(pupil);
+		return new PupilView(pupil.id(), identity.displayName(), identity.identityRepresentation(),
+				identity.name(), identity.surname(), pupil.lifecycle().name(),
 				latestSchoolClass == null ? "" : latestSchoolClass.name(),
 				latestSchoolClass == null ? "" : latestSchoolClass.getDisplayName());
 	}

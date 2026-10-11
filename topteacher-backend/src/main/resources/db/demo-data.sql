@@ -1,3 +1,6 @@
+/* MCP credentials are created interactively; no base or demo token grants access. */
+/* File-access settings inherit base-data defaults and preserve an existing installation location. */
+/* New demo exams start at revision 0; retry receipts are generated only by actual authoring requests. */
 insert into pupil (name, surname, lifecycle)
 select demo.name, demo.surname, demo.lifecycle
 from (
@@ -51,8 +54,8 @@ where not exists (
       and c.course_period = demo.course_period
 );
 
-insert into exam (course_id, title, exam_date, grading_scale_id)
-select c.id, demo.title, demo.exam_date, c.grading_scale_id
+insert into exam (course_id, title, exam_date, grading_scale_id, footer_markdown)
+select c.id, demo.title, demo.exam_date, c.grading_scale_id, ''
 from (
     values
         ('CLS_Q2', 'Englisch', 2026, 'FULL_YEAR', '1. Klausur Shakespeare', date '2026-11-17'),
@@ -143,6 +146,33 @@ where not exists (
       and part.title = demo.title
 );
 
+insert into loe_material (part_id, title, description_markdown, sort_order)
+select part.id, demo.title, demo.description_markdown, demo.sort_order
+from (
+    values
+        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 0, 'Ausgangstext', 'William Shakespeare prägt Literatur und Sprache bis heute. Dieser Demo-Text dient als **Material** für die Aufgaben.'),
+        ('Englisch', 'Klausurteil B: Sprachmittlung D-E (isoliert)', 0, 'Deutscher Ausgangstext', 'Ein kurzer deutscher Demo-Quellentext zur Bedeutung Shakespeares.'),
+        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 0, 'Texto de referencia', 'Este texto de demostración sirve como material para las tareas.'),
+        ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 0, 'Hinweis zum Hörtext', 'Der Hörtext wird zweimal abgespielt.')
+) demo(subject_name, part_title, sort_order, title, description_markdown)
+join course c
+    on c.calendar_year = 2026
+   and c.course_period = 'FULL_YEAR'
+join subject
+    on subject.id = c.subject_id
+   and subject.name = demo.subject_name
+join exam e
+    on e.course_id = c.id
+join eh_part part
+    on part.exam_id = e.id
+   and part.title = demo.part_title
+where not exists (
+    select 1
+    from loe_material material
+    where material.part_id = part.id
+      and material.title = demo.title
+);
+
 insert into eh_category (part_id, title, description_markdown, sort_order)
 select part.id, demo.title, demo.description_markdown, demo.sort_order
 from (
@@ -218,89 +248,89 @@ where not exists (
 
 insert into eh_requirement (task_id, description_markdown, max_points, bonus, sort_order)
 select task.id,
-       replace(demo.description_markdown, '(eh:1)',
-               '(eh:1/' || cast(demo.max_points as varchar) || ')'),
+       replace(demo.description_markdown, '(crit:1)',
+               '(crit:1?points=' || cast(demo.max_points as varchar) || ')'),
        demo.max_points,
        demo.bonus,
        demo.sort_order
 from (
     values
-        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Inhaltliche Leistung', 'Teilaufgabe 1 (Comprehension)', 0, 4, false, 'nennt [Aspekte für Shakespeares ungebrochene Popularität](eh:1/0,5), etwa:
+        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Inhaltliche Leistung', 'Teilaufgabe 1 (Comprehension)', 0, 4, false, 'nennt [Aspekte für Shakespeares ungebrochene Popularität](crit:1?points=0,5), etwa:
 - Rang eines Nationalsymbols
-- [Sprachkunst](eh:2/3,5)
+- [Sprachkunst](crit:2?points=3,5)
 - Fähigkeit zur Psychologisierung
 - tiefgehende Charakterdarstellungen
 - durch Shakespeare geprägte Redewendungen'),
-        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Inhaltliche Leistung', 'Teilaufgabe 1 (Comprehension)', 1, 4, false, 'nennt [Gründe gegen Shakespeares Eignung für den Schulunterricht](eh:1), etwa:
+        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Inhaltliche Leistung', 'Teilaufgabe 1 (Comprehension)', 1, 4, false, 'nennt [Gründe gegen Shakespeares Eignung für den Schulunterricht](crit:1), etwa:
 - Grammatik und Wortschatz gehören einer anderen Sprachstufe an
 - literarisches Vorwissen fehlt bei der heutigen Schülerschaft
 - die erschwerte Zugänglichkeit verhindert, Werte des Literaturunterrichts sinnvoll zu vermitteln; zeitgenössische Texte können diese Aufgabe übernehmen'),
-        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Inhaltliche Leistung', 'Teilaufgabe 1 (Comprehension)', 2, 4, false, 'nennt [Schlussfolgerungen des Autors](eh:1), etwa:
+        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Inhaltliche Leistung', 'Teilaufgabe 1 (Comprehension)', 2, 4, false, 'nennt [Schlussfolgerungen des Autors](crit:1), etwa:
 - Shakespeares Werke sollten zur Wahrung seines Status nicht als Pflichtlektüre im Curriculum festgelegt werden
 - Schülerinnen und Schüler könnten auf Zwang mit Ablehnung reagieren
 - die Auseinandersetzung mit seinen Werken soll mit Freude verbunden sein'),
-        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Inhaltliche Leistung', 'Teilaufgabe 2 (Analysis)', 0, 4, false, 'untersucht [Robshaws Gesamtargumentation](eh:1), indem herausgearbeitet wird, dass der Autor Shakespeares Qualitäten hervorhebt und zugleich deutlich macht, dass ein fester Platz im Curriculum heute nicht mehr gerechtfertigt ist.'),
-        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Inhaltliche Leistung', 'Teilaufgabe 2 (Analysis)', 1, 6, false, 'analysiert [Argumentationsgang und Funktion](eh:1) des Textes, indem erläutert wird, dass der Autor zum Beispiel:
+        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Inhaltliche Leistung', 'Teilaufgabe 2 (Analysis)', 0, 4, false, 'untersucht [Robshaws Gesamtargumentation](crit:1), indem herausgearbeitet wird, dass der Autor Shakespeares Qualitäten hervorhebt und zugleich deutlich macht, dass ein fester Platz im Curriculum heute nicht mehr gerechtfertigt ist.'),
+        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Inhaltliche Leistung', 'Teilaufgabe 2 (Analysis)', 1, 6, false, 'analysiert [Argumentationsgang und Funktion](crit:1) des Textes, indem erläutert wird, dass der Autor zum Beispiel:
 - eine provokative Überschrift wählt, die bereits die Hauptthese enthält
 - die Thematik mit der These einleitet: “isn’t it time we dropped him ...”
 - Shakespeare als nationales Denkmal darstellt und dafür Beispiele anführt
 - Argumente zur erschwerten Zugänglichkeit für Schülerinnen und Schüler entfaltet
 - seine Argumente mit Beispielen stützt
 - eine Schlussfolgerung mit Appell zieht'),
-        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Inhaltliche Leistung', 'Teilaufgabe 2 (Analysis)', 2, 6, false, 'analysiert [sprachliche Mittel und Leserlenkung](eh:1), zum Beispiel:
+        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Inhaltliche Leistung', 'Teilaufgabe 2 (Analysis)', 2, 6, false, 'analysiert [sprachliche Mittel und Leserlenkung](crit:1), zum Beispiel:
 - rhetorische Fragen wie “isn’t it time we dropped him from the National Curriculum?” und “Surely this is a tribute our national writer deserves?”
 - Aufzählungen wie “Along with a flag, an anthem and a football team ...” oder “aesthetic pleasure, understanding of character, moral sensitivity”
 - Metaphern wie “The Bard is a national monument”
 - Vergleiche wie “it’s like handing pupils a treasure in a locked chest”
 - Personalpronomen wie “we” zur Herstellung von Gemeinsamkeit
 - positiv und negativ konnotierte Wörter sowie unterschiedliche Sprachebenen'),
-        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Inhaltliche Leistung', 'Teilaufgabe 2 (Analysis)', 3, 4, true, 'erfüllt ein [weiteres aufgabenbezogenes Kriterium](eh:1).'),
-        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Inhaltliche Leistung', 'Teilaufgabe 3 (Comment)', 0, 6, false, 'greift [die Position des Autors](eh:1) auf, indem zum Beispiel:
+        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Inhaltliche Leistung', 'Teilaufgabe 2 (Analysis)', 3, 4, true, 'erfüllt ein [weiteres aufgabenbezogenes Kriterium](crit:1).'),
+        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Inhaltliche Leistung', 'Teilaufgabe 3 (Comment)', 0, 6, false, 'greift [die Position des Autors](crit:1) auf, indem zum Beispiel:
 - die Aktualität des Themas problematisiert wird
 - eigene Erfahrungen kritisch reflektiert werden
 - der Schulkontext berücksichtigt wird'),
-        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Inhaltliche Leistung', 'Teilaufgabe 3 (Comment)', 1, 6, false, 'positioniert sich [unter Rückgriff auf Unterrichtswissen](eh:1), indem zum Beispiel:
+        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Inhaltliche Leistung', 'Teilaufgabe 3 (Comment)', 1, 6, false, 'positioniert sich [unter Rückgriff auf Unterrichtswissen](crit:1), indem zum Beispiel:
 - auf Shakespeares Sprache verwiesen wird
 - Schwierigkeiten beim Erschließen stilistischer Mittel benannt werden
 - die zusätzliche Problematik für Fremdsprachenlernende erläutert wird
 - der Gewinn durch die Beschäftigung mit Charakteren, Themen und Konflikten aufgezeigt wird'),
-        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Inhaltliche Leistung', 'Teilaufgabe 3 (Comment)', 2, 2, false, 'bringt auf Grundlage der Argumentation [eine eigene begründete Sichtweise](eh:1) zum Ausdruck, indem die Argumente pointiert zusammengefasst werden.'),
-        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Inhaltliche Leistung', 'Teilaufgabe 3 (Comment)', 3, 2, true, 'erfüllt ein [weiteres aufgabenbezogenes Kriterium](eh:1).'),
-        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 0, 6, false, 'richtet seinen Text konsequent und explizit im Sinne der Aufgabenstellung auf [Intention und Adressaten](eh:1) aus.'),
-        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 1, 4, false, 'beachtet die [Textsortenmerkmale](eh:1) der jeweils geforderten Zieltextformate.'),
-        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 2, 4, false, 'erstellt einen [sachgerecht strukturierten Text](eh:1).'),
-        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 3, 4, false, 'gestaltet seinen Text hinreichend ausführlich, aber ohne [unnötige Wiederholungen und Umständlichkeiten](eh:1).'),
-        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 4, 3, false, 'belegt seine Aussagen durch eine [funktionale Verwendung von Verweisen und Zitaten](eh:1).'),
-        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 0, 4, false, 'löst sich vom Wortlaut des Ausgangstextes und [formuliert eigenständig](eh:1).'),
-        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 1, 6, false, 'verwendet funktional einen sachlich wie stilistisch angemessenen und differenzierten [allgemeinen und thematischen Wortschatz](eh:1).'),
-        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 2, 4, false, 'verwendet funktional einen sachlich wie stilistisch angemessenen und differenzierten [Funktions- und Interpretationswortschatz](eh:1).'),
-        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 3, 7, false, 'verwendet einen variablen und dem jeweiligen Zieltextformat angemessenen [Satzbau](eh:1).'),
-        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Sprachliche Leistung / Darstellungsleistung', 'Sprachrichtigkeit', 0, 9, false, 'beachtet die Normen der sprachlichen Korrektheit im Bereich [Wortschatz](eh:1).'),
-        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Sprachliche Leistung / Darstellungsleistung', 'Sprachrichtigkeit', 1, 8, false, 'beachtet die Normen der sprachlichen Korrektheit im Bereich [Grammatik](eh:1).'),
-        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Sprachliche Leistung / Darstellungsleistung', 'Sprachrichtigkeit', 2, 4, false, 'beachtet die Normen der sprachlichen Korrektheit im Bereich [Orthographie](eh:1) (Rechtschreibung und Zeichensetzung).'),
-        ('Englisch', 'Klausurteil B: Sprachmittlung D-E (isoliert)', 'Inhaltliche Leistung', 'Debate statement', 0, 6, false, 'verfasst ein adressaten- und themenbezogenes [debate statement](eh:1), in dem auf Thematik und Motive von Shakespeares Werken eingegangen wird:
+        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Inhaltliche Leistung', 'Teilaufgabe 3 (Comment)', 2, 2, false, 'bringt auf Grundlage der Argumentation [eine eigene begründete Sichtweise](crit:1) zum Ausdruck, indem die Argumente pointiert zusammengefasst werden.'),
+        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Inhaltliche Leistung', 'Teilaufgabe 3 (Comment)', 3, 2, true, 'erfüllt ein [weiteres aufgabenbezogenes Kriterium](crit:1).'),
+        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 0, 6, false, 'richtet seinen Text konsequent und explizit im Sinne der Aufgabenstellung auf [Intention und Adressaten](crit:1) aus.'),
+        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 1, 4, false, 'beachtet die [Textsortenmerkmale](crit:1) der jeweils geforderten Zieltextformate.'),
+        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 2, 4, false, 'erstellt einen [sachgerecht strukturierten Text](crit:1).'),
+        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 3, 4, false, 'gestaltet seinen Text hinreichend ausführlich, aber ohne [unnötige Wiederholungen und Umständlichkeiten](crit:1).'),
+        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 4, 3, false, 'belegt seine Aussagen durch eine [funktionale Verwendung von Verweisen und Zitaten](crit:1).'),
+        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 0, 4, false, 'löst sich vom Wortlaut des Ausgangstextes und [formuliert eigenständig](crit:1).'),
+        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 1, 6, false, 'verwendet funktional einen sachlich wie stilistisch angemessenen und differenzierten [allgemeinen und thematischen Wortschatz](crit:1).'),
+        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 2, 4, false, 'verwendet funktional einen sachlich wie stilistisch angemessenen und differenzierten [Funktions- und Interpretationswortschatz](crit:1).'),
+        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 3, 7, false, 'verwendet einen variablen und dem jeweiligen Zieltextformat angemessenen [Satzbau](crit:1).'),
+        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Sprachliche Leistung / Darstellungsleistung', 'Sprachrichtigkeit', 0, 9, false, 'beachtet die Normen der sprachlichen Korrektheit im Bereich [Wortschatz](crit:1).'),
+        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Sprachliche Leistung / Darstellungsleistung', 'Sprachrichtigkeit', 1, 8, false, 'beachtet die Normen der sprachlichen Korrektheit im Bereich [Grammatik](crit:1).'),
+        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 'Sprachliche Leistung / Darstellungsleistung', 'Sprachrichtigkeit', 2, 4, false, 'beachtet die Normen der sprachlichen Korrektheit im Bereich [Orthographie](crit:1) (Rechtschreibung und Zeichensetzung).'),
+        ('Englisch', 'Klausurteil B: Sprachmittlung D-E (isoliert)', 'Inhaltliche Leistung', 'Debate statement', 0, 6, false, 'verfasst ein adressaten- und themenbezogenes [debate statement](crit:1), in dem auf Thematik und Motive von Shakespeares Werken eingegangen wird:
 - aufgrund ihrer Zeitlosigkeit passend für jede Kultur, Nation und Epoche
 - für jede Generation faszinierend'),
-        ('Englisch', 'Klausurteil B: Sprachmittlung D-E (isoliert)', 'Inhaltliche Leistung', 'Debate statement', 1, 6, false, 'verweist auf die [historische Bedeutung der Werke Shakespeares in Deutschland](eh:1):
+        ('Englisch', 'Klausurteil B: Sprachmittlung D-E (isoliert)', 'Inhaltliche Leistung', 'Debate statement', 1, 6, false, 'verweist auf die [historische Bedeutung der Werke Shakespeares in Deutschland](crit:1):
 - Grundstein der deutschen Theatertradition
 - Bedeutung in der Zeit der Wiedervereinigung'),
-        ('Englisch', 'Klausurteil B: Sprachmittlung D-E (isoliert)', 'Inhaltliche Leistung', 'Debate statement', 2, 6, false, 'nimmt Bezug auf den [Unterhaltungswert des britischen Autors](eh:1):
+        ('Englisch', 'Klausurteil B: Sprachmittlung D-E (isoliert)', 'Inhaltliche Leistung', 'Debate statement', 2, 6, false, 'nimmt Bezug auf den [Unterhaltungswert des britischen Autors](crit:1):
 - Eignung für Massenunterhaltung
 - Vorlage für Hollywoodverfilmungen'),
-        ('Englisch', 'Klausurteil B: Sprachmittlung D-E (isoliert)', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung (Sprachmittlung)', 0, 9, false, '[Kommunikative Textgestaltung](eh:1):
+        ('Englisch', 'Klausurteil B: Sprachmittlung D-E (isoliert)', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung (Sprachmittlung)', 0, 9, false, '[Kommunikative Textgestaltung](crit:1):
 - richtet den Text konsequent und explizit auf Intention und Adressaten aus
 - berücksichtigt den situativen Kontext
 - beachtet Textsortenmerkmale des Zieltextformats
 - erstellt einen sachgerecht strukturierten Text
 - gestaltet hinreichend ausführlich, aber ohne unnötige Wiederholungen'),
-        ('Englisch', 'Klausurteil B: Sprachmittlung D-E (isoliert)', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel (Sprachmittlung)', 0, 9, false, '[Ausdrucksvermögen und sprachliche Mittel](eh:1):
+        ('Englisch', 'Klausurteil B: Sprachmittlung D-E (isoliert)', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel (Sprachmittlung)', 0, 9, false, '[Ausdrucksvermögen und sprachliche Mittel](crit:1):
 - löst sich vom Wortlaut des Ausgangstextes und formuliert eigenständig
 - nutzt ggf. Kompensationsstrategien
 - verwendet angemessenen und differenzierten allgemeinen, thematischen und funktionalen Wortschatz
 - verwendet variablen und zieltextangemessenen Satzbau'),
-        ('Englisch', 'Klausurteil B: Sprachmittlung D-E (isoliert)', 'Sprachliche Leistung / Darstellungsleistung', 'Sprachrichtigkeit (Sprachmittlung)', 0, 9, false, '[Sprachrichtigkeit](eh:1): beachtet die Normen sprachlicher Korrektheit in den Bereichen Wortschatz, Grammatik und Orthographie (Rechtschreibung und Zeichensetzung).'),
-        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 1: Resumen', 0, 2, false, 'benennt [Titel, Autor, Textsorte und Erscheinungsort](eh:1) des Artikels und stellt in einem kurzen Einleitungssatz das Hauptthema dar.'),
-        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 1: Resumen', 1, 14, false, 'fasst [die relevanten Aspekte](eh:1) zusammen, zum Beispiel:
+        ('Englisch', 'Klausurteil B: Sprachmittlung D-E (isoliert)', 'Sprachliche Leistung / Darstellungsleistung', 'Sprachrichtigkeit (Sprachmittlung)', 0, 9, false, '[Sprachrichtigkeit](crit:1): beachtet die Normen sprachlicher Korrektheit in den Bereichen Wortschatz, Grammatik und Orthographie (Rechtschreibung und Zeichensetzung).'),
+        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 1: Resumen', 0, 2, false, 'benennt [Titel, Autor, Textsorte und Erscheinungsort](crit:1) des Artikels und stellt in einem kurzen Einleitungssatz das Hauptthema dar.'),
+        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 1: Resumen', 1, 14, false, 'fasst [die relevanten Aspekte](crit:1) zusammen, zum Beispiel:
 - el autor supone que los emigrantes españoles, al volver al extranjero, se llevan productos culinarios de España en sus maletas
 - reconoce que algunos productos españoles también se pueden comprar en el extranjero pagando un poco más
 - explica que lleva muchos años fuera de España, pero siempre ha estado muy unido a su gente y a su tierra
@@ -311,47 +341,47 @@ from (
 - tiene que empaquetar la morriña y le pesa volver al trabajo en el extranjero
 - le gustaría poder llevarse a su familia, sus amigos y la vida en Santiago
 - quizás quienes hablan de la movilidad exterior saben dónde se puede comprar tal maleta'),
-        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 1: Resumen', 2, 2, true, 'erfüllt ein [weiteres aufgabenbezogenes Kriterium](eh:1).'),
-        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 2: Análisis', 0, 2, false, 'benennt [das Thema der Analyse](eh:1) und erstellt eine These.'),
-        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 2: Análisis', 1, 11, false, 'analysiert [die Gefühle des Autors nach seiner Rückkehr nach Deutschland](eh:1), zum Beispiel:
+        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 1: Resumen', 2, 2, true, 'erfüllt ein [weiteres aufgabenbezogenes Kriterium](crit:1).'),
+        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 2: Análisis', 0, 2, false, 'benennt [das Thema der Analyse](crit:1) und erstellt eine These.'),
+        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 2: Análisis', 1, 11, false, 'analysiert [die Gefühle des Autors nach seiner Rückkehr nach Deutschland](crit:1), zum Beispiel:
 - orgulloso de sí mismo: gracias a su vida fuera de España y a sus numerosos viajes, es la persona que es hoy
 - triste: cada vez le cuesta más hacer la maleta e irse; preferiría viajar sólo para aprender y descubrir cosas nuevas
 - añoranza/nostalgia: le dificulta la vuelta al extranjero; echa de menos a su familia, sus amigos, la vida en Santiago e incluso la lluvia
 - se siente mal entendido por quienes hablan de la movilidad exterior sin haberla vivido'),
-        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 3: Comentario', 0, 7, false, 'kommentiert und diskutiert [Gründe für das Verlassen der Heimat](eh:1), zum Beispiel:
+        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 3: Comentario', 0, 7, false, 'kommentiert und diskutiert [Gründe für das Verlassen der Heimat](crit:1), zum Beispiel:
 - en el extranjero hay trabajo
 - ganar dinero para poder vivir dignamente es existencial
 - no hay perspectivas
 - la situación actual'),
-        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 3: Comentario', 1, 7, false, 'kommentiert und diskutiert [Gründe für den Verbleib in der Heimat](eh:1), zum Beispiel:
+        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 3: Comentario', 1, 7, false, 'kommentiert und diskutiert [Gründe für den Verbleib in der Heimat](crit:1), zum Beispiel:
 - la familia y los amigos son más importantes que el dinero
 - es un riesgo dejar atrás su vida sin saber qué pasará en el extranjero
 - no hay garantías de que la vida en el exterior sea mejor'),
-        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 3: Comentario', 2, 5, false, 'formuliert eine [persönliche Stellungnahme](eh:1).'),
-        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 3: Comentario', 3, 2, true, 'erfüllt ein [weiteres aufgabenbezogenes Kriterium](eh:1).'),
-        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 0, 6, false, 'richtet seinen Text konsequent und explizit im Sinne der Aufgabenstellung auf [Intention und Adressaten](eh:1) aus.'),
-        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 1, 5, false, 'beachtet die [Textsortenmerkmale](eh:1) der jeweils geforderten Zieltextformate.'),
-        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 2, 5, false, 'erstellt einen [sachgerecht strukturierten Text](eh:1).'),
-        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 3, 5, false, 'gestaltet seinen Text hinreichend ausführlich, aber ohne [unnötige Wiederholungen und Umständlichkeiten](eh:1).'),
-        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 4, 3, false, 'belegt seine Aussagen durch [funktionale Verwendung von Verweisen und Zitaten](eh:1).'),
-        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 0, 5, false, 'löst sich vom Wortlaut des Ausgangstextes und [formuliert eigenständig](eh:1).'),
-        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 1, 6, false, 'verwendet einen sachlich wie stilistisch angemessenen und differenzierten [allgemeinen und thematischen Wortschatz](eh:1).'),
-        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 2, 5, false, 'verwendet funktional einen sachlich wie stilistisch angemessenen und differenzierten [Funktions- und Interpretationswortschatz](eh:1).'),
-        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 3, 8, false, 'verwendet einen variablen und dem jeweiligen Zieltextformat angemessenen [Satzbau](eh:1).'),
-        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Sprachrichtigkeit', 0, 10, false, 'beachtet die Normen der sprachlichen Korrektheit im Bereich [Wortschatz](eh:1).'),
-        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Sprachrichtigkeit', 1, 10, false, 'beachtet die Normen der sprachlichen Korrektheit im Bereich [Grammatik](eh:1).'),
-        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Sprachrichtigkeit', 2, 4, false, 'beachtet die Normen der sprachlichen Korrektheit im Bereich [Orthographie](eh:1) (Rechtschreibung und Zeichensetzung).'),
-        ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 0, 1, false, '[Aufgabe 1a](eh:1): wählt c als Originaltitel.'),
-        ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 1, 2, false, '[Aufgabe 1b](eh:1): formuliert eine individuelle, inhaltlich schlüssige Schülerlösung mit logischem Bezug zum Titel.'),
-        ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 2, 4, false, '[Aufgabe 2](eh:1): nennt 30, 35, Madrid und Barcelona.'),
-        ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 3, 1, false, '[Aufgabe 3a](eh:1/0,5): nennt [inspiración](eh:2/0,5).'),
-        ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 4, 1, false, '[Aufgabe 3b](eh:1): nennt de manera objetiva.'),
-        ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 5, 2, false, '[Aufgabe 4](eh:1): nennt 30 años und en 2009.'),
-        ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 6, 4, false, '[Aufgabe 5](eh:1): nennt, dass es ihrem damaligen Freund egal war und dass sie bereits deutsche Freunde hatte.'),
-        ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 7, 4, false, '[Aufgabe 6](eh:1): nennt reunirse con su novio und estaba en paro.'),
-        ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 8, 3, false, '[Aufgabe 7](eh:1): ordnet Alberto - México, Ana - Londres und Silvia - Montreal zu.'),
-        ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 9, 5, false, '[Aufgabe 8](eh:1): nennt u. a. Ausstellungen, Teilnahme an wichtigen Festivals, moralische Unterstützung, wenig finanzielle Unterstützung und das Gefühl eines stagnierenden Landes.'),
-        ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 10, 3, false, '[Aufgabe 9](eh:1): nennt, dass es keine gut bezahlte Arbeit für Künstler gibt und sie nicht anerkannt werden.')
+        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 3: Comentario', 2, 5, false, 'formuliert eine [persönliche Stellungnahme](crit:1).'),
+        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 3: Comentario', 3, 2, true, 'erfüllt ein [weiteres aufgabenbezogenes Kriterium](crit:1).'),
+        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 0, 6, false, 'richtet seinen Text konsequent und explizit im Sinne der Aufgabenstellung auf [Intention und Adressaten](crit:1) aus.'),
+        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 1, 5, false, 'beachtet die [Textsortenmerkmale](crit:1) der jeweils geforderten Zieltextformate.'),
+        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 2, 5, false, 'erstellt einen [sachgerecht strukturierten Text](crit:1).'),
+        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 3, 5, false, 'gestaltet seinen Text hinreichend ausführlich, aber ohne [unnötige Wiederholungen und Umständlichkeiten](crit:1).'),
+        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 4, 3, false, 'belegt seine Aussagen durch [funktionale Verwendung von Verweisen und Zitaten](crit:1).'),
+        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 0, 5, false, 'löst sich vom Wortlaut des Ausgangstextes und [formuliert eigenständig](crit:1).'),
+        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 1, 6, false, 'verwendet einen sachlich wie stilistisch angemessenen und differenzierten [allgemeinen und thematischen Wortschatz](crit:1).'),
+        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 2, 5, false, 'verwendet funktional einen sachlich wie stilistisch angemessenen und differenzierten [Funktions- und Interpretationswortschatz](crit:1).'),
+        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 3, 8, false, 'verwendet einen variablen und dem jeweiligen Zieltextformat angemessenen [Satzbau](crit:1).'),
+        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Sprachrichtigkeit', 0, 10, false, 'beachtet die Normen der sprachlichen Korrektheit im Bereich [Wortschatz](crit:1).'),
+        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Sprachrichtigkeit', 1, 10, false, 'beachtet die Normen der sprachlichen Korrektheit im Bereich [Grammatik](crit:1).'),
+        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Sprachrichtigkeit', 2, 4, false, 'beachtet die Normen der sprachlichen Korrektheit im Bereich [Orthographie](crit:1) (Rechtschreibung und Zeichensetzung).'),
+        ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 0, 1, false, '[Aufgabe 1a](crit:1): wählt c als Originaltitel.'),
+        ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 1, 2, false, '[Aufgabe 1b](crit:1): formuliert eine individuelle, inhaltlich schlüssige Schülerlösung mit logischem Bezug zum Titel.'),
+        ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 2, 4, false, '[Aufgabe 2](crit:1): nennt 30, 35, Madrid und Barcelona.'),
+        ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 3, 1, false, '[Aufgabe 3a](crit:1?points=0,5): nennt [inspiración](crit:2?points=0,5).'),
+        ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 4, 1, false, '[Aufgabe 3b](crit:1): nennt de manera objetiva.'),
+        ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 5, 2, false, '[Aufgabe 4](crit:1): nennt 30 años und en 2009.'),
+        ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 6, 4, false, '[Aufgabe 5](crit:1): nennt, dass es ihrem damaligen Freund egal war und dass sie bereits deutsche Freunde hatte.'),
+        ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 7, 4, false, '[Aufgabe 6](crit:1): nennt reunirse con su novio und estaba en paro.'),
+        ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 8, 3, false, '[Aufgabe 7](crit:1): ordnet Alberto - México, Ana - Londres und Silvia - Montreal zu.'),
+        ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 9, 5, false, '[Aufgabe 8](crit:1): nennt u. a. Ausstellungen, Teilnahme an wichtigen Festivals, moralische Unterstützung, wenig finanzielle Unterstützung und das Gefühl eines stagnierenden Landes.'),
+        ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 'Lösung', 'Hörverstehen', 10, 3, false, '[Aufgabe 9](crit:1): nennt, dass es keine gut bezahlte Arbeit für Künstler gibt und sie nicht anerkannt werden.')
 ) demo(subject_name, part_title, category_title, task_title, sort_order, max_points, bonus, description_markdown)
 join course c
     on c.calendar_year = 2026
@@ -489,3 +519,13 @@ where not exists (
     where criterion.requirement_id = requirement.id
       and criterion.criterion_key = demo.criterion_key
 );
+
+update eh_task task
+set description_markdown = 'Bearbeite **' || task.title || '**.',
+    max_points = (
+        select coalesce(sum(requirement.max_points), 0)
+        from eh_requirement requirement
+        where requirement.task_id = task.id
+          and requirement.bonus = false
+    );
+/* Demo exams do not have MCP creation retry receipts. */

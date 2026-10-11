@@ -26,12 +26,14 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.contextmenu.MenuItem;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.menubar.MenuBar;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.popover.Popover;
+import com.vaadin.flow.component.shared.Tooltip;
 import com.vaadin.flow.component.textfield.TextArea;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
@@ -72,15 +74,46 @@ class ExamResultsEditorTests {
 	private static final Pupil SECOND_PUPIL = new Pupil(21, "Berta", "Ergebnis", Lifecycle.ACTIVE);
 	private static final LoePart PART = new LoePart(1, EXAM.id(), "Klausurteil A", 0);
 	private static final LoeCategory CATEGORY = new LoeCategory(2, PART.id(), "Inhalt", "", 0);
-	private static final LoeTask TASK = new LoeTask(3, CATEGORY.id(), "Teilaufgabe 1", 0);
+	private static final LoeTask TASK = new LoeTask(3, CATEGORY.id(), "Teilaufgabe 1", "", 5, 0);
 	private static final LoeRequirement REQUIREMENT = new LoeRequirement(4, TASK.id(),
-			"Nutzt die [korrekte Zeitform](eh:1) und [präzise Wortwahl](eh:2/4).", 5, false, 0);
+			"Nutzt die [korrekte Zeitform](crit:1) und [präzise Wortwahl](crit:2?points=4).", 5, false, 0);
 	private static final LoeCriterion CRITERION = new LoeCriterion(5, REQUIREMENT.id(), "1", "korrekte Zeitform", 0,
 			true);
 	private static final LoeCriterion SECOND_CRITERION = new LoeCriterion(7, REQUIREMENT.id(), "2",
 			"präzise Wortwahl", 8, 1, true);
 	private static final LoeRequirement BONUS_REQUIREMENT = new LoeRequirement(6, TASK.id(), "Bonusaufgabe", 2, true,
 			1);
+
+	@Test
+	void staleResultSaveAndDeletePreserveDirtyCommentAndAwardsWithoutPersistence() {
+		withUi(() -> {
+			final LevelOfExpectationsRepository repository = levelOfExpectationsRepository();
+			when(repository.designRevision(EXAM.id())).thenReturn(4L);
+			final ExamResultsEditor editor = new ExamResultsEditor(courseRepository(), examRepository(), repository,
+					gradingScaleRepository());
+			editor.setExam(EXAM);
+			final TextArea comment = components(editor, TextArea.class).getFirst();
+			comment.setValue("Unsaved result comment");
+			final LoePointStepper adjustment = adjustmentStepper(editor);
+			increase(adjustment);
+			final int units = adjustment.getPointUnits();
+			clearInvocations(repository);
+			RepositoryDesignTestSupport.rejectDesignWrites(repository, 4, 5);
+
+			saveButton(editor).click();
+			deleteButton(editor).click();
+			final ConfirmDialog confirmation = confirmation(editor, "Ergebnisse löschen?");
+			ComponentUtil.fireEvent(confirmation, new ConfirmDialog.ConfirmEvent(confirmation, false));
+
+			assertThat(comment.getValue()).isEqualTo("Unsaved result comment");
+			assertThat(adjustment.getPointUnits()).isEqualTo(units);
+			assertThat(editor.hasUnsavedChanges()).isTrue();
+			assertThat(saveButton(editor).isEnabled()).isTrue();
+			verify(repository, never()).saveCriterionResult(any());
+			verify(repository, never()).saveRequirementResult(any());
+			verify(repository, never()).deleteResultsByExamAndPupil(EXAM.id(), PUPIL.id());
+		});
+	}
 
 	@Test
 	void keepsTheStatusTrayPeekingWhenThereAreNoValidationResults() {
@@ -96,7 +129,7 @@ class ExamResultsEditorTests {
 	}
 
 	@Test
-	void aggregateBadgesShareEhRenderingAndPointControlsShareTheSameFootprint() {
+	void aggregateBadgesSharePlainNumberRenderingAndPointControlsKeepTheirStructure() {
 		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository(), examRepository(),
 				levelOfExpectationsRepository(), gradingScaleRepository());
 		editor.setExam(EXAM);
@@ -110,17 +143,21 @@ class ExamResultsEditorTests {
 		});
 		assertThat(components(editor, LoePointBadge.class)).hasSize(4).allSatisfy(badge ->
 				assertThat(badge.getClassNames()).contains("tt-loe-points-cell", "tt-loe-aggregate-points"));
-		assertThat(components(editor, Span.class).stream()
-				.filter(span -> span.getClassNames().contains("tt-loe-aggregate-points-label"))
-				.map(span -> span.getText().strip())).containsExactly("Gesamt:", "Summe:", "Summe:", "Summe:");
-		assertThat(components(editor, Span.class).stream()
-				.filter(span -> span.getClassNames().contains("tt-loe-point-regular"))
-				.map(Span::getText)).containsExactly("1", "1", "1", "1");
-		assertThat(components(editor, Span.class).stream()
-				.filter(span -> span.getClassNames().contains("tt-loe-point-bonus"))
-				.map(Span::getText)).containsExactly("0", "0", "0", "0");
+		assertThat(badgeTexts(editor)).containsExactly("1", "1", "1", "1");
+		assertThat(components(editor, LoePointBadge.class)).allSatisfy(badge -> {
+			assertThat(badge.getContent().getText()).isEqualTo("1");
+			assertThat(badge.getElement().getAttribute("aria-label")).endsWith("1 Punkte");
+			assertThat(badge.getContent().getChildren()).isEmpty();
+		});
 		assertThat(criterionCheckboxes(editor)).allSatisfy(checkbox -> assertThat(checkbox.getParent()
-				.orElseThrow().getParent().orElseThrow()).isInstanceOf(LoeCriterionPointStepper.class));
+				.orElseThrow().getParent().orElseThrow()).isInstanceOf(ResultsPointsRow.class));
+		assertThat(components(editor, ResultsPointsRow.class)).hasSize(4).allSatisfy(row -> {
+			final List<Component> columns = row.getChildren().toList();
+			assertThat(columns).hasSize(2);
+			assertThat(columns.getFirst().getClassNames()).contains("tt-results-points-status");
+			assertThat(columns.getLast()).isInstanceOf(ResultsPointsCell.class);
+			assertThat(components(columns.getLast(), Checkbox.class)).isEmpty();
+		});
 	}
 
 	@Test
@@ -135,28 +172,30 @@ class ExamResultsEditorTests {
 		editor.setExam(EXAM);
 
 		final Button saveButton = saveButton(editor);
-		final Button discardButton = buttonByAriaLabel(editor, "Änderungen verwerfen");
+		final Button discardButton = buttonByAriaLabel(editor, "Änderungen verwerfen...");
 		final ConfirmDialog discardConfirmation = confirmation(editor, "Änderungen verwerfen?");
 		final MenuBar pdfMenu = pdfMenu(editor);
 		final LoePointStepper adjustment = adjustmentStepper(editor);
 		assertThat(saveButton.isEnabled()).isFalse();
 		assertThat(discardButton.isEnabled()).isFalse();
-		assertThat(discardButton.getText()).isEmpty();
+		assertThat(discardButton.getText()).isEqualTo("Änderungen verwerfen...");
+		assertThat(discardButton.getTooltip().getText()).isEqualTo("Änderungen verwerfen...");
+		assertThat(deleteButton(editor).getTooltip().getText()).isEqualTo("Ergebnisse löschen...");
 		assertThat(discardButton.getIcon()).isInstanceOf(Icon.class).extracting(icon -> ((Icon) icon).getIcon())
 				.isEqualTo(VaadinIcon.ROTATE_LEFT.create().getIcon());
 		assertThat(pdfMenu.isEnabled()).isTrue();
 		final MenuItem pdfMenuItem = pdfMenu.getItems().getFirst();
-		assertThat(pdfMenuItem.getText()).isEqualTo("Laden");
+		assertThat(pdfMenuItem.getText()).isEmpty();
 		assertThat(iconName(pdfMenuItem)).isEqualTo(VaadinIcon.DOWNLOAD.create().getIcon());
 		assertThat(pdfMenuItem.getSubMenu().getItems().stream().map(MenuItem::getText))
 				.containsExactly("Ergebnisbogen (Schüler:innen-Version)", "Ergebnisbogen (Lehrer:innen-Version)");
 		assertThat(pdfMenuItem.getSubMenu().getItems()).allMatch(item -> item.getChildren().findAny().isEmpty());
-		assertThat(pointsText(editor)).containsExactly("1 von 5 Punkten");
+		assertThat(pointsText(editor)).containsExactly("1 von 5 Pkt.");
 		assertThat(adjustment.getPointUnits()).isZero();
 		assertThat(criterionCheckboxes(editor)).hasSize(2);
 		assertThat(criterionCheckboxes(editor).getFirst().getAriaLabel())
 				.contains("korrekte Zeitform: volle Punktzahl");
-		assertThat(badgeTexts(editor)).contains("Gesamt: 1 (+0)", "Summe: 1 (+0)");
+		assertThat(badgeTexts(editor)).containsOnly("1");
 		assertThat(requirementNumberTexts(editor)).containsExactly("1");
 		assertThat(components(editor, FullscreenButton.class)).hasSize(1);
 
@@ -165,8 +204,8 @@ class ExamResultsEditorTests {
 		assertThat(saveButton.isEnabled()).isTrue();
 		assertThat(discardButton.isEnabled()).isTrue();
 		assertThat(pdfMenu.isEnabled()).isFalse();
-		assertThat(pointsText(editor)).containsExactly("2 von 5 Punkten");
-		assertThat(badgeTexts(editor)).contains("Gesamt: 2 (+0)", "Summe: 2 (+0)");
+		assertThat(pointsText(editor)).containsExactly("2 von 5 Pkt.");
+		assertThat(badgeTexts(editor)).containsOnly("2");
 		verify(levelOfExpectationsRepository, never()).saveRequirementResult(any());
 		verify(levelOfExpectationsRepository, never()).saveCriterionResult(any());
 
@@ -183,8 +222,8 @@ class ExamResultsEditorTests {
 
 		assertThat(discardConfirmation.isOpened()).isFalse();
 		assertThat(adjustment.getPointUnits()).isZero();
-		assertThat(pointsText(editor)).containsExactly("1 von 5 Punkten");
-		assertThat(badgeTexts(editor)).contains("Gesamt: 1 (+0)", "Summe: 1 (+0)");
+		assertThat(pointsText(editor)).containsExactly("1 von 5 Pkt.");
+		assertThat(badgeTexts(editor)).containsOnly("1");
 		assertThat(saveButton.isEnabled()).isFalse();
 		assertThat(discardButton.isEnabled()).isFalse();
 		assertThat(pdfMenu.isEnabled()).isTrue();
@@ -227,7 +266,7 @@ class ExamResultsEditorTests {
 		assertThat(saveButton.isEnabled()).isTrue();
 		assertThat(description.getCheckedCriterionKeys()).containsExactlyInAnyOrder("1", "2");
 		assertThat(criterionIndicatorTexts(editor)).containsExactly("2 Kriterien, alle voll erfüllt.");
-		assertThat(pointsText(editor)).containsExactly("5 von 5 Punkten");
+		assertThat(pointsText(editor)).containsExactly("5 von 5 Pkt.");
 		verify(levelOfExpectationsRepository, never()).saveCriterionResult(any(LoeCriterionResult.class));
 
 		saveButton.click();
@@ -252,16 +291,16 @@ class ExamResultsEditorTests {
 		assertThat(criterion.getPointUnits()).isEqualTo(1);
 		assertThat(checkbox.getValue()).isFalse();
 		assertThat(checkbox.isIndeterminate()).isTrue();
-		assertThat(pointsText(editor)).containsExactly("2 von 5 Punkten");
-		assertThat(badgeTexts(editor)).contains("Gesamt: 2 (+0)", "Summe: 2 (+0)");
+		assertThat(pointsText(editor)).containsExactly("2 von 5 Pkt.");
+		assertThat(badgeTexts(editor)).containsOnly("2");
 
 		checkbox.setValue(true);
 		assertThat(criterion.getPointUnits()).isEqualTo(8);
 		assertThat(checkbox.isIndeterminate()).isFalse();
-		assertThat(pointsText(editor)).containsExactly("5 von 5 Punkten");
+		assertThat(pointsText(editor)).containsExactly("5 von 5 Pkt.");
 		checkbox.setValue(false);
 		assertThat(criterion.getPointUnits()).isZero();
-		assertThat(pointsText(editor)).containsExactly("1 von 5 Punkten");
+		assertThat(pointsText(editor)).containsExactly("1 von 5 Pkt.");
 	}
 
 	@Test
@@ -326,7 +365,7 @@ class ExamResultsEditorTests {
 		assertThat(criterion.getMaximumPointUnits()).isZero();
 		assertThat(increaseButton(criterion).isEnabled()).isFalse();
 		assertThat(criterionCheckboxes(editor).get(1).isEnabled()).isFalse();
-		assertThat(pointsText(editor)).containsExactly("5 von 5 Punkten");
+		assertThat(pointsText(editor)).containsExactly("5 von 5 Pkt.");
 
 		decrease(adjustment);
 		increase(criterion);
@@ -350,14 +389,19 @@ class ExamResultsEditorTests {
 		assertThat(components(editor, Popover.class)).isEmpty();
 		assertThat(components(editor, ResultsRequirementPointCell.class))
 				.allSatisfy(cell -> assertThat(cell.getElement().getAttribute("role")).isNull());
-		assertThat(components(editor, Span.class).stream()
-				.filter(span -> span.getClassNames().contains("tt-results-adjustment-label"))
-				.map(Span::getText)).containsExactly("Frei vergebene Punkte", "Frei vergebene Punkte");
+		assertThat(components(editor, Icon.class).stream()
+				.filter(icon -> icon.getClassNames().contains("tt-results-adjustment-icon")))
+				.hasSize(2).allSatisfy(icon -> {
+					assertThat(icon.getElement().getAttribute("icon")).isEqualTo("vaadin:scale");
+					assertThat(icon.getElement().getAttribute("aria-label")).isEqualTo("Frei vergebene Punkte");
+					assertThat(icon.getTooltip().getText()).isEqualTo("Frei vergebene Punkte");
+					assertThat(icon.getParent().orElseThrow().getClassNames()).contains("tt-results-points-status");
+				});
 
 		increase(free);
 		assertThat(free.getPointUnits()).isEqualTo(1);
-		assertThat(pointsText(editor)).containsExactly("1 von 5 Punkten", "1 von 2 Punkten");
-		assertThat(badgeTexts(editor)).contains("Gesamt: 1 (+1)");
+		assertThat(pointsText(editor)).containsExactly("1 von 5 Pkt.", "1 von 2 Pkt.");
+		assertThat(badgeTexts(editor)).containsOnly("2");
 		saveButton(editor).click();
 		verify(repository).saveRequirementResult(new LoeRequirementResult(BONUS_REQUIREMENT.id(), PUPIL.id(), 1, 0, ""));
 	}
@@ -377,7 +421,7 @@ class ExamResultsEditorTests {
 	}
 
 	@Test
-	void showsBonusStarOnlyForBonusRequirements() {
+	void usesNumberedStarOnlyForBonusRequirements() {
 		final LevelOfExpectationsRepository levelOfExpectationsRepository = levelOfExpectationsRepository(
 				List.of(REQUIREMENT, BONUS_REQUIREMENT), List.of(CRITERION),
 				List.of(new LoeRequirementResult(REQUIREMENT.id(), PUPIL.id(), 1)));
@@ -387,16 +431,25 @@ class ExamResultsEditorTests {
 
 		editor.setExam(EXAM);
 
-		final Icon bonusIcon = bonusIcons(editor).getFirst();
-		final Component marker = bonusIcon.getParent().orElseThrow();
+		final Div bonusNumber = bonusNumberBadges(editor).getFirst();
+		final Component marker = bonusNumber.getParent().orElseThrow();
 		final Component requirement = marker.getParent().orElseThrow();
+		final List<Component> bonusNumberChildren = bonusNumber.getChildren().toList();
 		final List<Component> markerChildren = marker.getChildren().toList();
 		final List<Component> requirementChildren = requirement.getChildren().toList();
-		assertThat(bonusIcons(editor)).hasSize(1);
+		assertThat(bonusNumberBadges(editor)).hasSize(1);
+		assertThat(bonusNumberChildren).hasSize(2);
+		assertThat(bonusNumberChildren.getFirst()).isInstanceOf(Icon.class);
+		assertThat(((Icon) bonusNumberChildren.getFirst()).getIcon()).isEqualTo("vaadin:star");
+		assertThat(bonusNumberChildren.getLast()).isInstanceOf(Span.class);
+		assertThat(((Span) bonusNumberChildren.getLast()).getText()).isEqualTo("2");
+		assertThat(bonusNumber.getElement().getAttribute("aria-label"))
+				.isEqualTo("Anforderung 2, Sternchen-Aufgabe");
+		assertThat(Tooltip.forComponent(bonusNumber).getText()).isEqualTo("Sternchen-Aufgabe / Bonusaufgabe");
 		assertThat(requirement.getClassNames()).contains("tt-results-requirement");
 		assertThat(marker.getClassNames()).contains("tt-results-requirement-marker");
-		assertThat(markerChildren.get(0).getClassNames()).contains("tt-results-requirement-number");
-		assertThat(markerChildren.get(1)).isSameAs(bonusIcon);
+		assertThat(markerChildren).containsExactly(bonusNumber);
+		assertThat(bonusNumber.getClassNames()).contains("tt-results-requirement-number", "tt-results-bonus-number");
 		assertThat(requirementChildren.get(0)).isSameAs(marker);
 		assertThat(requirementChildren.get(1).getClassNames()).contains("tt-results-requirement-content");
 		assertThat(requirementChildren.get(2).getClassNames()).contains("tt-results-requirement-points-area");
@@ -464,14 +517,14 @@ class ExamResultsEditorTests {
 		assertThat(breadcrumb(editor).getElement().getAttribute("data-tt-breadcrumb-root-label")).isEqualTo("EB");
 		assertThat(breadcrumb(editor).getElement().getAttribute("data-tt-breadcrumb-root-title"))
 				.isEqualTo("Ergebnis, Berta");
-		assertThat(pointsText(editor)).containsExactly("4 von 5 Punkten");
+		assertThat(pointsText(editor)).containsExactly("4 von 5 Pkt.");
 		assertThat(criterionIndicatorTexts(editor))
 				.containsExactly("2 Kriterien, 1 voll erfüllt und 1 teilweise erfüllt.");
 		assertThat(criterionCheckboxes(editor).get(1).isIndeterminate()).isTrue();
 		assertThat(criterionStepper(editor, SECOND_CRITERION.id())).isSameAs(points);
 		assertThat(components(editor, TextArea.class).getFirst()).isSameAs(comment);
 		assertThat(criterionCheckboxes(editor).getFirst()).isSameAs(criterionCheckbox);
-		assertThat(badgeTexts(editor)).contains("Gesamt: 4 (+0)", "Summe: 4 (+0)");
+		assertThat(badgeTexts(editor)).containsOnly("4");
 		verify(levelOfExpectationsRepository, times(1)).syncCriteriaForExam(EXAM.id());
 		verify(levelOfExpectationsRepository, times(1)).findPartsByExamId(EXAM.id());
 		verify(levelOfExpectationsRepository, times(1)).findCategoriesByExamId(EXAM.id());
@@ -563,9 +616,9 @@ class ExamResultsEditorTests {
 			assertThat(points.getPointUnits()).isZero();
 			assertThat(comment.getValue()).isEmpty();
 			assertThat(deleteButton.isEnabled()).isFalse();
-			assertThat(pointsText(editor)).containsExactly("0 von 5 Punkten");
+			assertThat(pointsText(editor)).containsExactly("0 von 5 Pkt.");
 			assertThat(criterionIndicatorTexts(editor)).containsExactly("2 Kriterien, keines erfüllt.");
-			assertThat(badgeTexts(editor)).contains("Gesamt: 0 (+0)", "Summe: 0 (+0)");
+			assertThat(badgeTexts(editor)).containsOnly("0");
 		} finally {
 			UI.setCurrent(null);
 		}
@@ -590,6 +643,45 @@ class ExamResultsEditorTests {
 		} finally {
 			UI.setCurrent(null);
 		}
+	}
+
+	@Test
+	void aggregateBadgesIncludeEffectiveBonusPointsAndStopAtTheTaskMaximum() {
+		for (final int regularPoints : List.of(2, 3, 5)) {
+			final LevelOfExpectationsRepository repository = levelOfExpectationsRepository(
+					List.of(REQUIREMENT, BONUS_REQUIREMENT), List.of(),
+					List.of(new LoeRequirementResult(REQUIREMENT.id(), PUPIL.id(), regularPoints),
+							new LoeRequirementResult(BONUS_REQUIREMENT.id(), PUPIL.id(), 2)));
+			final ExamResultsEditor editor = new ExamResultsEditor(courseRepository(), examRepository(), repository,
+					gradingScaleRepository());
+			editor.setExam(EXAM);
+
+			assertThat(badgeTexts(editor)).containsOnly(String.valueOf(Math.min(5, regularPoints + 2)));
+			assertThat(components(editor, ResultsRequirementPointCell.class))
+					.extracting(cell -> cell.value().getText()).containsExactly(String.valueOf(regularPoints), "2");
+			assertThat(bonusNumberBadges(editor)).hasSize(1);
+
+			decrease(freePointSteppers(editor).getLast());
+			decrease(freePointSteppers(editor).getLast());
+
+			assertThat(badgeTexts(editor)).containsOnly(String.valueOf(Math.min(5, regularPoints + 1)));
+		}
+	}
+
+	@Test
+	void aggregateBadgesCannotCarrySurplusBonusPointsIntoAnotherTask() {
+		final LoeTask secondTask = new LoeTask(30, CATEGORY.id(), "Teilaufgabe 2", "", 5, 1);
+		final LoeRequirement secondRequirement = new LoeRequirement(31, secondTask.id(), "Weitere Aufgabe", 5, false, 0);
+		final LevelOfExpectationsRepository repository = levelOfExpectationsRepository(
+				List.of(REQUIREMENT, BONUS_REQUIREMENT, secondRequirement), List.of(),
+				List.of(new LoeRequirementResult(REQUIREMENT.id(), PUPIL.id(), 5),
+						new LoeRequirementResult(BONUS_REQUIREMENT.id(), PUPIL.id(), 2)));
+		when(repository.findTasksByExamId(EXAM.id())).thenReturn(List.of(TASK, secondTask));
+		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository(), examRepository(), repository,
+				gradingScaleRepository(10));
+		editor.setExam(EXAM);
+
+		assertThat(badgeTexts(editor)).containsExactly("5", "5", "5", "5", "0");
 	}
 
 	@Test
@@ -630,7 +722,7 @@ class ExamResultsEditorTests {
 	private static LevelOfExpectationsRepository levelOfExpectationsRepository(final List<LoeRequirement> requirements,
 			final List<LoeCriterion> criteria, final List<LoeRequirementResult> requirementResults,
 			final List<LoeCriterionResult> criterionResults) {
-		final LevelOfExpectationsRepository repository = mock(LevelOfExpectationsRepository.class);
+		final LevelOfExpectationsRepository repository = RepositoryDesignTestSupport.mockRepository();
 		when(repository.findPartsByExamId(EXAM.id())).thenReturn(List.of(PART));
 		when(repository.findCategoriesByExamId(EXAM.id())).thenReturn(List.of(CATEGORY));
 		when(repository.findTasksByExamId(EXAM.id())).thenReturn(List.of(TASK));
@@ -669,13 +761,14 @@ class ExamResultsEditorTests {
 	}
 
 	private static Button saveButton(final Component root) {
-		return components(root, Button.class).stream().filter(button -> "Speichern".equals(button.getText()))
+		return components(root, Button.class).stream()
+				.filter(button -> "Speichern".equals(button.getElement().getAttribute("aria-label")))
 				.findFirst().orElseThrow();
 	}
 
 	private static Button deleteButton(final Component root) {
 		return components(root, Button.class).stream()
-				.filter(button -> "Ergebnisse löschen".equals(button.getElement().getAttribute("aria-label")))
+				.filter(button -> "Ergebnisse löschen...".equals(button.getElement().getAttribute("aria-label")))
 				.findFirst().orElseThrow();
 	}
 
@@ -719,9 +812,9 @@ class ExamResultsEditorTests {
 		return components(root, LoePointBadge.class).stream().map(LoePointBadge::getText).toList();
 	}
 
-	private static List<Icon> bonusIcons(final Component root) {
-		return components(root, Icon.class).stream()
-				.filter(icon -> icon.getClassNames().contains("tt-results-bonus-icon")).toList();
+	private static List<Div> bonusNumberBadges(final Component root) {
+		return components(root, Div.class).stream()
+				.filter(div -> div.getClassNames().contains("tt-results-bonus-number")).toList();
 	}
 
 	private static List<String> requirementNumberTexts(final Component root) {
@@ -751,7 +844,7 @@ class ExamResultsEditorTests {
 
 	private static List<LoePointStepper> freePointSteppers(final Component root) {
 		return components(root, LoePointStepper.class).stream()
-				.filter(stepper -> stepper.getParent().map(parent -> parent.getClassNames()
+				.filter(stepper -> stepper.getParent().flatMap(Component::getParent).map(parent -> parent.getClassNames()
 						.contains("tt-results-adjustment")).orElse(false))
 				.toList();
 	}

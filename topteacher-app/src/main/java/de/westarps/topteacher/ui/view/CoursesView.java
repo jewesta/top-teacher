@@ -5,12 +5,11 @@ import java.util.List;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.textfield.IntegerField;
@@ -53,12 +52,12 @@ public class CoursesView extends SplitListDetailView<Course> {
 	private final Button saveButton = Buttons.createOrSave();
 	private final Button archiveButton = Buttons.archive();
 	private final ComboBox<Lifecycle> bulkLifecycle = new ComboBox<>("Status");
-	private final Button applyLifecycleButton = new Button("Anwenden");
-	private final Button copyAssignmentsButton = new Button("Aus Kurs...");
-	private final Dialog copyAssignmentsDialog = new Dialog();
+	private final Button applyLifecycleButton = Buttons.command("Anwenden", VaadinIcon.CHECK);
+	private final Button copyAssignmentsButton = Buttons.dialogOpener("Aus Kurs", VaadinIcon.COPY);
+	private final Dialog copyAssignmentsDialog = TopTeacherDialogs.create("Schüler:innen übernehmen");
 	private final ComboBox<Course> sourceCourse = new ComboBox<>("Kurs");
 	private final Binder<AssignmentCopyFormData> assignmentCopyBinder = new Binder<>();
-	private final PupilAssignmentGrid assignmentGrid = new PupilAssignmentGrid("Schüler:innen suchen");
+	private final PupilAssignmentGrid assignmentGrid = new PupilAssignmentGrid();
 	private FormBinders.DirtySaveButton dirtySaveButton;
 
 	private Course selectedCourse;
@@ -199,7 +198,6 @@ public class CoursesView extends SplitListDetailView<Course> {
 		bulkLifecycle.setRequiredIndicatorVisible(true);
 		bulkLifecycle.addValueChangeListener(event -> updateBulkApplyButton());
 
-		applyLifecycleButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 		applyLifecycleButton.addClickListener(event -> applyLifecycleToSelectedCourses());
 		updateBulkApplyButton();
 	}
@@ -214,8 +212,6 @@ public class CoursesView extends SplitListDetailView<Course> {
 	}
 
 	private void configureCopyAssignmentsDialog() {
-		copyAssignmentsDialog.setHeaderTitle("Schüler:innen übernehmen");
-
 		sourceCourse.setItemLabelGenerator(Course::getDisplayName);
 		sourceCourse.setRequiredIndicatorVisible(true);
 		sourceCourse.setWidthFull();
@@ -223,17 +219,15 @@ public class CoursesView extends SplitListDetailView<Course> {
 
 		final Span hint = new Span("Bestehende Zuordnungen werden ersetzt.");
 		final Button cancelButton = new Button("Abbrechen", event -> copyAssignmentsDialog.close());
-		final Button applyButton = new Button("Übernehmen", event -> copyAssignmentsFromSelectedCourse());
-		applyButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-		final HorizontalLayout actions = new HorizontalLayout(cancelButton, applyButton);
-		actions.setPadding(false);
-		actions.setSpacing(true);
+		final Button applyButton = TopTeacherDialogs.primaryButton("Übernehmen");
+		applyButton.addClickListener(event -> copyAssignmentsFromSelectedCourse());
 
-		final VerticalLayout content = new VerticalLayout(sourceCourse, hint, actions);
+		final VerticalLayout content = new VerticalLayout(sourceCourse, hint);
+		content.addClassName("tt-dialog-content");
 		content.setPadding(false);
 		content.setSpacing(true);
 		content.setWidth("24rem");
-		copyAssignmentsDialog.add(content);
+		copyAssignmentsDialog.add(content, TopTeacherDialogs.buttonBar(cancelButton, applyButton));
 	}
 
 	private void showSingleSelectEditor(final Course course) {

@@ -31,6 +31,7 @@ public class CourseRosterWriter {
 
 	@Transactional
 	public CreatedCourseRoster create(final Course course, final List<ResolvedPupil> resolvedPupils) {
+		PupilNamePseudonymizer.requireIdentityWrite();
 		Objects.requireNonNull(course, "course");
 		Objects.requireNonNull(resolvedPupils, "resolvedPupils");
 		final LinkedHashMap<Integer, Pupil> existingPupils = validateExistingPupils(resolvedPupils);
@@ -54,6 +55,32 @@ public class CourseRosterWriter {
 		return new CreatedCourseRoster(createdCourse, List.copyOf(assignedPupils.values()));
 	}
 
+	@Transactional
+	public CreatedCourseRoster createWithExisting(final Course course, final List<Integer> pupilIds) {
+		PupilNamePseudonymizer.isPseudonymized();
+		Objects.requireNonNull(course, "course");
+		final List<Integer> validatedIds = ExamWriteMcpTools.pupilIds(pupilIds, true);
+		final LinkedHashMap<Integer, Pupil> existingPupils = new LinkedHashMap<>();
+		for (final int pupilId : validatedIds) {
+			final Pupil pupil = pupils.findById(pupilId)
+					.orElseThrow(() -> new IllegalArgumentException("Pupil does not exist: " + pupilId));
+			if (pupil.lifecycle() != Lifecycle.ACTIVE) {
+				throw new IllegalArgumentException("Archived pupil can not be newly assigned: " + pupilId);
+			}
+			existingPupils.put(pupilId, pupil);
+		}
+		courses.findByNaturalKey(course.schoolClass(), course.subject().id(), course.schoolYear(),
+				course.coursePeriod()).ifPresent(existing -> {
+					throw new IllegalStateException(
+							"Course already exists: " + existing.id() + " (" + existing.getDisplayName() + ")");
+				});
+		final Course created = courses.save(course);
+		for (final int pupilId : existingPupils.keySet()) {
+			courses.assignPupil(created.id(), pupilId);
+		}
+		return new CreatedCourseRoster(created, List.copyOf(existingPupils.values()));
+	}
+
 	private LinkedHashMap<Integer, Pupil> validateExistingPupils(final List<ResolvedPupil> resolvedPupils) {
 		final LinkedHashMap<Integer, Pupil> existingPupils = new LinkedHashMap<>();
 		for (final ResolvedPupil resolvedPupil : resolvedPupils) {
@@ -65,7 +92,7 @@ public class CourseRosterWriter {
 					() -> new IllegalArgumentException("Pupil does not exist: " + resolvedPupil.existingPupilId()));
 			if (!existing.name().equals(resolvedPupil.name()) || !existing.surname().equals(resolvedPupil.surname())) {
 				throw new IllegalArgumentException("Pupil " + existing.id() + " no longer has the expected exact name: "
-						+ resolvedPupil.name() + " " + resolvedPupil.surname());
+						+ PupilNamePseudonymizer.displayName(resolvedPupil.name(), resolvedPupil.surname()));
 			}
 			if (existing.lifecycle() != Lifecycle.ACTIVE) {
 				throw new IllegalArgumentException("Archived pupil can not be newly assigned: " + existing.id());

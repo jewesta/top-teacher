@@ -1,3 +1,6 @@
+/* MCP credentials are created interactively; no base or demo token grants access. */
+/* Base data defines no exams; new exams inherit empty footer and revision 0 from schema.sql. */
+/* Retry receipts are empty; the shared image-lock singleton is maintained by schema.sql. */
 insert into app_setting (setting_key, setting_value)
 select base.setting_key, base.setting_value
 from (
@@ -6,6 +9,7 @@ from (
         ('tt.database.backup.target_folder', ''),
         ('tt.database.backup.schedule.enabled', 'false'),
         ('tt.database.backup.schedule.cron', '0 0 2 * * *'),
+        ('tt.file_access.installation_location', 'LOCAL'),
         ('tt.database.initialization.completed', 'false')
 ) base(setting_key, setting_value)
 where not exists (
@@ -186,3 +190,4 @@ where not exists (
 update course
 set grading_scale_id = (select gs.id from grading_scale gs where gs.name = 'Einführungsphase')
 where grading_scale_id is null;
+/* Exam creation retry receipts are empty in a newly initialized dataset. */

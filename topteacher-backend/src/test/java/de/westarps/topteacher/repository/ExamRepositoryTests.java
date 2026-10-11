@@ -268,9 +268,10 @@ class ExamRepositoryTests {
 		final LoePart part = levelOfExpectationsRepository.savePart(new LoePart(null, exam.id(), "A", 0));
 		final LoeCategory category = levelOfExpectationsRepository
 				.saveCategory(new LoeCategory(null, part.id(), "Inhalt", "", 0));
-		final LoeTask task = levelOfExpectationsRepository.saveTask(new LoeTask(null, category.id(), "Aufgabe 1", 0));
+		final LoeTask task = levelOfExpectationsRepository
+				.saveTask(new LoeTask(null, category.id(), "Aufgabe 1", "", 100, 0));
 		final LoeRequirement requirement = levelOfExpectationsRepository
-				.saveRequirement(new LoeRequirement(null, task.id(), "Anforderung", 5, false, 0));
+				.saveRequirement(new LoeRequirement(null, task.id(), "Anforderung", 100, false, 0));
 		levelOfExpectationsRepository.saveRequirementResult(new LoeRequirementResult(requirement.id(), pupil.id(), 3));
 
 		assertThat(examRepository.findPupilRemovalLocks(exam.id())).containsEntry(pupil.id(),

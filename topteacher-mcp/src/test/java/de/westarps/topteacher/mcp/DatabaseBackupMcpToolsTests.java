@@ -12,9 +12,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import de.westarps.topteacher.backend.backup.DatabaseBackupService;
 import de.westarps.topteacher.mcp.DatabaseBackupMcpTools.DatabaseBackupStatus;
+import de.westarps.topteacher.mcp.security.McpAccessContext;
+import de.westarps.topteacher.model.McpAccessLevel;
 
 @ExtendWith(MockitoExtension.class)
-class DatabaseBackupMcpToolsTests {
+class DatabaseBackupMcpToolsTests extends FullMcpAccessTest {
 
 	@Mock
 	private DatabaseBackupService backupService;
@@ -38,7 +40,23 @@ class DatabaseBackupMcpToolsTests {
 		final var result = new DatabaseBackupMcpTools(backupService).createDatabaseBackup();
 
 		assertThat(result.status()).isEqualTo(DatabaseBackupStatus.FAILED);
-		assertThat(result.message()).contains("kein Backup-Zielordner konfiguriert");
+		assertThat(result.message()).isEqualTo("Database backup could not be created. Check the backup settings in TopTeacher.");
 		assertThat(result.backups()).isEmpty();
+	}
+
+	@Test
+	void doesNotDiscloseServerPathsOrDatabaseFailureDetailsInEitherAccessMode() {
+		when(backupService.backUpNow()).thenThrow(new IllegalStateException(
+				"Datenbank-Backup fehlgeschlagen: BACKUP TO '/private/server/backups/topteacher-db.zip'; SQL state 90028"));
+		final DatabaseBackupMcpTools tools = new DatabaseBackupMcpTools(backupService);
+
+		for (final McpAccessLevel mode : McpAccessLevel.values()) {
+			try (McpAccessContext.Scope ignored = McpAccessContext.open(mode)) {
+				final var result = tools.createDatabaseBackup();
+				assertThat(result.status()).isEqualTo(DatabaseBackupStatus.FAILED);
+				assertThat(result.message()).contains("backup settings").doesNotContain("/private", "SQL", "90028");
+				assertThat(result.backups()).isEmpty();
+			}
+		}
 	}
 }

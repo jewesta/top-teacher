@@ -1,9 +1,10 @@
 # Level of Expectations
 
 The level of expectations is the app's English domain name for the German
-school concept "Erwartungshorizont". It belongs to exactly one exam, defines
-that exam's assessment structure, and provides the basis for marking pupil
-results.
+school concept "Erwartungshorizont". It belongs to exactly one exam and adds
+the requirements used to mark pupil results to the exam structure authored in
+`Aufgaben`. The EH is not the authority for parts, performance categories, or
+tasks.
 
 Result-entry behavior is specified in
 [LevelOfExpectationsResults.md](LevelOfExpectationsResults.md). PDF behavior is
@@ -12,7 +13,7 @@ specified in
 
 ## Structure
 
-The structure is hierarchical:
+The assessment structure is hierarchical:
 
 1. Part
 2. Performance category
@@ -23,19 +24,159 @@ The structure is hierarchical:
 
 A part is the top-level subject-specific section inside an exam, for example
 "Klausurteil A: Schreiben mit Leseverstehen". It has a title and sort order.
-Its regular and bonus points are aggregated from all requirements below it.
+Its regular point budget is aggregated from the explicit maxima of its tasks.
+The EH shows the regular requirement points currently assigned below it.
 
 ### Performance category
 
 A performance category groups tasks by assessment area, for example content or
 language performance. It has a title, optional markdown description, and sort
-order. Its regular and bonus points are aggregated from all requirements below
-it.
+order. Its regular point budget is aggregated from the explicit maxima of its
+tasks. The EH shows the regular requirement points currently assigned below it.
 
 ### Task
 
-A task groups concrete requirements. It has a title and sort order. Its regular
-and bonus points are aggregated from its requirements.
+A task represents an actual exam task and groups its later assessment
+requirements. It has a title, Markdown content, an explicitly assigned integer
+maximum, and a sort order. The task maximum is authored in `Aufgaben`; it is not
+derived from the requirements. A compact minus/value/plus control with a
+permanent background edits it in the task summary's point column. Non-bonus
+requirements subsequently distribute that budget in EH, while bonus
+requirements remain separate.
+
+### Exam closing text
+
+An exam has an optional Markdown closing text, labelled `Abschlusstext` in
+`Aufgaben`. It belongs to the exam itself, not to a part, category, or task.
+The editor is a fixed block below the task tree, including when the exam has
+no parts. It cannot be reordered, deleted as a tree node, or collapsed with
+the tree. An empty value means there is no closing text.
+
+The closing text uses Aufgaben's existing save, confirmed discard, dirty-state
+and first-result locking behavior. Saving preserves the live editor and tree.
+It is copied when the exam design is duplicated; removing a part or updating
+exam metadata does not remove it. In the future pupil exam sheet, it appears
+once after all parts, outside the final part, and is omitted when empty.
+It is not a repeated page footer or part of the EH result document.
+
+### Material
+
+Material is a parallel branch below a part rather than another level between a
+task and its requirements. It represents source texts, historical sources,
+diagrams, data, and similar material handed out with the exam.
+
+- A material belongs to exactly one part.
+- It has a title, Markdown content, and an explicit order among the other
+  materials of that part.
+- It is authored in the dedicated `Material` tab.
+- Tasks refer to material in their wording; they do not own or duplicate it.
+
+All content authored in `Aufgaben` is pupil-facing. The future exam sheet starts
+with the exam heading and groups its content by part: the part heading is
+followed by its ordered material on separate pages, then its performance
+categories, category descriptions, task titles, and task text in tree order.
+Each subsequent part starts on a new page. The exam closing text follows all
+parts. Print generation and its detailed layout remain deferred; see
+[the export scope](LevelOfExpectationsPdfExport.md#deferred-exam-sheet-export).
+
+Material also provides literal source-line numbering using `> [!NUMBERED]`.
+All Markdown editors provide the five GitHub-style alert types through a
+separate toolbar command. Their authoring, preview, and print contracts are
+specified in [Markdown.md](Markdown.md).
+
+#### Footnotes
+
+Editable Material Markdown provides a footnote toolbar command. It opens a
+dialog for the footnote text, inserts a simple numeric reference at the current
+cursor position, and appends the corresponding definition to the bottom of the
+same Markdown source:
+
+```markdown
+Eine Aussage mit Fußnote.[^1]
+
+[^1]: Der Fußnotentext.
+```
+
+The generated identifier is the next number after the highest numeric
+footnote identifier already present in that Material. Definitions written by
+hand may occur anywhere in the source; the Markdown renderer collects them and
+shows the local footnote list at the bottom of that Material's preview or
+read-only rendering. Numbering in this editor-local rendering is provisional
+for a future composed exam output, which may collect and renumber footnotes
+across several Markdown sources.
+
+The local preview and read-only renderer show references as plain superscript
+numbers. They deliberately do not activate the otherwise generated in-page
+links and omit the corresponding return-arrow control because that navigation
+does not work reliably inside the embedded preview. Ordinary Markdown links
+remain active.
+
+The shared Markdown editor exposes the footnote command as an optional
+capability, but it is hidden in Aufgaben, EH, and other Markdown editors for
+now.
+
+#### Managed images
+
+Only Material Markdown supports managed images. Its image toolbar command opens
+one dialog for choosing a PNG or JPEG image, entering the required description
+or alternative text, selecting automatic width or 5% to 100% content width in
+5% steps, and
+choosing left, centered, or right alignment with the horizontal icon selector.
+The slider's 0% position represents automatic width, and its displayed value is
+updated continuously while it is moved. Width and alignment share one row; new
+insertions start at automatic width and centered alignment. The upload row
+places the dashed file-drop target to the left, followed by `oder` and
+`Datei auswählen...` to the right. Confirmation inserts the declaration at the
+remembered cursor position. Only the dashed area accepts a dragged file; the
+separator and selection button are not drop targets:
+
+```markdown
+![Diagramm 1](img:4n8k2p7c?width=75)
+```
+
+The dialog previews the image inside a centered A4-proportioned page with the
+same 7 mm printable-area margins as the existing A4 export. Percentage width
+and horizontal alignment update live; the image is centered vertically for this
+standalone preview. Automatic width uses the image's intrinsic size at the
+standard CSS 96 dpi and remains constrained to the printable area.
+
+The width and alignment belong to that occurrence, not to the stored image.
+Width is relative to the available content width; omitted width uses automatic
+sizing, and omitted alignment means centered. Images preserve their aspect ratio,
+never exceed the available preview width, and can be opened in a larger
+inspection view. The faithful MCP rendering applies the same sizing and
+alignment contract. The future pupil printout must do so as well. The Markdown
+format retains automatic sizing for compatibility, while the dialog has no
+separate unset state. Opening and saving an older declaration with omitted width
+preserves automatic sizing through the slider's 0% position.
+
+If the cursor or selection is inside an existing managed-image declaration,
+the image command opens `Bild bearbeiten` with its description, width and alignment
+prefilled. `Übernehmen` replaces that declaration in place without requiring a
+new upload; the insert dialog continues to use `Einfügen`.
+
+Dropped files are intercepted in every editable or rendered Markdown surface
+so the browser cannot navigate away. A single PNG or JPEG dropped into editable
+Material opens the same dialog with the uploaded image fixed. Other Markdown
+surfaces explain that images can be added only in Material; locked Material
+explains that it can no longer be changed.
+
+Image data is immutable and stored separately from Markdown in the database.
+The visible reference uses an eight-character lowercase letter/digit ID; a
+unique SHA-256 hash is stored internally for deduplication. The database
+enforces both identities; a short-ID collision is assigned a new random ID and
+the Markdown reference is updated during the same save. Duplicated exams may
+therefore reuse the same immutable bytes, while cleanup removes an image only
+after its last Material reference disappears. Pending uploads remain transient
+until their Material is saved, so cancel and discard do not leave unused blobs.
+
+Uploads are limited to 10 MiB and 40 decoded megapixels. TopTeacher validates
+the actual PNG/JPEG contents, applies JPEG orientation, removes metadata by
+re-encoding, preserves PNG transparency, and proportionally reduces images
+whose longest side exceeds 3,000 pixels. JPEG normalization uses 90% quality.
+Preview resources are scoped to the active Vaadin session rather than exposed
+through a public image URL. Image insertion and persistence obey Material's
+first-result lock.
 
 ### Requirement
 
@@ -49,29 +190,53 @@ half-point results are rounded. It has:
 - zero or more optional criteria embedded in its description.
 
 The editor may temporarily contain a zero-point requirement while the design is
-incomplete. A completed requirement must have a meaningful positive maximum.
+incomplete. A completed requirement must have a meaningful positive maximum,
+and the regular requirements of its task must together distribute that task's
+explicit maximum.
 
-## Authoritative totals
+Requirement maxima use the same compact whole-point minus/value/plus control
+as task maxima in `Aufgaben`, with no visible `Max. Punkte` label. Both controls
+have a permanent blue background that does not change on hover or keyboard focus.
+The controls retain descriptive accessibility labels and become read-only in
+correction mode.
 
-The grading scale defines the authoritative regular maximum for the exam. A
-complete level of expectations must assign exactly that number of regular
-requirement points.
+## Authoritative budgets and distributions
 
-- Too few regular requirement points make the design incomplete but remain
-  saveable as an intermediate state.
-- Too many regular requirement points are an error. The editor may temporarily
-  display the pending over-allocation, but it must not save it.
-- Bonus requirements do not count toward the grading-scale maximum.
-- Regular and bonus totals are displayed separately, for example
-  `Summe: 98 (+ 2)`.
-- EH and Results use the same aggregate-points badge. Its label is left-aligned.
-  Regular points are right-aligned to a fixed axis, while bonus points are
-  left-aligned beyond it. Fixed-width number slots keep changing values from
-  shifting the badge layout.
-- The EH percentage chip matches the aggregate-points badge height.
+The grading scale defines the authoritative regular maximum for the exam. Task
+maxima define how that exam budget is divided, and regular requirement maxima
+define how each task budget is assessed. A complete design therefore satisfies
+both equalities:
 
-Changes to pending requirement maxima and bonus flags must update requirement,
-task, category, part, and exam totals immediately.
+```text
+sum(task maxima) = grading-scale maximum
+sum(regular requirement maxima for a task) = that task's maximum
+```
+
+- Too few task points or too few regular requirement points make the design
+  incomplete but remain saveable as an intermediate state.
+- Too many task points or too many regular requirement points are errors. The
+  editor may temporarily display the pending over-allocation, but it must not
+  save it.
+- Bonus requirements do not count toward either equality.
+- `Aufgaben`, EH, and Results use the same fixed-width, blue-tinted aggregate
+  badge with a single centered number. No visible `Gesamt`, `Summe`, ratio,
+  or separate bonus total is shown; descriptive tooltips and accessible labels
+  remain. The shared right edge stays aligned with the Markdown content.
+- `Aufgaben` badges sum task budgets. EH badges sum the currently assigned
+  regular requirement maxima at task, category, part, and exam level; bonus
+  requirements do not contribute. Part percentages continue to represent the
+  authoritative task budgets rather than an incomplete requirement allocation.
+- Whole-point controls share the narrower badge width and center their number
+  between minus and plus. Task and EH requirement controls share a permanent
+  blue background without a hover tint. Result-entry controls retain their
+  existing red interaction highlighting.
+- Existing allocation warnings and errors remain in separate inline message
+  bars. New warning/error colors or icons inside badges are deferred.
+- Part percentage chips in Aufgaben and EH match the aggregate-points badge
+  height and share its blue-tinted background and blue text color.
+
+Changes to pending task maxima, requirement maxima, and bonus flags must update
+the affected task, category, part, and exam information immediately.
 
 ## Criteria
 
@@ -91,22 +256,24 @@ over-allocated set may be displayed while editing but must not be saved.
 
 ### Tag syntax
 
-Criteria are declared with markdown links in the `eh:` namespace:
+Criteria are declared with markdown links using the document-local `crit:`
+scheme. The stable criterion key is the target; its optional point value is a
+named query parameter:
 
 ```markdown
-[correct tense](eh:1)
-[complete explanation](eh:2/2)
-[supporting detail](eh:3/0,5)
+[correct tense](crit:1)
+[complete explanation](crit:2?points=2)
+[supporting detail](crit:3?points=0,5)
 ```
 
 The canonical syntax is:
 
 ```text
-eh:<key>[/<points>]
+crit:<key>[?points=<value>]
 ```
 
-- The key is stable and unique inside its requirement.
-- Omitting the point value defaults it to one, so `eh:1` and `eh:1/1` are
+- The key is a positive integer, stable and unique inside its requirement.
+- Omitting the points query defaults it to one, so `crit:1` and `crit:1?points=1` are
   equivalent.
 - A criterion value must be positive and use half-point increments.
 - Criterion values are not limited to the convenient presets through four
@@ -114,8 +281,18 @@ eh:<key>[/<points>]
   an explicit custom entry.
 - Both comma and dot are accepted as decimal separators. The editor generates
   commas and the UI always displays values with the German comma form.
+- Standard URL-encoded query names and values are decoded before validation.
+  Only one `points` parameter is supported. Empty queries, unknown or duplicate
+  parameters, fragments, and malformed encodings are invalid, not an implicit
+  one-point default. Invalid parameter sets remain visible as `?` in preview.
 - Malformed definitions and duplicate keys are validation issues; they must not
   silently turn a requirement into a valid criterion-free requirement.
+
+Existing stored requirement Markdown is converted once from `eh:<key>[/<points>]`
+to this form at database startup, preserving criterion keys, identities, point
+values, and recorded results. New declarations use only `crit:`; the old scheme
+is not retained as a parallel supported syntax. Criterion declarations are
+interpreted by TT rather than passed to the browser as navigable URLs.
 
 The UI displays a criterion's point value in its pill rather than the internal
 key. Accessible text retains the criterion identity as well as its value.
@@ -128,7 +305,7 @@ Floating-point arithmetic must not be used for point calculations.
 ### Markdown editor interaction
 
 The Markdown toolbar provides a criterion command rather than requiring the
-user to construct an `eh:` URL manually. Its icon is a compact pill containing
+user to construct a `crit:` URL manually. Its icon is a compact pill containing
 `P`, representing points without implying either a fixed value or a visible
 criterion number. The button is labelled `Kriterium mit Punkten markieren`.
 
@@ -146,13 +323,13 @@ whole- and half-point values:
 The eight numeric entries are ordinary choices. Selecting one wraps the
 selected criterion text with the next stable key and the chosen value. If no
 text is selected, the command uses the word under the cursor. The one-point
-choice omits the redundant value, so it generates `eh:<key>` rather than
-`eh:<key>/1`. Decimal presets use a comma.
+choice omits the redundant value, so it generates `crit:<key>` rather than
+`crit:<key>?points=1`. Decimal presets use a comma.
 
 `4+` is labelled accessibly as `Andere Punktzahl eingeben`. It is an escape
 hatch rather than a point value:
 
-- it inserts `eh:<key>/?`;
+- it inserts `crit:<key>?points=?`;
 - it immediately selects only the `?` and returns focus to the editor so the
   user can replace it by typing;
 - the parser accepts a comma or dot in the entered value;
@@ -176,17 +353,86 @@ editor library's command child-panel mechanism. The reusable Markdown component
 provides extension hooks but must not contain EH point semantics or criterion
 presentation rules; no fork of the underlying editor is required.
 
+## Editing ownership and shared tree behavior
+
+The exam tabs follow the authoring workflow `Material` → `Aufgaben` → `EH`.
+The former `Notizen` tab and its exam-note persistence are no longer part of
+the application.
+
+`Aufgaben`, `Material`, and EH are separate views of the same exam definition
+and use the same tree-section rendering and collapse behavior.
+
+All three views share the EH Markdown right inset. Summary point badges and
+maximum-point controls align with the Markdown content's right edge, including
+the exam total above the tree.
+
+The [shared application action-bar rules](ApplicationActions.md#action-bars)
+apply to list, form, designer, and nested tree action bars. Add/reorder/delete
+rows use normal-sized controls and the shared compact horizontal spacing.
+Task reorder/delete action rows in Aufgaben and requirement reorder/delete
+rows in EH appear above their Markdown editors, after the section header.
+The same order applies to rendered task text in locked mode. They use the
+standard gap before the Markdown block; task sections retain the same bottom
+inset as EH requirements.
+Point steppers, section-header toggles, and Markdown formatting controls retain
+their existing sizing. Contextual add actions retain their
+plus icon and label; for example, `Klausurteil hinzufügen` is first in Material
+and Aufgaben.
+Where present, `Schnellfilter` precedes action buttons. `Neu`, `Anlegen`, and
+`Speichern` and download menu triggers show transparent icons in multi-element
+bars; a lone action shows its icon and label as a neutral secondary button.
+Filters, selectors, and disabled actions count toward the number of visible
+elements; hidden elements do not. Contextual additions retain their neutral
+button background in both modes. No toolbar action has primary highlighting.
+
+Discarding unsaved work in Aufgaben, Material, or EH always requires the
+confirmation `Änderungen verwerfen?`, which warns that unsaved changes will be
+lost. `Abbrechen` or dismissing the dialog preserves all pending changes;
+only confirming `Verwerfen` reloads the saved state. Discard stays disabled
+while the editor is clean.
+
+In `Aufgaben`, adding, reordering, or deleting tree nodes requires saving or
+discarding pending changes first, including changes only to `Abschlusstext`.
+Creating a part or changing material structure in `Material` has the same
+dirty-state guard. These actions must not silently reload away unsaved content.
+
+- `Material` and `Aufgaben` can create parts. `Aufgaben` edits part titles and
+  order, deletes parts, and edits performance categories, task titles, task
+  Markdown, task maxima, their order, and the exam closing text.
+- `Material` edits ordered material and its managed images below read-only part
+  headings. Without a part it offers only `Klausurteil hinzufügen`; material
+  can be added after that parent exists.
+- EH renders part, category, and task data as read-only context and edits only
+  requirements.
+- Each section header has an explicit control for that section and, when the
+  section has descendants, a second control for its complete subtree. Clicking
+  the rest of the header does not expand or collapse anything.
+- A subtree or whole-tree control offers expansion until every section in its
+  scope is expanded. It offers collapse only when the complete scope is
+  expanded.
+- Each tab keeps its own collapse and dirty state. Refreshing or switching tabs
+  must not silently discard unsaved work.
+
+After the first result is recorded, `Aufgaben` and `Material` become read-only.
+Their Markdown is then rendered as content instead of being left in disabled
+editor controls. EH continues to permit only the narrowly safeguarded
+requirement corrections described below; its ancestor hierarchy remains
+read-only before and after that boundary.
+
 ## Derived design state
 
 The level of expectations has no separately persisted lifecycle state. Its
 state is derived from its contents and existing results:
 
-- **Incomplete and editable:** one or more required point allocations are
-  missing or otherwise invalid.
-- **Complete and editable:** grading-scale and criterion allocations match and
-  no pupil results exist.
+- **Incomplete and editable:** one or more task, requirement, or criterion
+  allocations are missing or otherwise invalid.
+- **Complete and editable:** the grading scale matches the task budgets, each
+  task budget matches its regular requirements, all criterion allocations are
+  valid, and no pupil results exist.
 - **Complete and locked:** pupil results exist, so structure, point maxima,
-  bonus status, and criterion identities may no longer change.
+  bonus status, ordering, and criterion identities may no longer change. Only
+  requirement corrections that preserve result-bearing semantics remain
+  possible.
 
 The EH tab represents these states with an hourglass, tick, and lock respectively.
 
@@ -197,14 +443,26 @@ designer.
 
 - The tray peeks into view whenever the EH uses validation.
 - Its badge shows the number of messages and the most severe message level.
-- Overall allocation messages are not links because they have no single edit
+- Exam-level allocation messages are not links because they have no single edit
   target.
+- Task-distribution messages identify and link to the affected task. Their action
+  explicitly refers to requirements, for example:
+  `Aufgabe 1: Ordne Anforderungen einen weiteren Punkt zu.`
 - Requirement-specific messages identify their task and requirement. Activating
   one expands, scrolls to, and briefly emphasizes the affected requirement.
 - Missing allocations are warnings. Excess allocations and malformed values are
   errors.
+- A task with missing or excess regular requirement points shows the validation
+  message immediately before its distribution badge. It shares the requirement
+  message component and styling: yellow for missing points, red for excess
+  points. It uses the same validator result as the status tray, but shows only
+  the action without a task or `Erwartungshorizont` location prefix, for example:
+  `Ordne Anforderungen einen weiteren Punkt zu.`
+  Pending requirement maxima and bonus changes update the message
+  in place; it disappears when regular points match the task maximum. The badge
+  stays aligned with the shared points column.
 - A requirement with criterion validation findings shows the first finding
-  inline immediately before its `Max. Punkte` control. This uses the same
+  inline immediately before its maximum-point control. This uses the same
   validator result as the status tray, without repeating the requirement label.
   Warnings use yellow and errors use red. The message updates while either the
   criterion definitions or the requirement maximum changes. Criterion-free
@@ -213,20 +471,23 @@ designer.
 
 ## Bonus points
 
-Regular and bonus points are aggregated independently.
+Bonus requirements are distinguished by their star, not by a separate badge
+total or a parenthesized point value.
 
-- Regular requirements count toward the grading-scale total.
-- Bonus requirements are shown in parentheses.
-- Awarded bonus points may raise the effective exam result only up to the
-  grading-scale maximum.
-- The UI continues to show entered regular and bonus points separately even
-  when the effective total is capped.
+- Regular requirements distribute their task's maximum.
+- Bonus requirements show their own maximum as a plain number, like regular
+  requirements, but do not count toward regular design allocations.
+- After every raw requirement result has been rounded locally, awarded regular
+  and bonus points are combined within their task. The effective task result is
+  capped at that task's explicit maximum.
+- The effective exam result is the sum of those individually capped task
+  results. Surplus bonus points from one task cannot compensate for missing
+  points in another task.
+- Results badges show effective capped scores. Bonus awards remain visible in
+  their own requirements and are not shown as separate higher-level totals.
 
-For example, with a grading-scale maximum of 100, 99 regular points and four
-bonus points remain visible as `99 (+ 4)`, while the effective result is 100.
-
-## Notes
-
-An exam may contain several free-form note sections. Each section has a title,
-markdown description, and sort order. Notes are not fixed assessment categories
-and do not contribute points.
+For example, suppose a 100-point exam has a 60-point task and a 40-point task.
+If the first task receives 58 regular plus five bonus points, its effective
+result is capped at 60. If the second task receives 35 points, the effective
+exam result is 95, not 98. The task badges show 60 and 35; the exam badge shows
+95. Individual requirement values remain visible for assessment transparency.

@@ -32,7 +32,7 @@ import de.westarps.topteacher.model.Pupil;
 import de.westarps.topteacher.model.SchoolClass;
 
 @ExtendWith(MockitoExtension.class)
-class PupilMcpToolsTests {
+class PupilMcpToolsTests extends FullMcpAccessTest {
 
 	@Mock
 	private PupilRepository pupils;

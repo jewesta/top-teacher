@@ -90,4 +90,27 @@ class RefreshRegistryTests {
 		assertThat(pupilRefreshes).hasValue(1);
 		assertThat(registry.isStale(Target.PUPILS)).isFalse();
 	}
+
+	@Test
+	void keepsATargetStaleWhenUnsavedChangesBlockItsRefresh() {
+		final AtomicReference<Target> activeTarget = new AtomicReference<>(Target.RESULTS);
+		final AtomicInteger refreshes = new AtomicInteger();
+		final AtomicReference<Boolean> clean = new AtomicReference<>(false);
+		final RefreshRegistry<Change, Target> registry = new RefreshRegistry<>(Change.class, Target.class,
+				activeTarget::get);
+		registry.registerTarget(Target.RESULTS, refreshes::incrementAndGet, clean::get);
+		registry.registerDependency(Change.LEVEL_OF_EXPECTATIONS, Target.RESULTS);
+
+		registry.publish(Change.LEVEL_OF_EXPECTATIONS);
+
+		assertThat(refreshes).hasValue(0);
+		assertThat(registry.isStale(Target.RESULTS)).isTrue();
+		assertThat(registry.refreshIfStale(Target.RESULTS)).isFalse();
+		assertThat(registry.isStale(Target.RESULTS)).isTrue();
+
+		clean.set(true);
+		assertThat(registry.refreshIfStale(Target.RESULTS)).isTrue();
+		assertThat(refreshes).hasValue(1);
+		assertThat(registry.isStale(Target.RESULTS)).isFalse();
+	}
 }

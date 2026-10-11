@@ -17,6 +17,7 @@ import org.springframework.mock.env.MockEnvironment;
 
 import de.westarps.topteacher.backend.repo.SettingsRepository;
 import de.westarps.topteacher.backend.settings.AppSettings;
+import de.westarps.topteacher.model.InstallationLocation;
 
 class DatabaseInitializationServiceTests {
 
@@ -52,6 +53,92 @@ class DatabaseInitializationServiceTests {
 	void promptsForFirstStartWhenDatabaseContainsOnlyBaseData() {
 		assertThat(initializationService.shouldPromptForFirstStart()).isTrue();
 		assertThat(appSettings.ttDatabaseInitializationCompleted()).isFalse();
+		assertThat(appSettings.ttFileAccessInstallationLocation()).isEqualTo(InstallationLocation.LOCAL);
+	}
+
+	@Test
+	void migratesAnExistingMappingInstallationToRemoteOnlyWhenTheSettingIsMissing() {
+		jdbc.update("insert into shared_folder_mapping (client_path, server_path, sort_order) values (?, ?, 0)",
+				"/Volumes/School", "/mnt/school");
+		settingsRepository.delete(AppSettings.TT_FILE_ACCESS_INSTALLATION_LOCATION_KEY);
+
+		new ResourceDatabasePopulator(new ClassPathResource("db/schema.sql"), new ClassPathResource("db/base-data.sql"))
+				.execute(dataSource);
+
+		assertThat(appSettings.ttFileAccessInstallationLocation()).isEqualTo(InstallationLocation.REMOTE);
+
+		appSettings.saveTtFileAccessInstallationLocation(InstallationLocation.LOCAL);
+		new ResourceDatabasePopulator(new ClassPathResource("db/schema.sql"), new ClassPathResource("db/base-data.sql"),
+				new ClassPathResource("db/demo-data.sql")).execute(dataSource);
+
+		assertThat(appSettings.ttFileAccessInstallationLocation()).isEqualTo(InstallationLocation.LOCAL);
+		assertThat(countRows("shared_folder_mapping")).isOne();
+	}
+
+	@Test
+	void migratesAnInstallationWithoutMappingsToLocalAndPreservesAnExplicitRemoteChoice() {
+		settingsRepository.delete(AppSettings.TT_FILE_ACCESS_INSTALLATION_LOCATION_KEY);
+		new ResourceDatabasePopulator(new ClassPathResource("db/schema.sql")).execute(dataSource);
+
+		assertThat(appSettings.ttFileAccessInstallationLocation()).isEqualTo(InstallationLocation.LOCAL);
+
+		appSettings.saveTtFileAccessInstallationLocation(InstallationLocation.REMOTE);
+		new ResourceDatabasePopulator(new ClassPathResource("db/schema.sql"), new ClassPathResource("db/base-data.sql"))
+				.execute(dataSource);
+
+		assertThat(appSettings.ttFileAccessInstallationLocation()).isEqualTo(InstallationLocation.REMOTE);
+	}
+
+	@Test
+	void dropsTheLegacyExamNoteSectionTableWhenTheSchemaIsReapplied() {
+		jdbc.execute("create table exam_note_section (id integer primary key)");
+		assertThat(legacyNoteTableCount()).isOne();
+
+		new ResourceDatabasePopulator(new ClassPathResource("db/schema.sql")).execute(dataSource);
+
+		assertThat(legacyNoteTableCount()).isZero();
+	}
+
+	@Test
+	void addsAnEmptyFooterToExistingExamsAndPreservesItWhenTheSchemaIsReapplied() {
+		initializationService.initialize(DatabaseInitializationMode.DEMO);
+		jdbc.execute("alter table exam drop column footer_markdown");
+
+		new ResourceDatabasePopulator(new ClassPathResource("db/schema.sql")).execute(dataSource);
+
+		assertThat(jdbc.queryForList("select footer_markdown from exam", String.class)).containsOnly("");
+		final int examId = jdbc.queryForObject("select min(id) from exam", Integer.class);
+		jdbc.update("update exam set footer_markdown = ? where id = ?", "**Existing footer**", examId);
+		new ResourceDatabasePopulator(new ClassPathResource("db/schema.sql"), new ClassPathResource("db/base-data.sql"),
+				new ClassPathResource("db/demo-data.sql")).execute(dataSource);
+
+		assertThat(jdbc.queryForObject("select footer_markdown from exam where id = ?", String.class, examId))
+				.isEqualTo("**Existing footer**");
+	}
+
+	@Test
+	void backfillsTaskPointBudgetsFromRegularRequirementsOnce() {
+		initializationService.initialize(DatabaseInitializationMode.DEMO);
+		jdbc.update("update eh_task set max_points = 0");
+		jdbc.update("delete from app_setting where setting_key = 'tt.database.migration.issue35.task-points'");
+
+		new ResourceDatabasePopulator(new ClassPathResource("db/schema.sql")).execute(dataSource);
+
+		assertThat(count("""
+			select count(*)
+			from eh_task task
+			where task.max_points <> (
+			    select coalesce(sum(requirement.max_points), 0)
+			    from eh_requirement requirement
+			    where requirement.task_id = task.id
+			      and requirement.bonus = false
+			)
+			""")).isZero();
+		assertThat(count("""
+			select count(*)
+			from app_setting
+			where setting_key = 'tt.database.migration.issue35.task-points'
+			""")).isOne();
 	}
 
 	@Test
@@ -63,6 +150,43 @@ class DatabaseInitializationServiceTests {
 
 		assertThat(initializationService.shouldPromptForFirstStart()).isFalse();
 		assertThat(appSettings.ttDatabaseInitializationCompleted()).isTrue();
+	}
+
+	@Test
+	void migratesCriterionDeclarationsOnceWithoutChangingCriteriaOrScores() {
+		initializationService.initialize(DatabaseInitializationMode.DEMO);
+		final int requirementId = jdbc.queryForObject("select min(id) from eh_requirement", Integer.class);
+		final int criterionId = jdbc.queryForObject("select min(id) from eh_criterion where requirement_id = ?",
+				Integer.class, requirementId);
+		final int pupilId = jdbc.queryForObject("select min(id) from pupil", Integer.class);
+		jdbc.update("insert into eh_criterion_result (criterion_id, pupil_id, achieved, point_units) values (?, ?, true, 1)",
+				criterionId, pupilId);
+		jdbc.update("insert into eh_requirement_result (requirement_id, pupil_id, points, point_units, comment_text) values (?, ?, 1, 1, 'Keep this comment')",
+				requirementId, pupilId);
+		final var criteriaBefore = jdbc.queryForList("select * from eh_criterion order by id");
+		final var resultsBefore = jdbc.queryForList("select * from eh_criterion_result order by criterion_id, pupil_id");
+		final var requirementResultsBefore = jdbc
+				.queryForList("select * from eh_requirement_result order by requirement_id, pupil_id");
+		jdbc.update("update eh_requirement set description_markdown = ? where id = ?",
+				"[eins](eh:1) [halb](eh:2/0,5) [anderthalb](eh:3/1.5) [offen](eh:4/?) [neu](crit:5?points=2)",
+				requirementId);
+		jdbc.update("delete from app_setting where setting_key = 'tt.database.migration.issue35.criterion-urls'");
+
+		new ResourceDatabasePopulator(new ClassPathResource("db/schema.sql")).execute(dataSource);
+
+		assertThat(jdbc.queryForObject("select description_markdown from eh_requirement where id = ?", String.class,
+				requirementId)).isEqualTo(
+						"[eins](crit:1) [halb](crit:2?points=0,5) [anderthalb](crit:3?points=1.5) [offen](crit:4?points=?) [neu](crit:5?points=2)");
+		assertThat(jdbc.queryForList("select * from eh_criterion order by id")).isEqualTo(criteriaBefore);
+		assertThat(jdbc.queryForList("select * from eh_criterion_result order by criterion_id, pupil_id"))
+				.isEqualTo(resultsBefore);
+		assertThat(jdbc.queryForList("select * from eh_requirement_result order by requirement_id, pupil_id"))
+				.isEqualTo(requirementResultsBefore);
+
+		jdbc.update("update eh_requirement set description_markdown = '[alt](eh:1)' where id = ?", requirementId);
+		new ResourceDatabasePopulator(new ClassPathResource("db/schema.sql")).execute(dataSource);
+		assertThat(jdbc.queryForObject("select description_markdown from eh_requirement where id = ?", String.class,
+				requirementId)).isEqualTo("[alt](eh:1)");
 	}
 
 	@Test
@@ -139,6 +263,7 @@ class DatabaseInitializationServiceTests {
 			) course_roster
 			""")).isEqualTo(2);
 		assertThat(countRows("exam_pupil")).isEqualTo(12);
+		assertThat(countRows("loe_material")).isEqualTo(4);
 		assertThat(count("""
 			select count(*)
 			from (
@@ -155,6 +280,19 @@ class DatabaseInitializationServiceTests {
 			    group by e.id
 			    having sum(case when requirement.bonus then 0 else requirement.max_points end) = 150
 			       and sum(case when requirement.bonus then requirement.max_points else 0 end) > 0
+			) demo_exam
+			""")).isEqualTo(2);
+		assertThat(count("""
+			select count(*)
+			from (
+			    select exam.id
+			    from exam
+			    join grading_scale on grading_scale.id = exam.grading_scale_id
+			    join eh_part part on part.exam_id = exam.id
+			    join eh_category category on category.part_id = part.id
+			    join eh_task task on task.category_id = category.id
+			    group by exam.id, grading_scale.max_points
+			    having sum(task.max_points) = grading_scale.max_points
 			) demo_exam
 			""")).isEqualTo(2);
 		assertThat(countRows("eh_requirement_result")).isZero();
@@ -253,6 +391,14 @@ class DatabaseInitializationServiceTests {
 
 	private int countRows(final String table) {
 		return count("select count(*) from " + table);
+	}
+
+	private int legacyNoteTableCount() {
+		return count("""
+			select count(*)
+			from information_schema.tables
+			where table_name = 'EXAM_NOTE_SECTION'
+			""");
 	}
 
 	private int count(final String sql) {

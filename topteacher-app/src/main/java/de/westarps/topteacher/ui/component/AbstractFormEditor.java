@@ -13,7 +13,7 @@ public abstract class AbstractFormEditor extends VerticalLayout {
 	private static final FormLayout.ResponsiveStep TWO_COLUMNS = new FormLayout.ResponsiveStep("32rem", 2);
 
 	private final FormLayout form = new FormLayout();
-	private final HorizontalLayout actions = new HorizontalLayout();
+	private final HorizontalLayout actions = new ActionToolbar();
 
 	protected AbstractFormEditor(final String className, final FormColumns formColumns,
 			final List<? extends Component> leadingComponents, final List<? extends Component> formFields,
@@ -28,15 +28,14 @@ public abstract class AbstractFormEditor extends VerticalLayout {
 		form.setWidthFull();
 
 		actions.addClassName("tt-editor-actions");
-		actions.setSpacing(true);
 		actions.add(actionComponents.toArray(Component[]::new));
 
+		if (!actionComponents.isEmpty()) {
+			add(actions);
+		}
 		add(leadingComponents.toArray(Component[]::new));
 		if (!formFields.isEmpty()) {
 			add(form);
-		}
-		if (!actionComponents.isEmpty()) {
-			add(actions);
 		}
 	}
 

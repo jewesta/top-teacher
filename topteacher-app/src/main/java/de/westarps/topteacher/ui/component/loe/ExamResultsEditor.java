@@ -27,6 +27,7 @@ import com.vaadin.flow.component.menubar.MenuBarVariant;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.shared.Tooltip;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.data.value.ValueChangeMode;
 
@@ -62,14 +63,16 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private final LoeSaveController saveController = new LoeSaveController();
 	private final StepperComboBox<Pupil> pupilSelector = new StepperComboBox<>();
 	private final Button saveButton = Buttons.save();
-	private final Button discardButton = Buttons.icon("Änderungen verwerfen", VaadinIcon.ROTATE_LEFT,
+	private final Button discardButton = Buttons.dialogIcon("Änderungen verwerfen", VaadinIcon.ROTATE_LEFT,
 			event -> openDiscardConfirmation());
-	private final Button deleteButton = Buttons.icon("Ergebnisse löschen", VaadinIcon.TRASH,
+	private final Button deleteButton = Buttons.dialogIcon("Ergebnisse löschen", VaadinIcon.TRASH,
 			event -> openDeleteConfirmation());
 	private final Button reloadButton = Buttons.icon("Neu laden", VaadinIcon.REFRESH, event -> refreshFromDatabase());
 	private final MenuBar pdfMenu = new MenuBar();
-	private final ConfirmDialog discardConfirmation = new ConfirmDialog();
-	private final ConfirmDialog deleteConfirmation = new ConfirmDialog();
+	private final ConfirmDialog discardConfirmation = TopTeacherDialogs.discardConfirmation("Änderungen verwerfen?",
+			saveController::discard);
+	private final ConfirmDialog deleteConfirmation = TopTeacherDialogs.deleteConfirmation("Ergebnisse löschen?",
+			this::deleteSelectedPupilResults);
 	private final FullscreenButton fullscreenButton;
 	private final VerticalLayout results;
 	private final DesignerViewport viewport = new DesignerViewport(content());
@@ -82,7 +85,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private final Map<Integer, CriterionMarkdownViewer> requirementDescriptions = new HashMap<>();
 	private final Map<Integer, Span> requirementCriterionIndicators = new HashMap<>();
 	private final Map<Integer, Checkbox> criterionCheckboxes = new HashMap<>();
-	private final Map<Integer, LoeCriterionPointStepper> criterionRows = new HashMap<>();
+	private final Map<Integer, ResultsPointsRow> criterionRows = new HashMap<>();
 	private final Set<Integer> highlightedQuickCriteria = new HashSet<>();
 	private final Set<Integer> highlightedInlineCriteria = new HashSet<>();
 	private final Map<Integer, Integer> editedCriterionResults = new HashMap<>();
@@ -92,6 +95,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 
 	private Exam exam;
 	private Pupil selectedPupil;
+	private long loadedRevision;
 	private boolean refreshing;
 	private boolean applyingResultState;
 	private boolean updatingCriterionControls;
@@ -134,11 +138,19 @@ public class ExamResultsEditor extends AbstractDesigner {
 	}
 
 	public void setExam(final Exam exam) {
+		if (isDirty() && isDifferentExam(exam)) {
+			Notification.show("Bitte speichere die Ergebnisse zuerst.");
+			return;
+		}
 		if (this.exam == null || exam == null || !this.exam.id().equals(exam.id())) {
 			selectedPupil = null;
 		}
 		this.exam = exam;
 		refresh();
+	}
+
+	private boolean isDifferentExam(final Exam exam) {
+		return this.exam == null || exam == null || !this.exam.id().equals(exam.id());
 	}
 
 	public boolean selectPupil(final int pupilId) {
@@ -203,8 +215,6 @@ public class ExamResultsEditor extends AbstractDesigner {
 		discardButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY_INLINE);
 		saveController.setDiscardAction(this::discardChanges);
 		saveController.register(discardButton);
-		TopTeacherDialogs.configureDiscardConfirmation(discardConfirmation, "Änderungen verwerfen?",
-				saveController::discard);
 	}
 
 	private void configureReloadButton() {
@@ -214,15 +224,13 @@ public class ExamResultsEditor extends AbstractDesigner {
 
 	private void configureDeleteButton() {
 		deleteButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY_INLINE);
-		TopTeacherDialogs.configureDeleteConfirmation(deleteConfirmation, "Ergebnisse löschen?",
-				this::deleteSelectedPupilResults);
 		updateDeleteButton();
 	}
 
 	private void configurePdfDownload() {
 		pdfMenu.addClassName("tt-pdf-menu");
 		pdfMenu.addThemeVariants(MenuBarVariant.LUMO_SMALL);
-		pdfMenuItem = pdfMenu.addItem("Laden");
+		pdfMenuItem = pdfMenu.addItem("");
 		pdfMenuItem.addComponentAsFirst(VaadinIcon.DOWNLOAD.create());
 		pdfMenuItem.setAriaLabel("Ergebnisbogen herunterladen");
 		pdfMenu.setTooltipText(pdfMenuItem, "Ergebnisbogen herunterladen");
@@ -246,10 +254,14 @@ public class ExamResultsEditor extends AbstractDesigner {
 			return;
 		}
 
-		levelOfExpectationsRepository.syncCriteriaForExam(exam.id());
-		loadPointRules();
-		loadItems();
-		refreshPupils();
+		levelOfExpectationsRepository.withDesignRead(exam.id(), () -> {
+			levelOfExpectationsRepository.syncCriteriaForExam(exam.id());
+			loadPointRules();
+			loadItems();
+			loadedRevision = levelOfExpectationsRepository.designRevision(exam.id());
+			refreshPupils();
+			return null;
+		});
 		configureToolbar();
 		showDesigner();
 		renderResultStructure();
@@ -326,7 +338,10 @@ public class ExamResultsEditor extends AbstractDesigner {
 			applyResultState();
 			return;
 		}
-		loadResultState();
+		levelOfExpectationsRepository.withDesignRead(exam.id(), () -> {
+			loadResultState();
+			return null;
+		});
 		applyResultState();
 	}
 
@@ -412,7 +427,16 @@ public class ExamResultsEditor extends AbstractDesigner {
 			return;
 		}
 
-		levelOfExpectationsRepository.deleteResultsByExamAndPupil(exam.id(), selectedPupil.id());
+		try {
+			levelOfExpectationsRepository.withDesignWrite(exam.id(), loadedRevision, () -> {
+				levelOfExpectationsRepository.deleteResultsByExamAndPupil(exam.id(), selectedPupil.id());
+				loadedRevision = levelOfExpectationsRepository.designRevision(exam.id());
+				return null;
+			});
+		} catch (final IllegalArgumentException | IllegalStateException conflict) {
+			Notification.show(conflict.getMessage());
+			return;
+		}
 		clearResultState();
 		applyResultState();
 		deleteConfirmation.close();
@@ -622,7 +646,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 		}
 		final boolean highlighted = highlightedQuickCriteria.contains(criterion.id())
 				|| highlightedInlineCriteria.contains(criterion.id());
-		final LoeCriterionPointStepper row = criterionRows.get(criterion.id());
+		final ResultsPointsRow row = criterionRows.get(criterion.id());
 		if (row != null) {
 			row.getElement().getClassList().set("tt-results-criterion-highlighted", highlighted);
 		}
@@ -659,30 +683,35 @@ public class ExamResultsEditor extends AbstractDesigner {
 
 	private Component requirementMarker(final LoeTask task, final LoeRequirement requirement) {
 		final String requirementNumber = requirementNumber(task, requirement);
-		final VerticalLayout marker = new VerticalLayout(requirementNumberBadge(requirementNumber));
+		final VerticalLayout marker = new VerticalLayout(requirementNumberBadge(requirementNumber, requirement.bonus()));
 		marker.addClassName("tt-results-requirement-marker");
 		marker.setAlignItems(Alignment.CENTER);
 		marker.setPadding(false);
 		marker.setSpacing(false);
-		if (requirement.bonus()) {
-			marker.add(bonusIcon());
-		}
 		return marker;
 	}
 
-	private static Span requirementNumberBadge(final String requirementNumber) {
+	private static Component requirementNumberBadge(final String requirementNumber, final boolean bonus) {
+		if (bonus) {
+			return bonusRequirementNumberBadge(requirementNumber);
+		}
 		final Span number = new Span(requirementNumber);
 		number.addClassName("tt-results-requirement-number");
 		number.getElement().setAttribute("aria-label", "Anforderung " + requirementNumber);
 		return number;
 	}
 
-	private static Icon bonusIcon() {
+	private static Div bonusRequirementNumberBadge(final String requirementNumber) {
 		final Icon star = VaadinIcon.STAR.create();
-		star.addClassName("tt-results-bonus-icon");
-		star.getElement().setAttribute("aria-label", "Sternchen-Aufgabe");
-		star.setTooltipText("Sternchen-Aufgabe / Bonusaufgabe");
-		return star;
+		star.addClassName("tt-results-bonus-star");
+		star.getElement().setAttribute("aria-hidden", "true");
+		final Span number = new Span(requirementNumber);
+		number.addClassName("tt-results-bonus-number-text");
+		final Div badge = new Div(star, number);
+		badge.addClassNames("tt-results-requirement-number", "tt-results-bonus-number");
+		badge.getElement().setAttribute("aria-label", "Anforderung " + requirementNumber + ", Sternchen-Aufgabe");
+		Tooltip.forComponent(badge).withText("Sternchen-Aufgabe / Bonusaufgabe");
+		return badge;
 	}
 
 	private Component pointsControl(final LoeRequirement requirement, final List<LoeCriterion> requirementCriteria) {
@@ -694,7 +723,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 		requirementPointTexts.put(requirement.id(), pointsText);
 		refreshRequirementPointText(requirement);
 
-		final VerticalLayout control = new VerticalLayout(resultBadge, pointsText);
+		final VerticalLayout control = new VerticalLayout(new ResultsPointsRow(resultBadge), pointsText);
 		control.addClassName("tt-results-points-control");
 		control.setPadding(false);
 		control.setSpacing(false);
@@ -705,9 +734,11 @@ public class ExamResultsEditor extends AbstractDesigner {
 		final LoePointStepper free = new LoePointStepper("Frei vergebene Punkte");
 		free.setChangeHandler(units -> setFreePointUnits(requirement, units));
 		freePointControls.put(requirement.id(), free);
-		final Span freeLabel = new Span("Frei vergebene Punkte");
-		freeLabel.addClassName("tt-results-adjustment-label");
-		final VerticalLayout freeArea = new VerticalLayout(freeLabel, free);
+		final Icon freeIcon = VaadinIcon.SCALE.create();
+		freeIcon.addClassName("tt-results-adjustment-icon");
+		freeIcon.getElement().setAttribute("aria-label", "Frei vergebene Punkte");
+		freeIcon.setTooltipText("Frei vergebene Punkte");
+		final VerticalLayout freeArea = new VerticalLayout(new ResultsPointsRow(freeIcon, free));
 		freeArea.addClassName("tt-results-adjustment");
 		freeArea.setPadding(false);
 		freeArea.setSpacing(false);
@@ -739,24 +770,25 @@ public class ExamResultsEditor extends AbstractDesigner {
 		});
 		criterionCheckboxes.put(criterion.id(), checkbox);
 
-		final LoeCriterionPointStepper points = new LoeCriterionPointStepper(criterion.label() + " Punkte",
-				checkbox);
+		final LoePointStepper points = new LoePointStepper(criterion.label() + " Punkte");
 		points.setChangeHandler(units -> setCriterionPointUnits(requirement, criterion, units));
 		criterionPointControls.put(criterion.id(), points);
 
-		final LoeCriterionPointStepper row = points;
+		final ResultsPointsRow row = new ResultsPointsRow(checkbox, points);
+		row.addClassName("tt-results-criterion-checkbox-row");
 		row.getElement().setAttribute("aria-label", criterion.label() + ": "
 				+ LoePointUnits.formatGerman(criterion.pointUnits())
 				+ (criterion.pointUnits() == LoePointUnits.UNITS_PER_POINT ? " Punkt" : " Punkte") + " möglich");
 		row.getElement().addEventListener("mouseenter",
 				event -> setCriterionHighlight(criterion, highlightedQuickCriteria, true));
 		row.getElement().addEventListener("mouseleave",
-				event -> setCriterionHighlight(criterion, highlightedQuickCriteria, false));
+				event -> setCriterionHighlight(criterion, highlightedQuickCriteria, false))
+				.setFilter("!event.currentTarget.matches(':focus-within')");
 		row.getElement().addEventListener("focusin",
 				event -> setCriterionHighlight(criterion, highlightedQuickCriteria, true));
 		row.getElement().addEventListener("focusout",
 				event -> setCriterionHighlight(criterion, highlightedQuickCriteria, false))
-				.setFilter("!event.currentTarget.contains(event.relatedTarget)");
+				.setFilter("!event.currentTarget.contains(event.relatedTarget) && !event.currentTarget.matches(':hover')");
 		criterionRows.put(criterion.id(), row);
 		return row;
 	}
@@ -812,7 +844,10 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private void refreshRequirementPointText(final LoeRequirement requirement) {
 		final Span pointsText = requirementPointTexts.get(requirement.id());
 		if (pointsText != null) {
-			pointsText.setText(currentRequirementPoints(requirement) + " von " + requirement.maxPoints() + " Punkten");
+			final String pointSummary = currentRequirementPoints(requirement) + " von " + requirement.maxPoints();
+			pointsText.setText(pointSummary + " Pkt.");
+			pointsText.getElement().setAttribute("aria-label", pointSummary + " Punkten");
+			pointsText.getElement().setAttribute("title", pointSummary + " Punkten");
 		}
 		final ResultsRequirementPointCell badge = requirementResultBadges.get(requirement.id());
 		if (badge != null) {
@@ -857,29 +892,24 @@ public class ExamResultsEditor extends AbstractDesigner {
 	}
 
 	private LoePoints pointsForPart(final LoePart part) {
-		return sum(categoriesFor(part).stream().flatMap(category -> tasksFor(category).stream())
-				.flatMap(task -> requirementsFor(task).stream()).toList());
+		return sumTaskPoints(categoriesFor(part).stream().flatMap(category -> tasksFor(category).stream()).toList());
 	}
 
 	private LoePoints pointsForCategory(final LoeCategory category) {
-		return sum(tasksFor(category).stream().flatMap(task -> requirementsFor(task).stream()).toList());
+		return sumTaskPoints(tasksFor(category));
 	}
 
 	private LoePoints pointsForTask(final LoeTask task) {
-		return sum(requirementsFor(task));
+		return new LoePoints(pointRules.cappedAchievedTotal(List.of(task), requirementsFor(task),
+				this::currentRequirementPoints), 0);
 	}
 
 	private LoePoints pointsForExam() {
-		return sum(requirements);
+		return sumTaskPoints(tasks);
 	}
 
-	private LoePoints pointsForRequirement(final LoeRequirement requirement) {
-		return requirement.bonus() ? new LoePoints(0, currentRequirementPoints(requirement))
-				: new LoePoints(currentRequirementPoints(requirement), 0);
-	}
-
-	private LoePoints sum(final List<LoeRequirement> requirements) {
-		return requirements.stream().map(this::pointsForRequirement).reduce(new LoePoints(0, 0), LoePoints::plus);
+	private LoePoints sumTaskPoints(final List<LoeTask> includedTasks) {
+		return includedTasks.stream().map(this::pointsForTask).reduce(new LoePoints(0, 0), LoePoints::plus);
 	}
 
 	private int currentCriterionPointUnits(final LoeCriterion criterion) {
@@ -941,6 +971,10 @@ public class ExamResultsEditor extends AbstractDesigner {
 		return persistedRequirementComments.getOrDefault(requirement.id(), "");
 	}
 
+	public boolean hasUnsavedChanges() {
+		return isDirty();
+	}
+
 	private boolean isDirty() {
 		return criteria.stream()
 				.anyMatch(criterion -> currentCriterionPointUnits(criterion) != persistedCriterionPointUnits(criterion))
@@ -984,19 +1018,28 @@ public class ExamResultsEditor extends AbstractDesigner {
 			return;
 		}
 
-		criteria.stream()
-				.filter(criterion -> currentCriterionPointUnits(criterion) != persistedCriterionPointUnits(criterion))
-				.map(criterion -> new LoeCriterionResult(criterion.id(), selectedPupil.id(),
-						currentCriterionPointUnits(criterion)))
-				.forEach(levelOfExpectationsRepository::saveCriterionResult);
-		requirements.stream()
-				.filter(requirement -> currentRequirementRawUnits(requirement) != persistedRequirementPointUnits(requirement)
-						|| currentAdjustmentPointUnits(requirement) != persistedAdjustmentPointUnits(requirement)
-						|| !currentRequirementComment(requirement).equals(persistedRequirementComment(requirement)))
-				.map(requirement -> new LoeRequirementResult(requirement.id(), selectedPupil.id(),
-						currentRequirementRawUnits(requirement), currentAdjustmentPointUnits(requirement),
-						currentRequirementComment(requirement)))
-				.forEach(levelOfExpectationsRepository::saveRequirementResult);
+		try {
+			levelOfExpectationsRepository.withDesignWrite(exam.id(), loadedRevision, () -> {
+				criteria.stream()
+						.filter(criterion -> currentCriterionPointUnits(criterion) != persistedCriterionPointUnits(criterion))
+						.map(criterion -> new LoeCriterionResult(criterion.id(), selectedPupil.id(),
+								currentCriterionPointUnits(criterion)))
+						.forEach(levelOfExpectationsRepository::saveCriterionResult);
+				requirements.stream()
+						.filter(requirement -> currentRequirementRawUnits(requirement) != persistedRequirementPointUnits(requirement)
+								|| currentAdjustmentPointUnits(requirement) != persistedAdjustmentPointUnits(requirement)
+								|| !currentRequirementComment(requirement).equals(persistedRequirementComment(requirement)))
+						.map(requirement -> new LoeRequirementResult(requirement.id(), selectedPupil.id(),
+								currentRequirementRawUnits(requirement), currentAdjustmentPointUnits(requirement),
+								currentRequirementComment(requirement)))
+						.forEach(levelOfExpectationsRepository::saveRequirementResult);
+				loadedRevision = levelOfExpectationsRepository.designRevision(exam.id());
+				return null;
+			});
+		} catch (final IllegalArgumentException | IllegalStateException conflict) {
+			Notification.show(conflict.getMessage());
+			return;
+		}
 
 		persistedCriterionResults = criteria.stream()
 				.collect(Collectors.toMap(LoeCriterion::id, this::currentCriterionPointUnits));
@@ -1075,13 +1118,18 @@ public class ExamResultsEditor extends AbstractDesigner {
 			Notification.show("Für die Klausur wurde kein Notenschlüssel gefunden.");
 			return false;
 		}
-		final int regularMaxPoints = pointRules.regularMaxPoints(requirements);
-		if (!pointRules.regularMaxPointsMatch(requirements)) {
-			Notification.show("Der Erwartungshorizont hat " + regularMaxPoints
-					+ " reguläre Punkte. Der Notenschlüssel erwartet " + pointRules.maxPoints() + " Punkte.");
+		final int taskMaxPoints = pointRules.taskMaxPoints(tasks);
+		if (!pointRules.taskMaxPointsMatch(tasks)) {
+			Notification.show("Die Aufgaben haben zusammen " + taskMaxPoints + " Punkte. Der Notenschlüssel erwartet "
+					+ pointRules.maxPoints() + " Punkte.");
 			return false;
 		}
-		pointRules.cappedAchievedTotal(requirements, this::currentRequirementPoints);
+		if (!pointRules.requirementMaxPointsMatchTasks(tasks, requirements)) {
+			Notification.show(
+					"Die regulären Anforderungspunkte müssen bei jeder Aufgabe genau den Aufgabenpunkten entsprechen.");
+			return false;
+		}
+		pointRules.cappedAchievedTotal(tasks, requirements, this::currentRequirementPoints);
 		return true;
 	}
 

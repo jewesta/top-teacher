@@ -74,7 +74,7 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 
 	private void configureDownloadMenu() {
 		downloadMenu.addThemeVariants(MenuBarVariant.LUMO_SMALL);
-		final MenuItem downloadItem = downloadMenu.addItem("Laden");
+		final MenuItem downloadItem = downloadMenu.addItem("");
 		downloadItem.addComponentAsFirst(VaadinIcon.DOWNLOAD.create());
 		downloadItem.setAriaLabel("Dateien herunterladen");
 		downloadMenu.setTooltipText(downloadItem, "Dateien herunterladen");
@@ -214,12 +214,12 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 	}
 
 	private String gradeDisplayName(final EvaluationRow row) {
-		if (pointRules == null || !pointRules.regularMaxPointsMatch(requirements)) {
+		if (pointRules == null || !pointRules.validDesign(tasks, requirements)) {
 			return "";
 		}
 		final int effectivePoints;
 		try {
-			effectivePoints = pointRules.cappedAchievedTotal(requirements, row::achievedPointsFor);
+			effectivePoints = pointRules.cappedAchievedTotal(tasks, requirements, row::achievedPointsFor);
 		} catch (final IllegalArgumentException exception) {
 			return "";
 		}

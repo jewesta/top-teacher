@@ -24,4 +24,16 @@ class FullscreenButtonTests {
 
 		assertThat(button.getElement().getAttribute("aria-label")).isEqualTo("Vollbild");
 	}
+
+	@Test
+	void updatesTheAvailableToolbarLabelWhenFullscreenModeChanges() {
+		final FullscreenButton button = new FullscreenButton(new VerticalLayout());
+		new ActionToolbar(button);
+
+		assertThat(button.getText()).isEqualTo("Vollbild");
+		button.setFullscreenActive(true);
+		assertThat(button.getText()).isEqualTo("Vollbild verlassen");
+		button.setFullscreenActive(false);
+		assertThat(button.getText()).isEqualTo("Vollbild");
+	}
 }

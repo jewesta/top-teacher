@@ -20,6 +20,7 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import de.westarps.topteacher.backend.authoring.ExamDesignGuard;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.ExamNumber;
 import de.westarps.topteacher.model.Lifecycle;
@@ -33,11 +34,13 @@ public class ExamRepository {
 		""".trim();
 
 	private final NamedParameterJdbcTemplate jdbc;
+	private final ExamDesignGuard designGuard;
 	private final RowMapper<Exam> rowMapper = this::mapExam;
 	private final RowMapper<Pupil> pupilRowMapper = this::mapPupil;
 
-	public ExamRepository(final NamedParameterJdbcTemplate jdbc) {
+	public ExamRepository(final NamedParameterJdbcTemplate jdbc, final ExamDesignGuard designGuard) {
 		this.jdbc = jdbc;
+		this.designGuard = designGuard;
 	}
 
 	public List<Exam> findByCourseId(final int courseId) {
@@ -184,6 +187,9 @@ public class ExamRepository {
 
 	@Transactional
 	public Exam save(final Exam exam) {
+		if (exam.id() != null) {
+			designGuard.lockAndAdvance(exam.id());
+		}
 		validateExam(exam);
 		if (exam.id() == null) {
 			return insert(exam);
@@ -202,6 +208,7 @@ public class ExamRepository {
 
 	@Transactional
 	public void assignPupil(final int examId, final int pupilId) {
+		designGuard.lockAndAdvance(examId);
 		validatePupilsBelongToCourse(examId, Set.of(pupilId));
 		jdbc.update("""
 			merge into exam_pupil (exam_id, pupil_id)
@@ -212,6 +219,7 @@ public class ExamRepository {
 
 	@Transactional
 	public void removePupil(final int examId, final int pupilId) {
+		designGuard.lockAndAdvance(examId);
 		validatePupilCanBeRemoved(examId, pupilId);
 		jdbc.update("""
 			delete from exam_pupil
@@ -222,6 +230,7 @@ public class ExamRepository {
 
 	@Transactional
 	public void replacePupils(final int examId, final Collection<Integer> pupilIds) {
+		designGuard.lockAndAdvance(examId);
 		final Set<Integer> uniquePupilIds = new LinkedHashSet<>(pupilIds == null ? List.of() : pupilIds);
 		ensureExamExists(examId);
 		validatePupilsBelongToCourse(examId, uniquePupilIds);

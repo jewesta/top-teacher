@@ -1,5 +1,6 @@
 package de.westarps.topteacher.ui.view;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -32,21 +33,23 @@ import de.westarps.topteacher.ApplicationVersion;
 import de.westarps.topteacher.backend.backup.DatabaseBackupScheduler;
 import de.westarps.topteacher.backend.backup.DatabaseBackupService;
 import de.westarps.topteacher.backend.settings.AppSettings;
+import de.westarps.topteacher.ui.component.ActionToolbar;
 import de.westarps.topteacher.ui.component.Buttons;
 import de.westarps.topteacher.ui.component.ClipboardCopyButton;
 import de.westarps.topteacher.ui.component.FormBinders;
 import it.burning.cron.CronExpressionDescriptor;
 import it.burning.cron.CronExpressionParser.Options;
 
-@Order(10)
+@Order(20)
 @UIScope
 @SpringComponent
-public class DatabaseBackupSettingsTab extends VerticalLayout implements SettingsTab {
+public class DatabaseBackupSettingsTab extends VerticalLayout implements SystemSettingsSection {
 
 	private static final String DATABASE_FILE_PROPERTY = "tt.database.file";
 	private static final String DATASOURCE_URL_PROPERTY = "spring.datasource.url";
 	private static final String H2_FILE_URL_PREFIX = "jdbc:h2:file:";
 	private static final String H2_FILE_SUFFIX = ".mv.db";
+	private static final double BYTES_PER_MEGABYTE = 1024d * 1024d;
 
 	private final AppSettings appSettings;
 	private final DatabaseBackupService backupService;
@@ -82,11 +85,12 @@ public class DatabaseBackupSettingsTab extends VerticalLayout implements Setting
 
 	@Override
 	public String label() {
-		return "Sicherung";
+		return "Datenbank > Sicherung";
 	}
 
 	@Override
 	public Component content() {
+		updateCurrentDatabaseFileSize();
 		return this;
 	}
 
@@ -95,6 +99,7 @@ public class DatabaseBackupSettingsTab extends VerticalLayout implements Setting
 		currentDatabaseFile.setWidthFull();
 		currentDatabaseFile.setValue(currentDatabaseFilePath);
 		currentDatabaseFile.setSuffixComponent(createCopyCurrentDatabaseFileButton());
+		updateCurrentDatabaseFileSize();
 
 		backupTargetFolder.setClearButtonVisible(true);
 		backupTargetFolder.setPlaceholder("Beispiel: /Volumes/Backups/" + ApplicationVersion.APP_NAME);
@@ -124,19 +129,34 @@ public class DatabaseBackupSettingsTab extends VerticalLayout implements Setting
 		form.setResponsiveSteps(new FormLayout.ResponsiveStep("0", 1));
 		form.add(backupEnabled, backupTargetFolder, backupCron, cronDescription);
 
-		final HorizontalLayout actions = new HorizontalLayout(saveButton, backupNowButton);
+		final HorizontalLayout actions = new ActionToolbar(saveButton, backupNowButton);
 		actions.addClassName("tt-settings-actions");
-		actions.setSpacing(true);
 
 		addClassName("tt-settings-content");
 		setPadding(false);
 		setWidthFull();
-		add(currentDatabaseFile, new Hr(), backupDescription, backupFileNameDescription, form, actions);
+		add(actions, currentDatabaseFile, new Hr(), backupDescription, backupFileNameDescription, form);
 	}
 
 	private Component createCopyCurrentDatabaseFileButton() {
 		return new ClipboardCopyButton(currentDatabaseFilePath, "Pfad kopieren", "Pfad kopiert.",
 				"Pfad konnte nicht kopiert werden.");
+	}
+
+	private void updateCurrentDatabaseFileSize() {
+		currentDatabaseFile.setHelperText(databaseFileSize(currentDatabaseFilePath));
+	}
+
+	private static String databaseFileSize(final String databaseFilePath) {
+		if (!StringUtils.hasText(databaseFilePath)) {
+			return "Dateigröße: nicht verfügbar.";
+		}
+		try {
+			final long size = Files.size(Path.of(databaseFilePath));
+			return String.format(Locale.GERMANY, "Dateigröße: %.2f MB", size / BYTES_PER_MEGABYTE);
+		} catch (final IOException | InvalidPathException | SecurityException exception) {
+			return "Dateigröße: nicht verfügbar.";
+		}
 	}
 
 	private void readSettings() {

@@ -27,11 +27,30 @@ function MarkdownViewerContent({
   const preview = markdownPreviewConfiguration(markdownExtensions(extensionIds), context);
 
   return preview.wrap(
-    <MDEditor.Markdown
-      key={`${content}:${extensionIds.join(',')}`}
-      source={content}
-      {...preview.options}
-    />
+    <div
+      onDragOver={(event) => {
+        if (Array.from(event.dataTransfer?.types ?? []).includes('Files')) {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = 'none';
+        }
+      }}
+      onDrop={(event) => {
+        if (!event.dataTransfer?.files.length) return;
+        event.preventDefault();
+        event.stopPropagation();
+        context.emit('file-drop', {
+          fileCount: event.dataTransfer.files.length,
+          fileNames: Array.from(event.dataTransfer.files).map((file) => file.name),
+          fileTypes: Array.from(event.dataTransfer.files).map((file) => file.type),
+        });
+      }}
+    >
+      <MDEditor.Markdown
+        key={`${content}:${extensionIds.join(',')}`}
+        source={content}
+        {...preview.options}
+      />
+    </div>
   );
 }
 

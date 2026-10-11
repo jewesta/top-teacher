@@ -19,33 +19,36 @@ final class LoePartSection extends AbstractLoeSection<LoePart> {
 	private String savedTitle;
 
 	LoePartSection(final LoePart part, final List<LoePart> siblings, final List<LoeCategorySection> categories,
-			final LoeSectionComponents components, final LoeCollapseState collapseState, final Handler handler,
+			final LoeSectionComponents components, final Handler handler,
 			final Supplier<Integer> percentageSupplier, final Supplier<LoePoints> pointsSupplier,
-			final List<String> descendantKeys, final boolean correctionMode) {
-		this(part, siblings, categories, components, collapseState, handler, descendantKeys,
+			final boolean correctionMode) {
+		this(part, siblings, categories, components, handler,
 				components.summaryTitleField(part.title()), components.percentageBadge(percentageSupplier),
 				components.pointBadge("Summe", pointsSupplier), correctionMode);
 	}
 
 	private LoePartSection(final LoePart part, final List<LoePart> siblings, final List<LoeCategorySection> categories,
-			final LoeSectionComponents components, final LoeCollapseState collapseState, final Handler handler,
-			final List<String> descendantKeys, final TextField title, final LoePercentageBadge percentageBadge,
+			final LoeSectionComponents components, final Handler handler,
+			final TextField title, final LoePercentageBadge percentageBadge,
 			final LoePointBadge pointBadge, final boolean correctionMode) {
 		super(part, "tt-eh-part", components.partSummary(title, percentageBadge, pointBadge), pointBadge, categories);
 		this.percentageBadge = percentageBadge;
 		this.handler = handler;
 		this.title = title;
 		this.savedTitle = part.title();
+		title.setReadOnly(correctionMode);
 		components.trackDirty(title);
 		final Button addCategory = components.commandButton("Leistungskategorie hinzufügen", VaadinIcon.PLUS,
 				event -> handler.addCategory(part));
-		final Button delete = components.deleteButton("Klausurteil löschen?", () -> handler.delete(part));
+		final Button delete = components.deleteButton(
+				"Klausurteil mit enthaltenen Aufgaben, Anforderungen und Material löschen?",
+				() -> handler.delete(part));
 		if (correctionMode) {
 			components.lockCorrectionModeAction(addCategory);
 			components.lockCorrectionModeAction(delete);
 		}
 		addToBody(editorBlockWithMoveButtons(components, siblings, handler, List.of(addCategory),
-				List.of(collapseState.toggleButton(descendantKeys), delete), correctionMode));
+				List.of(delete), correctionMode));
 		addToBody(categories);
 	}
 

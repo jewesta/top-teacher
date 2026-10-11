@@ -13,8 +13,12 @@ import org.junit.jupiter.api.Test;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Html;
 import com.vaadin.flow.component.Text;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.provider.Query;
@@ -22,11 +26,94 @@ import com.vaadin.flow.data.provider.Query;
 import de.westarps.topteacher.backend.repo.GradingScaleRepository;
 import de.westarps.topteacher.model.GradingScale;
 import de.westarps.topteacher.model.Lifecycle;
+import de.westarps.topteacher.ui.component.ActionToolbar;
 
 @SuppressWarnings({
 		"rawtypes", "unchecked"
 })
 class GradingScaleSettingsTabTests {
+
+	@Test
+	void usesTopAdaptiveCreateActionWithTooltip() {
+		final GradingScaleRepository repository = mock(GradingScaleRepository.class);
+		when(repository.findAll()).thenReturn(List.of());
+		final GradingScaleSettingsTab tab = new GradingScaleSettingsTab(repository);
+		final Button create = button(tab, "Anlegen");
+		final ActionToolbar actions = (ActionToolbar) create.getParent().orElseThrow();
+
+		assertThat(create.getText()).isEqualTo("Anlegen");
+		assertThat(create.getIcon().getElement().getAttribute("icon")).isEqualTo("vaadin:plus");
+		assertThat(create.getTooltip().getText()).isEqualTo("Anlegen");
+		assertThat(create.getThemeNames()).contains(ButtonVariant.LUMO_ICON.getVariantName())
+				.doesNotContain(ButtonVariant.LUMO_PRIMARY.getVariantName());
+		assertThat(actions.getParent().orElseThrow().getChildren().findFirst()).contains(actions);
+	}
+
+	@Test
+	void showsUsedScaleLockReasonOnlyInTabStatusAndRestoresCreateStatus() {
+		final String reason = "Dieser Notenschlüssel wird bereits von Klausuren verwendet und kann nicht mehr geändert werden.";
+		final GradingScale scale = new GradingScale(1, "Einführungsphase", 100, Lifecycle.ACTIVE);
+		final GradingScaleRepository repository = mock(GradingScaleRepository.class);
+		when(repository.findAll()).thenReturn(List.of(scale));
+		when(repository.findRangesByGradingScaleId(scale.id())).thenReturn(List.of());
+		when(repository.isUsedByExam(scale.id())).thenReturn(true);
+		final GradingScaleSettingsTab tab = new GradingScaleSettingsTab(repository);
+
+		grid(tab).select(scale);
+
+		final Tab editorTab = components(tab, TabSheet.class).getFirst().getTabAt(0);
+		final Icon lock = editorTab.getChildren().filter(Icon.class::isInstance).map(Icon.class::cast)
+				.findFirst().orElseThrow();
+		assertThat(lock.getElement().getAttribute("icon")).isEqualTo("vaadin:lock");
+		assertThat(lock.getTooltip().getText()).isEqualTo(reason);
+		assertThat(editorTab.getElement().getAttribute("aria-label")).isEqualTo("Notenschlüssel, " + reason);
+		assertThat(components(tab, TextField.class).stream().filter(field -> "Name".equals(field.getLabel()))
+				.findFirst().orElseThrow().isReadOnly()).isTrue();
+		assertThat(button(tab, "Speichern").isEnabled()).isFalse();
+		assertThat(button(tab, "Archivieren...").isVisible()).isTrue();
+		assertThat(button(tab, "Archivieren...").isEnabled()).isFalse();
+		assertThat(components(tab, com.vaadin.flow.component.html.Span.class))
+				.noneMatch(span -> reason.equals(span.getText()));
+
+		grid(tab).deselectAll();
+
+		assertThat(editorTab.getChildren().filter(Icon.class::isInstance).map(Icon.class::cast)
+				.map(icon -> icon.getElement().getAttribute("icon"))).containsExactly("vaadin:plus");
+		assertThat(button(tab, "Anlegen").getText()).isEqualTo("Anlegen");
+		assertThat(button(tab, "Archivieren...").isVisible()).isFalse();
+		assertThat(button(tab, "Archivieren...").isEnabled()).isFalse();
+	}
+
+	@Test
+	void restoresArchiveActionWhenSwitchingFromLockedToUnusedScale() {
+		final GradingScale locked = new GradingScale(1, "Verwendet", 100, Lifecycle.ACTIVE);
+		final GradingScale unused = new GradingScale(2, "Unverwendet", 100, Lifecycle.ACTIVE);
+		final GradingScaleRepository repository = mock(GradingScaleRepository.class);
+		when(repository.findAll()).thenReturn(List.of(locked, unused));
+		when(repository.findRangesByGradingScaleId(locked.id())).thenReturn(List.of());
+		when(repository.findRangesByGradingScaleId(unused.id())).thenReturn(List.of());
+		when(repository.isUsedByExam(locked.id())).thenReturn(true);
+		final GradingScaleSettingsTab tab = new GradingScaleSettingsTab(repository);
+		final Grid<GradingScale> grid = grid(tab);
+		final Button archive = button(tab, "Archivieren...");
+		final Tab editorTab = components(tab, TabSheet.class).getFirst().getTabAt(0);
+
+		grid.select(locked);
+		assertThat(archive.isVisible()).isTrue();
+		assertThat(archive.isEnabled()).isFalse();
+		assertThat(editorTab.getChildren().filter(Icon.class::isInstance).map(Icon.class::cast)
+				.map(icon -> icon.getElement().getAttribute("icon"))).containsExactly("vaadin:lock");
+
+		grid.deselectAll();
+		grid.select(unused);
+
+		assertThat(archive.isVisible()).isTrue();
+		assertThat(archive.isEnabled()).isTrue();
+		assertThat(button(tab, "Speichern").isEnabled()).isFalse();
+		assertThat(editorTab.getChildren().filter(Icon.class::isInstance)).isEmpty();
+		assertThat(editorTab.getElement().getAttribute("aria-label"))
+				.isEqualTo("Notenschlüssel, Notenschlüssel bearbeiten");
+	}
 
 	@Test
 	void hidesLifecycleInCreateModeAndShowsItInEditMode() {
@@ -90,6 +177,12 @@ class GradingScaleSettingsTabTests {
 
 	private static Grid<GradingScale> grid(final Component root) {
 		return components(root, Grid.class).getFirst();
+	}
+
+	private static Button button(final Component root, final String label) {
+		return components(root, Button.class).stream()
+				.filter(button -> label.equals(button.getElement().getAttribute("aria-label")))
+				.findFirst().orElseThrow();
 	}
 
 	private static long itemCount(final Grid<?> grid) {

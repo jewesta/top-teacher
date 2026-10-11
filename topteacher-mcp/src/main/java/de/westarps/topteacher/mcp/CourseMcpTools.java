@@ -4,14 +4,19 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.GradingScaleRepository;
 import de.westarps.topteacher.backend.repo.SubjectRepository;
+import de.westarps.topteacher.mcp.security.McpAccessContext;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.CoursePeriod;
 import de.westarps.topteacher.model.GradingScale;
@@ -44,6 +49,7 @@ public class CourseMcpTools {
 					destructiveHint = false, idempotentHint = true, openWorldHint = false))
 	public CourseListView listCourses(@McpToolParam(required = false,
 			description = "Set to true to include archived courses. Defaults to false.") final Boolean includeArchived) {
+		McpAccessContext.accessLevel();
 		final List<Course> foundCourses = Boolean.TRUE.equals(includeArchived) ? courses.findAll()
 				: courses.findActive();
 		return new CourseListView(foundCourses.stream().map(CourseMcpTools::courseView).toList());
@@ -57,6 +63,7 @@ public class CourseMcpTools {
 			@McpToolParam(description = "Course ID returned by list_courses.") final int courseId,
 			@McpToolParam(required = false,
 					description = "Set to true to include archived historical pupils. Defaults to false.") final Boolean includeArchived) {
+		McpAccessContext.accessLevel();
 		final Course course = courses.findById(courseId)
 				.orElseThrow(() -> new IllegalArgumentException("Course does not exist: " + courseId));
 		final List<CoursePupilView> assignedPupils = courses.findPupils(courseId).stream()
@@ -70,6 +77,7 @@ public class CourseMcpTools {
 			generateOutputSchema = true, annotations = @McpTool.McpAnnotations(readOnlyHint = true,
 					destructiveHint = false, idempotentHint = true, openWorldHint = false))
 	public CourseCreationOptions getCourseCreationOptions() {
+		McpAccessContext.accessLevel();
 		return new CourseCreationOptions(
 				Arrays.stream(SchoolClass.values()).map(value -> new Option(value.name(), value.getDisplayName()))
 						.toList(),
@@ -97,7 +105,9 @@ public class CourseMcpTools {
 	}
 
 	private static CoursePupilView pupilView(final Pupil pupil) {
-		return new CoursePupilView(pupil.id(), pupil.name(), pupil.surname(), pupil.lifecycle().name());
+		final var identity = PupilNamePseudonymizer.identity(pupil);
+		return new CoursePupilView(pupil.id(), identity.displayName(), identity.identityRepresentation(),
+				identity.name(), identity.surname(), pupil.lifecycle().name());
 	}
 
 	public record CourseListView(List<CourseView> courses) {
@@ -120,7 +130,9 @@ public class CourseMcpTools {
 		}
 	}
 
-	public record CoursePupilView(int id, String name, String surname, String lifecycle) {
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record CoursePupilView(int id, String displayName, String identityRepresentation, @Nullable String name,
+			@Nullable String surname, String lifecycle) {
 	}
 
 	public record CourseCreationOptions(List<Option> schoolClasses, List<SubjectOption> subjects,
