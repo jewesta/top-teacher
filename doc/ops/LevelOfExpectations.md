@@ -124,19 +124,25 @@ or alternative text, selecting automatic width or 5% to 100% content width in
 choosing left, centered, or right alignment with the horizontal icon selector.
 The slider's 0% position represents automatic width, and its displayed value is
 updated continuously while it is moved. Width and alignment share one row; new
-insertions start at automatic width. The upload row
+insertions start at automatic width and centered alignment. The upload row
 places the dashed file-drop target to the left, followed by `oder` and
 `Datei auswählen...` to the right. Confirmation inserts the declaration at the
 remembered cursor position. Only the dashed area accepts a dragged file; the
 separator and selection button are not drop targets:
 
 ```markdown
-![Diagramm 1](img:4n8k2p7c?width=75&align=center)
+![Diagramm 1](img:4n8k2p7c?width=75)
 ```
+
+The dialog previews the image inside a centered A4-proportioned page with the
+same 7 mm printable-area margins as the existing A4 export. Percentage width
+and horizontal alignment update live; the image is centered vertically for this
+standalone preview. Automatic width uses the image's intrinsic size at the
+standard CSS 96 dpi and remains constrained to the printable area.
 
 The width and alignment belong to that occurrence, not to the stored image.
 Width is relative to the available content width; omitted width uses automatic
-sizing, and omitted alignment means left. Images preserve their aspect ratio,
+sizing, and omitted alignment means centered. Images preserve their aspect ratio,
 never exceed the available preview width, and can be opened in a larger
 inspection view. The faithful MCP rendering applies the same sizing and
 alignment contract. The future pupil printout must do so as well. The Markdown

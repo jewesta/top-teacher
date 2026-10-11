@@ -70,14 +70,14 @@ paths as image links, or put Base64 into Markdown. TopTeacher stores PNG/JPEG
 bytes. Request image output separately with get_material_image.
 
 ```markdown
-![Diagramm 1](img:4n8k2p7c?width=75&align=center)
+![Diagramm 1](img:4n8k2p7c?width=75)
 ```
 
 This eight lowercase-letter/digit ID is a syntax example, not an available
 image. Replace it with the actual returned ID. Alternative text describes the
 image. Optional width is an integer percentage from 1 through 100; omitted width
 uses automatic sizing. Optional alignment is `left`, `center`, or `right`;
-omitted alignment is left. Width and alignment may be used independently, for
+omitted alignment is centered. Width and alignment may be used independently, for
 example `img:4n8k2p7c?align=right`, or together as shown above. Aspect ratio is
 preserved. Explicit units such as cm, percent signs, and attribute syntax such
 as {width=75%} are not supported.

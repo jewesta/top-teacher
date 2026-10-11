@@ -13,6 +13,8 @@ import org.junit.jupiter.api.Test;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.RangeInput;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -52,9 +54,25 @@ class MaterialImageDialogTests {
 		final SegmentedControl<?> alignment = components(dialog.dialog(), SegmentedControl.class).getFirst();
 		final HorizontalLayout options = components(dialog.dialog(), HorizontalLayout.class).stream()
 				.filter(layout -> layout.hasClassName("tt-material-image-options")).findFirst().orElseThrow();
+		final Div previewStage = components(dialog.dialog(), Div.class).stream()
+				.filter(div -> div.hasClassName("tt-material-image-preview-stage")).findFirst().orElseThrow();
+		final Div previewPage = components(dialog.dialog(), Div.class).stream()
+				.filter(div -> div.hasClassName("tt-material-image-preview-page")).findFirst().orElseThrow();
+		final Div previewContent = components(dialog.dialog(), Div.class).stream()
+				.filter(div -> div.hasClassName("tt-material-image-preview-content")).findFirst().orElseThrow();
+		final Image preview = components(dialog.dialog(), Image.class).getFirst();
 		final List<Button> alignmentButtons = components(alignment, Button.class);
 
 		assertThat(options.getChildren().toList().getLast()).isSameAs(alignment);
+		assertThat(previewStage.isVisible()).isTrue();
+		assertThat(previewStage.getElement().getAttribute("aria-label"))
+				.isEqualTo("Bildvorschau auf einer A4-Seite");
+		assertThat(previewStage.getChildren()).containsExactly(previewPage);
+		assertThat(previewPage.getChildren()).containsExactly(previewContent);
+		assertThat(previewContent.getChildren()).containsExactly(preview);
+		assertThat(preview.getStyle().get("width")).isNotBlank();
+		assertThat(preview.getStyle().get("margin-left")).isEqualTo("auto");
+		assertThat(preview.getStyle().get("margin-right")).isEqualTo("auto");
 		assertThat(width.getAriaLabel()).contains("Breite in Prozent");
 		assertThat(width.getMin()).isZero();
 		assertThat(width.getMax()).isEqualTo(100.0);
@@ -64,7 +82,7 @@ class MaterialImageDialogTests {
 		assertThat(widthValue.getText()).isEqualTo("Auto");
 		assertThat(width.getElement().getAttribute("aria-valuetext")).isEqualTo("Auto");
 		assertThat(alignment.getLabel()).isEqualTo("Ausrichtung");
-		assertThat(alignment.getValue()).isEqualTo(Alignment.LEFT);
+		assertThat(alignment.getValue()).isEqualTo(Alignment.CENTER);
 		assertThat(alignmentButtons).extracting(button -> button.getIcon().getElement().getAttribute("icon"))
 				.containsExactly("lumo:align-left", "lumo:align-center", "lumo:align-right");
 		assertThat(alignmentButtons).extracting(button -> button.getElement().getAttribute("aria-label"))
@@ -79,9 +97,13 @@ class MaterialImageDialogTests {
 				result::set);
 		final RangeInput width = components(dialog.dialog(), RangeInput.class).getFirst();
 		final SegmentedControl<?> alignment = components(dialog.dialog(), SegmentedControl.class).getFirst();
+		final Image preview = components(dialog.dialog(), Image.class).getFirst();
 
 		assertThat(width.getValue()).isEqualTo(75.0);
 		assertThat(alignment.getValue()).isEqualTo(Alignment.RIGHT);
+		assertThat(preview.getStyle().get("width")).isEqualTo("75.000%");
+		assertThat(preview.getStyle().get("margin-left")).isEqualTo("auto");
+		assertThat(preview.getStyle().get("margin-right")).isEqualTo("0");
 		width.setValue(65.0);
 		assertThat(components(dialog.dialog(), Span.class).stream()
 				.filter(span -> span.hasClassName("tt-material-image-width-value")).findFirst().orElseThrow().getText())
@@ -89,6 +111,9 @@ class MaterialImageDialogTests {
 		components(alignment, Button.class).stream()
 				.filter(button -> "Zentriert".equals(button.getElement().getAttribute("aria-label"))).findFirst()
 				.orElseThrow().click();
+		assertThat(preview.getStyle().get("width")).isEqualTo("65.000%");
+		assertThat(preview.getStyle().get("margin-left")).isEqualTo("auto");
+		assertThat(preview.getStyle().get("margin-right")).isEqualTo("auto");
 		components(dialog.dialog(), Button.class).stream().filter(button -> "Übernehmen".equals(button.getText()))
 				.findFirst().orElseThrow().click();
 
@@ -110,6 +135,7 @@ class MaterialImageDialogTests {
 
 		assertThat(result.get()).isNotNull();
 		assertThat(result.get().width()).isNull();
+		assertThat(result.get().alignment()).isEqualTo(Alignment.LEFT);
 	}
 
 	private MaterialImageDialog openDialog(final MaterialImageDialog.Action action, final Integer width,

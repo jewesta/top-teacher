@@ -172,7 +172,7 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 				.orElse(insertionPoint.selectedText());
 		final Integer initialWidth = existingImage.map(existing -> existing.occurrence().width()).orElse(null);
 		final LoeMaterialImageReferences.Alignment initialAlignment = existingImage
-				.map(existing -> existing.occurrence().alignment()).orElse(LoeMaterialImageReferences.Alignment.LEFT);
+				.map(existing -> existing.occurrence().alignment()).orElse(LoeMaterialImageReferences.Alignment.CENTER);
 		final LoeMaterialImage dialogImage = existingImage.map(ExistingImage::image).orElse(prefilledImage);
 		new MaterialImageDialog(action, initialDescription, initialWidth, initialAlignment, dialogImage,
 				this::prepareImage, result -> {

@@ -11,9 +11,9 @@ const { parseMaterialImageTarget } = await import(
   `data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`
 );
 
-test('parses width and alignment independently with a left default', () => {
+test('parses width and alignment independently with a centered default', () => {
   assert.deepEqual(parseMaterialImageTarget('img:abcdefgh'), {
-    id: 'abcdefgh', alignment: 'left',
+    id: 'abcdefgh', alignment: 'center',
   });
   assert.deepEqual(parseMaterialImageTarget('img:abcdefgh?align=center'), {
     id: 'abcdefgh', alignment: 'center',

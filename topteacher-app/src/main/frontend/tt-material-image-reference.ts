@@ -10,7 +10,7 @@ export function parseMaterialImageTarget(value: string): MaterialImageTarget | u
   const match = targetPattern.exec(value);
   if (!match) return undefined;
   let width: string | undefined;
-  let alignment: MaterialImageTarget['alignment'] = 'left';
+  let alignment: MaterialImageTarget['alignment'] = 'center';
   let alignmentSpecified = false;
   for (const parameter of match[2]?.split('&') ?? []) {
     const pair = parameter.split('=');

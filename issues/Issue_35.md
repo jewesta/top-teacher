@@ -827,9 +827,10 @@ first toolbar action, disabled as expected for the demo exam with results.
 
 Managed Material images can now be left aligned, centered or right aligned.
 The image dialog stores the choice in the existing Markdown declaration;
-omitting alignment remains the compatible left-aligned default. The live
-preview and the faithful MCP PNG renderer share the same behavior, including
-alignment combined with either automatic or percentage width.
+omitting alignment means centered throughout the editor, Markdown preview,
+faithful MCP PNG renderer and import tool. It is also the default for new
+images. Explicit left and right alignment remain serialized in the Markdown
+declaration, including when combined with automatic or percentage width.
 
 `import_material_image` exposes the same optional `alignment` choice and the
 Markdown guide documents the canonical `align=left|center|right` parameter.
@@ -849,9 +850,15 @@ one row.
 
 The slider's 0% position represents automatic sizing and preserves an omitted
 width in the Markdown declaration. Its displayed value updates continuously
-while the thumb is moved. New insertions start at automatic width; existing
-non-step widths are shown at the nearest available 5% step.
+while the thumb is moved. New insertions start at automatic width and centered
+alignment; existing non-step widths are shown at the nearest available 5% step.
 
-Verification: the 5 focused dialog/control tests and all 716 Maven tests
-passed; `git diff --check` passed. The running demo was restarted on port 8081
-with the rebuilt frontend bundle.
+The image preview is presented on a centered A4-proportioned page with the
+existing export's 7 mm printable-area margins. It responds live to percentage
+width and alignment changes and centers the image vertically. Automatic width
+is derived from the image's intrinsic pixel width at 96 dpi and remains bounded
+by the printable area.
+
+Verification: all 21 frontend tests, the focused dialog/rendering/MCP tests and
+all 716 Maven tests passed; `git diff --check` passed. The running demo was
+restarted on port 8081 with the rebuilt frontend bundle.

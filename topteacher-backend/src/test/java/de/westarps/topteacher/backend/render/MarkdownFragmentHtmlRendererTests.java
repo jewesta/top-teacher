@@ -198,7 +198,7 @@ class MarkdownFragmentHtmlRendererTests {
 		assertThat(html.select("img").get(1).classNames())
 				.containsExactlyInAnyOrder("tt-material-image", "tt-material-image-align-right");
 		assertThat(html.select("img").get(2).classNames())
-				.containsExactlyInAnyOrder("tt-material-image", "tt-material-image-align-left");
+				.containsExactlyInAnyOrder("tt-material-image", "tt-material-image-align-center");
 		assertThat(html.select("img").get(1).hasAttr("style")).isFalse();
 		assertThat(html.select(".tt-material-image-missing").eachText()).containsExactly(
 				"Bild nicht verfügbar: Nicht gefunden", "Bild nicht verfügbar: Ungültige Breite", "Bild nicht verfügbar: Extern",

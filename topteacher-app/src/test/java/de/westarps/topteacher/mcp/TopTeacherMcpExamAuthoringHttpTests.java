@@ -166,7 +166,7 @@ class TopTeacherMcpExamAuthoringHttpTests {
 			final String imageId = imported.path("image").path("imageId").asString();
 			assertThat(imported.path("mutationRevision").asLong()).isEqualTo(imported.path("revision").asLong());
 			assertThat(imported.path("material").path("descriptionMarkdown").asString())
-					.contains("![Synthetic chart](img:" + imageId + "?width=75&align=center)");
+					.contains("![Synthetic chart](img:" + imageId + "?width=75)");
 			final JsonNode imageResult = call(exchange, "get_material_image",
 					Map.of("examId", examId, "materialId", materialId, "imageId", imageId));
 			assertNativeImage(imageResult);

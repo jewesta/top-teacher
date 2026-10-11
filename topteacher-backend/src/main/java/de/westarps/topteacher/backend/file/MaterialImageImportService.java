@@ -59,7 +59,7 @@ public class MaterialImageImportService {
 	public ImportImageSnapshot importImage(final int examId, final int materialId,
 			final String sourcePath, final String altText, final Integer widthPercent, final long expectedRevision,
 			final String requestId) {
-		return importImage(examId, materialId, sourcePath, altText, widthPercent, Alignment.LEFT, expectedRevision,
+		return importImage(examId, materialId, sourcePath, altText, widthPercent, Alignment.CENTER, expectedRevision,
 				requestId);
 	}
 
@@ -67,7 +67,7 @@ public class MaterialImageImportService {
 			final String sourcePath, final String altText, final Integer widthPercent, final Alignment alignment,
 			final long expectedRevision, final String requestId) {
 		final String description = alternativeText(altText);
-		final Alignment resolvedAlignment = alignment == null ? Alignment.LEFT : alignment;
+		final Alignment resolvedAlignment = alignment == null ? Alignment.CENTER : alignment;
 		if (widthPercent != null && (widthPercent < 1 || widthPercent > 100)) {
 			throw new IllegalArgumentException("widthPercent must be between 1 and 100.");
 		}

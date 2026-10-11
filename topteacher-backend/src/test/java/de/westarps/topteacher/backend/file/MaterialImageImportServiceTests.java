@@ -142,7 +142,7 @@ class MaterialImageImportServiceTests {
 				Alignment.CENTER, guard.revision(exam.id()), UUID.randomUUID().toString());
 
 		assertThat(imported.material().descriptionMarkdown()).contains(
-				"![Centered chart](img:" + imported.metadata().imageId() + "?width=50&align=center)");
+				"![Centered chart](img:" + imported.metadata().imageId() + "?width=50)");
 	}
 
 	@Test

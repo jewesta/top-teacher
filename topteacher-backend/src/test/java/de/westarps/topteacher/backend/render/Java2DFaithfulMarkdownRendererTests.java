@@ -102,13 +102,13 @@ class Java2DFaithfulMarkdownRendererTests {
 	void alignsManagedImagesWithinTheAvailableContentWidth() throws Exception {
 		final LoeMaterialImage image = image("image001", 32, 16, coloredPng(32, 16));
 		final BufferedImage rendered = decode(render(new RenderRequest(List.of(new Section("", """
-			![Left](img:image001?width=25)
+			![Left](img:image001?width=25&align=left)
 
-			![Center](img:image001?width=25&align=center)
+			![Center](img:image001?width=25)
 
 			![Right](img:image001?width=25&align=right)
 
-			![Automatic center](img:image001?align=center)
+			![Automatic center](img:image001)
 			""", Variant.MATERIAL)), List.of(image))));
 		try {
 			final List<ImageBand> bands = imageBands(rendered);

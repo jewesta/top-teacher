@@ -280,6 +280,44 @@ vaadin-upload.tt-material-image-upload::part(drop-label) {
 	gap: var(--lumo-space-l);
 }
 
+.tt-material-image-preview-stage {
+	align-items: center;
+	background-color: var(--lumo-contrast-5pct);
+	border-radius: var(--lumo-border-radius-m);
+	box-sizing: border-box;
+	display: flex;
+	justify-content: center;
+	padding: var(--lumo-space-m);
+	width: 100%;
+}
+
+.tt-material-image-preview-page {
+	aspect-ratio: 210 / 297;
+	background-color: white;
+	border: 1px solid var(--lumo-contrast-20pct);
+	box-shadow: var(--lumo-box-shadow-xs);
+	box-sizing: border-box;
+	position: relative;
+	width: min(100%, 15.56rem);
+}
+
+.tt-material-image-preview-content {
+	display: flex;
+	flex-direction: column;
+	inset: 2.357% 3.333%;
+	justify-content: center;
+	overflow: hidden;
+	position: absolute;
+}
+
+.tt-material-image-preview-image {
+	display: block;
+	height: auto;
+	max-height: 100%;
+	max-width: 100%;
+	object-fit: contain;
+}
+
 .tt-material-image-width-field {
 	min-width: 0;
 }

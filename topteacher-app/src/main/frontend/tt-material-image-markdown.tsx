@@ -78,7 +78,7 @@ function transformImages(node: MarkdownNode | undefined, images: Map<string, Man
         hProperties: {
           dataMaterialImageId: id ?? '',
           dataMaterialImageWidth: target?.width ?? '',
-          dataMaterialImageAlignment: target?.alignment ?? 'left',
+          dataMaterialImageAlignment: target?.alignment ?? 'center',
           dataMaterialImageMissing: image ? 'false' : 'true',
           dataMaterialPixelWidth: image?.pixelWidth?.toString() ?? '',
           dataMaterialPixelHeight: image?.pixelHeight?.toString() ?? '',
@@ -120,7 +120,7 @@ function ManagedImage(props: ManagedImageProps): ReactElement {
     node: _node,
     'data-material-image-id': _id,
     'data-material-image-width': width,
-    'data-material-image-alignment': alignment = 'left',
+    'data-material-image-alignment': alignment = 'center',
     'data-material-image-missing': missing,
     'data-material-pixel-width': pixelWidth,
     'data-material-pixel-height': pixelHeight,

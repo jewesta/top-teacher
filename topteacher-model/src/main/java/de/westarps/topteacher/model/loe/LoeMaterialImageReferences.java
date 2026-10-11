@@ -45,7 +45,7 @@ public final class LoeMaterialImageReferences {
 			return Optional.empty();
 		}
 		Integer width = null;
-		Alignment alignment = Alignment.LEFT;
+		Alignment alignment = Alignment.CENTER;
 		boolean alignmentSpecified = false;
 		if (matcher.group(2) != null) {
 			for (final String parameter : matcher.group(2).split("&", -1)) {
@@ -77,12 +77,12 @@ public final class LoeMaterialImageReferences {
 		if (width != null && (width < 1 || width > 100)) {
 			throw new IllegalArgumentException("Material image width must be between 1 and 100.");
 		}
-		final Alignment resolvedAlignment = alignment == null ? Alignment.LEFT : alignment;
+		final Alignment resolvedAlignment = alignment == null ? Alignment.CENTER : alignment;
 		final List<String> parameters = new ArrayList<>();
 		if (width != null) {
 			parameters.add("width=" + width);
 		}
-		if (resolvedAlignment != Alignment.LEFT) {
+		if (resolvedAlignment != Alignment.CENTER) {
 			parameters.add("align=" + resolvedAlignment.queryValue());
 		}
 		return "img:" + id + (parameters.isEmpty() ? "" : "?" + String.join("&", parameters));

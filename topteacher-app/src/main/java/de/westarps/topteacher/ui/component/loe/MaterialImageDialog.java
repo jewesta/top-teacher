@@ -2,6 +2,7 @@ package de.westarps.topteacher.ui.component.loe;
 
 import java.util.Base64;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -31,6 +32,7 @@ import de.westarps.topteacher.ui.component.SegmentedControl;
 import de.westarps.topteacher.ui.component.TopTeacherDialogs;
 
 final class MaterialImageDialog {
+	private static final double A4_CONTENT_WIDTH_CSS_PIXELS = 196.0 / 25.4 * 96.0;
 
 	private final Dialog dialog;
 	private final Binder<ImageDetails> binder = new Binder<>(ImageDetails.class);
@@ -40,6 +42,9 @@ final class MaterialImageDialog {
 	private final Span widthValue = new Span();
 	private final SegmentedControl<Alignment> alignment = SegmentedControl.withComponents("Ausrichtung",
 			List.of(Alignment.values()), MaterialImageDialog::alignmentIcon, MaterialImageDialog::alignmentLabel);
+	private final Div previewStage = new Div();
+	private final Div previewPage = new Div();
+	private final Div previewContent = new Div();
 	private final Image preview = new Image();
 	private final Button confirm;
 	private LoeMaterialImage image;
@@ -61,12 +66,14 @@ final class MaterialImageDialog {
 		width.setAriaLabel("Breite in Prozent");
 		width.addClassName("tt-material-image-width-slider");
 		width.setWidthFull();
-		width.addValueChangeListener(event -> updateWidthValue());
+		width.addValueChangeListener(event -> {
+			updateWidthValue();
+			updatePreviewLayout();
+		});
 		widthValue.addClassName("tt-material-image-width-value");
 		alignment.setWidth("11rem");
-		preview.setVisible(false);
-		preview.setMaxWidth("100%");
-		preview.setMaxHeight("20rem");
+		alignment.addValueChangeListener(event -> updatePreviewLayout());
+		configurePreview();
 
 		binder.forField(description).asRequired("Beschreibung ist erforderlich.")
 				.withValidator(value -> !value.isBlank(), "Beschreibung ist erforderlich.")
@@ -77,7 +84,7 @@ final class MaterialImageDialog {
 		binder.forField(alignment).bind(ImageDetails::getAlignment, ImageDetails::setAlignment);
 		details.setDescription(initialDescription == null ? "" : initialDescription);
 		details.setWidth(sliderWidth(initialWidth));
-		details.setAlignment(initialAlignment == null ? Alignment.LEFT : initialAlignment);
+		details.setAlignment(initialAlignment == null ? Alignment.CENTER : initialAlignment);
 		binder.readBean(details);
 		updateWidthValue();
 		binder.addStatusChangeListener(event -> updateConfirmEnabled());
@@ -102,7 +109,7 @@ final class MaterialImageDialog {
 		imageOptions.setFlexGrow(1, widthField);
 		imageOptions.setPadding(false);
 		imageOptions.setWidthFull();
-		fields.add(preview, description, imageOptions);
+		fields.add(previewStage, description, imageOptions);
 
 		final Button cancel = new Button("Abbrechen");
 		dialog = TopTeacherDialogs.create(action == Action.EDIT ? "Bild bearbeiten" : "Bild einfügen", fields,
@@ -179,7 +186,8 @@ final class MaterialImageDialog {
 		this.image = image;
 		preview.setSrc("data:" + image.mediaType() + ";base64," + Base64.getEncoder().encodeToString(image.data()));
 		preview.setAlt(description.getValue());
-		preview.setVisible(true);
+		previewStage.setVisible(true);
+		updatePreviewLayout();
 		updateConfirmEnabled();
 	}
 
@@ -197,11 +205,40 @@ final class MaterialImageDialog {
 		return field;
 	}
 
+	private void configurePreview() {
+		preview.addClassName("tt-material-image-preview-image");
+		previewContent.addClassName("tt-material-image-preview-content");
+		previewContent.add(preview);
+		previewPage.addClassName("tt-material-image-preview-page");
+		previewPage.add(previewContent);
+		previewStage.addClassName("tt-material-image-preview-stage");
+		previewStage.getElement().setAttribute("aria-label", "Bildvorschau auf einer A4-Seite");
+		previewStage.add(previewPage);
+		previewStage.setVisible(false);
+	}
+
 	private void updateWidthValue() {
 		final int value = width.getValue().intValue();
 		final String text = value == 0 ? "Auto" : value + " %";
 		widthValue.setText(text);
 		width.getElement().setAttribute("aria-valuetext", text);
+	}
+
+	private void updatePreviewLayout() {
+		if (image == null) {
+			return;
+		}
+		final int selectedWidth = width.getValue().intValue();
+		final double previewWidth = selectedWidth == 0
+				? Math.min(100.0, image.pixelWidth() / A4_CONTENT_WIDTH_CSS_PIXELS * 100.0)
+				: selectedWidth;
+		preview.getStyle().setWidth(String.format(Locale.ROOT, "%.3f%%", previewWidth));
+		final Alignment selectedAlignment = alignment.getValue() == null ? Alignment.CENTER : alignment.getValue();
+		switch (selectedAlignment) {
+			case LEFT -> preview.getStyle().set("margin-left", "0").set("margin-right", "auto");
+			case CENTER -> preview.getStyle().set("margin-left", "auto").set("margin-right", "auto");
+			case RIGHT -> preview.getStyle().set("margin-left", "auto").set("margin-right", "0");
+		}
 	}
 
 	private static Component alignmentIcon(final Alignment value) {
@@ -262,7 +299,7 @@ final class MaterialImageDialog {
 
 		private String description = "";
 		private Integer width;
-		private Alignment alignment = Alignment.LEFT;
+		private Alignment alignment = Alignment.CENTER;
 
 		public String getDescription() {
 			return description;

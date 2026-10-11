@@ -67,7 +67,7 @@ class LoeMaterialImageReferencesTests {
 	void unescapesOpeningAndClosingBracketsWhenEditingAnImageCaption() {
 		final String markdown = "![Chart \\[A\\]](img:abcdefgh)";
 		assertThat(LoeMaterialImageReferences.findAt(markdown, 3, 3)).contains(
-				new LoeMaterialImageReferences.Occurrence("abcdefgh", "Chart [A]", null, Alignment.LEFT, 0,
+				new LoeMaterialImageReferences.Occurrence("abcdefgh", "Chart [A]", null, Alignment.CENTER, 0,
 						markdown.length()));
 	}
 
@@ -94,7 +94,7 @@ class LoeMaterialImageReferencesTests {
 
 		assertThat(LoeMaterialImageReferences.findAt(markdown, markdown.indexOf("Diagramm"),
 				markdown.indexOf("Diagramm")))
-				.contains(new LoeMaterialImageReferences.Occurrence("4n8k2p7c", "Diagramm ] A", 50, Alignment.LEFT,
+				.contains(new LoeMaterialImageReferences.Occurrence("4n8k2p7c", "Diagramm ] A", 50, Alignment.CENTER,
 						markdown.indexOf("!["), markdown.indexOf(")") + 1));
 	}
 
@@ -103,7 +103,7 @@ class LoeMaterialImageReferencesTests {
 		final String markdown = "![Foto](img:abcdefgh)";
 
 		assertThat(LoeMaterialImageReferences.findAt(markdown, 2, 6))
-				.contains(new LoeMaterialImageReferences.Occurrence("abcdefgh", "Foto", null, Alignment.LEFT, 0,
+				.contains(new LoeMaterialImageReferences.Occurrence("abcdefgh", "Foto", null, Alignment.CENTER, 0,
 						markdown.length()));
 	}
 
@@ -113,9 +113,12 @@ class LoeMaterialImageReferencesTests {
 				.contains(new LoeMaterialImageReferences.Target("abcdefgh", null, Alignment.CENTER));
 		assertThat(LoeMaterialImageReferences.target("img:abcdefgh?align=right&width=25"))
 				.contains(new LoeMaterialImageReferences.Target("abcdefgh", 25, Alignment.RIGHT));
-		assertThat(LoeMaterialImageReferences.destination("abcdefgh", null, Alignment.LEFT)).isEqualTo("img:abcdefgh");
+		assertThat(LoeMaterialImageReferences.target("img:abcdefgh"))
+				.contains(new LoeMaterialImageReferences.Target("abcdefgh", null, Alignment.CENTER));
+		assertThat(LoeMaterialImageReferences.destination("abcdefgh", null, Alignment.LEFT))
+				.isEqualTo("img:abcdefgh?align=left");
 		assertThat(LoeMaterialImageReferences.destination("abcdefgh", 75, Alignment.CENTER))
-				.isEqualTo("img:abcdefgh?width=75&align=center");
+				.isEqualTo("img:abcdefgh?width=75");
 	}
 
 	@Test

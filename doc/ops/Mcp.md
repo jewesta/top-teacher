@@ -377,7 +377,7 @@ only in Material. Preview width does not guarantee future print fit.
 `import_material_image` takes `examId`, `materialId`, absolute `sourcePath`,
 nonblank `altText`, optional `widthPercent` (1–100), optional `alignment`
 (`LEFT`, `CENTER`, or `RIGHT`), `expectedRevision`, and `requestId`. Omitted
-alignment is left. Local installation resolves paths directly; remote installation
+alignment is centered. Local installation resolves paths directly; remote installation
 uses configured shares. See [file access](SystemSettings.md#file-access).
 Private server roots are not disclosed by MCP.
 
