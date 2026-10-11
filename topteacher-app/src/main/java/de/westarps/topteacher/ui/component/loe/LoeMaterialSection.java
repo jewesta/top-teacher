@@ -217,7 +217,7 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 	}
 
 	private static String declaration(final MaterialImageDialog.Result result) {
-		final String alternativeText = result.description().replace("\\", "\\\\").replace("]", "\\]")
+		final String alternativeText = result.description().replace("\\", "\\\\").replace("[", "\\[").replace("]", "\\]")
 				.replace('\n', ' ').replace('\r', ' ');
 		return "![" + alternativeText + "](img:" + result.image().id()
 				+ (result.width() == null ? "" : "?width=" + result.width()) + ")";

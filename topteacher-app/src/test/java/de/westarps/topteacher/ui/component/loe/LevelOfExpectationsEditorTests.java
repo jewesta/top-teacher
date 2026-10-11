@@ -73,6 +73,32 @@ class LevelOfExpectationsEditorTests {
 	private static final LoeRequirement NEW_REQUIREMENT = new LoeRequirement(11, TASK.id(), "", 0, false, 1);
 
 	@Test
+	void staleSaveKeepsTheDirtyRequirementMarkdownAndDoesNotInvokePersistence() {
+		final UI ui = new UI();
+		UI.setCurrent(ui);
+		try {
+			final LevelOfExpectationsRepository repository = repositoryWithHierarchy();
+			when(repository.designRevision(EXAM.id())).thenReturn(4L);
+			final LevelOfExpectationsEditor editor = new LevelOfExpectationsEditor(repository);
+			editor.setExam(EXAM);
+			final MarkdownEditor source = markdownEditor(editor, REQUIREMENT.descriptionMarkdown());
+			source.setValue("Unsaved requirement source");
+			clearInvocations(repository);
+			RepositoryDesignTestSupport.rejectDesignWrites(repository, 4, 5);
+
+			saveButtons(editor).getFirst().click();
+
+			assertThat(source.getValue()).isEqualTo("Unsaved requirement source");
+			assertThat(editor.hasUnsavedChanges()).isTrue();
+			assertThat(saveButtons(editor).getFirst().isEnabled()).isTrue();
+			verify(repository, never()).saveRequirement(any());
+			verify(repository, never()).findRequirementsByExamId(anyInt());
+		} finally {
+			UI.setCurrent(null);
+		}
+	}
+
+	@Test
 	void placesRequirementActionsBeforeMarkdownInDesignAndCorrectionMode() {
 		for (final boolean correctionMode : List.of(false, true)) {
 			final LevelOfExpectationsRepository repository = repositoryWithHierarchy();
@@ -933,7 +959,7 @@ class LevelOfExpectationsEditorTests {
 
 	private static LevelOfExpectationsRepository repositoryWithFixedTaskBudget(final LoeRequirement requirement,
 			final int taskMaxPoints) {
-		final LevelOfExpectationsRepository repository = mock(LevelOfExpectationsRepository.class);
+		final LevelOfExpectationsRepository repository = RepositoryDesignTestSupport.mockRepository();
 		final LoeTask task = new LoeTask(TASK.id(), TASK.categoryId(), TASK.title(), TASK.descriptionMarkdown(),
 				taskMaxPoints, TASK.sortOrder());
 		when(repository.findPartsByExamId(EXAM.id())).thenReturn(List.of(PART));
@@ -944,7 +970,7 @@ class LevelOfExpectationsEditorTests {
 	}
 
 	private static LevelOfExpectationsRepository repositoryWithTwoPartHierarchy() {
-		final LevelOfExpectationsRepository repository = mock(LevelOfExpectationsRepository.class);
+		final LevelOfExpectationsRepository repository = RepositoryDesignTestSupport.mockRepository();
 		when(repository.findPartsByExamId(EXAM.id())).thenReturn(List.of(PART, SECOND_PART));
 		when(repository.findCategoriesByExamId(EXAM.id())).thenReturn(List.of(CATEGORY, SECOND_CATEGORY));
 		when(repository.findTasksByExamId(EXAM.id())).thenReturn(List.of(TASK, SECOND_TASK));
@@ -953,7 +979,7 @@ class LevelOfExpectationsEditorTests {
 	}
 
 	private static LevelOfExpectationsRepository repositoryWithTwoRequirements() {
-		final LevelOfExpectationsRepository repository = mock(LevelOfExpectationsRepository.class);
+		final LevelOfExpectationsRepository repository = RepositoryDesignTestSupport.mockRepository();
 		when(repository.findPartsByExamId(EXAM.id())).thenReturn(List.of(PART));
 		when(repository.findCategoriesByExamId(EXAM.id())).thenReturn(List.of(CATEGORY));
 		when(repository.findTasksByExamId(EXAM.id())).thenReturn(List.of(TASK));
@@ -962,7 +988,7 @@ class LevelOfExpectationsEditorTests {
 	}
 
 	private static LevelOfExpectationsRepository repositoryWithRegularAndBonusRequirement() {
-		final LevelOfExpectationsRepository repository = mock(LevelOfExpectationsRepository.class);
+		final LevelOfExpectationsRepository repository = RepositoryDesignTestSupport.mockRepository();
 		when(repository.findPartsByExamId(EXAM.id())).thenReturn(List.of(PART));
 		when(repository.findCategoriesByExamId(EXAM.id())).thenReturn(List.of(CATEGORY));
 		when(repository.findTasksByExamId(EXAM.id())).thenReturn(List.of(TASK));
@@ -971,7 +997,7 @@ class LevelOfExpectationsEditorTests {
 	}
 
 	private static LevelOfExpectationsRepository emptyRepository() {
-		final LevelOfExpectationsRepository repository = mock(LevelOfExpectationsRepository.class);
+		final LevelOfExpectationsRepository repository = RepositoryDesignTestSupport.mockRepository();
 		when(repository.findPartsByExamId(EXAM.id())).thenReturn(List.of());
 		when(repository.findCategoriesByExamId(EXAM.id())).thenReturn(List.of());
 		when(repository.findTasksByExamId(EXAM.id())).thenReturn(List.of());

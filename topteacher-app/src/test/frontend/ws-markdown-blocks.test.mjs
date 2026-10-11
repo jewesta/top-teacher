@@ -35,6 +35,24 @@ function text(node) {
   return node.value ?? (node.children ?? []).map(text).join('');
 }
 
+test('the bundled MCP guide uses examples accepted by the actual alert/numbered/footnote renderer', async () => {
+  const guide = readFileSync(new URL(
+    '../../../../topteacher-mcp/src/main/resources/mcp/markdown-guide.md', import.meta.url,
+  ), 'utf8');
+  const examples = [...guide.matchAll(/```markdown\n([\s\S]*?)```/g)].map((match) => match[1]);
+  const numbered = examples.find((example) => example.includes('[!NUMBERED]'));
+  assert.ok(numbered, 'the discoverable guide must include a complete numbered source example');
+  const numberedTree = await render(numbered);
+  const rows = nodes(numberedTree, (node) => node.properties?.className?.includes('ws-markdown-numbered-line'));
+  assert.equal(rows.length, 3);
+  assert.deepEqual(rows.map((row) => row.children[1].properties.dataLineNumber), [1, undefined, 2]);
+  assert.equal(nodes(numberedTree, (node) => node.properties?.dataFootnotes).length, 1);
+  assert.equal(nodes(rows[0], (node) => node.properties?.dataFootnoteRef).length, 1);
+  const alerts = examples.find((example) => example.includes('[!TIP]'));
+  const alertTree = await render(alerts);
+  assert.equal(nodes(alertTree, (node) => node.properties?.className?.includes('ws-markdown-alert')).length, 2);
+});
+
 test('renders all GitHub alerts with German labels and retains inline formatting', async () => {
   const tree = await render(['NOTE', 'TIP', 'IMPORTANT', 'WARNING', 'CAUTION']
     .map((type) => `> [!${type}]\n> **Text** mit [Link](https://example.com).`).join('\n\n'));

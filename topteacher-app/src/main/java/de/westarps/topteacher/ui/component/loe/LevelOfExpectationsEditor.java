@@ -75,6 +75,7 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 	private List<LoeRequirementSection> requirementSections = List.of();
 	private final Map<Integer, LoeAllocationMessage> taskAllocationMessages = new HashMap<>();
 	private boolean correctionMode;
+	private long loadedRevision;
 	private Integer gradingScaleMaxPoints;
 	private ValidationResults<LoeValidationTarget> validationResults = ValidationResults.pass();
 	private DesignState designState = DesignState.INCOMPLETE;
@@ -165,11 +166,15 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 			return;
 		}
 
-		correctionMode = levelOfExpectationsRepository.hasResultsForExam(exam.id());
-		loadItems();
-		if (!correctionMode && ensureRequiredChildren()) {
+		levelOfExpectationsRepository.withDesignRead(exam.id(), () -> {
+			correctionMode = levelOfExpectationsRepository.hasResultsForExam(exam.id());
 			loadItems();
-		}
+			if (!correctionMode && ensureRequiredChildren()) {
+				loadItems();
+			}
+			loadedRevision = levelOfExpectationsRepository.designRevision(exam.id());
+			return null;
+		});
 
 		if (parts.isEmpty()) {
 			content().add(emptyState("Lege zuerst im Reiter Aufgaben einen Klausurteil an."));
@@ -418,9 +423,11 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 	}
 
 	private void addRequirement(final LoeTask task) {
-		final LoeRequirement requirement = addDefaultRequirement(task);
-		refreshAndScrollTo(detailKey("requirement", requirement.id()));
-		notifyChanged();
+		runStructureChange(() -> {
+			final LoeRequirement requirement = addDefaultRequirement(task);
+			refreshAndScrollTo(detailKey("requirement", requirement.id()));
+			notifyChanged();
+		});
 	}
 
 	private void save(final LoeRequirement requirement, final String descriptionMarkdown, final int maxPoints,
@@ -433,9 +440,11 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 	}
 
 	private void move(final LoeRequirement requirement, final int offset) {
-		levelOfExpectationsRepository.moveRequirement(requirement, requirementsFor(taskFor(requirement)), offset);
-		refresh();
-		notifyChanged();
+		runStructureChange(() -> {
+			levelOfExpectationsRepository.moveRequirement(requirement, requirementsFor(taskFor(requirement)), offset);
+			refresh();
+			notifyChanged();
+		});
 	}
 
 	private void delete(final LoeRequirement requirement) {
@@ -443,10 +452,23 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 	}
 
 	private void deleteSafely(final Runnable deleteAction) {
-		try {
+		runStructureChange(() -> {
 			deleteAction.run();
 			refresh();
 			notifyChanged();
+		});
+	}
+
+	private void runStructureChange(final Runnable action) {
+		if (isDirty()) {
+			Notification.show("Speichere oder verwirf zuerst den ungespeicherten Erwartungshorizont.");
+			return;
+		}
+		try {
+			levelOfExpectationsRepository.withDesignWrite(exam.id(), loadedRevision, () -> {
+				action.run();
+				return null;
+			});
 		} catch (final IllegalStateException exception) {
 			Notification.show(exception.getMessage());
 		}
@@ -474,11 +496,16 @@ public class LevelOfExpectationsEditor extends AbstractDesigner {
 			return;
 		}
 		try {
-			for (final LoeReadOnlySection<LoePart> partSection : partSections) {
-				if (!partSection.save()) {
-					return;
+			levelOfExpectationsRepository.withDesignWrite(exam.id(), loadedRevision, () -> {
+				for (final LoeReadOnlySection<LoePart> partSection : partSections) {
+					if (!partSection.save()) {
+						loadedRevision = levelOfExpectationsRepository.designRevision(exam.id());
+						return null;
+					}
 				}
-			}
+				loadedRevision = levelOfExpectationsRepository.designRevision(exam.id());
+				return null;
+			});
 		} catch (final IllegalStateException exception) {
 			Notification.show(exception.getMessage());
 			return;

@@ -107,6 +107,7 @@ public class ExamTasksEditor extends AbstractDesigner {
 	private MarkdownEditor footerEditor;
 	private String savedFooterMarkdown = "";
 	private boolean locked;
+	private long loadedRevision;
 	private Runnable changeHandler = () -> {
 	};
 
@@ -159,11 +160,15 @@ public class ExamTasksEditor extends AbstractDesigner {
 			showDesignerMessage(new Span("Bitte wähle eine Klausur aus."));
 			return;
 		}
-		locked = repository.hasResultsForExam(exam.id());
-		loadItems();
-		if (!locked && ensureRequiredChildren()) {
+		repository.withDesignRead(exam.id(), () -> {
+			locked = repository.hasResultsForExam(exam.id());
 			loadItems();
-		}
+			if (!locked && ensureRequiredChildren()) {
+				loadItems();
+			}
+			loadedRevision = repository.designRevision(exam.id());
+			return null;
+		});
 		if (parts.isEmpty()) {
 			content().add(emptyState("Noch keine Aufgaben angelegt."));
 		} else {
@@ -380,7 +385,10 @@ public class ExamTasksEditor extends AbstractDesigner {
 			return;
 		}
 		try {
-			action.run();
+			repository.withDesignWrite(exam.id(), loadedRevision, () -> {
+				action.run();
+				return null;
+			});
 		} catch (final IllegalStateException exception) {
 			Notification.show(exception.getMessage());
 		}
@@ -453,15 +461,20 @@ public class ExamTasksEditor extends AbstractDesigner {
 
 	private void saveDirtySections() {
 		try {
-			for (final LoePartSection partSection : partSections) {
-				if (!partSection.save()) {
-					return;
+			repository.withDesignWrite(exam.id(), loadedRevision, () -> {
+				for (final LoePartSection partSection : partSections) {
+					if (!partSection.save()) {
+						loadedRevision = repository.designRevision(exam.id());
+						return null;
+					}
 				}
-			}
-			if (isFooterDirty()) {
-				repository.saveExamFooterMarkdown(exam.id(), footerEditor.getValue());
-				savedFooterMarkdown = footerEditor.getValue();
-			}
+				if (isFooterDirty()) {
+					repository.saveExamFooterMarkdown(exam.id(), footerEditor.getValue());
+					savedFooterMarkdown = footerEditor.getValue();
+				}
+				loadedRevision = repository.designRevision(exam.id());
+				return null;
+			});
 			refreshBadges();
 			notifyChanged();
 		} catch (final IllegalStateException exception) {

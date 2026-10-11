@@ -114,7 +114,8 @@ public class PupilUpdateConflictResolver {
 			final List<Pupil> exactMatches, final Map<Integer, SchoolClass> latestSchoolClasses) {
 		final List<ExistingPupilView> existingPupils = exactMatches.stream().map(existing -> {
 			final SchoolClass latestSchoolClass = latestSchoolClasses.get(existing.id());
-			return new ExistingPupilView(existing.id(), PupilNamePseudonymizer.firstName(existing), PupilNamePseudonymizer.surname(existing),
+			final var identity = PupilNamePseudonymizer.identity(existing);
+			return new ExistingPupilView(existing.id(), identity.displayName(), identity.identityRepresentation(), identity.name(), identity.surname(),
 					existing.lifecycle().name(), latestSchoolClass == null ? "" : latestSchoolClass.name(),
 					latestSchoolClass == null ? "" : latestSchoolClass.getDisplayName());
 		}).toList();

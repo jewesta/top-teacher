@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.RowMapper;
@@ -20,12 +21,14 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import de.westarps.topteacher.backend.authoring.ExamDesignGuard;
 import de.westarps.topteacher.model.loe.LoeCategory;
 import de.westarps.topteacher.model.loe.LoeCriterion;
 import de.westarps.topteacher.model.loe.LoeCriterionParser;
 import de.westarps.topteacher.model.loe.LoeCriterionResult;
 import de.westarps.topteacher.model.loe.LoeMaterial;
 import de.westarps.topteacher.model.loe.LoeMaterialImage;
+import de.westarps.topteacher.model.loe.LoeMaterialImageMetadata;
 import de.westarps.topteacher.model.loe.LoeMaterialImageReferences;
 import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoeRequirement;
@@ -36,11 +39,14 @@ import de.westarps.topteacher.model.loe.LoeValidator;
 @Repository
 public class LevelOfExpectationsRepository {
 
+	private final ThreadLocal<Integer> materialBatchDepth = ThreadLocal.withInitial(() -> 0);
+
 	private static final String CORRECTION_MODE_MESSAGE = "Der Erwartungshorizont ist im Korrekturmodus. Struktur, Punkte und Kriterien können nicht geändert werden.";
 	private static final String RESULTS_BLOCKED_MESSAGE = "Ergebnisse können erst erfasst werden, wenn die regulären Anforderungspunkte jeder Aufgabe genau den Aufgabenpunkten entsprechen und die Aufgabensumme zur Notenskala passt.";
 	private static final String MATERIAL_IMAGE_ID_ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789";
 
 	private final NamedParameterJdbcTemplate jdbc;
+	private final ExamDesignGuard designGuard;
 	private final SecureRandom random = new SecureRandom();
 	private final RowMapper<LoePart> partRowMapper = this::mapPart;
 	private final RowMapper<LoeCategory> categoryRowMapper = this::mapCategory;
@@ -52,8 +58,44 @@ public class LevelOfExpectationsRepository {
 	private final RowMapper<LoeCriterionResult> criterionResultRowMapper = this::mapCriterionResult;
 	private final RowMapper<LoeRequirementResult> requirementResultRowMapper = this::mapRequirementResult;
 
-	public LevelOfExpectationsRepository(final NamedParameterJdbcTemplate jdbc) {
+	public LevelOfExpectationsRepository(final NamedParameterJdbcTemplate jdbc, final ExamDesignGuard designGuard) {
 		this.jdbc = jdbc;
+		this.designGuard = designGuard;
+	}
+
+	public long designRevision(final int examId) {
+		return designGuard.revision(examId);
+	}
+
+	public <T> T withDesignRead(final int examId, final Supplier<T> action) {
+		return designGuard.read(examId, action);
+	}
+
+	public <T> T withDesignWrite(final int examId, final Long expectedRevision, final Supplier<T> action) {
+		return designGuard.write(examId, expectedRevision, action);
+	}
+
+	/** Retains shared image blobs until the final state of an atomic content batch. */
+	@Transactional
+	public <T> T withMaterialImageBatch(final int examId, final Supplier<T> action) {
+		designGuard.lock(examId);
+		lockMaterialImages();
+		final int depth = materialBatchDepth.get();
+		materialBatchDepth.set(depth + 1);
+		try {
+			final T result = action.get();
+			materialBatchDepth.set(depth);
+			if (depth == 0) {
+				cleanupUnreferencedMaterialImages();
+			}
+			return result;
+		} finally {
+			if (depth == 0) {
+				materialBatchDepth.remove();
+			} else {
+				materialBatchDepth.set(depth);
+			}
+		}
 	}
 
 	public String findExamFooterMarkdown(final int examId) {
@@ -67,6 +109,7 @@ public class LevelOfExpectationsRepository {
 
 	@Transactional
 	public void saveExamFooterMarkdown(final int examId, final String footerMarkdown) {
+		designGuard.lockAndAdvance(examId);
 		final String existing = findExamFooterMarkdown(examId);
 		final String value = footerMarkdown == null ? "" : footerMarkdown;
 		if (!existing.equals(value)) {
@@ -132,6 +175,17 @@ public class LevelOfExpectationsRepository {
 			where id in (:ids)
 			order by id
 			""", Map.of("ids", Set.copyOf(ids)), materialImageRowMapper);
+	}
+
+	public List<LoeMaterialImageMetadata> findMaterialImageMetadataByIds(final Collection<String> ids) {
+		if (ids == null || ids.isEmpty()) {
+			return List.of();
+		}
+		return jdbc.query("""
+			select id, media_type, pixel_width, pixel_height, byte_size
+			from loe_material_image where id in (:ids) order by id
+			""", Map.of("ids", Set.copyOf(ids)), (row, index) -> new LoeMaterialImageMetadata(row.getString("id"),
+					row.getString("media_type"), row.getInt("pixel_width"), row.getInt("pixel_height"), row.getLong("byte_size")));
 	}
 
 	public Optional<LoeMaterialImage> findMaterialImageByContentHash(final String contentHash) {
@@ -239,6 +293,10 @@ public class LevelOfExpectationsRepository {
 
 	@Transactional
 	public void copyDesign(final int sourceExamId, final int targetExamId) {
+		designGuard.lock(Math.min(sourceExamId, targetExamId));
+		designGuard.lock(Math.max(sourceExamId, targetExamId));
+		designGuard.lockAndAdvance(targetExamId);
+		lockMaterialImages();
 		saveExamFooterMarkdown(targetExamId, findExamFooterMarkdown(sourceExamId));
 		final Map<Integer, Integer> partIds = new HashMap<>();
 		final Map<Integer, Integer> categoryIds = new HashMap<>();
@@ -273,7 +331,13 @@ public class LevelOfExpectationsRepository {
 		}
 	}
 
+	@Transactional
 	public LoePart savePart(final LoePart part) {
+		final int examId = part.id() == null ? part.examId() : examIdForPart(part.id());
+		if (examId != part.examId()) {
+			throw new IllegalArgumentException("Part ownership cannot be changed.");
+		}
+		designGuard.lockAndAdvance(examId);
 		if (part.id() == null) {
 			assertNoResultsForExam(part.examId());
 			return insertPart(part);
@@ -289,7 +353,12 @@ public class LevelOfExpectationsRepository {
 		return part;
 	}
 
+	@Transactional
 	public LoeCategory saveCategory(final LoeCategory category) {
+		if (category.id() != null && !findCategoryById(category.id()).partId().equals(category.partId())) {
+			throw new IllegalArgumentException("Category ownership cannot be changed.");
+		}
+		designGuard.lockAndAdvance(examIdForPart(category.partId()));
 		if (category.id() == null) {
 			assertNoResultsForExam(examIdForPart(category.partId()));
 			return insertCategory(category);
@@ -308,7 +377,12 @@ public class LevelOfExpectationsRepository {
 		return category;
 	}
 
+	@Transactional
 	public LoeTask saveTask(final LoeTask task) {
+		if (task.id() != null && !findTaskById(task.id()).categoryId().equals(task.categoryId())) {
+			throw new IllegalArgumentException("Task ownership cannot be changed.");
+		}
+		designGuard.lockAndAdvance(examIdForCategory(task.categoryId()));
 		if (task.id() == null) {
 			assertNoResultsForExam(examIdForCategory(task.categoryId()));
 			return insertTask(task);
@@ -327,7 +401,12 @@ public class LevelOfExpectationsRepository {
 		return task;
 	}
 
+	@Transactional
 	public LoeMaterial saveMaterial(final LoeMaterial material) {
+		final int examId = material.id() == null ? examIdForPart(material.partId())
+				: examIdForPart(findMaterialById(material.id()).partId());
+		designGuard.lockAndAdvance(examId);
+		lockMaterialImages();
 		if (material.id() == null) {
 			assertNoResultsForExam(examIdForPart(material.partId()));
 			return insertMaterial(material);
@@ -356,6 +435,10 @@ public class LevelOfExpectationsRepository {
 	@Transactional
 	public LoeMaterial saveMaterialWithImages(final LoeMaterial material,
 			final Collection<LoeMaterialImage> pendingImages) {
+		final int examId = material.id() == null ? examIdForPart(material.partId())
+				: examIdForPart(findMaterialById(material.id()).partId());
+		designGuard.lock(examId);
+		lockMaterialImages();
 		LoeMaterial canonicalMaterial = material;
 		for (final LoeMaterialImage image : pendingImages == null ? List.<LoeMaterialImage>of() : pendingImages) {
 			canonicalMaterial = savePendingMaterialImage(canonicalMaterial, image);
@@ -366,7 +449,12 @@ public class LevelOfExpectationsRepository {
 		return saved;
 	}
 
+	@Transactional
 	public LoeRequirement saveRequirement(final LoeRequirement requirement) {
+		if (requirement.id() != null && !findRequirementById(requirement.id()).taskId().equals(requirement.taskId())) {
+			throw new IllegalArgumentException("Requirement ownership cannot be changed.");
+		}
+		designGuard.lockAndAdvance(examIdForTask(requirement.taskId()));
 		if (requirement.id() == null) {
 			assertCriterionAllocationSaveable(requirement);
 			assertNoResultsForExam(examIdForTask(requirement.taskId()));
@@ -399,11 +487,15 @@ public class LevelOfExpectationsRepository {
 		});
 	}
 
+	@Transactional
 	public void syncCriteriaForExam(final int examId) {
+		designGuard.lock(examId);
 		findRequirementsByExamId(examId).forEach(this::syncCriteria);
 	}
 
+	@Transactional
 	public void saveCriterionResult(final LoeCriterionResult result) {
+		designGuard.lockAndAdvance(examIdForCriterion(result.criterionId()));
 		assertPointDistributionValidForExam(examIdForCriterion(result.criterionId()));
 		final Integer availablePointUnits = jdbc.queryForObject("select point_units from eh_criterion where id = :id",
 				Map.of("id", result.criterionId()), Integer.class);
@@ -419,7 +511,9 @@ public class LevelOfExpectationsRepository {
 				.addValue("pointUnits", result.pointUnits()));
 	}
 
+	@Transactional
 	public void saveRequirementResult(final LoeRequirementResult result) {
+		designGuard.lockAndAdvance(examIdForRequirement(result.requirementId()));
 		assertPointDistributionValidForExam(examIdForRequirement(result.requirementId()));
 		jdbc.update("""
 			merge into eh_requirement_result (requirement_id, pupil_id, points, point_units, adjustment_units, comment_text)
@@ -435,6 +529,7 @@ public class LevelOfExpectationsRepository {
 
 	@Transactional
 	public void deleteResultsByExamAndPupil(final int examId, final int pupilId) {
+		designGuard.lockAndAdvance(examId);
 		final MapSqlParameterSource parameters = new MapSqlParameterSource().addValue("examId", examId)
 				.addValue("pupilId", pupilId);
 		jdbc.update("""
@@ -466,6 +561,8 @@ public class LevelOfExpectationsRepository {
 
 	@Transactional
 	public void deletePart(final int id) {
+		designGuard.lockAndAdvance(examIdForPart(id));
+		lockMaterialImages();
 		assertNoResultsForExam(examIdForPart(id));
 		assertNoCriterionResultsForPart(id);
 		assertNoRequirementResultsForPart(id);
@@ -473,21 +570,27 @@ public class LevelOfExpectationsRepository {
 		cleanupUnreferencedMaterialImages();
 	}
 
+	@Transactional
 	public void deleteCategory(final int id) {
+		designGuard.lockAndAdvance(examIdForCategory(id));
 		assertNoResultsForExam(examIdForCategory(id));
 		assertNoCriterionResultsForCategory(id);
 		assertNoRequirementResultsForCategory(id);
 		deleteById("eh_category", id);
 	}
 
+	@Transactional
 	public void deleteTask(final int id) {
+		designGuard.lockAndAdvance(examIdForTask(id));
 		assertNoResultsForExam(examIdForTask(id));
 		assertNoCriterionResultsForTask(id);
 		assertNoRequirementResultsForTask(id);
 		deleteById("eh_task", id);
 	}
 
+	@Transactional
 	public void deleteRequirement(final int id) {
+		designGuard.lockAndAdvance(examIdForRequirement(id));
 		assertNoResultsForExam(examIdForRequirement(id));
 		assertNoCriterionResultsForRequirement(id);
 		assertNoRequirementResultsForRequirement(id);
@@ -497,6 +600,8 @@ public class LevelOfExpectationsRepository {
 	@Transactional
 	public void deleteMaterial(final int id) {
 		final LoeMaterial material = findMaterialById(id);
+		designGuard.lockAndAdvance(examIdForPart(material.partId()));
+		lockMaterialImages();
 		assertNoResultsForExam(examIdForPart(material.partId()));
 		deleteById("loe_material", id);
 		cleanupUnreferencedMaterialImages();
@@ -542,31 +647,54 @@ public class LevelOfExpectationsRepository {
 			""", partId);
 	}
 
+	@Transactional
 	public void movePart(final LoePart part, final int offset) {
-		assertNoResultsForExam(part.examId());
-		final List<LoePart> siblings = findPartsByExamId(part.examId());
+		final int examId = examIdForPart(part.id());
+		designGuard.lockAndAdvance(examId);
+		assertNoResultsForExam(examId);
+		final List<LoePart> siblings = findPartsByExamId(examId);
 		move("eh_part", siblings.stream().map(SortableItem::fromPart).toList(), part.id(), offset);
 	}
 
+	@Transactional
 	public void moveCategory(final LoeCategory category, final List<LoeCategory> siblings, final int offset) {
-		assertNoResultsForExam(examIdForCategory(category.id()));
-		move("eh_category", siblings.stream().map(SortableItem::fromCategory).toList(), category.id(), offset);
+		final int examId = examIdForCategory(category.id());
+		designGuard.lockAndAdvance(examId);
+		assertNoResultsForExam(examId);
+		final LoeCategory existing = findCategoryById(category.id());
+		move("eh_category", findCategoriesByExamId(examId).stream()
+				.filter(item -> item.partId().equals(existing.partId())).map(SortableItem::fromCategory).toList(),
+				category.id(), offset);
 	}
 
+	@Transactional
 	public void moveTask(final LoeTask task, final List<LoeTask> siblings, final int offset) {
-		assertNoResultsForExam(examIdForTask(task.id()));
-		move("eh_task", siblings.stream().map(SortableItem::fromTask).toList(), task.id(), offset);
+		final int examId = examIdForTask(task.id());
+		designGuard.lockAndAdvance(examId);
+		assertNoResultsForExam(examId);
+		final LoeTask existing = findTaskById(task.id());
+		move("eh_task", findTasksByExamId(examId).stream()
+				.filter(item -> item.categoryId().equals(existing.categoryId())).map(SortableItem::fromTask).toList(),
+				task.id(), offset);
 	}
 
+	@Transactional
 	public void moveRequirement(final LoeRequirement requirement, final List<LoeRequirement> siblings,
 			final int offset) {
-		assertNoResultsForExam(examIdForRequirement(requirement.id()));
-		move("eh_requirement", siblings.stream().map(SortableItem::fromRequirement).toList(), requirement.id(), offset);
+		final int examId = examIdForRequirement(requirement.id());
+		designGuard.lockAndAdvance(examId);
+		assertNoResultsForExam(examId);
+		final LoeRequirement existing = findRequirementById(requirement.id());
+		move("eh_requirement", findRequirementsByExamId(examId).stream()
+				.filter(item -> item.taskId().equals(existing.taskId())).map(SortableItem::fromRequirement).toList(),
+				requirement.id(), offset);
 	}
 
+	@Transactional
 	public void moveMaterial(final LoeMaterial material, final int offset) {
 		final LoeMaterial existing = findMaterialById(material.id());
 		final int examId = examIdForPart(existing.partId());
+		designGuard.lockAndAdvance(examId);
 		assertNoResultsForExam(examId);
 		final List<SortableItem> persistedSiblings = findMaterialsByExamId(examId).stream()
 				.filter(sibling -> sibling.partId().equals(existing.partId())).map(SortableItem::fromMaterial).toList();
@@ -664,6 +792,10 @@ public class LevelOfExpectationsRepository {
 		if (hasResultsForExam(examId)) {
 			throw new IllegalStateException(CORRECTION_MODE_MESSAGE);
 		}
+	}
+
+	private void lockMaterialImages() {
+		jdbc.queryForObject("select id from loe_material_image_lock where id = 1 for update", Map.of(), Integer.class);
 	}
 
 	private LoePart findPartById(final int id) {
@@ -875,6 +1007,9 @@ public class LevelOfExpectationsRepository {
 	}
 
 	private void cleanupUnreferencedMaterialImages() {
+		if (materialBatchDepth.get() > 0) {
+			return;
+		}
 		final Set<String> referencedIds = new HashSet<>();
 		jdbc.queryForList("select description_markdown from loe_material", Map.of(), String.class).stream()
 				.map(LoeMaterialImageReferences::ids).forEach(referencedIds::addAll);

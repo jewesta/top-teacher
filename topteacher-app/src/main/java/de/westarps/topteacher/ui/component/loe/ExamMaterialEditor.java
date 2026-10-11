@@ -66,6 +66,7 @@ public class ExamMaterialEditor extends AbstractDesigner {
 	private List<LoeMaterialImage> materialImages = List.of();
 	private List<LoeReadOnlySection<LoePart>> partSections = List.of();
 	private boolean locked;
+	private long loadedRevision;
 	private Runnable changeHandler = () -> {
 	};
 
@@ -113,12 +114,16 @@ public class ExamMaterialEditor extends AbstractDesigner {
 			showDesignerMessage(new Span("Bitte wähle eine Klausur aus."));
 			return;
 		}
-		locked = repository.hasResultsForExam(exam.id());
-		parts = repository.findPartsByExamId(exam.id());
-		materials = repository.findMaterialsByExamId(exam.id());
-		final List<LoeMaterialImage> loadedImages = repository.findMaterialImagesByIds(materials.stream()
-				.flatMap(material -> LoeMaterialImageReferences.ids(material.descriptionMarkdown()).stream()).toList());
-		materialImages = loadedImages == null ? List.of() : loadedImages;
+		repository.withDesignRead(exam.id(), () -> {
+			locked = repository.hasResultsForExam(exam.id());
+			parts = repository.findPartsByExamId(exam.id());
+			materials = repository.findMaterialsByExamId(exam.id());
+			final List<LoeMaterialImage> loadedImages = repository.findMaterialImagesByIds(materials.stream()
+					.flatMap(material -> LoeMaterialImageReferences.ids(material.descriptionMarkdown()).stream()).toList());
+			materialImages = loadedImages == null ? List.of() : loadedImages;
+			loadedRevision = repository.designRevision(exam.id());
+			return null;
+		});
 		if (parts.isEmpty()) {
 			content().add(emptyState("Lege zuerst im Reiter Aufgaben einen Klausurteil an."));
 		} else {
@@ -171,6 +176,10 @@ public class ExamMaterialEditor extends AbstractDesigner {
 	}
 
 	private void addMaterial(final LoePart part) {
+		runStructureChange(() -> addMaterialNow(part));
+	}
+
+	private void addMaterialNow(final LoePart part) {
 		final int sortOrder = repository.nextMaterialSortOrder(part.id());
 		final LoeMaterial material = repository.saveMaterial(
 				new LoeMaterial(null, part.id(), "Quelle " + (sortOrder + 1), "", sortOrder));
@@ -193,16 +202,31 @@ public class ExamMaterialEditor extends AbstractDesigner {
 	}
 
 	private void move(final LoeMaterial material, final int offset) {
-		repository.moveMaterial(material, offset);
-		refresh();
-		notifyChanged();
+		runStructureChange(() -> {
+			repository.moveMaterial(material, offset);
+			refresh();
+			notifyChanged();
+		});
 	}
 
 	private void delete(final LoeMaterial material) {
-		try {
+		runStructureChange(() -> {
 			repository.deleteMaterial(material.id());
 			refresh();
 			notifyChanged();
+		});
+	}
+
+	private void runStructureChange(final Runnable action) {
+		if (isDirty()) {
+			Notification.show("Speichere oder verwirf zuerst das ungespeicherte Material.");
+			return;
+		}
+		try {
+			repository.withDesignWrite(exam.id(), loadedRevision, () -> {
+				action.run();
+				return null;
+			});
 		} catch (final IllegalStateException exception) {
 			Notification.show(exception.getMessage());
 		}
@@ -243,11 +267,16 @@ public class ExamMaterialEditor extends AbstractDesigner {
 
 	private void saveDirtySections() {
 		try {
-			for (final LoeReadOnlySection<LoePart> section : partSections) {
-				if (!section.save()) {
-					return;
+			repository.withDesignWrite(exam.id(), loadedRevision, () -> {
+				for (final LoeReadOnlySection<LoePart> section : partSections) {
+					if (!section.save()) {
+						loadedRevision = repository.designRevision(exam.id());
+						return null;
+					}
 				}
-			}
+				loadedRevision = repository.designRevision(exam.id());
+				return null;
+			});
 			notifyChanged();
 		} catch (final IllegalStateException exception) {
 			Notification.show(exception.getMessage());

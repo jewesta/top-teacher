@@ -7,16 +7,21 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.ExamRepository;
 import de.westarps.topteacher.mcp.ExamMcpTools.PupilView;
 import de.westarps.topteacher.mcp.ExamPupilWriter.RemovalResult;
+import de.westarps.topteacher.mcp.security.McpAccessContext;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.Lifecycle;
@@ -55,6 +60,7 @@ public class ExamPupilRemovalMcpTools {
 					description = "Pupil IDs obtained from list_exam_pupils. Duplicate IDs are ignored.") final List<Integer> pupilIds,
 			@McpToolParam(required = false,
 					description = "Decision from a previous NEEDS_RESOLUTION result. Use SKIP to keep locked pupils and remove the others, or CANCEL to remove nobody.") final LockedPupilAction lockedPupilAction) {
+		McpAccessContext.accessLevel();
 		examInActiveCourse(examId);
 		final List<Integer> requestedPupilIds = ExamWriteMcpTools.pupilIds(pupilIds, false);
 		final Map<Integer, Pupil> assignedPupils = new LinkedHashMap<>();
@@ -177,8 +183,9 @@ public class ExamPupilRemovalMcpTools {
 	}
 
 	private static LockedExamPupilView lockedPupilView(final Pupil pupil, final String reason) {
-		return new LockedExamPupilView(pupil.id(), PupilNamePseudonymizer.firstName(pupil),
-				PupilNamePseudonymizer.surname(pupil), pupil.lifecycle().name(), reason,
+		final var identity = PupilNamePseudonymizer.identity(pupil);
+		return new LockedExamPupilView(pupil.id(), identity.displayName(), identity.identityRepresentation(),
+				identity.name(), identity.surname(), pupil.lifecycle().name(), reason,
 				ALLOWED_ACTIONS);
 	}
 
@@ -194,7 +201,9 @@ public class ExamPupilRemovalMcpTools {
 		CANCELLED
 	}
 
-	public record LockedExamPupilView(int id, String name, String surname, String lifecycle, String reason,
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record LockedExamPupilView(int id, String displayName, String identityRepresentation, @Nullable String name,
+			@Nullable String surname, String lifecycle, String reason,
 			List<String> allowedActions) {
 
 		public LockedExamPupilView {

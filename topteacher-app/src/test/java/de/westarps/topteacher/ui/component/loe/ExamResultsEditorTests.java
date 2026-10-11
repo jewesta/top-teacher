@@ -83,6 +83,37 @@ class ExamResultsEditorTests {
 			1);
 
 	@Test
+	void staleResultSaveAndDeletePreserveDirtyCommentAndAwardsWithoutPersistence() {
+		withUi(() -> {
+			final LevelOfExpectationsRepository repository = levelOfExpectationsRepository();
+			when(repository.designRevision(EXAM.id())).thenReturn(4L);
+			final ExamResultsEditor editor = new ExamResultsEditor(courseRepository(), examRepository(), repository,
+					gradingScaleRepository());
+			editor.setExam(EXAM);
+			final TextArea comment = components(editor, TextArea.class).getFirst();
+			comment.setValue("Unsaved result comment");
+			final LoePointStepper adjustment = adjustmentStepper(editor);
+			increase(adjustment);
+			final int units = adjustment.getPointUnits();
+			clearInvocations(repository);
+			RepositoryDesignTestSupport.rejectDesignWrites(repository, 4, 5);
+
+			saveButton(editor).click();
+			deleteButton(editor).click();
+			final ConfirmDialog confirmation = confirmation(editor, "Ergebnisse löschen?");
+			ComponentUtil.fireEvent(confirmation, new ConfirmDialog.ConfirmEvent(confirmation, false));
+
+			assertThat(comment.getValue()).isEqualTo("Unsaved result comment");
+			assertThat(adjustment.getPointUnits()).isEqualTo(units);
+			assertThat(editor.hasUnsavedChanges()).isTrue();
+			assertThat(saveButton(editor).isEnabled()).isTrue();
+			verify(repository, never()).saveCriterionResult(any());
+			verify(repository, never()).saveRequirementResult(any());
+			verify(repository, never()).deleteResultsByExamAndPupil(EXAM.id(), PUPIL.id());
+		});
+	}
+
+	@Test
 	void keepsTheStatusTrayPeekingWhenThereAreNoValidationResults() {
 		final ExamResultsEditor editor = new ExamResultsEditor(courseRepository(), examRepository(),
 				levelOfExpectationsRepository(), gradingScaleRepository());
@@ -681,7 +712,7 @@ class ExamResultsEditorTests {
 	private static LevelOfExpectationsRepository levelOfExpectationsRepository(final List<LoeRequirement> requirements,
 			final List<LoeCriterion> criteria, final List<LoeRequirementResult> requirementResults,
 			final List<LoeCriterionResult> criterionResults) {
-		final LevelOfExpectationsRepository repository = mock(LevelOfExpectationsRepository.class);
+		final LevelOfExpectationsRepository repository = RepositoryDesignTestSupport.mockRepository();
 		when(repository.findPartsByExamId(EXAM.id())).thenReturn(List.of(PART));
 		when(repository.findCategoriesByExamId(EXAM.id())).thenReturn(List.of(CATEGORY));
 		when(repository.findTasksByExamId(EXAM.id())).thenReturn(List.of(TASK));

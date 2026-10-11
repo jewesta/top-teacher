@@ -58,6 +58,56 @@ class ExamTasksEditorTests {
 	}
 
 	@Test
+	void staleSavePreservesDirtyTaskSourceAndFooterWithoutInvokingAnyPersistence() {
+		final LevelOfExpectationsRepository repository = repository(false);
+		when(repository.designRevision(EXAM.id())).thenReturn(4L);
+		final ExamTasksEditor editor = new ExamTasksEditor(repository);
+		editor.setExam(EXAM);
+		final MarkdownEditor source = markdownEditor(editor, TASK.descriptionMarkdown());
+		final MarkdownEditor footer = components(footerBlock(editor), MarkdownEditor.class).getFirst();
+		source.setValue("Unsaved task source");
+		footer.setValue("Unsaved footer");
+		clearInvocations(repository);
+		RepositoryDesignTestSupport.rejectDesignWrites(repository, 4, 5);
+
+		saveButton(editor).click();
+
+		assertThat(source.getValue()).isEqualTo("Unsaved task source");
+		assertThat(footer.getValue()).isEqualTo("Unsaved footer");
+		assertThat(editor.hasUnsavedChanges()).isTrue();
+		assertThat(saveButton(editor).isEnabled()).isTrue();
+		verify(repository, never()).saveTask(org.mockito.ArgumentMatchers.any());
+		verify(repository, never()).saveExamFooterMarkdown(anyInt(), org.mockito.ArgumentMatchers.anyString());
+		verify(repository, never()).findPartsByExamId(anyInt());
+	}
+
+	@Test
+	void staleStructureActionsDoNotAddMoveOrDeleteTasks() {
+		final LevelOfExpectationsRepository repository = repository(false);
+		when(repository.designRevision(EXAM.id())).thenReturn(4L);
+		when(repository.findTasksByExamId(EXAM.id())).thenReturn(List.of(TASK,
+				new LoeTask(4, CATEGORY.id(), "Second", "Source", 5, 1)));
+		final ExamTasksEditor editor = new ExamTasksEditor(repository);
+		editor.setExam(EXAM);
+		clearInvocations(repository);
+		RepositoryDesignTestSupport.rejectDesignWrites(repository, 4, 5);
+
+		button(editor, "Klausurteil hinzufügen").click();
+		final Details firstTask = components(editor, Details.class).get(2);
+		buttonByAriaLabel(firstTask, "Nach unten").click();
+		buttonByAriaLabel(firstTask, "Löschen...").click();
+		final ConfirmDialog confirmation = components(ui, ConfirmDialog.class).stream()
+				.filter(ConfirmDialog::isOpened).findFirst().orElseThrow();
+		ComponentUtil.fireEvent(confirmation, new ConfirmDialog.ConfirmEvent(confirmation, false));
+
+		verify(repository, never()).savePart(org.mockito.ArgumentMatchers.any());
+		verify(repository, never()).moveTask(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyList(), anyInt());
+		verify(repository, never()).deleteTask(anyInt());
+		verify(repository, never()).findPartsByExamId(anyInt());
+		assertThat(components(editor, Details.class)).hasSize(4);
+	}
+
+	@Test
 	void placesLabeledAddActionFirstAndConfirmsDiscardingTaskChanges() {
 		final LevelOfExpectationsRepository repository = repository(false);
 		final ExamTasksEditor editor = new ExamTasksEditor(repository);
@@ -410,7 +460,7 @@ class ExamTasksEditorTests {
 	}
 
 	private static LevelOfExpectationsRepository repository(final boolean locked) {
-		final LevelOfExpectationsRepository repository = mock(LevelOfExpectationsRepository.class);
+		final LevelOfExpectationsRepository repository = RepositoryDesignTestSupport.mockRepository();
 		when(repository.hasResultsForExam(EXAM.id())).thenReturn(locked);
 		when(repository.findPartsByExamId(EXAM.id())).thenReturn(List.of(PART));
 		when(repository.findCategoriesByExamId(EXAM.id())).thenReturn(List.of(CATEGORY));

@@ -1,5 +1,6 @@
 /* MCP credentials are created interactively; no base or demo token grants access. */
 /* File-access settings inherit base-data defaults and preserve an existing installation location. */
+/* New demo exams start at revision 0; retry receipts are generated only by actual authoring requests. */
 insert into pupil (name, surname, lifecycle)
 select demo.name, demo.surname, demo.lifecycle
 from (
@@ -527,3 +528,4 @@ set description_markdown = 'Bearbeite **' || task.title || '**.',
         where requirement.task_id = task.id
           and requirement.bonus = false
     );
+/* Demo exams do not have MCP creation retry receipts. */

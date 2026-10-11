@@ -3,6 +3,8 @@ package de.westarps.topteacher.mcp;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -13,6 +15,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,6 +63,8 @@ class PseudonymizedMcpToolsTests {
 	@BeforeEach
 	void authenticatePseudonymizedAccess() {
 		access = McpAccessContext.open(McpAccessLevel.PSEUDONYMIZED);
+		lenient().when(levels.withDesignRead(anyInt(), any()))
+				.thenAnswer(invocation -> invocation.getArgument(1, Supplier.class).get());
 	}
 
 	@AfterEach
@@ -77,8 +82,10 @@ class PseudonymizedMcpToolsTests {
 		assertThat(pupilTools.listPupils("Müller", null).pupils()).isEmpty();
 		assertThat(pupilTools.listPupils("Hans", null).pupils()).isEmpty();
 		assertThat(pupilTools.listPupils("MH", null).pupils()).hasSize(2).allSatisfy(view -> {
-			assertThat(view.name()).isEqualTo("MH");
-			assertThat(view.surname()).isEmpty();
+			assertThat(view.displayName()).isEqualTo("MH");
+			assertThat(view.identityRepresentation()).isEqualTo("INITIALS");
+			assertThat(view.name()).isNull();
+			assertThat(view.surname()).isNull();
 		}).extracting(PupilMcpSchema.PupilView::latestSchoolClass).containsExactly("CLS_Q1", "CLS_EF");
 		assertThat(pupilTools.listPupils("42", null).pupils()).singleElement()
 				.satisfies(view -> assertThat(view.id()).isEqualTo(42));
@@ -111,15 +118,17 @@ class PseudonymizedMcpToolsTests {
 		final var courseRoster = new CourseMcpTools(courses, mock(SubjectRepository.class), scales)
 				.listCoursePupils(3, null);
 		assertThat(courseRoster.pupils()).singleElement().satisfies(view -> {
-			assertThat(view.name()).isEqualTo("MH");
-			assertThat(view.surname()).isEmpty();
+			assertThat(view.displayName()).isEqualTo("MH");
+			assertThat(view.identityRepresentation()).isEqualTo("INITIALS");
+			assertThat(view.name()).isNull();
+			assertThat(view.surname()).isNull();
 			assertThat(view.id()).isEqualTo(42);
 		});
 		assertThat(new ExamMcpTools(courses, exams, levels).listExamPupils(11).pupils()).singleElement()
-				.satisfies(view -> assertThat(view.name()).isEqualTo("MH"));
+				.satisfies(view -> assertThat(view.displayName()).isEqualTo("MH"));
 		final var result = new PupilResultMcpTools(exams, scales, levels, pupils).getPupilResult(11, 42);
-		assertThat(result.pupil().name()).isEqualTo("MH");
-		assertThat(result.pupil().surname()).isEmpty();
+		assertThat(result.pupil().displayName()).isEqualTo("MH");
+		assertThat(result.pupil().surname()).isNull();
 		assertThat(result.summary().effectivePoints()).isNull();
 		assertThat(result.summary().gradingAvailable()).isFalse();
 		assertThat(result.requirements()).singleElement()
@@ -133,13 +142,15 @@ class PseudonymizedMcpToolsTests {
 		when(exams.save(any(Exam.class), any())).thenReturn(exam());
 		when(exams.findById(11)).thenReturn(Optional.of(exam()));
 		when(exams.findPupils(11)).thenReturn(List.of(pupil));
-		final ExamWriteMcpTools tools = new ExamWriteMcpTools(courses, exams, scales, levels);
+		final ExamWriteMcpTools tools = ExamWriteTestSupport.tools(courses, exams, scales, levels);
 
-		assertThat(tools.createExam(3, "Exam", "2026-10-12", null, null, List.of(42)).pupils())
-				.singleElement().satisfies(view -> assertThat(view.name()).isEqualTo("MH"));
-		assertThat(tools.updateExam(11, "Updated exam", null).pupils()).singleElement().satisfies(view -> {
-			assertThat(view.name()).isEqualTo("MH");
-			assertThat(view.surname()).isEmpty();
+		assertThat(tools.createExam(3, "Exam", "2026-10-12", null, null, List.of(42), "create").pupils())
+				.singleElement().satisfies(view -> assertThat(view.displayName()).isEqualTo("MH"));
+		assertThat(tools.updateExam(11, "Updated exam", null, 0, "update").pupils()).singleElement().satisfies(view -> {
+			assertThat(view.displayName()).isEqualTo("MH");
+			assertThat(view.identityRepresentation()).isEqualTo("INITIALS");
+			assertThat(view.name()).isNull();
+			assertThat(view.surname()).isNull();
 		});
 		verify(exams).save(any(Exam.class));
 	}
@@ -154,8 +165,10 @@ class PseudonymizedMcpToolsTests {
 		final var result = tools.assignPupilsToCourse(null, 3, null, null, List.of(42, 42));
 
 		assertThat(result.assignedPupils()).singleElement().satisfies(view -> {
-			assertThat(view.name()).isEqualTo("MH");
-			assertThat(view.surname()).isEmpty();
+			assertThat(view.displayName()).isEqualTo("MH");
+			assertThat(view.identityRepresentation()).isEqualTo("INITIALS");
+			assertThat(view.name()).isNull();
+			assertThat(view.surname()).isNull();
 		});
 		verify(writer).assignExisting(3, List.of(42));
 		assertThatThrownBy(() -> tools.assignPupilsToCourse(null, 3,
@@ -182,7 +195,7 @@ class PseudonymizedMcpToolsTests {
 						invocation.<List<Integer>>getArgument(1).isEmpty() ? List.of() : List.of(pupil)));
 
 		assertThat(tools.createCourseWithPupils(null, draft, null, null, List.of(42)).assignedPupils())
-				.singleElement().satisfies(view -> assertThat(view.name()).isEqualTo("MH"));
+				.singleElement().satisfies(view -> assertThat(view.displayName()).isEqualTo("MH"));
 		assertThat(tools.createCourseWithPupils(null, draft, null, null, null).assignedPupils()).isEmpty();
 		verifyNoInteractions(conflicts);
 	}
@@ -196,9 +209,9 @@ class PseudonymizedMcpToolsTests {
 		final var result = new ExamPupilAssignmentMcpTools(writer).assignPupilsToExam(11, List.of(42));
 
 		assertThat(result.assignedPupils()).singleElement()
-				.satisfies(view -> assertThat(view.name()).isEqualTo("MH"));
+				.satisfies(view -> assertThat(view.displayName()).isEqualTo("MH"));
 		assertThat(result.alreadyAssignedPupils()).singleElement()
-				.satisfies(view -> assertThat(view.surname()).isEmpty());
+				.satisfies(view -> assertThat(view.surname()).isNull());
 	}
 
 	@Test
@@ -222,9 +235,9 @@ class PseudonymizedMcpToolsTests {
 				.removePupilsFromExam(context, 11, List.of(42), null);
 
 		assertThat(courseRemoval.lockedPupils()).singleElement()
-				.satisfies(view -> assertThat(view.name()).isEqualTo("MH"));
+				.satisfies(view -> assertThat(view.displayName()).isEqualTo("MH"));
 		assertThat(examRemoval.lockedPupils()).singleElement()
-				.satisfies(view -> assertThat(view.name()).isEqualTo("MH"));
+				.satisfies(view -> assertThat(view.displayName()).isEqualTo("MH"));
 		final ArgumentCaptor<ElicitFormRequest> requests = ArgumentCaptor.forClass(ElicitFormRequest.class);
 		verify(context, org.mockito.Mockito.times(2)).elicit(requests.capture());
 		assertThat(requests.getAllValues()).allSatisfy(request -> assertThat(request.message())
@@ -247,10 +260,10 @@ class PseudonymizedMcpToolsTests {
 
 		assertThat(new CoursePupilRemovalMcpTools(courses, courseWriter)
 				.removePupilsFromCourse(null, 3, List.of(42), null).removedPupils()).singleElement()
-				.satisfies(view -> assertThat(view.name()).isEqualTo("MH"));
+				.satisfies(view -> assertThat(view.displayName()).isEqualTo("MH"));
 		assertThat(new ExamPupilRemovalMcpTools(courses, exams, examWriter)
 				.removePupilsFromExam(null, 11, List.of(42), null).removedPupils()).singleElement()
-				.satisfies(view -> assertThat(view.surname()).isEmpty());
+				.satisfies(view -> assertThat(view.surname()).isNull());
 	}
 
 	@Test

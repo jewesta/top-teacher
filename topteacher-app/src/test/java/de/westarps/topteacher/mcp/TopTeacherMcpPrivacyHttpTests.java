@@ -20,6 +20,7 @@ import de.westarps.topteacher.backend.mcp.McpAccessTokenService.CreatedToken;
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.ExamRepository;
 import de.westarps.topteacher.backend.repo.GradingScaleRepository;
+import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.backend.repo.PupilRepository;
 import de.westarps.topteacher.backend.repo.SubjectRepository;
 import de.westarps.topteacher.model.Course;
@@ -56,6 +57,8 @@ class TopTeacherMcpPrivacyHttpTests {
 	private SubjectRepository subjects;
 	@Autowired
 	private GradingScaleRepository gradingScales;
+	@Autowired
+	private LevelOfExpectationsRepository levels;
 
 	@Test
 	void guardsEveryRosterResponseAndKeepsParallelFullAndRestrictedClientsIsolated() throws Exception {
@@ -84,12 +87,14 @@ class TopTeacherMcpPrivacyHttpTests {
 				final String arguments = switch (tool) {
 				case "list_course_pupils" -> "{\"courseId\":" + q1.id() + "}";
 				case "get_pupil_result" -> "{\"examId\":" + exam.id() + ",\"pupilId\":" + hans.id() + "}";
-				case "update_exam" -> "{\"examId\":" + exam.id() + ",\"title\":\"Changed privacy exam\"}";
+				case "update_exam" -> "{\"examId\":" + exam.id() + ",\"title\":\"Changed privacy exam\",\"expectedRevision\":"
+						+ levels.designRevision(exam.id()) + ",\"requestId\":\"privacy-metadata\"}";
 				default -> "{\"examId\":" + exam.id() + "}";
 				};
 				final String result = call(client, restricted.credential(), restrictedSession, tool, arguments).body();
 				assertGuarded(result);
 				assertThat(result).contains("MH").doesNotContain("\"isError\":true");
+				assertThat(result).contains("displayName", "INITIALS").doesNotContain("\"name\":", "\"surname\":");
 			}
 
 			for (int iteration = 0; iteration < 4; iteration++) {
@@ -172,6 +177,10 @@ class TopTeacherMcpPrivacyHttpTests {
 	private String initialize(final HttpClient client, final String token) throws Exception {
 		final HttpResponse<String> initialized = client.send(request(INITIALIZE, token, null), HttpResponse.BodyHandlers.ofString());
 		assertThat(initialized.statusCode()).isEqualTo(200);
+		assertThat(initialized.body()).contains("exam-first", "get_mcp_context", "get_markdown_guide",
+				"displayName", "identityRepresentation", "FULL_NAME", "INITIALS", "name and surname are omitted",
+				"stable IDs", "not automatically name-redacted")
+				.doesNotContain("pupil name fields contain", "surname is empty");
 		final String session = initialized.headers().firstValue("Mcp-Session-Id").orElseThrow();
 		final HttpResponse<String> notification = client.send(request("{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}", token, session),
 				HttpResponse.BodyHandlers.ofString());

@@ -9,6 +9,7 @@ import de.westarps.topteacher.mcp.security.McpAccessContext;
 import de.westarps.topteacher.model.Lifecycle;
 import de.westarps.topteacher.model.McpAccessLevel;
 import de.westarps.topteacher.model.Pupil;
+import tools.jackson.databind.json.JsonMapper;
 
 class PupilNamePseudonymizerTests {
 
@@ -19,6 +20,7 @@ class PupilNamePseudonymizerTests {
 		assertThatThrownBy(() -> PupilNamePseudonymizer.firstName(pupil)).isInstanceOf(SecurityException.class);
 		assertThatThrownBy(() -> PupilNamePseudonymizer.surname(pupil)).isInstanceOf(SecurityException.class);
 		assertThatThrownBy(() -> PupilNamePseudonymizer.displayName(pupil)).isInstanceOf(SecurityException.class);
+		assertThatThrownBy(() -> PupilNamePseudonymizer.identity(pupil)).isInstanceOf(SecurityException.class);
 		assertThatThrownBy(PupilNamePseudonymizer::requireIdentityWrite).isInstanceOf(SecurityException.class);
 	}
 
@@ -38,5 +40,25 @@ class PupilNamePseudonymizerTests {
 			assertThat(PupilNamePseudonymizer.displayName(pupil)).isEqualTo("Hans Müller");
 		}
 		assertThatThrownBy(() -> PupilNamePseudonymizer.displayName(pupil)).isInstanceOf(SecurityException.class);
+	}
+
+	@Test
+	void identityDtosDoNotMislabelInitialsAsNamesAndOmitRealNameFields() {
+		final JsonMapper mapper = JsonMapper.builder().build();
+		try (var full = McpAccessContext.open(McpAccessLevel.FULL)) {
+			final var fullView = ExamMcpTools.pupilView(pupil);
+			assertThat(fullView.displayName()).isEqualTo("Hans Müller");
+			assertThat(fullView.identityRepresentation()).isEqualTo("FULL_NAME");
+			assertThat(fullView.name()).isEqualTo("Hans");
+			try (var restricted = McpAccessContext.open(McpAccessLevel.PSEUDONYMIZED)) {
+				final var view = ExamMcpTools.pupilView(pupil);
+				assertThat(view.displayName()).isEqualTo("MH");
+				assertThat(view.identityRepresentation()).isEqualTo("INITIALS");
+				assertThat(view.name()).isNull();
+				assertThat(view.surname()).isNull();
+				assertThat(mapper.writeValueAsString(view)).contains("\"displayName\":\"MH\"", "\"identityRepresentation\":\"INITIALS\"")
+						.doesNotContain("\"name\"", "\"surname\"", "Hans", "Müller");
+			}
+		}
 	}
 }

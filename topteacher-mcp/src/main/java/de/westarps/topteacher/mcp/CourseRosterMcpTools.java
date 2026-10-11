@@ -5,11 +5,15 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.GradingScaleRepository;
@@ -151,8 +155,9 @@ public class CourseRosterMcpTools {
 	}
 
 	private static RosterPupilView pupilView(final Pupil pupil) {
-		return new RosterPupilView(pupil.id(), PupilNamePseudonymizer.firstName(pupil),
-				PupilNamePseudonymizer.surname(pupil), pupil.lifecycle().name());
+		final var identity = PupilNamePseudonymizer.identity(pupil);
+		return new RosterPupilView(pupil.id(), identity.displayName(), identity.identityRepresentation(),
+				identity.name(), identity.surname(), pupil.lifecycle().name());
 	}
 
 	private static CourseRosterResult needsResolution(final List<PupilConflictView> conflicts) {
@@ -203,7 +208,9 @@ public class CourseRosterMcpTools {
 		}
 	}
 
-	public record RosterPupilView(int id, String name, String surname, String lifecycle) {
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record RosterPupilView(int id, String displayName, String identityRepresentation, @Nullable String name,
+			@Nullable String surname, String lifecycle) {
 	}
 
 }

@@ -180,8 +180,9 @@ public class CoursePupilAssignmentMcpTools {
 	}
 
 	private static RosterPupilView pupilView(final Pupil pupil) {
-		return new RosterPupilView(pupil.id(), PupilNamePseudonymizer.firstName(pupil),
-				PupilNamePseudonymizer.surname(pupil), pupil.lifecycle().name());
+		final var identity = PupilNamePseudonymizer.identity(pupil);
+		return new RosterPupilView(pupil.id(), identity.displayName(), identity.identityRepresentation(),
+				identity.name(), identity.surname(), pupil.lifecycle().name());
 	}
 
 	public enum CoursePupilAssignmentStatus {

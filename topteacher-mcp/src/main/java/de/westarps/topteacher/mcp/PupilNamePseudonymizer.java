@@ -3,6 +3,8 @@ package de.westarps.topteacher.mcp;
 import java.util.Locale;
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
+
 import de.westarps.topteacher.mcp.security.McpAccessContext;
 import de.westarps.topteacher.model.McpAccessLevel;
 import de.westarps.topteacher.model.Pupil;
@@ -51,6 +53,17 @@ public final class PupilNamePseudonymizer {
 
 	public static String displayName(final String name, final String surname) {
 		return isPseudonymized() ? initials(name, surname) : name + " " + surname;
+	}
+
+	public static IdentityProjection identity(final Pupil pupil) {
+		Objects.requireNonNull(pupil, "pupil");
+		return isPseudonymized()
+				? new IdentityProjection(initials(pupil.name(), pupil.surname()), "INITIALS", null, null)
+				: new IdentityProjection(pupil.name() + " " + pupil.surname(), "FULL_NAME", pupil.name(), pupil.surname());
+	}
+
+	public record IdentityProjection(String displayName, String identityRepresentation,
+			@Nullable String name, @Nullable String surname) {
 	}
 
 	private static String initials(final String name, final String surname) {

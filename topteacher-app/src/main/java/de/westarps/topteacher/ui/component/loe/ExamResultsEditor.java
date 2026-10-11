@@ -94,6 +94,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 
 	private Exam exam;
 	private Pupil selectedPupil;
+	private long loadedRevision;
 	private boolean refreshing;
 	private boolean applyingResultState;
 	private boolean updatingCriterionControls;
@@ -252,10 +253,14 @@ public class ExamResultsEditor extends AbstractDesigner {
 			return;
 		}
 
-		levelOfExpectationsRepository.syncCriteriaForExam(exam.id());
-		loadPointRules();
-		loadItems();
-		refreshPupils();
+		levelOfExpectationsRepository.withDesignRead(exam.id(), () -> {
+			levelOfExpectationsRepository.syncCriteriaForExam(exam.id());
+			loadPointRules();
+			loadItems();
+			loadedRevision = levelOfExpectationsRepository.designRevision(exam.id());
+			refreshPupils();
+			return null;
+		});
 		configureToolbar();
 		showDesigner();
 		renderResultStructure();
@@ -332,7 +337,10 @@ public class ExamResultsEditor extends AbstractDesigner {
 			applyResultState();
 			return;
 		}
-		loadResultState();
+		levelOfExpectationsRepository.withDesignRead(exam.id(), () -> {
+			loadResultState();
+			return null;
+		});
 		applyResultState();
 	}
 
@@ -418,7 +426,16 @@ public class ExamResultsEditor extends AbstractDesigner {
 			return;
 		}
 
-		levelOfExpectationsRepository.deleteResultsByExamAndPupil(exam.id(), selectedPupil.id());
+		try {
+			levelOfExpectationsRepository.withDesignWrite(exam.id(), loadedRevision, () -> {
+				levelOfExpectationsRepository.deleteResultsByExamAndPupil(exam.id(), selectedPupil.id());
+				loadedRevision = levelOfExpectationsRepository.designRevision(exam.id());
+				return null;
+			});
+		} catch (final IllegalArgumentException | IllegalStateException conflict) {
+			Notification.show(conflict.getMessage());
+			return;
+		}
 		clearResultState();
 		applyResultState();
 		deleteConfirmation.close();
@@ -995,19 +1012,28 @@ public class ExamResultsEditor extends AbstractDesigner {
 			return;
 		}
 
-		criteria.stream()
-				.filter(criterion -> currentCriterionPointUnits(criterion) != persistedCriterionPointUnits(criterion))
-				.map(criterion -> new LoeCriterionResult(criterion.id(), selectedPupil.id(),
-						currentCriterionPointUnits(criterion)))
-				.forEach(levelOfExpectationsRepository::saveCriterionResult);
-		requirements.stream()
-				.filter(requirement -> currentRequirementRawUnits(requirement) != persistedRequirementPointUnits(requirement)
-						|| currentAdjustmentPointUnits(requirement) != persistedAdjustmentPointUnits(requirement)
-						|| !currentRequirementComment(requirement).equals(persistedRequirementComment(requirement)))
-				.map(requirement -> new LoeRequirementResult(requirement.id(), selectedPupil.id(),
-						currentRequirementRawUnits(requirement), currentAdjustmentPointUnits(requirement),
-						currentRequirementComment(requirement)))
-				.forEach(levelOfExpectationsRepository::saveRequirementResult);
+		try {
+			levelOfExpectationsRepository.withDesignWrite(exam.id(), loadedRevision, () -> {
+				criteria.stream()
+						.filter(criterion -> currentCriterionPointUnits(criterion) != persistedCriterionPointUnits(criterion))
+						.map(criterion -> new LoeCriterionResult(criterion.id(), selectedPupil.id(),
+								currentCriterionPointUnits(criterion)))
+						.forEach(levelOfExpectationsRepository::saveCriterionResult);
+				requirements.stream()
+						.filter(requirement -> currentRequirementRawUnits(requirement) != persistedRequirementPointUnits(requirement)
+								|| currentAdjustmentPointUnits(requirement) != persistedAdjustmentPointUnits(requirement)
+								|| !currentRequirementComment(requirement).equals(persistedRequirementComment(requirement)))
+						.map(requirement -> new LoeRequirementResult(requirement.id(), selectedPupil.id(),
+								currentRequirementRawUnits(requirement), currentAdjustmentPointUnits(requirement),
+								currentRequirementComment(requirement)))
+						.forEach(levelOfExpectationsRepository::saveRequirementResult);
+				loadedRevision = levelOfExpectationsRepository.designRevision(exam.id());
+				return null;
+			});
+		} catch (final IllegalArgumentException | IllegalStateException conflict) {
+			Notification.show(conflict.getMessage());
+			return;
+		}
 
 		persistedCriterionResults = criteria.stream()
 				.collect(Collectors.toMap(LoeCriterion::id, this::currentCriterionPointUnits));

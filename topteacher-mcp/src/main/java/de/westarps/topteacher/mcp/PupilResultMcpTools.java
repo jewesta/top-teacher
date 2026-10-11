@@ -19,6 +19,7 @@ import de.westarps.topteacher.backend.repo.GradingScaleRepository;
 import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.backend.repo.PupilRepository;
 import de.westarps.topteacher.mcp.ExamMcpTools.PupilView;
+import de.westarps.topteacher.mcp.security.McpAccessContext;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.GradingScale;
 import de.westarps.topteacher.model.Pupil;
@@ -56,6 +57,11 @@ public class PupilResultMcpTools {
 	public PupilResultView getPupilResult(
 			@McpToolParam(description = "Exam ID returned by list_exams.") final int examId,
 			@McpToolParam(description = "Pupil ID returned by list_exam_pupils.") final int pupilId) {
+		McpAccessContext.accessLevel();
+		return levelOfExpectations.withDesignRead(examId, () -> readPupilResult(examId, pupilId));
+	}
+
+	private PupilResultView readPupilResult(final int examId, final int pupilId) {
 		final Exam exam = exams.findById(examId)
 				.orElseThrow(() -> new IllegalArgumentException("Exam does not exist: " + examId));
 		if (!exams.hasPupil(examId, pupilId)) {

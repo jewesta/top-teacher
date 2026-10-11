@@ -74,7 +74,7 @@ class ExamsViewDeepLinkTests {
 
 	private final CourseRepository courses = mock(CourseRepository.class);
 	private final ExamRepository exams = mock(ExamRepository.class);
-	private final LevelOfExpectationsRepository levelOfExpectations = mock(LevelOfExpectationsRepository.class);
+	private final LevelOfExpectationsRepository levelOfExpectations = de.westarps.topteacher.ui.component.loe.RepositoryDesignTestSupport.mockRepository();
 	private final GradingScaleRepository gradingScales = mock(GradingScaleRepository.class);
 	private ExamsView view;
 

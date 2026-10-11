@@ -52,6 +52,52 @@ class ExamMaterialEditorTests {
 	}
 
 	@Test
+	void staleSavePreservesDirtyMaterialSourceWithoutInvokingImageOrMaterialPersistence() {
+		final LevelOfExpectationsRepository repository = repository(false);
+		when(repository.designRevision(EXAM.id())).thenReturn(4L);
+		final ExamMaterialEditor editor = new ExamMaterialEditor(repository);
+		editor.setExam(EXAM);
+		final MarkdownEditor source = components(editor, MarkdownEditor.class).getFirst();
+		source.setValue("Unsaved material source");
+		clearInvocations(repository);
+		RepositoryDesignTestSupport.rejectDesignWrites(repository, 4, 5);
+
+		buttonsByAriaLabel(editor, "Speichern").getFirst().click();
+
+		assertThat(source.getValue()).isEqualTo("Unsaved material source");
+		assertThat(editor.hasUnsavedChanges()).isTrue();
+		assertThat(buttonsByAriaLabel(editor, "Speichern").getFirst().isEnabled()).isTrue();
+		verify(repository, never()).saveMaterialWithImages(any(), any());
+		verify(repository, never()).findMaterialsByExamId(anyInt());
+	}
+
+	@Test
+	void staleStructureActionsDoNotAddMoveOrDeleteMaterial() {
+		final LevelOfExpectationsRepository repository = repository(false);
+		when(repository.designRevision(EXAM.id())).thenReturn(4L);
+		when(repository.findMaterialsByExamId(EXAM.id())).thenReturn(List.of(MATERIAL,
+				new LoeMaterial(3, PART.id(), "Second", "Source", 1)));
+		final ExamMaterialEditor editor = new ExamMaterialEditor(repository);
+		editor.setExam(EXAM);
+		clearInvocations(repository);
+		RepositoryDesignTestSupport.rejectDesignWrites(repository, 4, 5);
+
+		button(editor, "Material hinzufügen").click();
+		final Details firstMaterial = components(editor, Details.class).get(1);
+		buttonsByAriaLabel(firstMaterial, "Nach unten").getFirst().click();
+		buttonsByAriaLabel(firstMaterial, "Löschen...").getFirst().click();
+		final ConfirmDialog confirmation = components(ui, ConfirmDialog.class).stream()
+				.filter(ConfirmDialog::isOpened).findFirst().orElseThrow();
+		ComponentUtil.fireEvent(confirmation, new ConfirmDialog.ConfirmEvent(confirmation, false));
+
+		verify(repository, never()).saveMaterial(any());
+		verify(repository, never()).moveMaterial(any(), anyInt());
+		verify(repository, never()).deleteMaterial(anyInt());
+		verify(repository, never()).findMaterialsByExamId(anyInt());
+		assertThat(components(editor, Details.class)).hasSize(3);
+	}
+
+	@Test
 	void confirmsDiscardingMaterialChangesAndPreservesThemOnCancel() {
 		final LevelOfExpectationsRepository repository = repository(false);
 		final ExamMaterialEditor editor = new ExamMaterialEditor(repository);
@@ -163,7 +209,7 @@ class ExamMaterialEditorTests {
 	}
 
 	private static LevelOfExpectationsRepository repository(final boolean locked) {
-		final LevelOfExpectationsRepository repository = mock(LevelOfExpectationsRepository.class);
+		final LevelOfExpectationsRepository repository = RepositoryDesignTestSupport.mockRepository();
 		when(repository.hasResultsForExam(EXAM.id())).thenReturn(locked);
 		when(repository.findPartsByExamId(EXAM.id())).thenReturn(List.of(PART));
 		when(repository.findMaterialsByExamId(EXAM.id())).thenReturn(List.of(MATERIAL));

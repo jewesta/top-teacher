@@ -7,6 +7,68 @@ import org.junit.jupiter.api.Test;
 class LoeMaterialImageReferencesTests {
 
 	@Test
+	void ignoresCaptionExamplesLinksPlainTextAndFencedOrInlineCode() {
+		assertThat(LoeMaterialImageReferences.ids("""
+			![Caption (img:deadbeef) with [nested text]](img:abcdefgh)
+			[Ordinary link](img:deadbeef)
+			Plain (img:deadbeef)
+			`![Inline example](img:deadbeef)`
+			```markdown
+			![Fenced example](img:deadbeef)
+			```
+			![![Nested alt image](img:deadbeef)](img:abcdefgh)
+			""")).containsExactly("abcdefgh");
+	}
+
+	@Test
+	void changesOnlyActualImageDestinationsAndLeavesCaptionAndCodeExamplesUntouched() {
+		final String markdown = """
+			![Caption (img:4n8k2p7c) with [nested text]](img:4n8k2p7c?width=75)
+			[Link](img:4n8k2p7c) plain (img:4n8k2p7c)
+			`![Inline example](img:4n8k2p7c)`
+			```markdown
+			![Fenced example](img:4n8k2p7c)
+			```
+			![![Nested alt image](img:4n8k2p7c)](img:4n8k2p7c "Title (img:4n8k2p7c)")
+			""";
+		assertThat(LoeMaterialImageReferences.replaceId(markdown, "4n8k2p7c", "abcdefgh")).isEqualTo("""
+			![Caption (img:4n8k2p7c) with [nested text]](img:abcdefgh?width=75)
+			[Link](img:4n8k2p7c) plain (img:4n8k2p7c)
+			`![Inline example](img:4n8k2p7c)`
+			```markdown
+			![Fenced example](img:4n8k2p7c)
+			```
+			![![Nested alt image](img:4n8k2p7c)](img:abcdefgh "Title (img:4n8k2p7c)")
+			""");
+	}
+
+	@Test
+	void supportsRenderedReferenceImagesWithoutChangingUnusedDefinitions() {
+		final String markdown = """
+			![Chart][Used]
+			![Used][]
+
+			[Used]: img:4n8k2p7c?width=50 "Chart"
+			[Unused]: img:4n8k2p7c
+			""";
+		assertThat(LoeMaterialImageReferences.ids(markdown)).containsExactly("4n8k2p7c");
+		assertThat(LoeMaterialImageReferences.replaceId(markdown, "4n8k2p7c", "abcdefgh")).isEqualTo("""
+			![Chart][Used]
+			![Used][]
+
+			[Used]: img:abcdefgh?width=50 "Chart"
+			[Unused]: img:4n8k2p7c
+			""");
+	}
+
+	@Test
+	void unescapesOpeningAndClosingBracketsWhenEditingAnImageCaption() {
+		final String markdown = "![Chart \\[A\\]](img:abcdefgh)";
+		assertThat(LoeMaterialImageReferences.findAt(markdown, 3, 3)).contains(
+				new LoeMaterialImageReferences.Occurrence("abcdefgh", "Chart [A]", null, 0, markdown.length()));
+	}
+
+	@Test
 	void findsManagedImageReferencesAndIgnoresOtherImages() {
 		assertThat(LoeMaterialImageReferences.ids("""
 			![Diagramm](img:4n8k2p7c?width=75)

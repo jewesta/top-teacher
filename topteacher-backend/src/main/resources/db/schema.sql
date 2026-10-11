@@ -132,6 +132,7 @@ create table if not exists exam (
     original_exam_id integer,
     grading_scale_id integer not null,
     footer_markdown clob default '' not null,
+    design_revision bigint default 0 not null,
     constraint exam_course_fk foreign key (course_id) references course(id),
     constraint exam_original_exam_fk foreign key (original_exam_id) references exam(id),
     constraint exam_grading_scale_fk foreign key (grading_scale_id) references grading_scale(id),
@@ -141,6 +142,19 @@ create table if not exists exam (
 
 alter table exam add column if not exists original_exam_id integer;
 alter table exam add column if not exists footer_markdown clob default '' not null;
+alter table exam add column if not exists design_revision bigint default 0 not null;
+
+create table if not exists exam_creation_mutation (
+    course_id integer not null,
+    request_id varchar(100) not null,
+    operation varchar(40) not null,
+    request_hash varchar(64) not null,
+    exam_id integer not null,
+    resulting_revision bigint not null,
+    primary key (course_id, request_id),
+    constraint exam_creation_course_fk foreign key (course_id) references course(id) on delete cascade,
+    constraint exam_creation_exam_fk foreign key (exam_id) references exam(id) on delete cascade
+);
 alter table exam add constraint if not exists exam_original_exam_fk foreign key (original_exam_id) references exam(id);
 alter table exam add constraint if not exists exam_original_exam_not_self_check check (original_exam_id is null or original_exam_id <> id);
 alter table exam add column if not exists grading_scale_id integer;
@@ -155,6 +169,25 @@ alter table exam alter column grading_scale_id set not null;
 alter table exam add constraint if not exists exam_grading_scale_fk foreign key (grading_scale_id) references grading_scale(id);
 alter table exam drop constraint if exists exam_max_points_check;
 alter table exam drop column if exists max_points;
+
+/* Retry receipts contain only authoring IDs and neutral metadata, never pupil projections. */
+create table if not exists exam_design_mutation (
+    exam_id integer not null,
+    request_id varchar(100) not null,
+    operation varchar(40) not null,
+    request_hash varchar(64) not null,
+    result_metadata clob not null,
+    resulting_revision bigint not null,
+    primary key (exam_id, request_id),
+    constraint exam_design_mutation_exam_fk foreign key (exam_id) references exam(id) on delete cascade
+);
+
+/* Shared immutable images require cross-exam serialization during reference cleanup. */
+create table if not exists loe_material_image_lock (
+    id integer primary key check (id = 1)
+);
+insert into loe_material_image_lock (id)
+select 1 where not exists (select 1 from loe_material_image_lock where id = 1);
 
 create table if not exists exam_pupil (
     exam_id integer not null,

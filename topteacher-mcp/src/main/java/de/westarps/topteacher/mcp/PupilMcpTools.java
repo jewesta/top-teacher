@@ -198,8 +198,9 @@ public class PupilMcpTools {
 
 	private static PupilView view(final Pupil pupil, final Map<Integer, SchoolClass> latestSchoolClasses) {
 		final SchoolClass latestSchoolClass = latestSchoolClasses.get(pupil.id());
-		return new PupilView(pupil.id(), PupilNamePseudonymizer.firstName(pupil),
-				PupilNamePseudonymizer.surname(pupil), pupil.lifecycle().name(),
+		final var identity = PupilNamePseudonymizer.identity(pupil);
+		return new PupilView(pupil.id(), identity.displayName(), identity.identityRepresentation(),
+				identity.name(), identity.surname(), pupil.lifecycle().name(),
 				latestSchoolClass == null ? "" : latestSchoolClass.name(),
 				latestSchoolClass == null ? "" : latestSchoolClass.getDisplayName());
 	}

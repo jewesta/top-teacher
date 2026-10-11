@@ -1,405 +1,93 @@
 package de.westarps.topteacher.mcp;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
-import org.jspecify.annotations.Nullable;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-
-import de.westarps.topteacher.backend.repo.CourseRepository;
-import de.westarps.topteacher.backend.repo.ExamRepository;
-import de.westarps.topteacher.backend.repo.GradingScaleRepository;
-import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
-import de.westarps.topteacher.mcp.CourseMcpTools.CourseView;
-import de.westarps.topteacher.mcp.ExamMcpTools.ExamView;
-import de.westarps.topteacher.model.Course;
-import de.westarps.topteacher.model.Exam;
-import de.westarps.topteacher.model.GradingScale;
-import de.westarps.topteacher.model.GradingScaleRange;
+import de.westarps.topteacher.backend.authoring.ExamAuthoringService;
+import de.westarps.topteacher.mcp.ExamDesignMcpSchema.DesignDiagnostic;
+import de.westarps.topteacher.mcp.ExamDesignMcpSchema.ExamPermissions;
+import de.westarps.topteacher.mcp.ExamDesignMcpSchema.PointSummaryView;
+import de.westarps.topteacher.mcp.security.McpAccessContext;
+import de.westarps.topteacher.model.loe.ExamAuthoringResult;
+import de.westarps.topteacher.model.loe.LevelOfExpectationsCommand;
 import de.westarps.topteacher.model.loe.LoeCategory;
-import de.westarps.topteacher.model.loe.LoeCriterion;
-import de.westarps.topteacher.model.loe.LoeMaterial;
-import de.westarps.topteacher.model.loe.LoePart;
-import de.westarps.topteacher.model.loe.LoeRequirement;
-import de.westarps.topteacher.model.loe.LoeTask;
 
-/**
- * MCP operations for reading and initially creating levels of expectations.
- */
+/** EH requirements refer to the existing task tree; this boundary cannot author another hierarchy. */
 @Component
 @ConditionalOnProperty(name = "tt.mcp.enabled", havingValue = "true")
 public class LevelOfExpectationsMcpTools {
 
-	private static final int MAXIMUM_PARTS = 20;
-	private static final int MAXIMUM_CATEGORIES_PER_PART = 50;
-	private static final int MAXIMUM_TASKS_PER_CATEGORY = 100;
-	private static final int MAXIMUM_MATERIALS_PER_PART = 100;
-	private static final int MAXIMUM_REQUIREMENTS_PER_TASK = 200;
-	private static final int MAXIMUM_TOTAL_REQUIREMENTS = 1_000;
-	private static final int MAXIMUM_TITLE_LENGTH = 200;
-	private static final int MAXIMUM_MARKDOWN_LENGTH = 50_000;
+	private final ExamDesignMcpSupport support;
+	private final ExamAuthoringService authoring;
 
-	private final CourseRepository courses;
-	private final ExamRepository exams;
-	private final GradingScaleRepository gradingScales;
-	private final LevelOfExpectationsRepository levelOfExpectations;
-
-	public LevelOfExpectationsMcpTools(final CourseRepository courses, final ExamRepository exams,
-			final GradingScaleRepository gradingScales, final LevelOfExpectationsRepository levelOfExpectations) {
-		this.courses = Objects.requireNonNull(courses, "courses");
-		this.exams = Objects.requireNonNull(exams, "exams");
-		this.gradingScales = Objects.requireNonNull(gradingScales, "gradingScales");
-		this.levelOfExpectations = Objects.requireNonNull(levelOfExpectations, "levelOfExpectations");
+	public LevelOfExpectationsMcpTools(final ExamDesignMcpSupport support, final ExamAuthoringService authoring) {
+		this.support = Objects.requireNonNull(support, "support");
+		this.authoring = Objects.requireNonNull(authoring, "authoring");
 	}
 
 	@McpTool(name = "get_level_of_expectations", title = "Get a level of expectations",
-			description = "Get an exam's complete task and material design, level of expectations, criteria, point totals, and grading scale.",
+			description = "Read EH requirements/criteria against existing task IDs, with read-only task context, revision, points, permissions and diagnostics. Content is authored only through apply_exam_content_changes; get_exam reads pupil-facing tasks/material/footer. Criterion keys and half-point units retain stable identities.",
 			generateOutputSchema = true, annotations = @McpTool.McpAnnotations(readOnlyHint = true,
 					destructiveHint = false, idempotentHint = true, openWorldHint = false))
 	public LevelOfExpectationsView getLevelOfExpectations(
-			@McpToolParam(description = "Exam ID returned by list_exams.") final int examId) {
-		final Exam exam = requireExam(examId);
-		final Course course = requireCourse(exam.courseId());
-		final List<LoePart> parts = levelOfExpectations.findPartsByExamId(examId);
-		final List<LoeCategory> categories = levelOfExpectations.findCategoriesByExamId(examId);
-		final List<LoeTask> tasks = levelOfExpectations.findTasksByExamId(examId);
-		final List<LoeMaterial> materials = levelOfExpectations.findMaterialsByExamId(examId);
-		final List<LoeRequirement> requirements = levelOfExpectations.findRequirementsByExamId(examId);
-		final List<LoeCriterion> criteria = levelOfExpectations.findActiveCriteriaByExamId(examId);
-		final List<PartView> partViews = parts.stream()
-				.map(part -> partView(part, categories, tasks, materials, requirements, criteria)).toList();
-		final GradingScaleView gradingScale = gradingScaleView(exam.gradingScaleId());
-		final boolean correctionMode = levelOfExpectations.hasResultsForExam(examId);
-		return new LevelOfExpectationsView(CourseMcpTools.courseView(course),
-				ExamMcpTools.examView(exam, exams.findNumberById(examId).orElse(null), correctionMode), gradingScale,
-				pointSummary(tasks, requirements, gradingScale), correctionMode, partViews);
+			@McpToolParam(description = "Exam ID from list_exams.") final int examId) {
+		return support.read(examId, snapshot -> {
+			final Map<Integer, LoeCategory> categories = snapshot.categories().stream()
+					.collect(Collectors.toMap(LoeCategory::id, Function.identity()));
+			final List<TaskRequirementsView> tasks = snapshot.parts().stream()
+					.flatMap(part -> snapshot.categories().stream().filter(category -> category.partId().equals(part.id())))
+					.flatMap(category -> snapshot.tasks().stream().filter(task -> task.categoryId().equals(category.id())))
+					.map(task -> {
+				final LoeCategory category = categories.get(task.categoryId());
+				return new TaskRequirementsView(task.id(), category.partId(), task.categoryId(), task.title(),
+						task.descriptionMarkdown(), task.maxPoints(), task.sortOrder(),
+						snapshot.requirements().stream().filter(requirement -> requirement.taskId().equals(task.id()))
+								.map(requirement -> new RequirementView(requirement.id(), requirement.descriptionMarkdown(),
+										requirement.maxPoints(), requirement.bonus(), requirement.sortOrder(),
+										snapshot.criteria().stream().filter(criterion -> criterion.requirementId().equals(requirement.id()))
+												.map(criterion -> new CriterionView(criterion.id(), criterion.criterionKey(),
+														criterion.label(), criterion.pointUnits(), criterion.sortOrder())).toList()))
+								.toList());
+			}).toList();
+			return new LevelOfExpectationsView(examId, snapshot.revision(), snapshot.permissions().correctionMode(),
+					snapshot.permissions(), snapshot.points(), snapshot.diagnostics(), tasks);
+		});
 	}
 
-	@Transactional
-	@McpTool(name = "create_level_of_expectations", title = "Create a level of expectations",
-			description = "Create a complete nested exam design with task Markdown, task point budgets, materials, and a level of expectations for a blank exam. Existing designs are never overwritten. List order becomes display order. Use [label](crit:key?points=value) Markdown links to define criteria; omitting the points query means one point, and comma or dot half-point values are accepted.",
+	@McpTool(name = "apply_level_of_expectations_changes", title = "Apply level-of-expectations changes",
+			description = "Atomically create, update, explicitly delete or reorder requirements against existing task IDs; no other hierarchy is created. Criteria derive from [label](crit:1?points=1.5) Markdown with stable positive-integer keys. Omitted fields stay unchanged; empty Markdown clears text. Reorder all surviving task requirements once by ID or new clientKey. Under-allocation produces diagnostics; over-allocation is rejected. Use current revision and a unique requestId, retrying identical requests with the same key. With results only corrections preserving criterion keys, points and other assessment semantics remain possible. Read get_markdown_guide with REQUIREMENT context.",
 			generateOutputSchema = true, annotations = @McpTool.McpAnnotations(readOnlyHint = false,
-					destructiveHint = false, idempotentHint = false, openWorldHint = false))
-	public LevelOfExpectationsView createLevelOfExpectations(@McpToolParam(
-			description = "Exam ID returned by list_exams. The exam must have a blank design.") final int examId,
-			@McpToolParam(
-					description = "Ordered nested parts, categories, tasks, and requirements.") final List<PartDraft> parts) {
-		requireExam(examId);
-		assertBlankDesign(examId);
-		validateDraft(parts);
-
-		for (int partIndex = 0; partIndex < parts.size(); partIndex++) {
-			final PartDraft partDraft = parts.get(partIndex);
-			final LoePart part = levelOfExpectations.savePart(new LoePart(null, examId, partDraft.title(), partIndex));
-			for (int materialIndex = 0; materialIndex < partDraft.materials().size(); materialIndex++) {
-				final MaterialDraft materialDraft = partDraft.materials().get(materialIndex);
-				levelOfExpectations.saveMaterial(new LoeMaterial(null, part.id(), materialDraft.title(),
-						markdown(materialDraft.descriptionMarkdown()), materialIndex));
-			}
-			for (int categoryIndex = 0; categoryIndex < partDraft.categories().size(); categoryIndex++) {
-				final CategoryDraft categoryDraft = partDraft.categories().get(categoryIndex);
-				final LoeCategory category = levelOfExpectations.saveCategory(new LoeCategory(null, part.id(),
-						categoryDraft.title(), markdown(categoryDraft.descriptionMarkdown()), categoryIndex));
-				for (int taskIndex = 0; taskIndex < categoryDraft.tasks().size(); taskIndex++) {
-					final TaskDraft taskDraft = categoryDraft.tasks().get(taskIndex);
-					final LoeTask task = levelOfExpectations.saveTask(new LoeTask(null, category.id(), taskDraft.title(),
-							markdown(taskDraft.descriptionMarkdown()), taskDraft.maxPoints(), taskIndex));
-					for (int requirementIndex = 0; requirementIndex < taskDraft.requirements()
-							.size(); requirementIndex++) {
-						final RequirementDraft requirementDraft = taskDraft.requirements().get(requirementIndex);
-						levelOfExpectations.saveRequirement(
-								new LoeRequirement(null, task.id(), markdown(requirementDraft.descriptionMarkdown()),
-										requirementDraft.maxPoints(), requirementDraft.bonus(), requirementIndex));
-					}
-				}
-			}
-		}
-		return getLevelOfExpectations(examId);
+					destructiveHint = true, idempotentHint = true, openWorldHint = false))
+	public ExamAuthoringResult applyLevelOfExpectationsChanges(
+			@McpToolParam(description = "Target exam ID.") final int examId,
+			@McpToolParam(description = "Latest exam-design revision from get_exam, EH read or authoring result.") final long expectedRevision,
+			@McpToolParam(description = "Unique mutation key. Reuse only for an identical request retry.") final String requestId,
+			@McpToolParam(description = "Ordered typed requirement commands. Creation/reordering targets existing task IDs; criteria belong only in requirement Markdown.") final List<LevelOfExpectationsCommand> commands) {
+		McpAccessContext.accessLevel();
+		return authoring.applyLevelOfExpectationsChanges(examId, expectedRevision, requestId, commands);
 	}
 
-	private void assertBlankDesign(final int examId) {
-		if (!levelOfExpectations.findPartsByExamId(examId).isEmpty() || levelOfExpectations.hasResultsForExam(examId)) {
-			throw new IllegalStateException("Exam " + examId + " already has a level of expectations or saved results.");
-		}
+	public record LevelOfExpectationsView(int examId, long revision, boolean correctionMode,
+			ExamPermissions permissions, PointSummaryView points, List<DesignDiagnostic> diagnostics,
+			List<TaskRequirementsView> tasks) {
 	}
 
-	private static void validateDraft(final List<PartDraft> parts) {
-		boundedList(parts, "parts", MAXIMUM_PARTS);
-		if (parts.isEmpty()) {
-			throw new IllegalArgumentException("parts must not be empty");
-		}
-		int requirementCount = 0;
-		for (final PartDraft part : parts) {
-			boundedText(part.title(), "part title", MAXIMUM_TITLE_LENGTH, false);
-			boundedList(part.materials(), "part materials", MAXIMUM_MATERIALS_PER_PART);
-			for (final MaterialDraft material : part.materials()) {
-				boundedText(material.title(), "material title", MAXIMUM_TITLE_LENGTH, false);
-				boundedText(material.descriptionMarkdown(), "material descriptionMarkdown", MAXIMUM_MARKDOWN_LENGTH,
-						true);
-			}
-			boundedList(part.categories(), "part categories", MAXIMUM_CATEGORIES_PER_PART);
-			for (final CategoryDraft category : part.categories()) {
-				boundedText(category.title(), "category title", MAXIMUM_TITLE_LENGTH, false);
-				boundedText(category.descriptionMarkdown(), "category descriptionMarkdown", MAXIMUM_MARKDOWN_LENGTH,
-						true);
-				boundedList(category.tasks(), "category tasks", MAXIMUM_TASKS_PER_CATEGORY);
-				for (final TaskDraft task : category.tasks()) {
-					boundedText(task.title(), "task title", MAXIMUM_TITLE_LENGTH, false);
-					boundedText(task.descriptionMarkdown(), "task descriptionMarkdown", MAXIMUM_MARKDOWN_LENGTH, true);
-					if (task.maxPoints() < 0) {
-						throw new IllegalArgumentException("task maxPoints must not be negative");
-					}
-					boundedList(task.requirements(), "task requirements", MAXIMUM_REQUIREMENTS_PER_TASK);
-					int regularRequirementPoints = 0;
-					for (final RequirementDraft requirement : task.requirements()) {
-						boundedText(requirement.descriptionMarkdown(), "requirement descriptionMarkdown",
-								MAXIMUM_MARKDOWN_LENGTH, true);
-						if (requirement.maxPoints() < 0) {
-							throw new IllegalArgumentException("requirement maxPoints must not be negative");
-						}
-						if (!requirement.bonus()) {
-							regularRequirementPoints += requirement.maxPoints();
-						}
-						requirementCount++;
-					}
-					if (regularRequirementPoints != task.maxPoints()) {
-						throw new IllegalArgumentException(
-								"regular requirement maxPoints must equal task maxPoints for task " + task.title());
-					}
-				}
-			}
-		}
-		if (requirementCount > MAXIMUM_TOTAL_REQUIREMENTS) {
-			throw new IllegalArgumentException(
-					"level of expectations must not contain more than " + MAXIMUM_TOTAL_REQUIREMENTS + " requirements");
-		}
-	}
-
-	private static void boundedList(final List<?> values, final String name, final int maximumSize) {
-		Objects.requireNonNull(values, name + " must not be null");
-		if (values.size() > maximumSize) {
-			throw new IllegalArgumentException(name + " must not contain more than " + maximumSize + " entries");
-		}
-	}
-
-	private static void boundedText(final String value, final String name, final int maximumLength,
-			final boolean nullable) {
-		if (value == null) {
-			if (nullable) {
-				return;
-			}
-			throw new IllegalArgumentException(name + " must not be null");
-		}
-		if (!nullable && value.isBlank()) {
-			throw new IllegalArgumentException(name + " must not be blank");
-		}
-		if (value.length() > maximumLength) {
-			throw new IllegalArgumentException(name + " must not exceed " + maximumLength + " characters");
-		}
-	}
-
-	private Course requireCourse(final int courseId) {
-		return courses.findById(courseId)
-				.orElseThrow(() -> new IllegalArgumentException("Course does not exist: " + courseId));
-	}
-
-	private Exam requireExam(final int examId) {
-		return exams.findById(examId).orElseThrow(() -> new IllegalArgumentException("Exam does not exist: " + examId));
-	}
-
-	private GradingScaleView gradingScaleView(final Integer gradingScaleId) {
-		if (gradingScaleId == null) {
-			return null;
-		}
-		final GradingScale gradingScale = gradingScales.findById(gradingScaleId).orElse(null);
-		if (gradingScale == null) {
-			return null;
-		}
-		return new GradingScaleView(gradingScale.id(), gradingScale.name(), gradingScale.maxPoints(),
-				gradingScale.lifecycle().name(), gradingScales.findRangesByGradingScaleId(gradingScale.id()).stream()
-						.map(LevelOfExpectationsMcpTools::gradingRangeView).toList());
-	}
-
-	private static PartView partView(final LoePart part, final List<LoeCategory> categories, final List<LoeTask> tasks,
-			final List<LoeMaterial> materials, final List<LoeRequirement> requirements,
-			final List<LoeCriterion> criteria) {
-		final List<CategoryView> categoryViews = categories.stream()
-				.filter(category -> category.partId().equals(part.id()))
-				.map(category -> categoryView(category, tasks, requirements, criteria)).toList();
-		final List<MaterialView> materialViews = materials.stream()
-				.filter(material -> material.partId().equals(part.id())).map(LevelOfExpectationsMcpTools::materialView)
-				.toList();
-		return new PartView(part.id(), part.title(), part.sortOrder(), materialViews, categoryViews);
-	}
-
-	private static CategoryView categoryView(final LoeCategory category, final List<LoeTask> tasks,
-			final List<LoeRequirement> requirements, final List<LoeCriterion> criteria) {
-		final List<TaskView> taskViews = tasks.stream().filter(task -> task.categoryId().equals(category.id()))
-				.map(task -> taskView(task, requirements, criteria)).toList();
-		return new CategoryView(category.id(), category.title(), category.descriptionMarkdown(), category.sortOrder(),
-				taskViews);
-	}
-
-	private static TaskView taskView(final LoeTask task, final List<LoeRequirement> requirements,
-			final List<LoeCriterion> criteria) {
-		final List<RequirementView> requirementViews = requirements.stream()
-				.filter(requirement -> requirement.taskId().equals(task.id()))
-				.map(requirement -> requirementView(requirement, criteria)).toList();
-		return new TaskView(task.id(), task.title(), task.descriptionMarkdown(), task.maxPoints(), task.sortOrder(),
-				requirementViews);
-	}
-
-	private static MaterialView materialView(final LoeMaterial material) {
-		return new MaterialView(material.id(), material.title(), material.descriptionMarkdown(), material.sortOrder());
-	}
-
-	private static RequirementView requirementView(final LoeRequirement requirement,
-			final List<LoeCriterion> criteria) {
-		final List<CriterionView> criterionViews = criteria.stream()
-				.filter(criterion -> criterion.requirementId().equals(requirement.id()))
-				.map(LevelOfExpectationsMcpTools::criterionView).toList();
-		return new RequirementView(requirement.id(), requirement.descriptionMarkdown(), requirement.maxPoints(),
-				requirement.bonus(), requirement.sortOrder(), criterionViews);
-	}
-
-	private static PointSummaryView pointSummary(final List<LoeTask> tasks, final List<LoeRequirement> requirements,
-			final GradingScaleView gradingScale) {
-		final int regularMaximum = tasks.stream().mapToInt(LoeTask::maxPoints).sum();
-		final int bonusMaximum = requirements.stream().filter(LoeRequirement::bonus).mapToInt(LoeRequirement::maxPoints)
-				.sum();
-		final Integer gradingScaleMaximum = gradingScale == null ? null : gradingScale.maxPoints();
-		final boolean requirementsMatchTasks = tasks.stream().allMatch(task -> requirements.stream()
-				.filter(requirement -> requirement.taskId().equals(task.id()) && !requirement.bonus())
-				.mapToInt(LoeRequirement::maxPoints).sum() == task.maxPoints());
-		final boolean regularMaximumMatchesGradingScale = gradingScaleMaximum != null
-				&& regularMaximum == gradingScaleMaximum;
-		return new PointSummaryView(regularMaximum, bonusMaximum, gradingScaleMaximum,
-				regularMaximumMatchesGradingScale, requirementsMatchTasks,
-				regularMaximumMatchesGradingScale && requirementsMatchTasks);
-	}
-
-	private static GradingScaleRangeView gradingRangeView(final GradingScaleRange range) {
-		return new GradingScaleRangeView(range.gradeLevel().name(), range.gradeLevel().getDisplayName(),
-				range.gradeLevel().getShortName(), range.minPoints(), range.maxPoints());
-	}
-
-	private static CriterionView criterionView(final LoeCriterion criterion) {
-		return new CriterionView(criterion.id(), criterion.criterionKey(), criterion.label(), criterion.pointUnits(),
-				criterion.sortOrder());
-	}
-
-	private static String markdown(final String value) {
-		return value == null ? "" : value;
-	}
-
-	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record LevelOfExpectationsView(CourseView course, ExamView exam, @Nullable GradingScaleView gradingScale,
-			PointSummaryView points, boolean correctionMode, List<PartView> parts) {
-
-		public LevelOfExpectationsView {
-			Objects.requireNonNull(course, "course");
-			Objects.requireNonNull(exam, "exam");
-			Objects.requireNonNull(points, "points");
-			parts = List.copyOf(Objects.requireNonNull(parts, "parts"));
-		}
-	}
-
-	public record GradingScaleView(int id, String name, int maxPoints, String lifecycle,
-			List<GradingScaleRangeView> ranges) {
-
-		public GradingScaleView {
-			ranges = List.copyOf(Objects.requireNonNull(ranges, "ranges"));
-		}
-	}
-
-	public record GradingScaleRangeView(String gradeLevel, String displayName, String shortName, int minPoints,
-			int maxPoints) {
-	}
-
-	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record PointSummaryView(int regularMaximum, int bonusMaximum, @Nullable Integer gradingScaleMaximum,
-			boolean regularMaximumMatchesGradingScale, boolean requirementsMatchTasks, boolean validDesign) {
-	}
-
-	public record PartView(int id, String title, int sortOrder, List<MaterialView> materials,
-			List<CategoryView> categories) {
-
-		public PartView {
-			materials = List.copyOf(Objects.requireNonNull(materials, "materials"));
-			categories = List.copyOf(Objects.requireNonNull(categories, "categories"));
-		}
-	}
-
-	public record MaterialView(int id, String title, String descriptionMarkdown, int sortOrder) {
-	}
-
-	public record CategoryView(int id, String title, String descriptionMarkdown, int sortOrder, List<TaskView> tasks) {
-
-		public CategoryView {
-			tasks = List.copyOf(Objects.requireNonNull(tasks, "tasks"));
-		}
-	}
-
-	public record TaskView(int id, String title, String descriptionMarkdown, int maxPoints, int sortOrder,
-			List<RequirementView> requirements) {
-
-		public TaskView {
-			requirements = List.copyOf(Objects.requireNonNull(requirements, "requirements"));
-		}
+	public record TaskRequirementsView(int taskId, int partId, int categoryId, String title,
+			String descriptionMarkdown, int maxPoints, int sortOrder, List<RequirementView> requirements) {
 	}
 
 	public record RequirementView(int id, String descriptionMarkdown, int maxPoints, boolean bonus, int sortOrder,
 			List<CriterionView> criteria) {
-
-		public RequirementView {
-			criteria = List.copyOf(Objects.requireNonNull(criteria, "criteria"));
-		}
 	}
 
 	public record CriterionView(int id, String key, String label, int pointUnits, int sortOrder) {
-	}
-
-	public record PartDraft(String title, List<MaterialDraft> materials, List<CategoryDraft> categories) {
-
-		public PartDraft {
-			materials = List.copyOf(Objects.requireNonNull(materials, "materials"));
-			categories = List.copyOf(Objects.requireNonNull(categories, "categories"));
-		}
-
-		public PartDraft(final String title, final List<CategoryDraft> categories) {
-			this(title, List.of(), categories);
-		}
-	}
-
-	public record MaterialDraft(String title, String descriptionMarkdown) {
-	}
-
-	public record CategoryDraft(String title, String descriptionMarkdown, List<TaskDraft> tasks) {
-
-		public CategoryDraft {
-			tasks = List.copyOf(Objects.requireNonNull(tasks, "tasks"));
-		}
-	}
-
-	public record TaskDraft(String title, String descriptionMarkdown, int maxPoints,
-			List<RequirementDraft> requirements) {
-
-		public TaskDraft {
-			requirements = List.copyOf(Objects.requireNonNull(requirements, "requirements"));
-		}
-
-		public TaskDraft(final String title, final List<RequirementDraft> requirements) {
-			this(title, "", requirements.stream().filter(requirement -> !requirement.bonus())
-					.mapToInt(RequirementDraft::maxPoints).sum(), requirements);
-		}
-	}
-
-	public record RequirementDraft(String descriptionMarkdown, int maxPoints, boolean bonus) {
 	}
 }

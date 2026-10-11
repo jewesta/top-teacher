@@ -21,6 +21,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.ExamRepository;
 import de.westarps.topteacher.backend.repo.GradingScaleRepository;
+import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.backend.repo.PupilRepository;
 import de.westarps.topteacher.backend.repo.SubjectRepository;
 import de.westarps.topteacher.model.CoursePeriod;
@@ -61,6 +62,9 @@ class TopTeacherMcpHttpTests {
 	@Autowired
 	private GradingScaleRepository gradingScales;
 
+	@Autowired
+	private LevelOfExpectationsRepository levelOfExpectations;
+
 	@DynamicPropertySource
 	static void mcpProperties(final DynamicPropertyRegistry registry) {
 		registry.add("tt.mcp.token-file", TOKEN_FILE::toString);
@@ -94,10 +98,12 @@ class TopTeacherMcpHttpTests {
 			assertThat(tools.statusCode()).isEqualTo(200);
 			assertThat(tools.body()).contains("assign_pupils_to_course", "assign_pupils_to_exam",
 					"create_course_with_pupils", "create_database_backup", "create_exam",
-					"create_level_of_expectations", "create_pupils", "get_course_creation_options",
+					"apply_exam_content_changes", "apply_level_of_expectations_changes", "create_pupils", "get_course_creation_options",
 					"get_level_of_expectations", "get_pupil_result", "list_course_pupils", "list_courses",
 					"list_exam_pupils", "list_exams", "list_pupils", "remove_pupils_from_course",
-					"remove_pupils_from_exam", "update_exam", "update_pupil");
+					"remove_pupils_from_exam", "update_exam", "update_pupil", "get_exam", "get_mcp_context", "get_markdown_guide",
+					"get_exam_authoring_options", "import_material_image", "get_material_image", "save_pupil_result", "duplicate_exam")
+					.doesNotContain("create_level_of_expectations");
 
 			final Pupil activeScopePupil = pupils.save(new Pupil(null, "McpHttpActive", "Scope", Lifecycle.ACTIVE));
 			final Pupil archivedScopePupil = pupils
@@ -227,7 +233,7 @@ class TopTeacherMcpHttpTests {
 					.send(request(databaseBackupCall(18), TOKEN, sessionId), HttpResponse.BodyHandlers.ofString());
 
 			assertThat(unconfiguredBackup.statusCode()).isEqualTo(200);
-			assertThat(unconfiguredBackup.body()).contains("FAILED", "kein Backup-Zielordner konfiguriert");
+			assertThat(unconfiguredBackup.body()).contains("FAILED", "Check the backup settings in TopTeacher");
 		}
 	}
 
@@ -270,16 +276,16 @@ class TopTeacherMcpHttpTests {
 
 	private static String createExamCall(final int requestId, final int courseId) {
 		return """
-			{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"create_exam","arguments":{"courseId":%d,"title":"MCP exam","date":"2098-05-01"}}}
+			{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"create_exam","arguments":{"courseId":%d,"title":"MCP exam","date":"2098-05-01","requestId":"http-create"}}}
 			""".formatted(
 				requestId, courseId).trim();
 	}
 
-	private static String updateExamCall(final int requestId, final int examId) {
+	private String updateExamCall(final int requestId, final int examId) {
 		return """
-			{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"update_exam","arguments":{"examId":%d,"title":"Updated MCP exam","date":"2098-05-02"}}}
+			{"jsonrpc":"2.0","id":%d,"method":"tools/call","params":{"name":"update_exam","arguments":{"examId":%d,"title":"Updated MCP exam","date":"2098-05-02","expectedRevision":%d,"requestId":"http-update"}}}
 			""".formatted(
-				requestId, examId).trim();
+				requestId, examId, levelOfExpectations.designRevision(examId)).trim();
 	}
 
 	private static String examPupilsCall(final int requestId, final int examId) {

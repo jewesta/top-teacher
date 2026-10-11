@@ -1,13 +1,17 @@
 package de.westarps.topteacher.mcp;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import de.westarps.topteacher.backend.repo.ExamRepository;
@@ -35,6 +39,12 @@ class PupilResultMcpToolsTests extends FullMcpAccessTest {
 	private final PupilRepository pupils = mock(PupilRepository.class);
 	private final PupilResultMcpTools tools = new PupilResultMcpTools(exams, gradingScales, levelOfExpectations,
 			pupils);
+
+	@BeforeEach
+	void readConsistentDesignSnapshot() {
+		when(levelOfExpectations.withDesignRead(anyInt(), any()))
+				.thenAnswer(invocation -> invocation.getArgument(1, Supplier.class).get());
+	}
 
 	@Test
 	void returnsCappedPointsAndTheMatchingGradeForAPupil() {

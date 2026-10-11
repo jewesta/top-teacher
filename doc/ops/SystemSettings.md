@@ -26,6 +26,10 @@ settings tabs.
 
 ## MCP access and pupil pseudonymization
 
+The exam-oriented tool contract, capability discovery, authoring/retry rules
+and image workflow are specified in [Mcp.md](Mcp.md). This document owns token
+maintenance, pupil-name policy and installation file access.
+
 `MCP > Sicherheit` maintains one named access token per client or purpose.
 Each line contains a designation, access level, optional expiry date, and its
 own save/create and revoke actions. Creation defaults to `Pseudonymisiert`.
@@ -73,9 +77,10 @@ exchange: structured fields, generated messages, confirmation/elicitation
 text, errors, metadata, filenames, and generated document content. The same
 pupil must be represented consistently in pupil lists, course/exam rosters,
 results, and operation responses. The shared `PupilNamePseudonymizer` is the
-mandatory boundary for every pupil name entering these MCP responses. Existing
-response schemas are retained: under pseudonymized access, `name` contains the
-surname-first initials and `surname` is empty.
+mandatory boundary for every pupil name entering these MCP responses. Pupil
+projections use stable `id`, `displayName` and `identityRepresentation`
+(`FULL_NAME` or `INITIALS`). Real `name` and `surname` fields occur only with
+full access; pseudonymized display labels contain surname-first initials.
 
 Pseudonymized discovery and matching use IDs or the displayed pseudonyms and
 context. Real-name search or matching is unavailable, including queries that
@@ -205,5 +210,9 @@ image bytes as the `data` value. The resulting MCP content has this shape:
 }
 ```
 
-This conversion is a reusable prerequisite for exam-oriented MCP tools; it
-does not by itself introduce a new public MCP tool.
+`get_material_image` uses this conversion after checking that the image belongs
+to the requested exam/material reference. `import_material_image` reads a
+client-visible path through the configured installation mode and saves the
+normalized image together with its material declaration. Both access levels
+receive unchanged stored pixels; users must remove or cover names first. See
+[the image exchange contract](Mcp.md#material-image-exchange).
