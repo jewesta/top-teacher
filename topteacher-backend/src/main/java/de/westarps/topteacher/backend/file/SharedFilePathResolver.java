@@ -10,19 +10,26 @@ import java.util.Objects;
 import org.springframework.stereotype.Service;
 
 import de.westarps.topteacher.backend.repo.SharedFolderMappingRepository;
+import de.westarps.topteacher.backend.settings.AppSettings;
+import de.westarps.topteacher.model.InstallationLocation;
 import de.westarps.topteacher.model.SharedFolderMapping;
 
 @Service
 public class SharedFilePathResolver {
 
 	private final SharedFolderMappingRepository mappings;
+	private final AppSettings appSettings;
 
-	public SharedFilePathResolver(final SharedFolderMappingRepository mappings) {
+	public SharedFilePathResolver(final SharedFolderMappingRepository mappings, final AppSettings appSettings) {
 		this.mappings = Objects.requireNonNull(mappings, "mappings");
+		this.appSettings = Objects.requireNonNull(appSettings, "appSettings");
 	}
 
 	public Path resolveReadableFile(final String clientFilePath) {
 		final Path clientFile = absoluteNormalizedPath(clientFilePath, "client file path");
+		if (appSettings.ttFileAccessInstallationLocation() == InstallationLocation.LOCAL) {
+			return resolveLocalFile(clientFile);
+		}
 		final SharedFolderMapping mapping = mappings.findAll().stream()
 				.filter(candidate -> clientFile.startsWith(absoluteNormalizedPath(candidate.clientPath(), "client root")))
 				.max(Comparator.comparingInt(candidate -> absoluteNormalizedPath(candidate.clientPath(), "client root")
@@ -46,6 +53,18 @@ public class SharedFilePathResolver {
 			return target;
 		} catch (final IOException | SecurityException exception) {
 			throw new IllegalArgumentException("Mapped file is unavailable: " + configuredTarget, exception);
+		}
+	}
+
+	private static Path resolveLocalFile(final Path clientFile) {
+		try {
+			final Path target = clientFile.toRealPath();
+			if (!Files.isRegularFile(target) || !Files.isReadable(target)) {
+				throw new IllegalArgumentException("Local file is not a readable regular file: " + target);
+			}
+			return target;
+		} catch (final IOException | SecurityException exception) {
+			throw new IllegalArgumentException("Local file is unavailable: " + clientFile, exception);
 		}
 	}
 

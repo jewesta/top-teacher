@@ -1,3 +1,4 @@
+/* File-access settings inherit base-data defaults and preserve an existing installation location. */
 insert into pupil (name, surname, lifecycle)
 select demo.name, demo.surname, demo.lifecycle
 from (

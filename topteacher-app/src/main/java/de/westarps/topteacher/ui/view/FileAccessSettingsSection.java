@@ -17,13 +17,16 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
 
+import de.westarps.topteacher.backend.file.FileAccessSettingsService;
 import de.westarps.topteacher.backend.repo.SharedFolderMappingRepository;
+import de.westarps.topteacher.model.InstallationLocation;
 import de.westarps.topteacher.model.SharedFolderMapping;
 import de.westarps.topteacher.ui.component.ActionToolbar;
 import de.westarps.topteacher.ui.component.Buttons;
@@ -34,19 +37,24 @@ import de.westarps.topteacher.ui.component.Buttons;
 public class FileAccessSettingsSection extends VerticalLayout implements SystemSettingsSection {
 
 	private static final String DUPLICATE_CLIENT_PATH = "Dieser Client-Pfad ist mehrfach eingetragen.";
+	private static final String LOCAL_DESCRIPTION = "TopTeacher! läuft auf demselben System wie die KI und geht davon aus, dass alle Dateipfade, die es bekommt, lokal erreichbar sind.";
+	private static final String REMOTE_DESCRIPTION = "Ordne Pfade, die auf einem Client sichtbar sind, den entsprechenden freigegebenen Ordnern auf diesem TopTeacher-Server zu. So kann TopTeacher zum Beispiel ein im Chat übergebenes Bild vom gemeinsamen Speicher laden.";
 
-	private final SharedFolderMappingRepository repository;
+	private final FileAccessSettingsService settings;
+	private final Select<InstallationLocation> installationLocation = new Select<>("Installationsort");
+	private final Span description = new Span();
 	private final List<MappingRow> rows = new ArrayList<>();
 	private final VerticalLayout mappingList = new VerticalLayout();
 	private final Span emptyState = new Span("Noch keine Ordnerzuordnungen eingerichtet.");
 	private final Button saveButton = Buttons.save(event -> save());
 	private final Button addButton = Buttons.add("Zuordnung hinzufügen", event -> addEmptyRow());
 	private List<MappingSnapshot> loadedMappings = List.of();
+	private InstallationLocation loadedInstallationLocation;
 
-	public FileAccessSettingsSection(final SharedFolderMappingRepository repository) {
-		this.repository = repository;
+	public FileAccessSettingsSection(final FileAccessSettingsService settings) {
+		this.settings = settings;
 		configureContent();
-		loadMappings();
+		loadSettings();
 	}
 
 	@Override
@@ -65,11 +73,23 @@ public class FileAccessSettingsSection extends VerticalLayout implements SystemS
 		setSpacing(true);
 		setWidthFull();
 
-		final ActionToolbar actions = new ActionToolbar(saveButton, addButton);
+		installationLocation.setItems(InstallationLocation.LOCAL, InstallationLocation.REMOTE);
+		installationLocation.setItemLabelGenerator(location -> switch (location) {
+		case LOCAL -> "Lokal";
+		case REMOTE -> "Entfernt";
+		});
+		installationLocation.setEmptySelectionAllowed(false);
+		installationLocation.setWidth("10rem");
+		installationLocation.addValueChangeListener(event -> {
+			updateModePresentation();
+			updateButtonStates();
+		});
+
+		final ActionToolbar actions = new ActionToolbar(saveButton, addButton, installationLocation);
+		actions.addComponentAtIndex(0, installationLocation);
+		actions.setAlignItems(Alignment.END);
 		actions.addClassName("tt-settings-actions");
 
-		final Span description = new Span(
-				"Ordne Pfade, die auf einem Client sichtbar sind, den entsprechenden freigegebenen Ordnern auf diesem TopTeacher-Server zu. So kann TopTeacher zum Beispiel ein im Chat übergebenes Bild vom gemeinsamen Speicher laden.");
 		description.addClassName("tt-settings-description");
 
 		emptyState.addClassNames("tt-settings-description", "tt-file-access-empty-state");
@@ -81,20 +101,22 @@ public class FileAccessSettingsSection extends VerticalLayout implements SystemS
 		add(actions, description, mappingList);
 	}
 
-	private void loadMappings() {
+	private void loadSettings() {
 		rows.clear();
 		mappingList.removeAll();
-		final List<SharedFolderMapping> mappings = repository.findAll();
+		final List<SharedFolderMapping> mappings = settings.mappings();
 		for (final SharedFolderMapping mapping : mappings) {
 			addRow(new MappingFormData(mapping.clientPath(), mapping.serverPath()));
 		}
 		loadedMappings = snapshots();
+		loadedInstallationLocation = settings.installationLocation();
+		installationLocation.setValue(loadedInstallationLocation);
 		updateEmptyState();
 		updateButtonStates();
 	}
 
 	private void addEmptyRow() {
-		if (rows.size() >= SharedFolderMappingRepository.MAXIMUM_MAPPINGS) {
+		if (!isRemote() || rows.size() >= SharedFolderMappingRepository.MAXIMUM_MAPPINGS) {
 			return;
 		}
 		addRow(new MappingFormData("", ""));
@@ -109,6 +131,9 @@ public class FileAccessSettingsSection extends VerticalLayout implements SystemS
 	}
 
 	private void removeRow(final MappingRow row) {
+		if (!isRemote()) {
+			return;
+		}
 		rows.remove(row);
 		mappingList.remove(row);
 		updateEmptyState();
@@ -125,10 +150,25 @@ public class FileAccessSettingsSection extends VerticalLayout implements SystemS
 		}
 	}
 
+	private boolean isRemote() {
+		return installationLocation.getValue() == InstallationLocation.REMOTE;
+	}
+
+	private void updateModePresentation() {
+		final boolean remote = isRemote();
+		description.setText(remote ? REMOTE_DESCRIPTION : LOCAL_DESCRIPTION);
+		addButton.setVisible(remote);
+		mappingList.setVisible(remote);
+		mappingList.setEnabled(remote);
+	}
+
 	private void updateButtonStates() {
-		final boolean valid = validateRows();
-		saveButton.setEnabled(valid && !snapshots().equals(loadedMappings));
-		addButton.setEnabled(rows.size() < SharedFolderMappingRepository.MAXIMUM_MAPPINGS);
+		final boolean remote = isRemote();
+		final boolean valid = !remote || validateRows();
+		final boolean changed = installationLocation.getValue() != loadedInstallationLocation
+				|| (remote && !snapshots().equals(loadedMappings));
+		saveButton.setEnabled(installationLocation.getValue() != null && valid && changed);
+		addButton.setEnabled(remote && rows.size() < SharedFolderMappingRepository.MAXIMUM_MAPPINGS);
 	}
 
 	private boolean validateRows() {
@@ -156,18 +196,23 @@ public class FileAccessSettingsSection extends VerticalLayout implements SystemS
 	}
 
 	private void save() {
-		if (!validateRows()) {
+		if (!saveButton.isEnabled() || (isRemote() && !validateRows())) {
 			updateButtonStates();
 			return;
 		}
 
 		final List<SharedFolderMapping> mappings = new ArrayList<>();
-		for (int index = 0; index < rows.size(); index++) {
-			final MappingRow row = rows.get(index);
-			mappings.add(new SharedFolderMapping(trim(row.clientPath.getValue()), trim(row.serverPath.getValue()), index));
+		if (isRemote()) {
+			for (int index = 0; index < rows.size(); index++) {
+				final MappingRow row = rows.get(index);
+				mappings.add(new SharedFolderMapping(trim(row.clientPath.getValue()), trim(row.serverPath.getValue()), index));
+			}
 		}
-		repository.replaceAll(mappings);
-		loadedMappings = snapshots();
+		settings.save(installationLocation.getValue(), mappings);
+		loadedInstallationLocation = installationLocation.getValue();
+		if (isRemote()) {
+			loadedMappings = snapshots();
+		}
 		updateButtonStates();
 		Notification.show("Dateizugriff gespeichert.");
 	}

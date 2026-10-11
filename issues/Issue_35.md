@@ -568,9 +568,17 @@ The MCP module now also provides a reusable conversion from a database-backed
 and Base64-encoding its bytes. These are infrastructure pieces for later exam
 tools; no new public MCP tool contract is introduced by this step.
 
+`Dateizugriff` now starts its action bar with the persisted `Installationsort`
+choice (`Lokal` / `Entfernt`). Local installations resolve file paths directly
+and hide the mapping editor; remote installations use the configured mappings.
+Switching modes retains existing mappings and unsaved drafts. New installations
+default to local, while existing mapped installations initially stay remote.
+See [system settings](../doc/ops/SystemSettings.md#file-access).
+
 Verification: the required `mvn -pl topteacher-app -am test` reactor run passed
-with 209 application tests, and the final settings layout was checked in the
-running local demo.
+with 211 application tests. Local/remote selection, hidden local mapping
+controls, the exact local explanation, and restoration of the existing mapping
+were checked in the running local demo. `git diff --check` passed.
 
 ### Morning follow-up — 11 October 2026
 

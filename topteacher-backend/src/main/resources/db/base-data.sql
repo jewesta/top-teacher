@@ -6,6 +6,7 @@ from (
         ('tt.database.backup.target_folder', ''),
         ('tt.database.backup.schedule.enabled', 'false'),
         ('tt.database.backup.schedule.cron', '0 0 2 * * *'),
+        ('tt.file_access.installation_location', 'LOCAL'),
         ('tt.database.initialization.completed', 'false')
 ) base(setting_key, setting_value)
 where not exists (

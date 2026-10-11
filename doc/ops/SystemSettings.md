@@ -25,7 +25,32 @@ settings tabs.
 
 ## File access
 
-`Dateizugriff` maps an absolute shared-folder root visible on a client to the
+The first control in the `Dateizugriff` action bar is the `Installationsort`
+dropdown with the choices `Lokal` and `Entfernt`. The selected location is
+persisted with `Speichern`; changing it immediately updates the section's
+explanation and mapping controls. A new installation defaults to `Lokal`.
+Existing installations with saved mappings initially use `Entfernt` unless a
+location has already been saved.
+
+### Local installation
+
+`Lokal` means TopTeacher and the AI use the same system. The explanation is:
+
+> TopTeacher! läuft auf demselben System wie die KI und geht davon aus, dass alle Dateipfade, die es bekommt, lokal erreichbar sind.
+
+`Zuordnung hinzufügen` and the complete mapping editor are hidden. Mappings
+cannot be defined in this mode, and the backend resolves incoming absolute
+file paths directly without applying mappings. The target must still be an
+existing, readable regular file. Relative paths are rejected.
+
+Previously stored mappings remain available when switching back to `Entfernt`
+but are ignored while `Lokal` is saved. Unsaved mapping drafts are retained when
+switching between the two choices; invalid or unavailable remote paths do not
+prevent saving `Lokal`.
+
+### Remote installation
+
+`Entfernt` maps an absolute shared-folder root visible on a client to the
 absolute root of the same shared folder on the TopTeacher server. For example:
 
 | Client path | TopTeacher server path |
@@ -34,12 +59,13 @@ absolute root of the same shared folder on the TopTeacher server. For example:
 
 Each row contains one client root and one server root. The section action bar
 offers `Zuordnung hinzufügen` and `Speichern`. Removing a row changes only the
-form until the complete list is saved. Up to 50 mappings can be stored.
+form until the complete list is saved. Up to 50 mappings can be stored. The
+location and mapping list are saved together.
 
 Client roots must be absolute and unique. They do not have to exist on the
 server. Server roots must be absolute, reachable, readable directories when
-the settings are saved. Save is available only while the complete mapping list
-is both changed and valid.
+the settings are saved. Save is available only while the location or complete
+mapping list has changed and the visible mappings are valid.
 
 When TopTeacher receives an absolute client file path, it selects the most
 specific matching client root, appends the relative path to the configured

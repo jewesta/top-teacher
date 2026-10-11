@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import de.westarps.topteacher.backend.repo.SettingsRepository;
+import de.westarps.topteacher.model.InstallationLocation;
 
 @SpringBootTest
 class AppSettingsTests {
@@ -27,6 +28,7 @@ class AppSettingsTests {
 		settingsRepository.save(AppSettings.TT_DATABASE_BACKUP_SCHEDULE_CRON_KEY, "0 0 2 * * *");
 		settingsRepository.delete(AppSettings.TT_EVENT_DATABASE_BACKUP_ERROR_KEY);
 		settingsRepository.save(AppSettings.TT_DATABASE_INITIALIZATION_COMPLETED_KEY, "false");
+		settingsRepository.save(AppSettings.TT_FILE_ACCESS_INSTALLATION_LOCATION_KEY, "LOCAL");
 	}
 
 	@Test
@@ -92,5 +94,33 @@ class AppSettingsTests {
 		appSettings.saveTtDatabaseInitializationCompleted(true);
 
 		assertThat(appSettings.ttDatabaseInitializationCompleted()).isTrue();
+	}
+
+	@Test
+	void defaultsToLocalFileAccessWhenTheInstallationLocationIsMissing() {
+		settingsRepository.delete(AppSettings.TT_FILE_ACCESS_INSTALLATION_LOCATION_KEY);
+
+		assertThat(appSettings.ttFileAccessInstallationLocation()).isEqualTo(InstallationLocation.LOCAL);
+	}
+
+	@Test
+	void persistsTheInstallationLocation() {
+		appSettings.saveTtFileAccessInstallationLocation(InstallationLocation.REMOTE);
+
+		assertThat(settingsRepository.findValue(AppSettings.TT_FILE_ACCESS_INSTALLATION_LOCATION_KEY))
+				.contains("REMOTE");
+		assertThat(appSettings.ttFileAccessInstallationLocation()).isEqualTo(InstallationLocation.REMOTE);
+
+		appSettings.saveTtFileAccessInstallationLocation(InstallationLocation.LOCAL);
+
+		assertThat(appSettings.ttFileAccessInstallationLocation()).isEqualTo(InstallationLocation.LOCAL);
+	}
+
+	@Test
+	void rejectsUnknownInstallationLocations() {
+		settingsRepository.save(AppSettings.TT_FILE_ACCESS_INSTALLATION_LOCATION_KEY, "UNKNOWN");
+
+		assertThatThrownBy(appSettings::ttFileAccessInstallationLocation)
+				.isInstanceOf(IllegalArgumentException.class);
 	}
 }

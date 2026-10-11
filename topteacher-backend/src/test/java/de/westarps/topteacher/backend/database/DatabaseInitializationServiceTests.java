@@ -17,6 +17,7 @@ import org.springframework.mock.env.MockEnvironment;
 
 import de.westarps.topteacher.backend.repo.SettingsRepository;
 import de.westarps.topteacher.backend.settings.AppSettings;
+import de.westarps.topteacher.model.InstallationLocation;
 
 class DatabaseInitializationServiceTests {
 
@@ -52,6 +53,40 @@ class DatabaseInitializationServiceTests {
 	void promptsForFirstStartWhenDatabaseContainsOnlyBaseData() {
 		assertThat(initializationService.shouldPromptForFirstStart()).isTrue();
 		assertThat(appSettings.ttDatabaseInitializationCompleted()).isFalse();
+		assertThat(appSettings.ttFileAccessInstallationLocation()).isEqualTo(InstallationLocation.LOCAL);
+	}
+
+	@Test
+	void migratesAnExistingMappingInstallationToRemoteOnlyWhenTheSettingIsMissing() {
+		jdbc.update("insert into shared_folder_mapping (client_path, server_path, sort_order) values (?, ?, 0)",
+				"/Volumes/School", "/mnt/school");
+		settingsRepository.delete(AppSettings.TT_FILE_ACCESS_INSTALLATION_LOCATION_KEY);
+
+		new ResourceDatabasePopulator(new ClassPathResource("db/schema.sql"), new ClassPathResource("db/base-data.sql"))
+				.execute(dataSource);
+
+		assertThat(appSettings.ttFileAccessInstallationLocation()).isEqualTo(InstallationLocation.REMOTE);
+
+		appSettings.saveTtFileAccessInstallationLocation(InstallationLocation.LOCAL);
+		new ResourceDatabasePopulator(new ClassPathResource("db/schema.sql"), new ClassPathResource("db/base-data.sql"),
+				new ClassPathResource("db/demo-data.sql")).execute(dataSource);
+
+		assertThat(appSettings.ttFileAccessInstallationLocation()).isEqualTo(InstallationLocation.LOCAL);
+		assertThat(countRows("shared_folder_mapping")).isOne();
+	}
+
+	@Test
+	void migratesAnInstallationWithoutMappingsToLocalAndPreservesAnExplicitRemoteChoice() {
+		settingsRepository.delete(AppSettings.TT_FILE_ACCESS_INSTALLATION_LOCATION_KEY);
+		new ResourceDatabasePopulator(new ClassPathResource("db/schema.sql")).execute(dataSource);
+
+		assertThat(appSettings.ttFileAccessInstallationLocation()).isEqualTo(InstallationLocation.LOCAL);
+
+		appSettings.saveTtFileAccessInstallationLocation(InstallationLocation.REMOTE);
+		new ResourceDatabasePopulator(new ClassPathResource("db/schema.sql"), new ClassPathResource("db/base-data.sql"))
+				.execute(dataSource);
+
+		assertThat(appSettings.ttFileAccessInstallationLocation()).isEqualTo(InstallationLocation.REMOTE);
 	}
 
 	@Test
