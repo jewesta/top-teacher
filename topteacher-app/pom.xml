@@ -58,6 +58,12 @@
         </dependency>
 
         <dependency>
+            <groupId>com.microsoft.playwright</groupId>
+            <artifactId>playwright</artifactId>
+            <version>1.63.0</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-dev</artifactId>
             <optional>true</optional>

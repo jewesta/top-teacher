@@ -79,6 +79,55 @@ resources, sanitization, and vector objects in actual PDF output.
 This does not implement
 the deferred pupil exam-sheet layout or its numbered-text print rendering.
 
+## MCP faithful rendering
+
+The optional PNG output of focused MCP reads renders the same Vaadin
+`MarkdownViewer` components used by TopTeacher. Material uses
+`MaterialMarkdownViewer` and the existing `tt-material-image` extension;
+requirements use `MarkdownViewer` with the shared `tt-criterion` extension in
+`DEFAULT` mode, without result-entry controls. Common Markdown,
+alerts, footnotes and literal numbered lines continue through the reusable
+viewer. Do not add a separate server-side Markdown parser or reproduce the
+viewer CSS for this path. The exam editors and their established layout remain
+unchanged.
+
+The MCP boundary captures the requested text, metadata and referenced images
+under the existing exam-design read guard, then releases it before browser
+work. An internal ephemeral-ticket view assembles the selected viewer with
+that immutable snapshot. The view is separate from the user's live exam UI;
+rendering neither navigates that UI nor changes its editor state. The ticket
+and snapshot are removed when the render finishes, including failure paths.
+
+Java Playwright controls one lazy, reusable browser on a single worker, with a
+fresh browser context for each request. The browser visits the ticket view, waits
+for viewer content and images, and captures its content as PNG bytes. The
+fresh context prevents session state from carrying into later renders. The
+application retains PNG bytes in memory only; browser profile scratch files
+may use the operating system's temporary directory. No exam content is stored
+as a durable render artifact.
+
+The browser must be installed separately. Use installed Chrome or an explicitly
+configured supported executable/channel; automatic browser downloads are
+disabled. The browser initializes only for `includeFaithfulRender=true`, so
+ordinary focused reads do not require it. A missing browser or failed
+initialization produces unavailable render metadata alongside the original
+Markdown. Keep browser failures and installation paths out of user-visible
+messages.
+
+| Property | Default | Meaning |
+| --- | --- | --- |
+| `tt.mcp.render.browser-executable` | Unset | Absolute path to an existing installed browser executable. |
+| `tt.mcp.render.browser-channel` | `chrome` | Installed browser channel used for launch. |
+| `tt.mcp.render.timeout-seconds` | `30` | Request deadline in seconds, bounded from 5 to 60. |
+
+The render worker has a bounded queue and a request deadline. Capture is
+limited to 960 pixels in width, 12000 pixels in height and 8 MiB of PNG output;
+an over-limit render must fail cleanly instead of clipping or downscaling the
+content silently. Close each request's context and release its ticket on
+success, error or timeout; shut down the browser and worker with the
+application. The functional response contract belongs in
+[Mcp.md](../ops/Mcp.md#optional-faithful-png-output).
+
 ## Local frontend builds
 
 Vaadin may copy a reusable module's frontend files from the version installed

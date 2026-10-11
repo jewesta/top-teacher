@@ -695,8 +695,27 @@ with pixels still retrieved through `get_material_image`. Existing complete
 exam/EH reads remain compatible. The authoritative contract is
 [the focused-read specification](../doc/ops/Mcp.md#outline-and-focused-reads).
 
-PNG rendering and its optional parameter remain deferred.
+PNG rendering and its optional parameter were deferred at this step.
 
 Verification: `mvn -pl topteacher-app -am test` passed with 661 tests, including
 focused reads over HTTP in both access modes, ownership checks and payload
 isolation. `git diff --check` passed. The MCP inventory now contains 33 tools.
+
+## Faithful MCP rendering follow-up - 11 October 2026
+
+The four focused content reads now offer explicitly requested PNG output
+through `includeFaithfulRender`, while ordinary reads retain their structured
+Markdown response. Rendering reuses the existing Vaadin viewer and extensions;
+render failures preserve the text response. The authoritative contract is
+[the optional render specification](../doc/ops/Mcp.md#optional-faithful-png-output),
+with component and browser lifecycle guidance in
+[MarkdownExtensions.md](../doc/tech/MarkdownExtensions.md#mcp-faithful-rendering).
+
+Verification: the required Maven reactor suite passed with 688 tests and no
+failures, including the explicitly enabled real-browser capture check. The
+browser check covers the shared viewers, managed material images and isolated
+successive renders; HTTP checks cover the optional flag and text fallback.
+`git diff --check` passed. A live MCP call returned the demo's first material
+as a 960 × 594 PNG in about two seconds, and the user confirmed its appearance.
+The local demo was restarted with its existing database and tokens and exposes
+33 MCP tools with the new render option.

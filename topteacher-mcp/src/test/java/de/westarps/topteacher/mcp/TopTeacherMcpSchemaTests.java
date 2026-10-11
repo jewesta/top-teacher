@@ -97,8 +97,8 @@ class TopTeacherMcpSchemaTests extends FullMcpAccessTest {
 
 	@Test
 	void generatedSchemasHaveObjectRootsAndStableParameterNames() {
-		final List<SyncToolSpecification> specifications = new SyncMcpToolProvider(toolGroups())
-				.getToolSpecifications();
+		final List<SyncToolSpecification> specifications = ExamContentReadMcpSchemaCustomizer.customize(
+				new SyncMcpToolProvider(toolGroups()).getToolSpecifications());
 
 		assertThat(specifications).hasSize(33).allSatisfy(specification -> {
 			assertThat(specification.tool().inputSchema()).containsEntry("type", "object");
@@ -106,6 +106,19 @@ class TopTeacherMcpSchemaTests extends FullMcpAccessTest {
 				assertThat(specification.tool().outputSchema()).containsEntry("type", "object");
 			}
 		});
+
+		for (final String focusedRead : List.of("get_task", "get_material", "get_exam_footer", "get_task_requirements")) {
+			assertThat(properties(specifications, focusedRead)).containsKey("includeFaithfulRender");
+			assertThat(map(properties(specifications, focusedRead).get("includeFaithfulRender"))).containsEntry("type", "boolean");
+			assertThat(list(schema(specifications, focusedRead, true).get("required"))).doesNotContain("includeFaithfulRender");
+			assertThat(outputProperties(specifications, focusedRead)).containsKeys("examId", "revision", "permissions", "faithfulRender");
+			assertThat(list(schema(specifications, focusedRead, false).get("required"))).doesNotContain("faithfulRender");
+		}
+		assertThat(outputProperties(specifications, "get_task")).containsKey("task");
+		assertThat(outputProperties(specifications, "get_material")).containsKey("material");
+		assertThat(outputProperties(specifications, "get_exam_footer")).containsKey("footerMarkdown");
+		assertThat(outputProperties(specifications, "get_task_requirements")).containsKeys("task", "requirements");
+		assertThat(properties(specifications, "get_exam_structure")).doesNotContainKey("includeFaithfulRender");
 
 		final Map<String, Object> createProperties = properties(specifications, "apply_exam_content_changes");
 		assertThat(createProperties).containsKeys("examId", "expectedRevision", "requestId", "commands", "requirementChanges")
@@ -178,6 +191,27 @@ class TopTeacherMcpSchemaTests extends FullMcpAccessTest {
 		final Map<String, Object> updatePupilProperties = properties(specifications, "update_pupil");
 		assertThat(updatePupilProperties).containsKeys("pupilId", "name", "surname", "duplicateNameAction")
 				.doesNotContainKeys("context", "lifecycle");
+	}
+
+	@Test
+	void schemaCustomizationPreservesHandlersAndOtherToolsDuringBeanInitialization() {
+		final List<SyncToolSpecification> original = new SyncMcpToolProvider(toolGroups()).getToolSpecifications();
+		final var customizer = new ExamContentReadMcpSchemaCustomizer();
+		final Object customized = customizer.postProcessAfterInitialization(original, "toolSpecs");
+
+		assertThat(customized).isInstanceOf(List.class);
+		final List<?> specifications = (List<?>) customized;
+		assertThat(specifications).hasSize(original.size());
+		for (int index = 0; index < original.size(); index++) {
+			final var before = original.get(index);
+			final var after = (SyncToolSpecification) specifications.get(index);
+			assertThat(after.callHandler()).isSameAs(before.callHandler());
+			assertThat(after.tool().inputSchema()).isEqualTo(before.tool().inputSchema());
+			assertThat(after.tool().annotations()).isEqualTo(before.tool().annotations());
+			assertThat(after.tool().description()).isEqualTo(before.tool().description());
+		}
+		final Object unrelated = new Object();
+		assertThat(customizer.postProcessAfterInitialization(unrelated, "unrelated")).isSameAs(unrelated);
 	}
 
 	private static Map<String, Object> properties(final List<SyncToolSpecification> specifications,

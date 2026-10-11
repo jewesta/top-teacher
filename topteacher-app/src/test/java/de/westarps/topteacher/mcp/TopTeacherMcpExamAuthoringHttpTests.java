@@ -1,9 +1,13 @@
 package de.westarps.topteacher.mcp;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -23,6 +27,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import de.westarps.topteacher.backend.mcp.McpAccessTokenService;
 import de.westarps.topteacher.backend.repo.CourseRepository;
@@ -30,6 +35,8 @@ import de.westarps.topteacher.backend.repo.GradingScaleRepository;
 import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.backend.repo.PupilRepository;
 import de.westarps.topteacher.backend.repo.SubjectRepository;
+import de.westarps.topteacher.backend.render.FaithfulMarkdownRenderer;
+import de.westarps.topteacher.backend.render.FaithfulMarkdownRenderer.RenderedPng;
 import de.westarps.topteacher.backend.settings.AppSettings;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.CoursePeriod;
@@ -62,6 +69,7 @@ class TopTeacherMcpExamAuthoringHttpTests {
 	@Autowired private GradingScaleRepository scales;
 	@Autowired private LevelOfExpectationsRepository levels;
 	@Autowired private AppSettings settings;
+	@MockitoBean private FaithfulMarkdownRenderer renderer;
 
 	@ParameterizedTest
 	@EnumSource(McpAccessLevel.class)
@@ -80,6 +88,14 @@ class TopTeacherMcpExamAuthoringHttpTests {
 					"get_exam_authoring_options", "apply_exam_content_changes", "apply_level_of_expectations_changes",
 					"import_material_image", "get_material_image", "save_pupil_result", "get_exam_structure", "get_task",
 					"get_material", "get_exam_footer", "get_task_requirements").doesNotContain("create_level_of_expectations");
+			for (final String name : List.of("get_task", "get_material", "get_exam_footer", "get_task_requirements")) {
+				final JsonNode tool = java.util.stream.StreamSupport.stream(inventory.path("tools").spliterator(), false)
+						.filter(candidate -> name.equals(candidate.path("name").asString())).findFirst().orElseThrow();
+				assertThat(tool.path("inputSchema").path("properties").has("includeFaithfulRender")).isTrue();
+				assertThat(tool.path("inputSchema").path("required").toString()).doesNotContain("includeFaithfulRender");
+				assertThat(tool.path("outputSchema").path("properties").has("examId")).isTrue();
+				assertThat(tool.path("outputSchema").path("properties").has("permissions")).isTrue();
+			}
 			final JsonNode context = data(call(exchange, "get_mcp_context", Map.of()));
 			assertThat(context.path("accessLevel").asString()).isEqualTo(mode.name());
 			assertThat(context.path("imageImport").path("installationLocation").asString()).isEqualTo("LOCAL");
@@ -196,6 +212,7 @@ class TopTeacherMcpExamAuthoringHttpTests {
 			assertThat(levels.isPointDistributionValidForExam(examId)).isTrue();
 			assertFocusedReads(exchange, examId, reordered.path("revision").asLong(), partA, partB, taskA,
 					taskZero, materialId, requirementA, imageId);
+			assertOptionalRenders(exchange, examId, taskA, materialId);
 			final int otherExamId = data(call(exchange, "create_exam", Map.of("courseId", course.id(),
 					"title", "Other exam " + unique, "date", "2076-05-02", "initialPupilIds", List.of(),
 					"requestId", "other-shell"))).path("exam").path("id").asInt();
@@ -314,6 +331,47 @@ class TopTeacherMcpExamAuthoringHttpTests {
 		assertThat(requirement.path("markdown").asString()).contains("crit:");
 		final JsonNode footer = data(call(exchange, "get_markdown_guide", Map.of("context", "EXAM_FOOTER")));
 		assertThat(footer.path("capabilities").path("pupilExamSheetExport").asBoolean()).isFalse();
+	}
+
+	private void assertOptionalRenders(final Exchange exchange, final int examId, final int taskId,
+			final int materialId) throws Exception {
+		final JsonNode plainTask = call(exchange, "get_task", Map.of("examId", examId, "taskId", taskId,
+				"includeFaithfulRender", false));
+		assertThat(data(plainTask).has("faithfulRender")).isFalse();
+		assertThat(plainTask.path("content").size()).isOne();
+		verifyNoInteractions(renderer);
+		final ByteArrayOutputStream png = new ByteArrayOutputStream();
+		ImageIO.write(new BufferedImage(2, 3, BufferedImage.TYPE_INT_RGB), "png", png);
+		when(renderer.render(any())).thenReturn(new RenderedPng(png.toByteArray(), 2, 3));
+		final Map<String, Map<String, Object>> requests = Map.of(
+				"get_task", Map.of("examId", examId, "taskId", taskId, "includeFaithfulRender", true),
+				"get_material", Map.of("examId", examId, "materialId", materialId, "includeFaithfulRender", true),
+				"get_exam_footer", Map.of("examId", examId, "includeFaithfulRender", true),
+				"get_task_requirements", Map.of("examId", examId, "taskId", taskId, "includeFaithfulRender", true));
+		for (final var entry : requests.entrySet()) {
+			final JsonNode result = call(exchange, entry.getKey(), entry.getValue());
+			assertThat(result.path("structuredContent").isObject()).isTrue();
+			assertThat(data(result).path("faithfulRender").path("status").asString()).isEqualTo("rendered");
+			assertThat(data(result).path("faithfulRender").path("pixelWidth").asInt()).isEqualTo(2);
+			assertThat(data(result).path("faithfulRender").path("pixelHeight").asInt()).isEqualTo(3);
+			assertThat(result.path("content").size()).isEqualTo(2);
+			assertThat(result.path("content").get(0).path("type").asString()).isEqualTo("text");
+			assertThat(JSON.readTree(result.path("content").get(0).path("text").asString())).isEqualTo(data(result));
+			final JsonNode image = result.path("content").get(1);
+			assertThat(image.path("type").asString()).isEqualTo("image");
+			assertThat(image.path("mimeType").asString()).isEqualTo("image/png");
+			final BufferedImage decoded = ImageIO.read(new ByteArrayInputStream(
+					Base64.getDecoder().decode(image.path("data").asString())));
+			assertThat(decoded.getWidth()).isEqualTo(2);
+			assertThat(decoded.getHeight()).isEqualTo(3);
+		}
+		when(renderer.render(any())).thenThrow(new IllegalStateException("Private browser installation path"));
+		final JsonNode unavailable = call(exchange, "get_task", requests.get("get_task"));
+		assertThat(data(unavailable).path("task").path("descriptionMarkdown").asString())
+				.isEqualTo("Explain with evidence.");
+		assertThat(data(unavailable).path("faithfulRender").path("status").asString()).isEqualTo("unavailable");
+		assertThat(unavailable.path("content").size()).isOne();
+		assertThat(unavailable.toString()).doesNotContain("Private browser installation path");
 	}
 
 	private JsonNode content(final Exchange exchange, final int examId, final long revision, final String requestId,
