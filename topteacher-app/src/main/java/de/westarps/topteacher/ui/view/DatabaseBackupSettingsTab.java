@@ -83,7 +83,7 @@ public class DatabaseBackupSettingsTab extends VerticalLayout implements SystemS
 
 	@Override
 	public String label() {
-		return "Sicherung";
+		return "Datenbank > Sicherung";
 	}
 
 	@Override

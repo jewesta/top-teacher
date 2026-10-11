@@ -9,7 +9,7 @@ top-level tabs.
 `Systemeinstellungen` uses a fixed master/detail layout:
 
 - the grid on the left lists `MCP > Dateibehandlung`, `MCP > Sicherheit`,
-  `Sicherung`, and `Zurücksetzen`;
+  `Datenbank > Sicherung`, and `Datenbank > Zurücksetzen`;
 - the list has no quick filter or action bar and always keeps exactly one
   section selected;
 - `MCP > Dateibehandlung` is initially selected;

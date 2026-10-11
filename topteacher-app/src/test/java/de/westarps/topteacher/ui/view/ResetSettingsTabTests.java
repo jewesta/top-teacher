@@ -19,7 +19,7 @@ class ResetSettingsTabTests {
 		final DatabaseInitializationDialogFactory dialogFactory = mock(DatabaseInitializationDialogFactory.class);
 		final ResetSettingsTab tab = new ResetSettingsTab(dialogFactory);
 
-		assertThat(tab.label()).isEqualTo("Zurücksetzen");
+		assertThat(tab.label()).isEqualTo("Datenbank > Zurücksetzen");
 
 		button(tab, "Datenbank zurücksetzen...").click();
 

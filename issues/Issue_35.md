@@ -675,3 +675,12 @@ checks in both access modes. All 17 frontend Markdown tests and
 resource in production and tests to prevent contract drift. The local demo
 was restarted with its existing database and tokens; it serves the application
 on port 8081, registers 28 MCP tools and rejects unauthenticated MCP requests.
+
+## Database settings navigation follow-up — 11 October 2026
+
+Renamed the system-settings navigation entries to `Datenbank > Sicherung` and
+`Datenbank > Zurücksetzen`. Section contents and behavior remain unchanged. See
+the authoritative [system settings structure](../doc/ops/SystemSettings.md#settings-structure).
+
+Verification: the required Maven reactor tests and `git diff --check` passed.
+The local demo was restarted with its existing database and tokens.

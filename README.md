@@ -107,7 +107,7 @@ Wichtige Properties:
 | `spring.h2.console.enabled` | `true` | Aktiviert die H2-Konsole. Für produktiven Betrieb kann sie per `false` deaktiviert werden. |
 | `spring.h2.console.path` | `/h2-console` | Pfad der H2-Konsole relativ zum Context Path. |
 
-Beim ersten Start führt TopTeacher durch die Datenbank-Initialisierung. Dabei kann eine leere Datenbank mit Basisdaten oder eine Datenbank mit Demodaten angelegt werden. Später kann die Datenbank unter `Einstellungen > Systemeinstellungen > Zurücksetzen` erneut initialisiert werden.
+Beim ersten Start führt TopTeacher durch die Datenbank-Initialisierung. Dabei kann eine leere Datenbank mit Basisdaten oder eine Datenbank mit Demodaten angelegt werden. Später kann die Datenbank unter `Einstellungen` → `Systemeinstellungen` → `Datenbank > Zurücksetzen` erneut initialisiert werden.
 
 ### Linux helper script
 

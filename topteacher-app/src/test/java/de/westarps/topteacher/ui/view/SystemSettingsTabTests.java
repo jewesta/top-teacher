@@ -22,7 +22,7 @@ class SystemSettingsTabTests {
 		final Div fileAccess = new Div();
 		final Div backup = new Div();
 		final SystemSettingsSection first = new StaticSection("MCP > Dateibehandlung", fileAccess);
-		final SystemSettingsSection second = new StaticSection("Sicherung", backup);
+		final SystemSettingsSection second = new StaticSection("Datenbank > Sicherung", backup);
 
 		final SystemSettingsTab systemSettings = new SystemSettingsTab(List.of(first, second));
 
@@ -43,7 +43,7 @@ class SystemSettingsTabTests {
 		final Div fileAccess = new Div(fileAccessValue);
 		final Div backup = new Div();
 		final SystemSettingsSection first = new StaticSection("MCP > Dateibehandlung", fileAccess);
-		final SystemSettingsSection second = new StaticSection("Sicherung", backup);
+		final SystemSettingsSection second = new StaticSection("Datenbank > Sicherung", backup);
 		final SystemSettingsTab systemSettings = new SystemSettingsTab(List.of(first, second));
 		final Grid<SystemSettingsSection> navigation = (Grid<SystemSettingsSection>) components(systemSettings, Grid.class)
 				.getFirst();

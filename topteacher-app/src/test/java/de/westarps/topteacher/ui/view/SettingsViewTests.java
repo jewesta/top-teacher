@@ -46,6 +46,7 @@ class SettingsViewTests {
 		assertThat(view.getPageTitle()).isEqualTo("Einstellungen");
 		assertThat(tabSheet.getTabCount()).isEqualTo(1);
 		assertThat(tabSheet.getTabAt(0).getLabel()).isEqualTo("Systemeinstellungen");
+		assertThat(((DatabaseBackupSettingsTab) backupContent).label()).isEqualTo("Datenbank > Sicherung");
 		assertThat(form.getResponsiveSteps()).hasSize(1);
 		assertThat(form.getResponsiveSteps().getFirst().toJson().get("columns").asInt()).isEqualTo(1);
 		assertThat(button(backupContent, "Speichern").isEnabled()).isFalse();

@@ -25,7 +25,7 @@ public class ResetSettingsTab extends VerticalLayout implements SystemSettingsSe
 
 	@Override
 	public String label() {
-		return "Zurücksetzen";
+		return "Datenbank > Zurücksetzen";
 	}
 
 	@Override
