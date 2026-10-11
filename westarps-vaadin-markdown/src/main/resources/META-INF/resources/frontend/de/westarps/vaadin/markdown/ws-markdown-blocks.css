@@ -50,7 +50,8 @@
   float: left;
   width: 2em;
   color: var(--color-fg-muted, #656d76);
-  font-size: 0.85em;
+  font-size: inherit;
+  line-height: inherit;
   text-align: right;
   user-select: none;
 }

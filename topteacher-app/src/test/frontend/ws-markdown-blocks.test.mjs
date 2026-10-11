@@ -103,6 +103,20 @@ test('shows the first and every fifth line number without skipping rows or blank
   }
 });
 
+test('renders line numbers as normal text with the source line font size and line height', async () => {
+  const tree = await render('> [!NUMBERED]\n> Erste Zeile');
+  const number = nodes(tree, (node) => node.properties?.className?.includes('ws-markdown-line-number'))[0];
+  assert.equal(number.tagName, 'span');
+  assert.equal(nodes(number, (node) => node.tagName === 'sup').length, 0);
+  const css = readFileSync(new URL(
+    '../../../../westarps-vaadin-markdown/src/main/resources/META-INF/resources/frontend/de/westarps/vaadin/markdown/ws-markdown-blocks.css',
+    import.meta.url,
+  ), 'utf8');
+  const rule = css.match(/\.wmde-markdown \.ws-markdown-line-number\s*\{([^}]*)\}/)[1];
+  assert.match(rule, /font-size:\s*inherit;/);
+  assert.match(rule, /line-height:\s*inherit;/);
+});
+
 test('keeps a long source line as one row and does not interpret it as a list', async () => {
   const content = `1. ${'Langer Text '.repeat(40)}`;
   const tree = await render(`> [!NUMBERED]\n> ${content}\n> Letzte Zeile`);

@@ -53,6 +53,8 @@ Each source line after the marker is one displayed line. Each block starts at
 quote prefixes are hidden. The left margin shows only the first line number
 and multiples of five: 1, 5, 10, 15, and so on. All intervening lines still
 count, and the number column keeps the same width on unlabelled lines.
+Line numbers use normal text at the source line's font size and baseline, not
+superscript styling; footnote references remain superscript.
 Inline formatting, links, and footnote references remain supported. Footnote
 definitions stay outside the block and appear in the local footnote list.
 
