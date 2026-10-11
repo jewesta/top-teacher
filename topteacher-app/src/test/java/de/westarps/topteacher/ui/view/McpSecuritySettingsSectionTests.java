@@ -85,7 +85,7 @@ class McpSecuritySettingsSectionTests {
 			assertThat(components(dialog, ClipboardCopyButton.class)).hasSize(1);
 			assertThat(textFields(section, "Bezeichnung")).extracting(TextField::getValue)
 					.containsExactly("Chat", "anderer Entwurf");
-			assertThat(button(section, "Speichern").isEnabled()).isFalse();
+			assertThat(iconButton(section, "Speichern").isEnabled()).isFalse();
 
 			button(dialog, "Token übernommen").click();
 
@@ -108,15 +108,15 @@ class McpSecuritySettingsSectionTests {
 		when(tokens.tokens()).thenReturn(List.of(original), List.of(updated));
 		final McpSecuritySettingsSection section = new McpSecuritySettingsSection(tokens);
 
-		assertThat(button(section, "Speichern").isEnabled()).isFalse();
+		assertThat(iconButton(section, "Speichern").isEnabled()).isFalse();
 		textField(section, "Bezeichnung").setValue("Chat neu");
 		accessLevel(section).setValue(McpAccessLevel.PSEUDONYMIZED);
-		assertThat(button(section, "Speichern").isEnabled()).isTrue();
+		assertThat(iconButton(section, "Speichern").isEnabled()).isTrue();
 
-		withUi(() -> button(section, "Speichern").click());
+		withUi(() -> iconButton(section, "Speichern").click());
 
 		verify(tokens).update(original, "Chat neu", McpAccessLevel.PSEUDONYMIZED, expiry);
-		assertThat(button(section, "Speichern").isEnabled()).isFalse();
+		assertThat(iconButton(section, "Speichern").isEnabled()).isFalse();
 		assertThat(components(section, Span.class)).anyMatch(span -> span.getText().contains("Zuletzt verwendet: Noch nie"));
 	}
 
@@ -184,7 +184,7 @@ class McpSecuritySettingsSectionTests {
 				.containsExactly("ungespeicherte Änderung", "neuer Entwurf");
 		assertThat(components(section, Span.class)).anyMatch(span -> span.getText().contains("Zuletzt verwendet:")
 				&& !span.getText().contains("Noch nie"));
-		assertThat(button(section, "Speichern").isEnabled()).isTrue();
+		assertThat(iconButton(section, "Speichern").isEnabled()).isTrue();
 	}
 
 	@Test
@@ -205,13 +205,13 @@ class McpSecuritySettingsSectionTests {
 		final UI ui = new UI();
 		UI.setCurrent(ui);
 		try {
-			button(section, "Speichern").click();
+			iconButton(section, "Speichern").click();
 
 			verify(tokens).update(original, "Meine Änderung", McpAccessLevel.FULL, expiry);
 			verify(tokens, never()).update(downgraded, "Meine Änderung", McpAccessLevel.FULL, expiry);
 			assertThat(textField(section, "Bezeichnung").getValue()).isEqualTo("Meine Änderung");
 			assertThat(accessLevel(section).getValue()).isEqualTo(McpAccessLevel.FULL);
-			assertThat(button(section, "Speichern").isEnabled()).isFalse();
+			assertThat(iconButton(section, "Speichern").isEnabled()).isFalse();
 			assertThat(components(section, Span.class)).anyMatch(span -> span.getText()
 					.contains("Deine Änderungen bleiben erhalten. Lade den aktuellen Stand und prüfe die Zugriffsstufe"));
 
@@ -224,7 +224,7 @@ class McpSecuritySettingsSectionTests {
 
 			assertThat(textField(section, "Bezeichnung").getValue()).isEqualTo("Chat");
 			assertThat(accessLevel(section).getValue()).isEqualTo(McpAccessLevel.PSEUDONYMIZED);
-			assertThat(button(section, "Speichern").isEnabled()).isFalse();
+			assertThat(iconButton(section, "Speichern").isEnabled()).isFalse();
 		} finally {
 			UI.setCurrent(null);
 		}
@@ -238,12 +238,12 @@ class McpSecuritySettingsSectionTests {
 		final McpSecuritySettingsSection section = new McpSecuritySettingsSection(tokens);
 		textField(section, "Bezeichnung").setValue("Chat neu");
 
-		assertThat(button(section, "Speichern").isEnabled()).isFalse();
+		assertThat(iconButton(section, "Speichern").isEnabled()).isFalse();
 		assertThat(components(section, DatePicker.class).getFirst().getErrorMessage())
 				.isEqualTo("Bitte wähle heute oder einen späteren Tag.");
 		components(section, DatePicker.class).getFirst().clear();
 
-		assertThat(button(section, "Speichern").isEnabled()).isTrue();
+		assertThat(iconButton(section, "Speichern").isEnabled()).isTrue();
 	}
 
 	@Test

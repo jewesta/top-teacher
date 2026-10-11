@@ -341,11 +341,19 @@ vaadin-upload.tt-material-image-upload[dragover-valid] .tt-material-image-drop-t
 	gap: var(--lumo-space-xs);
 }
 
-.tt-mcp-token-row vaadin-text-field,
-.tt-mcp-token-row vaadin-select,
-.tt-mcp-token-row vaadin-date-picker {
-	flex: 1 1 11rem;
-	min-width: 10rem;
+.tt-mcp-token-name {
+	flex: 0 0 13.5rem;
+	width: 13.5rem;
+}
+
+.tt-mcp-token-access {
+	flex: 0 0 10.5rem;
+	width: 10.5rem;
+}
+
+.tt-mcp-token-expiry {
+	flex: 0 0 11rem;
+	width: 11rem;
 }
 
 .tt-mcp-token-metadata {

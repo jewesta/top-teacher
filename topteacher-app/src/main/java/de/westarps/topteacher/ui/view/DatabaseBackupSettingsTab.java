@@ -1,5 +1,6 @@
 package de.westarps.topteacher.ui.view;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -48,6 +49,7 @@ public class DatabaseBackupSettingsTab extends VerticalLayout implements SystemS
 	private static final String DATASOURCE_URL_PROPERTY = "spring.datasource.url";
 	private static final String H2_FILE_URL_PREFIX = "jdbc:h2:file:";
 	private static final String H2_FILE_SUFFIX = ".mv.db";
+	private static final double BYTES_PER_MEGABYTE = 1024d * 1024d;
 
 	private final AppSettings appSettings;
 	private final DatabaseBackupService backupService;
@@ -88,6 +90,7 @@ public class DatabaseBackupSettingsTab extends VerticalLayout implements SystemS
 
 	@Override
 	public Component content() {
+		updateCurrentDatabaseFileSize();
 		return this;
 	}
 
@@ -96,6 +99,7 @@ public class DatabaseBackupSettingsTab extends VerticalLayout implements SystemS
 		currentDatabaseFile.setWidthFull();
 		currentDatabaseFile.setValue(currentDatabaseFilePath);
 		currentDatabaseFile.setSuffixComponent(createCopyCurrentDatabaseFileButton());
+		updateCurrentDatabaseFileSize();
 
 		backupTargetFolder.setClearButtonVisible(true);
 		backupTargetFolder.setPlaceholder("Beispiel: /Volumes/Backups/" + ApplicationVersion.APP_NAME);
@@ -137,6 +141,22 @@ public class DatabaseBackupSettingsTab extends VerticalLayout implements SystemS
 	private Component createCopyCurrentDatabaseFileButton() {
 		return new ClipboardCopyButton(currentDatabaseFilePath, "Pfad kopieren", "Pfad kopiert.",
 				"Pfad konnte nicht kopiert werden.");
+	}
+
+	private void updateCurrentDatabaseFileSize() {
+		currentDatabaseFile.setHelperText(databaseFileSize(currentDatabaseFilePath));
+	}
+
+	private static String databaseFileSize(final String databaseFilePath) {
+		if (!StringUtils.hasText(databaseFilePath)) {
+			return "Dateigröße: nicht verfügbar.";
+		}
+		try {
+			final long size = Files.size(Path.of(databaseFilePath));
+			return String.format(Locale.GERMANY, "Dateigröße: %.2f MB", size / BYTES_PER_MEGABYTE);
+		} catch (final IOException | InvalidPathException | SecurityException exception) {
+			return "Dateigröße: nicht verfügbar.";
+		}
 	}
 
 	private void readSettings() {

@@ -24,6 +24,13 @@ top-level tabs.
 Additional system settings are added as sections rather than as new top-level
 settings tabs.
 
+## Database backup
+
+`Datenbank > Sicherung` shows the resolved H2 database file as a read-only,
+copyable path. Its current physical file size appears directly below the field
+in MB and is refreshed whenever the section is opened. If the file size cannot
+be read, the size is shown as unavailable.
+
 ## MCP access and pupil pseudonymization
 
 The exam-oriented tool contract, capability discovery, authoring/retry rules
@@ -34,6 +41,13 @@ maintenance, pupil-name policy and installation file access.
 Each line contains a designation, access level, optional expiry date, and its
 own save/create and revoke actions. Creation defaults to `Pseudonymisiert`.
 The metadata line shows creation, last use, and expired/revoked status.
+
+The designation and access fields use compact, consistent widths so active and
+revoked rows align and the `Gilt bis einschl.` picker and row actions fit beside
+them when space permits. Fields wrap on narrower views.
+Existing tokens use compact, unboxed checkmark and trash icons for save and
+revoke actions. The save icon retains `Speichern` as its accessible name and
+tooltip; draft creation keeps the label `Anlegen...`.
 
 `Token hinzufügen` adds an unsaved row. `Anlegen...` creates its credential and
 opens a one-time copy dialog; the credential is discarded from that dialog

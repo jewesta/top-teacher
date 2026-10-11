@@ -729,3 +729,28 @@ the optional flag still returned text only. The sample material rendered in
 0.32 seconds and its requirements in 0.04 seconds on this development machine.
 Visual inspection confirmed images, alerts, literal numbering and criterion
 highlights. The runtime classpath no longer includes Playwright.
+
+## MCP token row layout follow-up - 11 October 2026
+
+Made the designation and access fields more compact to place the expiry picker
+on the same row when space permits. Existing tokens now use compact, unboxed
+save and revoke icons; the save icon retains an accessible `Speichern` name and
+tooltip. The date field is labelled `Gilt bis einschl.` without a helper line,
+and fixed field widths keep active and revoked rows aligned. Narrow views retain
+wrapping. The authoritative behavior is in
+[the MCP security specification](../doc/ops/SystemSettings.md#mcp-access-and-pupil-pseudonymization).
+
+Verification: `mvn -pl topteacher-app -am test` passed all 703 tests and
+`git diff --check` passed. Browser inspection confirmed the single-row layout,
+bare action icons, and wrapping at a narrower window width.
+
+## Database size follow-up - 11 October 2026
+
+The database backup settings show the physical H2 file size in MB below the
+read-only database path and refresh it whenever the section is opened. An
+unreadable or unavailable file is reported without preventing access to the
+remaining backup settings. The authoritative behavior is in
+[the system settings specification](../doc/ops/SystemSettings.md#database-backup).
+
+Verification: `mvn -pl topteacher-app -am test` passed all 703 tests and
+`git diff --check` passed.

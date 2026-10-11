@@ -5,6 +5,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
@@ -88,8 +90,9 @@ class SettingsViewTests {
 	}
 
 	@Test
-	void showsCurrentH2FileAsReadOnlyCopyableField() {
+	void showsCurrentH2FileAsReadOnlyCopyableFieldWithItsSize() throws IOException {
 		final Path databaseFile = tempDir.resolve("topteacher");
+		Files.write(Path.of(databaseFile + ".mv.db"), new byte[1_572_864]);
 		final SettingsView view = view("", false, "0 0 2 * * *", databaseFile);
 		final Component backupContent = backupContent(view);
 
@@ -97,6 +100,7 @@ class SettingsViewTests {
 
 		assertThat(h2File.isReadOnly()).isTrue();
 		assertThat(h2File.getValue()).isEqualTo(databaseFile + ".mv.db");
+		assertThat(h2File.getHelperText()).isEqualTo("Dateigröße: 1,50 MB");
 		final Component suffixComponent = h2File.getSuffixComponent();
 		assertThat(suffixComponent).isInstanceOf(ClipboardCopyButton.class);
 		assertThat(suffixComponent.getElement().getAttribute("aria-label")).isEqualTo("Pfad kopieren");

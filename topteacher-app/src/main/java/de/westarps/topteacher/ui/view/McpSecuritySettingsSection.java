@@ -12,6 +12,7 @@ import org.springframework.core.annotation.Order;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.datepicker.DatePicker.DatePickerI18n;
@@ -187,7 +188,7 @@ public class McpSecuritySettingsSection extends VerticalLayout implements System
 		private final Binder<TokenFormData> binder = new Binder<>();
 		private final TextField name = new TextField("Bezeichnung");
 		private final Select<McpAccessLevel> accessLevel = new Select<>("Zugriff");
-		private final DatePicker expiry = new DatePicker("Gültig bis (optional)");
+		private final DatePicker expiry = new DatePicker("Gilt bis einschl.");
 		private final Span metadata = new Span();
 		private final Button saveButton = Buttons.save(event -> save());
 		private final Button removeButton;
@@ -205,20 +206,19 @@ public class McpSecuritySettingsSection extends VerticalLayout implements System
 			setWidthFull();
 
 			name.setMaxLength(McpAccessToken.MAXIMUM_NAME_LENGTH);
+			name.addClassName("tt-mcp-token-name");
 			name.setClearButtonVisible(true);
 			name.setValueChangeMode(ValueChangeMode.EAGER);
-			name.setWidthFull();
+			accessLevel.addClassName("tt-mcp-token-access");
 			accessLevel.setItems(McpAccessLevel.PSEUDONYMIZED, McpAccessLevel.FULL);
 			accessLevel.setItemLabelGenerator(level -> switch (level) {
 			case PSEUDONYMIZED -> "Pseudonymisiert";
 			case FULL -> "Vollzugriff";
 			});
 			accessLevel.setEmptySelectionAllowed(false);
-			accessLevel.setWidthFull();
+			expiry.addClassName("tt-mcp-token-expiry");
 			expiry.setI18n(germanDatePickerI18n());
 			expiry.setClearButtonVisible(true);
-			expiry.setHelperText("Gilt bis zum Ende dieses Tages.");
-			expiry.setWidthFull();
 
 			binder.forField(name).withConverter(McpSecuritySettingsSection::strip, value -> value)
 					.asRequired("Bitte gib eine Bezeichnung an.")
@@ -241,6 +241,7 @@ public class McpSecuritySettingsSection extends VerticalLayout implements System
 					confirmRevocation();
 				}
 			});
+			removeButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY_INLINE);
 			final SettingsLineItem line = new SettingsLineItem();
 			line.addFields(name, accessLevel, expiry);
 			line.addActions(saveButton, removeButton);
@@ -270,8 +271,16 @@ public class McpSecuritySettingsSection extends VerticalLayout implements System
 					token == null ? McpAccessLevel.PSEUDONYMIZED : token.accessLevel(),
 					token == null ? null : expiryDate(token.expiresAt())));
 			loadedSnapshot = snapshot();
-			saveButton.setText(token == null ? "Anlegen..." : "Speichern");
+			saveButton.setText(token == null ? "Anlegen..." : "");
 			saveButton.setIcon((token == null ? VaadinIcon.PLUS : VaadinIcon.CHECK).create());
+			Buttons.setIconLabel(saveButton, token == null ? "Anlegen..." : "Speichern");
+			if (token == null) {
+				saveButton.removeThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY_INLINE);
+				saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+			} else {
+				saveButton.removeThemeVariants(ButtonVariant.LUMO_PRIMARY);
+				saveButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY_INLINE);
+			}
 			Buttons.setIconLabel(removeButton, token == null ? "Entwurf entfernen" : "Token widerrufen...");
 			final boolean revoked = token != null && token.revokedAt() != null;
 			name.setReadOnly(revoked);
