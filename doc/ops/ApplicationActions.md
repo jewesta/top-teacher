@@ -6,7 +6,7 @@
   bar. Form-editor actions appear at the top of the tab, before descriptions
   and fields, rather than below the form. This includes single-record editors,
   bulk status changes,
-  grading-scale editing, and backup settings.
+  grading-scale editing, backup settings, and file-access mappings.
   Task and requirement reorder/delete bars appear above their Markdown content
   within the section, below its header.
 - Action bars adapt to their visible elements. A lone action shows its icon
@@ -54,9 +54,12 @@
   buttons keep their labels. Selector navigation buttons remain icon-only.
   Field-level controls and contextual tree controls remain beside the content
   they affect.
-- `Zurücksetzen` is the explicit tab-level exception: its destructive action
-  keeps its label and remains below the explanatory text. Confirmation dialogs
-  remain unchanged.
+- `Zurücksetzen` is the explicit system-settings-section exception: its
+  destructive action keeps its label and remains below the explanatory text.
+  Confirmation dialogs remain unchanged.
+
+See [System Settings](SystemSettings.md) for the fixed navigation and contextual
+action placement within `Systemeinstellungen`.
 
 ## Selection indicators
 

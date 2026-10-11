@@ -36,16 +36,16 @@ class SettingsViewTests {
 	private Path tempDir;
 
 	@Test
-	void wrapsBackupSettingsInATabAndUsesOneColumnForm() {
+	void wrapsBackupSettingsInSystemSettingsAndUsesOneColumnForm() {
 		final SettingsView view = view("", false, "0 0 2 * * *");
 
 		final TabSheet tabSheet = components(view, TabSheet.class).getFirst();
-		final Component backupContent = tabSheet.getComponent(tabSheet.getSelectedTab());
+		final Component backupContent = backupContent(view);
 		final FormLayout form = components(backupContent, FormLayout.class).getFirst();
 
 		assertThat(view.getPageTitle()).isEqualTo("Einstellungen");
 		assertThat(tabSheet.getTabCount()).isEqualTo(1);
-		assertThat(tabSheet.getTabAt(0).getLabel()).isEqualTo("Sicherung");
+		assertThat(tabSheet.getTabAt(0).getLabel()).isEqualTo("Systemeinstellungen");
 		assertThat(form.getResponsiveSteps()).hasSize(1);
 		assertThat(form.getResponsiveSteps().getFirst().toJson().get("columns").asInt()).isEqualTo(1);
 		assertThat(button(backupContent, "Speichern").isEnabled()).isFalse();
@@ -121,8 +121,8 @@ class SettingsViewTests {
 		final DatabaseBackupScheduler backupScheduler = mock(DatabaseBackupScheduler.class);
 		final DatabaseBackupService backupService = mock(DatabaseBackupService.class);
 		when(backupService.backUpNow()).thenReturn(tempDir.resolve("topteacher-db.zip"));
-		final SettingsView view = new SettingsView(List.of(new DatabaseBackupSettingsTab(appSettings, backupService,
-				backupScheduler, databaseEnvironment(tempDir.resolve("topteacher")))));
+		final SettingsView view = new SettingsView(List.of(new SystemSettingsTab(List.of(new DatabaseBackupSettingsTab(
+				appSettings, backupService, backupScheduler, databaseEnvironment(tempDir.resolve("topteacher")))))));
 		final Component backupContent = backupContent(view);
 		final UI ui = new UI();
 		UI.setCurrent(ui);
@@ -173,9 +173,9 @@ class SettingsViewTests {
 
 	private static SettingsView view(final String targetFolder, final boolean scheduleEnabled, final String cron,
 			final Path databaseFile) {
-		return new SettingsView(List.of(new DatabaseBackupSettingsTab(settings(targetFolder, scheduleEnabled, cron),
-				mock(DatabaseBackupService.class), mock(DatabaseBackupScheduler.class),
-				databaseEnvironment(databaseFile))));
+		return new SettingsView(List.of(new SystemSettingsTab(List.of(new DatabaseBackupSettingsTab(
+				settings(targetFolder, scheduleEnabled, cron), mock(DatabaseBackupService.class),
+				mock(DatabaseBackupScheduler.class), databaseEnvironment(databaseFile))))));
 	}
 
 	private static AppSettings settings(final String targetFolder, final boolean scheduleEnabled, final String cron) {
@@ -196,8 +196,9 @@ class SettingsViewTests {
 	}
 
 	private static Component backupContent(final SettingsView view) {
-		final TabSheet tabSheet = components(view, TabSheet.class).getFirst();
-		return tabSheet.getComponent(tabSheet.getSelectedTab());
+		final TabSheet settingsTabs = components(view, TabSheet.class).getFirst();
+		final Component systemSettings = settingsTabs.getComponent(settingsTabs.getSelectedTab());
+		return components(systemSettings, DatabaseBackupSettingsTab.class).getFirst();
 	}
 
 	private static Button button(final Component root, final String text) {

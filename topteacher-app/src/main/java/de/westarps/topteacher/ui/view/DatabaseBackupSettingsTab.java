@@ -39,10 +39,10 @@ import de.westarps.topteacher.ui.component.FormBinders;
 import it.burning.cron.CronExpressionDescriptor;
 import it.burning.cron.CronExpressionParser.Options;
 
-@Order(10)
+@Order(20)
 @UIScope
 @SpringComponent
-public class DatabaseBackupSettingsTab extends VerticalLayout implements SettingsTab {
+public class DatabaseBackupSettingsTab extends VerticalLayout implements SystemSettingsSection {
 
 	private static final String DATABASE_FILE_PROPERTY = "tt.database.file";
 	private static final String DATASOURCE_URL_PROPERTY = "spring.datasource.url";

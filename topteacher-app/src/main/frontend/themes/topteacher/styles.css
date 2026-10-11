@@ -294,6 +294,49 @@ vaadin-upload.tt-material-image-upload[dragover-valid] .tt-material-image-drop-t
 	font-size: var(--lumo-font-size-s);
 }
 
+.tt-system-settings-list {
+	gap: 0;
+}
+
+.tt-system-settings-navigation {
+	min-height: 0;
+}
+
+.tt-system-settings-section-host {
+	box-sizing: border-box;
+	height: 100%;
+	min-height: 0;
+	overflow: auto;
+	padding: var(--lumo-space-m);
+	width: 100%;
+}
+
+.tt-file-access-settings-content {
+	gap: var(--lumo-space-m);
+}
+
+.tt-file-access-mapping-list {
+	gap: var(--lumo-space-m);
+}
+
+.tt-file-access-mapping-row {
+	align-items: flex-end;
+	flex-wrap: wrap;
+}
+
+.tt-file-access-mapping-row vaadin-text-field {
+	flex: 1 1 18rem;
+	min-width: 14rem;
+}
+
+.tt-file-access-remove {
+	flex: 0 0 auto;
+}
+
+.tt-file-access-empty-state {
+	padding-block: var(--lumo-space-m);
+}
+
 .tt-master-data-view {
 	box-sizing: border-box;
 	height: 100%;

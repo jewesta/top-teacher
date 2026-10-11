@@ -81,6 +81,10 @@ independent view state or dirty-state handling.
 - Material supports managed PNG/JPEG images through the image workflow recorded
   below and specified in the
   [operational documentation](../doc/ops/LevelOfExpectations.md#managed-images).
+- MCP-oriented image exchange starts with two reusable prerequisites: mapped
+  access to client-visible shared-folder paths and conversion of stored
+  material images to native Base64 MCP image content. See
+  [system settings](../doc/ops/SystemSettings.md).
 - Remove the `Notizen` tab and the complete exam-note-section feature. It was
   accidental legacy from the original exam template and must not be repurposed
   as the implementation of `Material`.
@@ -541,6 +545,32 @@ saved state and remains running with the Material editor reopened.
 Remaining scope: pupil-facing exam-sheet export, print-specific numbered-text
 layout, and cross-editor footnote collection/renumbering. The former blanket
 deferral of footnotes and line numbering no longer applies to Material authoring.
+
+## MCP image-exchange prerequisite — 11 October 2026
+
+The settings UI now keeps only `Fächer`, `Notenschlüssel`, and
+`Systemeinstellungen` as top-level tabs. `Systemeinstellungen` provides a
+fixed, single-selection list for `Dateizugriff`, `Sicherung`, and
+`Zurücksetzen`; the selected content is rendered directly on the right without
+another tab bar. The context area owns each section's action bar and retains
+unsaved component state while switching. The existing backup and reset content
+was moved into that structure without changing its behavior.
+
+`Dateizugriff` persists ordered mappings from absolute client share roots to
+absolute server mount roots. Input validation requires unique client roots and
+currently reachable, readable server directories. The backend path resolver
+uses the most specific matching mapping, requires the final target to be a
+readable regular file, and verifies its real path remains beneath the real
+server root.
+
+The MCP module now also provides a reusable conversion from a database-backed
+`LoeMaterialImage` to the SDK's native image content, preserving its MIME type
+and Base64-encoding its bytes. These are infrastructure pieces for later exam
+tools; no new public MCP tool contract is introduced by this step.
+
+Verification: the required `mvn -pl topteacher-app -am test` reactor run passed
+with 209 application tests, and the final settings layout was checked in the
+running local demo.
 
 ### Morning follow-up — 11 October 2026
 

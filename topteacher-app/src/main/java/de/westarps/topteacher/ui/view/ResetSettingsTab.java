@@ -11,10 +11,10 @@ import com.vaadin.flow.spring.annotation.UIScope;
 
 import de.westarps.topteacher.ui.component.Buttons;
 
-@Order(100)
+@Order(30)
 @UIScope
 @SpringComponent
-public class ResetSettingsTab extends VerticalLayout implements SettingsTab {
+public class ResetSettingsTab extends VerticalLayout implements SystemSettingsSection {
 
 	private final DatabaseInitializationDialogFactory dialogFactory;
 
