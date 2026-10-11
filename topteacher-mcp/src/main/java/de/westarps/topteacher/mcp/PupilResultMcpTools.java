@@ -6,10 +6,13 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import de.westarps.topteacher.backend.repo.ExamRepository;
 import de.westarps.topteacher.backend.repo.GradingScaleRepository;
@@ -138,7 +141,8 @@ public class PupilResultMcpTools {
 		}
 	}
 
-	public record ResultSummaryView(int regularPoints, int bonusPoints, Integer effectivePoints, String grade,
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record ResultSummaryView(int regularPoints, int bonusPoints, @Nullable Integer effectivePoints, String grade,
 			boolean gradingAvailable) {
 	}
 

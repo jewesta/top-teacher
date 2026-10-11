@@ -85,7 +85,7 @@ independent view state or dirty-state handling.
   access to client-visible shared-folder paths and conversion of stored
   material images to native Base64 MCP image content. See
   [system settings](../doc/ops/SystemSettings.md).
-- MCP access tokens will be maintained in `Systemeinstellungen` and persisted
+- MCP access tokens are maintained in `MCP > Sicherheit` and persisted
   in the database with full or pseudonymized access. Restricted access protects
   pupil names, prevents pupil creation/renaming and real-name probing, and
   retains other operations using pupil IDs, initials, and class context.
@@ -598,10 +598,252 @@ freshly prepared frontend's TypeScript check, and `git diff --check` passed.
 The Markdown module was installed locally for the next TT startup; the server
 remains stopped as requested.
 
-## MCP privacy decision — 11 October 2026
+## MCP privacy implementation — 11 October 2026
 
-Recorded the agreed name-focused pseudonymization contract in
+Implemented the agreed name-focused contract in
 [system settings](../doc/ops/SystemSettings.md#mcp-access-and-pupil-pseudonymization).
-Implementation is pending: MCP still uses one unrestricted file-based bearer
-token. This discussion changed only the specification and decision record;
-no token maintenance, authorization, or runtime behavior has changed.
+`MCP > Sicherheit` maintains named full/pseudonymized tokens with one-time
+credential display, optional expiry, usage metadata, and immediate revocation.
+Only credential hashes are stored. Existing file credentials migrate once;
+revocation and the migration marker survive dataset reset. Atomic optimistic
+saves prevent stale settings forms from undoing newer access-level changes.
+
+Every MCP pupil-name projection and generated identity message uses the shared
+pseudonymizer. Restricted discovery uses initials/IDs, and identity creation,
+import, renaming, and name matching are guarded before mutations. Course tools
+accept IDs for existing-pupil assignment and empty-course creation. Other
+academic operations and the user-content protocol remain available.
+Authentication is checked per request; sessions are bound to token and access
+level so a downgraded token cannot replay full-name responses.
+
+Renamed `Dateizugriff` to `MCP > Dateibehandlung`. Both MCP settings reuse one
+line-item component; its action baseline stays fixed when field errors appear.
+
+Verification: the required `mvn -pl topteacher-app -am test` reactor run passed,
+including HTTP checks for restricted reads/writes, real-name probing, concurrent
+access levels, revocation, and session replay. Actual Vaadin/Lumo component
+layout was checked with synthetic data for validation errors and narrow widths.
+`git diff --check` passed.
+
+## Exam-first MCP design proposal — 11 October 2026
+
+Discussion only: this section records the proposed next MCP structure. No
+implementation, database, running-demo, or security changes belong to this
+step. Token maintenance and pseudonymization are being implemented separately;
+this proposal consumes their authenticated access context rather than replacing
+that work. Tool names and request granularity below remain provisional.
+
+### Established constraints
+
+- There is no requirement to preserve the old MCP contract. Its EH-centred
+  naming and combined creation payload reflect an outdated domain boundary.
+- Exam-first is agreed: the exam is the aggregate root, not a replace-only
+  document. Its shared parts/categories/tasks are authored in Aufgaben;
+  Material belongs to parts; EH attaches requirements to existing tasks;
+  results belong to pupils and assessment requirements/criteria. Targeted edits,
+  incremental additions, and explicit reordering are mandatory.
+- `footerMarkdown` is optional exam-level content outside every part. It is
+  pupil-facing, just like all Aufgaben content; it is not an EH requirement or
+  a repeated page footer. See
+  [exam closing text](../doc/ops/LevelOfExpectations.md#exam-closing-text).
+- The access modes and user-content boundary are already defined in
+  [system settings](../doc/ops/SystemSettings.md#mcp-access-and-pupil-pseudonymization).
+  Pseudonymized access is not read-only and does not imply complete anonymity.
+- New pupil exam-sheet printing remains deferred. Its future order is material
+  before categories/tasks within each part, a new page for each subsequent part,
+  and one closing text after all parts. Existing EH result exports remain
+  separate; see
+  [the export scope](../doc/ops/LevelOfExpectationsPdfExport.md#deferred-exam-sheet-export).
+
+### One academic API, two identity projections
+
+Use one exam/content/EH/result model and the same academic operation names in
+both modes. The bearer token determines effective access on the server; no tool
+argument can select or override it. A small `get_mcp_context` response should
+report contract version, effective access level, available operations, import
+capabilities, limits, Markdown dialect/guide version and discovery, and the
+relevant AI interaction rules. It must not expose
+credentials or require disclosure of internal server mount paths.
+
+The new pupil view should explicitly distinguish `pupilId`, `displayName`,
+and identity representation (`FULL_NAME` or `INITIALS`), with real-name fields
+available only under full access. Do not retain the transitional convention of
+putting initials into a field called `name` and an empty string into `surname`.
+All academic writes address existing pupils by ID. Initials remain nonunique,
+surname-first labels; ambiguity is resolved using class/course context and ID.
+
+Real-name searching and pupil creation/import/renaming are full-access-only.
+ID/initials discovery and existing-pupil assignments/removals remain shared.
+Identity-sensitive requests must be denied before real-name lookup, including
+indirect roster creation and duplicate detection. A mode-aware advertised tool
+list is desirable where supported, but every operation must enforce permission
+independently of discovery. Token administration remains a UI concern, not a
+new MCP tool family.
+
+Reuse one access-policy and identity-projection boundary for structured output,
+messages, elicitation, errors, exports, filenames, and metadata. Cached results,
+resource retrieval, and retries must not replay a full-name response through
+pseudonymized access. User-authored text and images, including the footer, stay
+unchanged under the agreed user responsibility to remove names; automatic
+redaction or OCR is not introduced. Server-side backup creation stays available
+when only its filename is returned; raw database transmission does not.
+
+### Proposed tool families
+
+| Area | Proposed operations and boundary |
+| --- | --- |
+| Context and discovery | `get_mcp_context`, `get_markdown_guide`, course/pupil/exam lists, authoring options including grading scales; lightweight, active-by-default discovery. |
+| Exam | `create_exam`, metadata updates, duplication, `get_exam`; metadata, content, footer, image-reference metadata, edit permissions and design diagnostics. Rosters, EH and results have explicit reads rather than being returned indiscriminately. |
+| Aufgaben and Material | Bulk initial content plus targeted transactional creation, updates, deletion and reordering, provisionally `apply_exam_content_changes`; parts, categories, tasks, material, explicit task maxima and `footerMarkdown`. Incremental additions do not require resending existing content. No implicit EH creation. |
+| Material images | `import_material_image` and `get_material_image`, scoped to an exam/material; import a client path through the configured resolver, and retrieve native MCP image content explicitly. |
+| Level of expectations | `get_level_of_expectations` and targeted/bulk requirement creation, updates, deletion and reordering against existing task IDs; no second editable task hierarchy. Criteria remain derived from `crit:` Markdown declarations. |
+| Assignments and results | ID-based roster operations, separate result reads and result writes; the same academic rules in both access modes. Existing export/backup capabilities remain within their agreed boundaries. |
+
+`get_exam` should describe the pupil-facing definition in its natural shape:
+ordered parts with separate `materials` and `categories` collections, ordered
+tasks below categories, and `footerMarkdown` directly on the exam. It returns
+image IDs/references and metadata, not all image bytes. EH reads may include
+read-only task context, but they do not become an alternative content editor.
+
+### Incremental authoring and targeted editing — agreed
+
+- An AI can add a second part and its category/task subtree to an existing exam
+  in one atomic request, using request-local keys for newly created parents.
+  It can also append or insert individual tasks, materials, or requirements
+  later. Existing exam content is neither resent nor implicitly replaced.
+- Updates address stable node IDs and specified fields: for example one task's
+  text, one material, the exam closing text, or one EH requirement. Validate
+  each target's actual exam and parent ownership on the server. Untargeted
+  nodes and attached EH remain unchanged; adding a task does not generate EH.
+- Explicit sibling reordering is supported for parts, categories, tasks,
+  materials, and requirements. Preserve IDs and EH associations; do not
+  recreate nodes or redistribute points. Reordering changes order within the
+  existing parent, not parent ownership. Cross-parent moves are distinct edits,
+  never inferred from a reorder request.
+- Prefer a complete sibling-ID sequence or a relative before/after sibling
+  placement over exposing raw sort numbers. Complete sequences must contain
+  every current sibling exactly once; relative targets must belong to the same
+  parent. Validate stale requests, duplicates and foreign IDs. The exact
+  request schema remains open.
+- Task-budget edits preserve existing requirements. Saveable incompleteness
+  produces diagnostics; over-allocation follows the existing rejection rules.
+  The AI must explicitly request any corresponding EH adjustment rather than
+  having it silently regenerated.
+- Apply the existing result-derived lock to every operation and recheck it at
+  commit, including results recorded since the AI read the exam. While results
+  exist, Aufgaben/Material additions, updates, deletions and reordering are
+  forbidden throughout that exam, including otherwise untouched or new parts;
+  the closing text and images are locked too. EH allows only its established
+  result-preserving corrections, not new requirements, structural changes,
+  reordering, or changed assessment semantics. There is no MCP lock bypass.
+- Batches are all-or-nothing, including mixed additions and edits within their
+  authoring scope. Return created-ID mappings, affected canonical content/order,
+  revision and diagnostics so the AI can continue without rereading the whole
+  exam. Full and pseudonymized access share these academic editing rules.
+
+### Markdown dialect discovery — proposal
+
+The AI must discover TT's supported Markdown instead of guessing custom syntax.
+Expose a compact, versioned `get_markdown_guide`, optionally filtered by content
+context (Material, task/category, exam closing text, EH requirement). Return
+readable rules and complete copyable examples as tool text, with a capability
+summary where useful. `get_mcp_context` and relevant write-tool/field
+descriptions point to this guide and include critical local restrictions.
+Reading the guide is recommended before authoring; it is not a security check
+or a brittle session prerequisite for otherwise valid writes.
+
+An MCP resource may expose the same guide, but cannot be the only delivery
+path: resource inclusion is controlled by the host, whereas tools are designed
+for model discovery/invocation. See the
+[MCP resource interaction model](https://modelcontextprotocol.io/specification/2025-06-18/server/resources#user-interaction-model).
+The guide is bundled with the running TT version, identical in both access
+modes, and contains no exam data or private installation paths.
+
+Cover ordinary supported Markdown plus alerts, literal `> [!NUMBERED]` source
+lines, footnotes, managed `img:` references and EH `crit:` declarations. Use
+[the Markdown contract](../doc/ops/Markdown.md) and
+[Material/criterion rules](../doc/ops/LevelOfExpectations.md) as the source of
+truth rather than maintaining an independent dialect. Distinguish rendering
+support from toolbar availability: numbered blocks and footnotes render on
+other Markdown surfaces even though their commands are enabled only in
+Material; managed images are Material-specific and criteria belong to EH
+requirements.
+
+Explain literal source breaks, uncounted blank lines, per-block numbering,
+labels at 1 and multiples of five, no wrapping/nesting, and footnote definitions
+outside numbered blocks. The AI must not manually prefix line numbers or
+silently reflow an existing numbered source. Image IDs come from TT; criterion
+keys remain stable during targeted corrections. Do not advertise unimplemented
+syntax or guarantee that preview lines fit the deferred exam-sheet printout.
+
+Guide examples and capability claims need conformance tests against the actual
+parsers/renderers. Writes retain server-side domain validation regardless of
+whether the guide was read, with actionable field/node findings for malformed
+criteria, missing image references and invalid placement. A non-writing
+validation request is a possible convenience, not a new rendering/print engine.
+Keep authoritative guide instructions separate from user-authored exam content.
+
+### Authoring and image workflow
+
+An AI must be able to create the exam shell and then author a complete Aufgaben
+tree, ordered materials, and closing text without supplying EH. Prefer a bulk
+initial-content request, optionally included in `create_exam`, followed by
+focused domain edits. Avoid both dozens of compulsory leaf calls and an
+ambiguous replace-everything operation. Creation returns stable IDs and mappings
+for request-local node keys so later EH refers to the actual created tasks.
+Pupil selection/defaults must be explicit and documented; creating academic
+content must never implicitly create pupils.
+
+Image input follows the established client-path model, not a second upload
+protocol: local paths resolve 1:1, remote paths use share mappings. Processing,
+deduplication, declarations and limits must match the existing Material UI.
+Persist image bytes and their material reference together; an abandoned import
+must not leave an unreferenced durable blob. The exact insertion/import payload
+is still open. The image processor currently lives in the app module, so a
+shared backend image-import service is a refactor prerequisite, not an already
+available MCP ingestion pipeline.
+
+Image output uses the existing native Base64 `content` image block with the
+stored MIME type, not a Base64 string embedded in the exam DTO or a public image
+URL. Require the image to be referenced by the requested exam/material rather
+than treating its opaque ID as authorization. Retrieve images on demand to
+avoid inflating ordinary exam/EH reads. This follows the
+[MCP tool-result structure](https://modelcontextprotocol.io/specification/2025-06-18/server/tools#tool-result).
+
+### Shared write safeguards and readiness
+
+- Preserve existing IDs. Array order establishes sibling order on creation;
+  later reordering is explicit. Omitted update fields remain unchanged; an
+  empty Markdown string clears content. Omitted nodes are not deletions.
+- Explicit deletion reports affected descendants, material/image references
+  and EH; it must not silently drop unrelated content or pupil results.
+- Validate and commit each requested mutation/batch atomically. Use shared
+  backend authoring services, also suitable for the UI, rather than duplicate
+  rules in tool methods. Typed content commands are not raw SQL, arbitrary
+  property paths, or an unrestricted generic database dispatcher.
+- Introduce retry-safe creation/mutation keys and optimistic revision checks
+  shared across UI and MCP writers. A stale edit returns a conflict rather than
+  overwriting concurrent work. These are proposed prerequisites, not claims
+  about current implementation.
+- Allow incomplete task/EH allocations as saveable authoring stages, while
+  rejecting over-allocation according to the operational point rules. The old
+  creator's compulsory task/requirement equality must not force EH into the
+  initial Aufgaben workflow. Readiness diagnostics identify incomplete budgets,
+  grading-scale mismatches, invalid criteria, and missing image references.
+- Report token capabilities separately from this exam's editable areas and
+  readiness. First results lock Aufgaben, Material, images and the footer;
+  EH permits only its established result-preserving corrections. Archived
+  records remain historical, and result entry requires a valid assessment
+  design. No new stored lifecycle or publish action is implied.
+
+Recommended sequence: discover context/course/options and permitted pupil IDs;
+create exam and participant selection; author content/material/footer; import
+and place images; add EH against returned task IDs; review readiness; record
+results. Full access can separately maintain pupil identities; pseudonymized
+access follows the same academic sequence using existing IDs and initials.
+
+Next discussion: settle the concrete command schemas/tool names, including
+ordering and image insertion payloads. Exam-first ownership with bulk initial
+creation, targeted editing and incremental additions is agreed. Implementation
+must wait until explicitly requested; settled behavior can then be promoted to
+`doc/ops/` without duplicating the privacy specification here.

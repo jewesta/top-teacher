@@ -8,10 +8,11 @@ top-level tabs.
 
 `Systemeinstellungen` uses a fixed master/detail layout:
 
-- the grid on the left lists `Dateizugriff`, `Sicherung`, and `Zurücksetzen`;
+- the grid on the left lists `MCP > Dateibehandlung`, `MCP > Sicherheit`,
+  `Sicherung`, and `Zurücksetzen`;
 - the list has no quick filter or action bar and always keeps exactly one
   section selected;
-- `Dateizugriff` is initially selected;
+- `MCP > Dateibehandlung` is initially selected;
 - the selected section is shown directly in the context area on the right,
   without a secondary tab bar;
 - section components remain alive while the user switches sections, so
@@ -25,11 +26,31 @@ settings tabs.
 
 ## MCP access and pupil pseudonymization
 
-This is the agreed design; token maintenance and access-level enforcement are
-not implemented yet.
+`MCP > Sicherheit` maintains one named access token per client or purpose.
+Each line contains a designation, access level, optional expiry date, and its
+own save/create and revoke actions. Creation defaults to `Pseudonymisiert`.
+The metadata line shows creation, last use, and expired/revoked status.
 
-`Systemeinstellungen` gains an `MCP-Zugriff` section for maintaining access
-tokens. Token records are persisted in the database and distinguish
+`Token hinzufügen` adds an unsaved row. `Anlegen...` creates its credential and
+opens a one-time copy dialog; the credential is discarded from that dialog
+after it closes. `Speichern` is available only for valid changed rows and
+does not save other rows. `Token widerrufen...` asks for confirmation and
+revokes that token immediately; its row remains visible as read-only history.
+Drafts survive section switching and actions on other rows. Saves compare the
+configuration originally loaded by the row with the current database record;
+a stale form cannot overwrite another session's access-level change. A conflict
+preserves the draft and offers an explicit reload of the current configuration.
+
+The expiry date includes the whole selected day in the server's local timezone.
+Changing only a token's designation or access level preserves its precise
+existing expiry timestamp. An expired token must have its expiry extended or
+cleared before metadata can be saved.
+
+Both MCP settings sections share the same line-item layout. Row actions align
+with the input controls and retain their vertical position when validation
+messages or helper text appear.
+
+Token records are persisted in the database and distinguish
 `Vollzugriff` from `Pseudonymisiert`. Credential storage must keep a one-way
 verifier rather than the reusable token itself; a newly generated credential
 is shown once for configuring the client.
@@ -51,7 +72,10 @@ TopTeacher must suppress names obtained from pupil records throughout the MCP
 exchange: structured fields, generated messages, confirmation/elicitation
 text, errors, metadata, filenames, and generated document content. The same
 pupil must be represented consistently in pupil lists, course/exam rosters,
-results, and operation responses.
+results, and operation responses. The shared `PupilNamePseudonymizer` is the
+mandatory boundary for every pupil name entering these MCP responses. Existing
+response schemas are retained: under pseudonymized access, `name` contains the
+surname-first initials and `surname` is empty.
 
 Pseudonymized discovery and matching use IDs or the displayed pseudonyms and
 context. Real-name search or matching is unavailable, including queries that
@@ -59,8 +83,11 @@ would reveal whether a guessed name exists. Pupil names cannot be recovered by
 calling a different tool or requesting a different response format.
 
 Pupil creation, import, and renaming are unavailable, including indirect
-creation through course-roster or assignment tools. Assigning existing pupils to a course must have an ID-based path that
-never creates or renames a pupil.
+creation through course-roster or assignment tools. Existing course creation
+and assignment tools accept `pupilIds` for the name-free path. Do not combine
+IDs with a named roster. Omitting the roster or supplying an empty ID list
+creates an empty course; assigning to an existing course requires a nonempty
+ID list. These paths never create or rename pupils.
 
 All other operations remain available under their existing domain safeguards,
 including course/exam assignments and removals, result reading and entry, and
@@ -88,9 +115,31 @@ and IDs, ambiguous references require clarification using class/course context
 or IDs, and real names must not be requested or reconstructed. The settings
 explanation must describe the user-content boundary using `Du`.
 
+### Authentication and migration
+
+Every MCP HTTP request authenticates against current token records. Revocation,
+expiry, and saved access-level changes apply to subsequent requests without an
+application restart. Sessions belong to their creating token and access level;
+another token cannot use or replay that session. After an access-level change,
+the client must initialize a new session. Missing authentication or missing
+permission context never defaults to full access. MCP responses cannot be
+cached.
+
+MCP remains disabled by default through `tt.mcp.enabled`. Tokens can be
+maintained in the UI while the endpoint is disabled. Enabling MCP without any
+active token keeps the endpoint inaccessible until a token is created.
+
+On the first enabled startup, an existing `tt.mcp.token-file` is imported once
+as a full-access token named `Bisheriger MCP-Zugriff`. If no file is configured,
+the migration is marked complete without creating a token. Subsequent startups
+use only database credentials and do not reopen the legacy file. The old file
+can be deleted and the property removed after import. Revoking the imported
+token never causes it to reappear on restart. Token configuration and the
+migration marker survive empty/demo dataset initialization and database reset.
+
 ## File access
 
-The first control in the `Dateizugriff` action bar is the `Installationsort`
+The first control in the `MCP > Dateibehandlung` action bar is the `Installationsort`
 dropdown with the choices `Lokal` and `Entfernt`. The selected location is
 persisted with `Speichern`; changing it immediately updates the section's
 explanation and mapping controls. A new installation defaults to `Lokal`.

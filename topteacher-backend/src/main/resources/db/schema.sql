@@ -11,6 +11,30 @@ create table if not exists app_setting (
     setting_value varchar(2000) not null
 );
 
+create table if not exists mcp_access_token (
+    id varchar(36) primary key,
+    name varchar(100) not null,
+    access_level varchar(20) not null,
+    credential_hash binary(32) not null,
+    created_at timestamp(9) with time zone not null,
+    last_used_at timestamp(9) with time zone,
+    expires_at timestamp(9) with time zone,
+    revoked_at timestamp(9) with time zone,
+    constraint mcp_access_token_hash_unique unique (credential_hash),
+    constraint mcp_access_token_level_check check (access_level in ('FULL', 'PSEUDONYMIZED'))
+);
+
+/* Security configuration is retained when the teaching dataset is initialized. */
+create table if not exists mcp_security_state (
+    id integer primary key,
+    legacy_token_imported boolean default false not null,
+    constraint mcp_security_state_singleton_check check (id = 1)
+);
+
+insert into mcp_security_state (id, legacy_token_imported)
+select 1, false
+where not exists (select 1 from mcp_security_state where id = 1);
+
 create table if not exists shared_folder_mapping (
     client_path varchar(1000) primary key,
     server_path varchar(1000) not null,

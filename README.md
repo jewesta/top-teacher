@@ -131,25 +131,35 @@ Streamable HTTP. It is disabled by default. When enabled, the endpoint is
 `http://localhost:8081/top-teacher/mcp` and every request requires a bearer
 token.
 
-Store the token outside the repository in a file readable only by its owner. It
-must contain exactly one UTF-8 line with at least 32 characters. For example:
+Create a named token under `Systemeinstellungen` → `MCP > Sicherheit`. New
+tokens default to pseudonymized access. Copy the credential when it is created;
+TopTeacher displays it only once and stores only its hash in the database.
+Tokens can be revoked immediately, given an optional expiry date, or switched
+between full and pseudonymized access. See
+[system settings](doc/ops/SystemSettings.md#mcp-access-and-pupil-pseudonymization).
 
-```shell
-umask 077
-openssl rand -hex 32 > /absoluter/pfad/topteacher-mcp-token
-```
-
-Enable MCP through environment variables when using one of the bundled start
-scripts:
+Enable MCP through the environment when using one of the bundled start scripts:
 
 ```shell
 TT_MCP_ENABLED=true \
-TT_MCP_TOKEN_FILE=/absoluter/pfad/topteacher-mcp-token \
 ./run/start-dev.sh /Users/<Benutzername>/Documents/<top-teacher-db>
 ```
 
-The AI client must use the endpoint URL and the HTTP header
-`Authorization: Bearer <token from the file>`.
+The AI client uses the endpoint URL and HTTP header
+`Authorization: Bearer <token copied from TopTeacher>`.
+
+Existing installations may retain `TT_MCP_TOKEN_FILE` for the first enabled
+startup after upgrading. Its credential is imported once as a full-access token;
+subsequent authentication uses the database and the old file can be removed.
+A revoked imported token is never restored from that file on restart.
+
+Pseudonymized access returns stable pupil IDs, surname-first initials in `name`,
+and an empty `surname`. Discovery searches initials or IDs rather than real
+names. Pupil creation/import/renaming and real-name matching are unavailable;
+other existing operations remain available under their normal domain rules.
+Course creation/assignment use `pupilIds` instead of name-bearing rosters.
+Users must remove names from arbitrary comments, material and uploaded work
+before sharing them with the AI; those contents are not automatically redacted.
 
 The MCP server currently exposes these tools:
 
@@ -183,7 +193,7 @@ and latest-class information; archived pupils are visible only through an
 explicit `ARCHIVED` or `ALL` scope. The MCP interface does not expose a way to
 change lifecycle state.
 
-Exact active pupil-name matches are never merged automatically. The
+With full access, exact active pupil-name matches are never merged automatically. The
 course-creation tool requires an explicit `REUSE`, `CREATE`, or `SKIP` decision;
 assigning pupils to an existing course uses the same decisions. A uniquely
 named active pupil who is already assigned satisfies the request without a

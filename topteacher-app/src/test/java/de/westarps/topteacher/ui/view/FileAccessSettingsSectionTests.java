@@ -36,7 +36,7 @@ class FileAccessSettingsSectionTests {
 
 		final FileAccessSettingsSection section = new FileAccessSettingsSection(settings);
 
-		assertThat(section.label()).isEqualTo("Dateizugriff");
+		assertThat(section.label()).isEqualTo("MCP > Dateibehandlung");
 		assertThat(textField(section, "Pfad auf dem Client").getValue()).isEqualTo("/Volumes/Foo");
 		assertThat(textField(section, "Pfad auf dem TopTeacher-Server").getValue()).isEqualTo(tempDir.toString());
 		assertThat(button(section, "Speichern").isEnabled()).isFalse();

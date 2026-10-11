@@ -39,7 +39,7 @@ import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeTask;
 
-class LevelOfExpectationsMcpToolsTests {
+class LevelOfExpectationsMcpToolsTests extends FullMcpAccessTest {
 
 	private final CourseRepository courses = mock(CourseRepository.class);
 	private final ExamRepository exams = mock(ExamRepository.class);
@@ -101,6 +101,8 @@ class LevelOfExpectationsMcpToolsTests {
 				.thenReturn(List.of(new LoeCriterion(16, requirement.id(), "1", "Ziel", 10, 0, true)));
 
 		final LevelOfExpectationsView result = tools.getLevelOfExpectations(exam.id());
+		assertThat(result.gradingScale()).isNull();
+		assertThat(result.points().gradingScaleMaximum()).isNull();
 
 		assertThat(result.points().regularMaximum()).isEqualTo(5);
 		assertThat(result.points().requirementsMatchTasks()).isTrue();

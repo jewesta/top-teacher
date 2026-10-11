@@ -45,7 +45,7 @@ import io.modelcontextprotocol.spec.McpSchema.ElicitFormRequest;
 import io.modelcontextprotocol.spec.McpSchema.ElicitResult;
 
 @ExtendWith(MockitoExtension.class)
-class CourseRosterMcpToolsTests {
+class CourseRosterMcpToolsTests extends FullMcpAccessTest {
 
 	private static final Subject SUBJECT = new Subject(3, "Englisch", Lifecycle.ACTIVE);
 	private static final GradingScale GRADING_SCALE = new GradingScale(5, "Test", 100, Lifecycle.ACTIVE);

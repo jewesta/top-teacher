@@ -23,7 +23,7 @@ import de.westarps.topteacher.backend.repo.PupilRepository;
 import de.westarps.topteacher.backend.repo.SubjectRepository;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 
-class TopTeacherMcpSchemaTests {
+class TopTeacherMcpSchemaTests extends FullMcpAccessTest {
 
 	private static final List<Class<?>> TOOL_GROUPS = List.of(CourseMcpTools.class, ExamMcpTools.class,
 			ExamWriteMcpTools.class, ExamPupilAssignmentMcpTools.class, ExamPupilRemovalMcpTools.class,
@@ -103,6 +103,9 @@ class TopTeacherMcpSchemaTests {
 		assertThat(containsObjectProperties(createLevelSchema,
 				Set.of("title", "descriptionMarkdown", "maxPoints", "requirements"))).isTrue();
 		final Map<String, Object> levelOutputSchema = schema(specifications, "get_level_of_expectations", false);
+		assertThat(list(levelOutputSchema.get("required"))).doesNotContain("gradingScale");
+		final Map<String, Object> pointSummary = map(outputProperties(specifications, "get_level_of_expectations").get("points"));
+		assertThat(list(pointSummary.get("required"))).doesNotContain("gradingScaleMaximum");
 		assertThat(outputProperties(specifications, "get_level_of_expectations")).doesNotContainKey("noteSections");
 		assertThat(containsObjectProperties(levelOutputSchema,
 				Set.of("id", "title", "sortOrder", "materials", "categories"))).isTrue();
@@ -115,13 +118,15 @@ class TopTeacherMcpSchemaTests {
 				Set.of("requirementId", "points", "pointUnits", "adjustmentUnits"))).isTrue();
 		assertThat(containsObjectProperties(pupilResultSchema,
 				Set.of("criterionId", "awardedPointUnits", "availablePointUnits"))).isTrue();
+		final Map<String, Object> resultSummary = map(outputProperties(specifications, "get_pupil_result").get("summary"));
+		assertThat(list(resultSummary.get("required"))).doesNotContain("effectivePoints");
 
 		final Map<String, Object> createCourseProperties = properties(specifications, "create_course_with_pupils");
-		assertThat(createCourseProperties).containsKeys("course", "roster", "resolutions").doesNotContainKey("context");
+		assertThat(createCourseProperties).containsKeys("course", "roster", "resolutions", "pupilIds").doesNotContainKey("context");
 		assertThat(map(createCourseProperties.get("roster"))).containsEntry("type", "array");
 
 		final Map<String, Object> assignPupilsProperties = properties(specifications, "assign_pupils_to_course");
-		assertThat(assignPupilsProperties).containsKeys("courseId", "pupilDrafts", "resolutions")
+		assertThat(assignPupilsProperties).containsKeys("courseId", "pupilDrafts", "resolutions", "pupilIds")
 				.doesNotContainKey("context");
 		assertThat(map(assignPupilsProperties.get("pupilDrafts"))).containsEntry("type", "array");
 

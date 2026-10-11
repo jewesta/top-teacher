@@ -171,6 +171,7 @@ public class DatabaseInitializationService {
 			from information_schema.tables
 			where table_schema = 'PUBLIC'
 			  and table_type = 'BASE TABLE'
+			  and table_name not in ('MCP_ACCESS_TOKEN', 'MCP_SECURITY_STATE')
 			order by table_name
 			""")) {
 			while (resultSet.next()) {

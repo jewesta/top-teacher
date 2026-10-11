@@ -15,7 +15,6 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextField;
@@ -30,6 +29,7 @@ import de.westarps.topteacher.model.InstallationLocation;
 import de.westarps.topteacher.model.SharedFolderMapping;
 import de.westarps.topteacher.ui.component.ActionToolbar;
 import de.westarps.topteacher.ui.component.Buttons;
+import de.westarps.topteacher.ui.component.SettingsLineItem;
 
 @Order(10)
 @UIScope
@@ -59,7 +59,7 @@ public class FileAccessSettingsSection extends VerticalLayout implements SystemS
 
 	@Override
 	public String label() {
-		return "Dateizugriff";
+		return "MCP > Dateibehandlung";
 	}
 
 	@Override
@@ -214,7 +214,7 @@ public class FileAccessSettingsSection extends VerticalLayout implements SystemS
 			loadedMappings = snapshots();
 		}
 		updateButtonStates();
-		Notification.show("Dateizugriff gespeichert.");
+		Notification.show("MCP > Dateibehandlung gespeichert.");
 	}
 
 	private List<MappingSnapshot> snapshots() {
@@ -263,7 +263,7 @@ public class FileAccessSettingsSection extends VerticalLayout implements SystemS
 		}
 	}
 
-	private final class MappingRow extends HorizontalLayout {
+	private final class MappingRow extends SettingsLineItem {
 
 		private final Binder<MappingFormData> binder = new Binder<>();
 		private final TextField clientPath = pathField("Pfad auf dem Client", "/Volumes/Freigabe");
@@ -271,10 +271,6 @@ public class FileAccessSettingsSection extends VerticalLayout implements SystemS
 
 		private MappingRow(final MappingFormData formData) {
 			addClassName("tt-file-access-mapping-row");
-			setPadding(false);
-			setSpacing(true);
-			setAlignItems(Alignment.END);
-			setWidthFull();
 
 			binder.forField(clientPath).asRequired("Bitte gib einen Client-Pfad an.")
 					.withValidator(FileAccessSettingsSection::isAbsolutePath, "Bitte gib einen absoluten Pfad an.")
@@ -295,8 +291,8 @@ public class FileAccessSettingsSection extends VerticalLayout implements SystemS
 			final Button removeButton = Buttons.icon("Zuordnung entfernen", VaadinIcon.TRASH,
 					event -> removeRow(this));
 			removeButton.addClassName("tt-file-access-remove");
-			add(clientPath, serverPath, removeButton);
-			setFlexGrow(1, clientPath, serverPath);
+			addFields(clientPath, serverPath);
+			addActions(removeButton);
 		}
 	}
 

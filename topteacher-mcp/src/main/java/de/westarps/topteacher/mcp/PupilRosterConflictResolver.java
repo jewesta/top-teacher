@@ -50,6 +50,7 @@ public class PupilRosterConflictResolver {
 
 	private ResolutionOutcome resolve(final McpSyncRequestContext context, final List<PupilDraft> roster,
 			final List<PupilConflictResolution> resolutions, final boolean reuseAllowed) {
+		PupilNamePseudonymizer.requireIdentityWrite();
 		final List<ConflictPlan> conflicts = findConflicts(roster, reuseAllowed);
 		final Map<String, PupilConflictResolution> resolutionsByEntryKey = resolutions(resolutions, conflicts);
 		final List<ResolvedPupil> resolvedPupils = new ArrayList<>();
@@ -209,7 +210,8 @@ public class PupilRosterConflictResolver {
 
 	private static String elicitationMessage(final ConflictPlan conflict) {
 		final PupilDraft pupil = conflict.pupil();
-		final StringBuilder message = new StringBuilder("Für ").append(pupil.name()).append(' ').append(pupil.surname())
+		final StringBuilder message = new StringBuilder("Für ")
+				.append(PupilNamePseudonymizer.displayName(pupil.name(), pupil.surname()))
 				.append(" ist eine Entscheidung nötig.");
 		if (!conflict.exactMatches().isEmpty()) {
 			message.append(" Vorhandene exakte Treffer: ");
@@ -252,7 +254,7 @@ public class PupilRosterConflictResolver {
 			final boolean reuseAllowed) {
 		final List<ExistingPupilView> existingPupils = exactMatches.stream().map(existing -> {
 			final SchoolClass latestSchoolClass = latestSchoolClasses.get(existing.id());
-			return new ExistingPupilView(existing.id(), existing.name(), existing.surname(),
+			return new ExistingPupilView(existing.id(), PupilNamePseudonymizer.firstName(existing), PupilNamePseudonymizer.surname(existing),
 					existing.lifecycle().name(), latestSchoolClass == null ? "" : latestSchoolClass.name(),
 					latestSchoolClass == null ? "" : latestSchoolClass.getDisplayName());
 		}).toList();
@@ -260,7 +262,8 @@ public class PupilRosterConflictResolver {
 				? List.of(PupilConflictAction.CREATE.name(), PupilConflictAction.SKIP.name())
 				: List.of(PupilConflictAction.REUSE.name(), PupilConflictAction.CREATE.name(),
 						PupilConflictAction.SKIP.name());
-		return new PupilConflictView(pupil.entryKey(), pupil.name(), pupil.surname(), !exactMatches.isEmpty(),
+		return new PupilConflictView(pupil.entryKey(), PupilNamePseudonymizer.firstName(pupil.name(), pupil.surname()),
+				PupilNamePseudonymizer.surname(pupil.name(), pupil.surname()), !exactMatches.isEmpty(),
 				repeatedInRoster, existingPupils, allowedActions);
 	}
 

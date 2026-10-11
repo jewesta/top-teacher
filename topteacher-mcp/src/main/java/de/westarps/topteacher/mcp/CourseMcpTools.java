@@ -97,7 +97,8 @@ public class CourseMcpTools {
 	}
 
 	private static CoursePupilView pupilView(final Pupil pupil) {
-		return new CoursePupilView(pupil.id(), pupil.name(), pupil.surname(), pupil.lifecycle().name());
+		return new CoursePupilView(pupil.id(), PupilNamePseudonymizer.firstName(pupil),
+				PupilNamePseudonymizer.surname(pupil), pupil.lifecycle().name());
 	}
 
 	public record CourseListView(List<CourseView> courses) {

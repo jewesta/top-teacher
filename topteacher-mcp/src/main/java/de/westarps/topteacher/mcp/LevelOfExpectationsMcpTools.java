@@ -3,11 +3,14 @@ package de.westarps.topteacher.mcp;
 import java.util.List;
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.ExamRepository;
@@ -295,7 +298,8 @@ public class LevelOfExpectationsMcpTools {
 		return value == null ? "" : value;
 	}
 
-	public record LevelOfExpectationsView(CourseView course, ExamView exam, GradingScaleView gradingScale,
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record LevelOfExpectationsView(CourseView course, ExamView exam, @Nullable GradingScaleView gradingScale,
 			PointSummaryView points, boolean correctionMode, List<PartView> parts) {
 
 		public LevelOfExpectationsView {
@@ -318,7 +322,8 @@ public class LevelOfExpectationsMcpTools {
 			int maxPoints) {
 	}
 
-	public record PointSummaryView(int regularMaximum, int bonusMaximum, Integer gradingScaleMaximum,
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record PointSummaryView(int regularMaximum, int bonusMaximum, @Nullable Integer gradingScaleMaximum,
 			boolean regularMaximumMatchesGradingScale, boolean requirementsMatchTasks, boolean validDesign) {
 	}
 

@@ -35,7 +35,7 @@ import io.modelcontextprotocol.spec.McpSchema.ElicitFormRequest;
 import io.modelcontextprotocol.spec.McpSchema.ElicitResult;
 
 @ExtendWith(MockitoExtension.class)
-class CoursePupilRemovalMcpToolsTests {
+class CoursePupilRemovalMcpToolsTests extends FullMcpAccessTest {
 
 	private static final String LOCK_REASON = "Assigned to an exam";
 

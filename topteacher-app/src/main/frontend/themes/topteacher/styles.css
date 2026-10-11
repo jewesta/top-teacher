@@ -311,22 +311,58 @@ vaadin-upload.tt-material-image-upload[dragover-valid] .tt-material-image-drop-t
 	width: 100%;
 }
 
-.tt-file-access-settings-content {
+.tt-file-access-settings-content,
+.tt-mcp-security-settings-content,
+.tt-file-access-mapping-list,
+.tt-mcp-token-list {
 	gap: var(--lumo-space-m);
 }
 
-.tt-file-access-mapping-list {
-	gap: var(--lumo-space-m);
+.tt-settings-line-item {
+	/* Vaadin field/button baselines follow the input, independent of validation text. */
+	align-items: baseline;
 }
 
-.tt-file-access-mapping-row {
-	align-items: flex-end;
+.tt-settings-line-item-fields {
 	flex-wrap: wrap;
+	min-width: 0;
+}
+
+.tt-settings-line-item-actions {
+	flex: 0 0 auto;
 }
 
 .tt-file-access-mapping-row vaadin-text-field {
 	flex: 1 1 18rem;
 	min-width: 14rem;
+}
+
+.tt-mcp-token-row {
+	gap: var(--lumo-space-xs);
+}
+
+.tt-mcp-token-row vaadin-text-field,
+.tt-mcp-token-row vaadin-select,
+.tt-mcp-token-row vaadin-date-picker {
+	flex: 1 1 11rem;
+	min-width: 10rem;
+}
+
+.tt-mcp-token-metadata {
+	color: var(--lumo-secondary-text-color);
+	font-size: var(--lumo-font-size-s);
+}
+
+.tt-mcp-token-row-revoked {
+	opacity: 0.7;
+}
+
+.tt-mcp-token-credential-dialog {
+	max-width: min(42rem, calc(100vw - 2 * var(--lumo-space-m)));
+}
+
+.tt-mcp-token-credential {
+	font-family: var(--lumo-font-family-monospace, monospace);
 }
 
 .tt-file-access-remove {

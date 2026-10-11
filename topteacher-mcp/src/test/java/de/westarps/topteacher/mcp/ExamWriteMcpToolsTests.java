@@ -35,7 +35,7 @@ import de.westarps.topteacher.model.SchoolYear;
 import de.westarps.topteacher.model.Subject;
 
 @ExtendWith(MockitoExtension.class)
-class ExamWriteMcpToolsTests {
+class ExamWriteMcpToolsTests extends FullMcpAccessTest {
 
 	@Mock
 	private CourseRepository courses;

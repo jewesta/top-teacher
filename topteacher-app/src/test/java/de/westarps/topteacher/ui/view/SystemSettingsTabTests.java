@@ -21,7 +21,7 @@ class SystemSettingsTabTests {
 	void usesFixedNavigationAndSelectsFirstSection() {
 		final Div fileAccess = new Div();
 		final Div backup = new Div();
-		final SystemSettingsSection first = new StaticSection("Dateizugriff", fileAccess);
+		final SystemSettingsSection first = new StaticSection("MCP > Dateibehandlung", fileAccess);
 		final SystemSettingsSection second = new StaticSection("Sicherung", backup);
 
 		final SystemSettingsTab systemSettings = new SystemSettingsTab(List.of(first, second));
@@ -42,7 +42,7 @@ class SystemSettingsTabTests {
 		final TextField fileAccessValue = new TextField();
 		final Div fileAccess = new Div(fileAccessValue);
 		final Div backup = new Div();
-		final SystemSettingsSection first = new StaticSection("Dateizugriff", fileAccess);
+		final SystemSettingsSection first = new StaticSection("MCP > Dateibehandlung", fileAccess);
 		final SystemSettingsSection second = new StaticSection("Sicherung", backup);
 		final SystemSettingsTab systemSettings = new SystemSettingsTab(List.of(first, second));
 		final Grid<SystemSettingsSection> navigation = (Grid<SystemSettingsSection>) components(systemSettings, Grid.class)

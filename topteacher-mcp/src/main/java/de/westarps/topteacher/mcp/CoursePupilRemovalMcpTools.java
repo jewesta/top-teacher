@@ -65,7 +65,7 @@ public class CoursePupilRemovalMcpTools {
 				.filter(pupil -> removalLocks.containsKey(pupil.id()))
 				.map(pupil -> lockedPupilView(pupil, removalLocks.get(pupil.id()))).toList();
 
-		final LockedPupilAction action = resolveAction(context, lockedPupils, lockedPupilAction);
+		final LockedPupilAction action = resolveAction(context, lockedPupils, lockedPupilAction, assignedPupils);
 		if (!lockedPupils.isEmpty() && action == null) {
 			return result(CoursePupilRemovalStatus.NEEDS_RESOLUTION,
 					"No database changes were made. Ask the user whether locked pupils should be skipped or the entire removal should be cancelled, then call this tool again with lockedPupilAction.",
@@ -117,7 +117,8 @@ public class CoursePupilRemovalMcpTools {
 	}
 
 	private static LockedPupilAction resolveAction(final McpSyncRequestContext context,
-			final List<LockedCoursePupilView> lockedPupils, final LockedPupilAction suppliedAction) {
+			final List<LockedCoursePupilView> lockedPupils, final LockedPupilAction suppliedAction,
+			final Map<Integer, Pupil> assignedPupils) {
 		if (lockedPupils.isEmpty() || suppliedAction != null) {
 			return suppliedAction;
 		}
@@ -125,7 +126,7 @@ public class CoursePupilRemovalMcpTools {
 			return null;
 		}
 		final ElicitResult result = context
-				.elicit(ElicitFormRequest.builder(elicitationMessage(lockedPupils), elicitationSchema()).build());
+				.elicit(ElicitFormRequest.builder(elicitationMessage(lockedPupils, assignedPupils), elicitationSchema()).build());
 		if (result.action() != ElicitResult.Action.ACCEPT) {
 			return LockedPupilAction.CANCEL;
 		}
@@ -156,7 +157,8 @@ public class CoursePupilRemovalMcpTools {
 		return requestedSchema;
 	}
 
-	private static String elicitationMessage(final List<LockedCoursePupilView> lockedPupils) {
+	private static String elicitationMessage(final List<LockedCoursePupilView> lockedPupils,
+			final Map<Integer, Pupil> assignedPupils) {
 		final StringBuilder message = new StringBuilder(
 				"Einige Schüler:innen sind bereits Klausuren dieses Kurses zugeordnet und können nicht entfernt werden: ");
 		for (int index = 0; index < lockedPupils.size(); index++) {
@@ -164,7 +166,7 @@ public class CoursePupilRemovalMcpTools {
 				message.append("; ");
 			}
 			final LockedCoursePupilView pupil = lockedPupils.get(index);
-			message.append(pupil.name()).append(' ').append(pupil.surname()).append(" (ID ").append(pupil.id())
+			message.append(PupilNamePseudonymizer.displayName(assignedPupils.get(pupil.id()))).append(" (ID ").append(pupil.id())
 					.append(')');
 		}
 		return message.append(". Wähle SKIP oder CANCEL.").toString();
@@ -197,11 +199,13 @@ public class CoursePupilRemovalMcpTools {
 	}
 
 	private static CoursePupilView pupilView(final Pupil pupil) {
-		return new CoursePupilView(pupil.id(), pupil.name(), pupil.surname(), pupil.lifecycle().name());
+		return new CoursePupilView(pupil.id(), PupilNamePseudonymizer.firstName(pupil),
+				PupilNamePseudonymizer.surname(pupil), pupil.lifecycle().name());
 	}
 
 	private static LockedCoursePupilView lockedPupilView(final Pupil pupil, final String reason) {
-		return new LockedCoursePupilView(pupil.id(), pupil.name(), pupil.surname(), pupil.lifecycle().name(), reason,
+		return new LockedCoursePupilView(pupil.id(), PupilNamePseudonymizer.firstName(pupil),
+				PupilNamePseudonymizer.surname(pupil), pupil.lifecycle().name(), reason,
 				ALLOWED_ACTIONS);
 	}
 

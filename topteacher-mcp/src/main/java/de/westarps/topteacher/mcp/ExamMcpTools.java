@@ -71,7 +71,8 @@ public class ExamMcpTools {
 	}
 
 	static PupilView pupilView(final Pupil pupil) {
-		return new PupilView(pupil.id(), pupil.name(), pupil.surname(), pupil.lifecycle().name());
+		return new PupilView(pupil.id(), PupilNamePseudonymizer.firstName(pupil),
+				PupilNamePseudonymizer.surname(pupil), pupil.lifecycle().name());
 	}
 
 	public record ExamListView(CourseView course, List<ExamView> exams) {

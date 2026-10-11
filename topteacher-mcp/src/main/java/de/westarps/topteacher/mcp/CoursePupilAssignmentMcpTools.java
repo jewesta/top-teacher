@@ -49,15 +49,32 @@ public class CoursePupilAssignmentMcpTools {
 	}
 
 	@McpTool(name = "assign_pupils_to_course", title = "Assign pupils to an existing course",
-			description = "Add pupils to an existing active course selected by an ID from list_courses. New pupils are created as active records. Exact active pupil-name matches and names repeated in the request require REUSE, CREATE, or SKIP. A uniquely named active pupil already assigned to the course is treated as satisfied. Archived pupils and archived courses are historical and cannot receive new assignments. No pupils are removed and no course properties are changed.",
+			description = "Add pupils to an existing active course selected by an ID from list_courses. Supply pupilIds to assign existing active pupils without name matching; this path is required for pseudonymized access. Do not combine pupilIds and pupilDrafts. Full access may use the legacy name roster. New pupils are created as active records. Exact active pupil-name matches and names repeated in the request require REUSE, CREATE, or SKIP. A uniquely named active pupil already assigned to the course is treated as satisfied. Archived pupils and archived courses are historical and cannot receive new assignments. No pupils are removed and no course properties are changed.",
 			generateOutputSchema = true, annotations = @McpTool.McpAnnotations(readOnlyHint = false,
 					destructiveHint = false, idempotentHint = false, openWorldHint = false))
 	public CoursePupilAssignmentResult assignPupilsToCourse(final McpSyncRequestContext context,
 			@McpToolParam(description = "Active course ID obtained from list_courses.") final int courseId,
-			@McpToolParam(
-					description = "Pupils to assign. entryKey must be unique and stable across a NEEDS_RESOLUTION retry.") final List<PupilDraft> pupilDrafts,
 			@McpToolParam(required = false,
-					description = "Conflict decisions from a previous NEEDS_RESOLUTION result. Omit on the first call.") final List<PupilConflictResolution> resolutions) {
+					description = "Full access only: pupils to assign. entryKey must be unique and stable across a NEEDS_RESOLUTION retry.") final List<PupilDraft> pupilDrafts,
+			@McpToolParam(required = false,
+					description = "Conflict decisions from a previous NEEDS_RESOLUTION result. Omit on the first call.") final List<PupilConflictResolution> resolutions,
+			@McpToolParam(required = false,
+					description = "Existing active pupil IDs from list_pupils. Required for pseudonymized access. No pupil records are created or renamed.") final List<Integer> pupilIds) {
+		PupilNamePseudonymizer.isPseudonymized();
+		if (pupilDrafts != null || resolutions != null) {
+			PupilNamePseudonymizer.requireIdentityWrite();
+		}
+		if (pupilIds != null) {
+			if (pupilDrafts != null || resolutions != null) {
+				throw new IllegalArgumentException("Use either pupilIds or pupilDrafts and resolutions, not both");
+			}
+			final AssignmentResult assigned = writer.assignExisting(courseId,
+					ExamWriteMcpTools.pupilIds(pupilIds, false));
+			return result(assigned.assignedPupils().isEmpty() ? CoursePupilAssignmentStatus.UNCHANGED
+					: CoursePupilAssignmentStatus.UPDATED, "Existing pupils were assigned by ID.", assigned.course(),
+					assigned.assignedPupils(), assigned.alreadyAssignedPupils(), List.of(), List.of());
+		}
+		PupilNamePseudonymizer.requireIdentityWrite();
 		final Course course = activeCourse(courseId);
 		final List<PupilDraft> validatedDrafts = validateDrafts(pupilDrafts);
 		final PreResolvedRoster preResolved = preResolveAlreadyAssigned(courseId, validatedDrafts);
@@ -97,6 +114,12 @@ public class CoursePupilAssignmentMcpTools {
 				: "Pupils were created or assigned in one transaction.";
 		return result(status, message, assigned.course(), assigned.assignedPupils(), assigned.alreadyAssignedPupils(),
 				List.of(), resolution.skippedEntryKeys());
+	}
+
+	public CoursePupilAssignmentResult assignPupilsToCourse(final McpSyncRequestContext context,
+			final int courseId, final List<PupilDraft> pupilDrafts,
+			final List<PupilConflictResolution> resolutions) {
+		return assignPupilsToCourse(context, courseId, pupilDrafts, resolutions, null);
 	}
 
 	private Course activeCourse(final int courseId) {
@@ -157,7 +180,8 @@ public class CoursePupilAssignmentMcpTools {
 	}
 
 	private static RosterPupilView pupilView(final Pupil pupil) {
-		return new RosterPupilView(pupil.id(), pupil.name(), pupil.surname(), pupil.lifecycle().name());
+		return new RosterPupilView(pupil.id(), PupilNamePseudonymizer.firstName(pupil),
+				PupilNamePseudonymizer.surname(pupil), pupil.lifecycle().name());
 	}
 
 	public enum CoursePupilAssignmentStatus {

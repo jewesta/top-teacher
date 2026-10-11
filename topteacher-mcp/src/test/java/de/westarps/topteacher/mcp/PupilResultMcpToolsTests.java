@@ -27,7 +27,7 @@ import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeRequirementResult;
 import de.westarps.topteacher.model.loe.LoeTask;
 
-class PupilResultMcpToolsTests {
+class PupilResultMcpToolsTests extends FullMcpAccessTest {
 
 	private final ExamRepository exams = mock(ExamRepository.class);
 	private final GradingScaleRepository gradingScales = mock(GradingScaleRepository.class);

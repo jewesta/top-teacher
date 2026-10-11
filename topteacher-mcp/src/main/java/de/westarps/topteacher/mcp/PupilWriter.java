@@ -28,6 +28,7 @@ public class PupilWriter {
 
 	@Transactional
 	public List<Pupil> create(final List<ResolvedPupil> resolvedPupils) {
+		PupilNamePseudonymizer.requireIdentityWrite();
 		Objects.requireNonNull(resolvedPupils, "resolvedPupils");
 		final List<Pupil> created = new ArrayList<>();
 		for (final ResolvedPupil resolvedPupil : resolvedPupils) {
@@ -42,6 +43,7 @@ public class PupilWriter {
 	@Transactional
 	public Pupil updateName(final int pupilId, final String name, final String surname,
 			final boolean duplicateNameConfirmed) {
+		PupilNamePseudonymizer.requireIdentityWrite();
 		final Pupil existing = pupils.findById(pupilId)
 				.orElseThrow(() -> new IllegalArgumentException("Pupil does not exist: " + pupilId));
 		if (existing.lifecycle() == Lifecycle.ACTIVE && !duplicateNameConfirmed && pupils

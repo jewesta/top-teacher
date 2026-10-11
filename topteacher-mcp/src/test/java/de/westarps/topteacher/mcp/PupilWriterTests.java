@@ -20,7 +20,7 @@ import de.westarps.topteacher.model.Lifecycle;
 import de.westarps.topteacher.model.Pupil;
 
 @ExtendWith(MockitoExtension.class)
-class PupilWriterTests {
+class PupilWriterTests extends FullMcpAccessTest {
 
 	@Mock
 	private PupilRepository pupils;

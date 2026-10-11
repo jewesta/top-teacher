@@ -14,7 +14,7 @@ import de.westarps.topteacher.backend.backup.DatabaseBackupService;
 import de.westarps.topteacher.mcp.DatabaseBackupMcpTools.DatabaseBackupStatus;
 
 @ExtendWith(MockitoExtension.class)
-class DatabaseBackupMcpToolsTests {
+class DatabaseBackupMcpToolsTests extends FullMcpAccessTest {
 
 	@Mock
 	private DatabaseBackupService backupService;
