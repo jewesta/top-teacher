@@ -104,9 +104,10 @@ function numberedBlock(
   const lines = sourceLines.slice(node.position.start.line, node.position.end.line);
   /* Prefixing each source line prevents list/heading syntax from turning one line into a block. */
   const prefix = 'WSLINE ';
-  node.children = lines.map((line, index) => {
-    const lineNumber = index + 1;
+  let lineNumber = 0;
+  node.children = lines.map((line) => {
     const content = line.replace(/^ {0,3}>[ \t]?/, '');
+    const countedLineNumber = content.trim() ? ++lineNumber : undefined;
     const parsed = parse(`${prefix}${content}\n\n${definitions}`);
     const inline = parsed.children?.[0]?.children ?? [];
     if (inline[0]?.type === 'text') inline[0].value = inline[0].value?.slice(prefix.length);
@@ -117,17 +118,31 @@ function numberedBlock(
         {
           type: 'paragraph',
           data: htmlData('span', ['ws-markdown-line-number']),
-          children: [{ type: 'text', value: lineNumber === 1 || lineNumber % 5 === 0 ? String(lineNumber) : '' }],
+          children: [{ type: 'text', value: countedLineNumber !== undefined
+            && (countedLineNumber === 1 || countedLineNumber % 5 === 0) ? String(countedLineNumber) : '' }],
         },
         {
           type: 'paragraph',
-          data: htmlData('span', ['ws-markdown-line-text']),
+          data: {
+            hName: 'span',
+            hProperties: { className: ['ws-markdown-line-text'], dataLineNumber: countedLineNumber },
+          },
           children: inline,
         },
       ],
     };
   });
   node.data = htmlData('div', ['ws-markdown-numbered']);
+}
+
+export function overflowingNumberedLines(
+  lines: readonly Pick<HTMLElement, 'dataset' | 'scrollWidth' | 'clientWidth'>[],
+): number[] {
+  return lines.flatMap((line) => {
+    const lineNumber = Number(line.dataset.lineNumber);
+    return Number.isInteger(lineNumber) && lineNumber > 0 && line.scrollWidth > line.clientWidth + 1
+      ? [lineNumber] : [];
+  });
 }
 
 function htmlData(hName: string, className: string[]) {
@@ -143,7 +158,7 @@ export function markdownBlockSanitizeSchema(schema: typeof defaultSchema): typeo
         'ws-markdown-alert', 'ws-markdown-alert-note', 'ws-markdown-alert-tip',
         'ws-markdown-alert-important', 'ws-markdown-alert-warning', 'ws-markdown-alert-caution',
         'ws-markdown-alert-title', 'ws-markdown-numbered', 'ws-markdown-numbered-line']],
-      span: [...(schema.attributes?.span ?? []), 'ariaHidden', ['className',
+      span: [...(schema.attributes?.span ?? []), 'ariaHidden', 'dataLineNumber', ['className',
         'ws-markdown-alert-icon', 'ws-markdown-line-number', 'ws-markdown-line-text']],
     },
   };

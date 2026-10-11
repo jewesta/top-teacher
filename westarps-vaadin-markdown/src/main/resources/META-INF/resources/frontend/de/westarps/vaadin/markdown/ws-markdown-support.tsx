@@ -7,7 +7,12 @@ import {
   type MarkdownExtensionContext,
   type MarkdownPreviewContribution,
 } from './ws-markdown-extensions';
-import { markdownBlockPluginsFirst, markdownBlockSanitizeSchema, remarkMarkdownBlocks } from './ws-markdown-blocks';
+import {
+  markdownBlockPluginsFirst,
+  markdownBlockSanitizeSchema,
+  overflowingNumberedLines,
+  remarkMarkdownBlocks,
+} from './ws-markdown-blocks';
 import './ws-markdown-blocks.css';
 
 export type MarkdownToolbarCommandId = 'IMAGE' | 'FOOTNOTE' | 'ALERT' | 'NUMBERED';
@@ -168,7 +173,7 @@ function NumberedBlock({ children, ...properties }: React.HTMLAttributes<HTMLDiv
     const measure = () => {
       if (disposed) return;
       const lines = Array.from(element.querySelectorAll<HTMLElement>('.ws-markdown-line-text'));
-      const overflow = lines.flatMap((line, index) => line.scrollWidth > line.clientWidth + 1 ? [index + 1] : []);
+      const overflow = overflowingNumberedLines(lines);
       setOverflowing((previous) => previous.join(',') === overflow.join(',') ? previous : overflow);
     };
     const observer = new ResizeObserver(measure);

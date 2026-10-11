@@ -75,8 +75,9 @@ independent view state or dirty-state handling.
   `Aufgaben` and `Material` tabs are fully functional. No separate teacher
   version of that future exam sheet is currently needed. This does not affect
   the existing pupil and teacher EH result PDFs.
-- Footnotes and line numbering are deferred to a separate issue. They must not
-  hold up the initial material-authoring workflow.
+- Material footnotes and literal source-line numbering are now implemented.
+  Cross-editor footnote collection and pupil-facing print layout remain deferred;
+  see the implementation status below.
 - Material supports managed PNG/JPEG images through the image workflow recorded
   below and specified in the
   [operational documentation](../doc/ops/LevelOfExpectations.md#managed-images).
@@ -238,7 +239,8 @@ exports, and MCP result summaries.
   space are deferred.
 - Managed image support is implemented as described below; generic document
   attachments remain outside that scope.
-- Footnotes and source-text line numbering are deferred.
+- Material footnotes and source-text line numbering are implemented; composed
+  footnote scopes and numbered-text print layout remain deferred.
 
 ## Reimplementation status
 
@@ -266,7 +268,8 @@ The Issue 35 work was planned for these reviewable stages:
 
 Current progress: the restart foundation and stage 1 are committed at
 `301ec3c`; the combined implementation and its follow-up refinements are
-committed through `8b70361`. The stages were reapplied together because their
+committed through `8b70361`, with subsequent UI and Markdown follow-ups committed
+through `358a22c`. The stages were reapplied together because their
 domain, validation, result, export, MCP, shared-rendering, and lock behavior are
 tightly coupled. The running application has been visually checked for the
 workflow tab order, editable Aufgaben/Material views, read-only EH ancestors,
@@ -459,8 +462,10 @@ settled behavior.
 Literal line numbering uses the agreed `> [!NUMBERED]` blockquote convention,
 preserves authored line breaks including empty lines, and clips excess text
 without deleting it. Only line 1 and multiples of five are labelled in the
-margin, while every source line still counts. A separate Material command
-inserts the block. Line numbers now match the source text's size and baseline
+margin, while only non-empty source lines count. Empty and whitespace-only
+lines remain visible as spacing without advancing the counter. A separate
+Material command inserts the block. Line numbers now match the source text's
+size and baseline
 instead of appearing like superscript footnote references. All current
 Markdown editors offer the five GitHub alerts through their own icon and the
 shared dialog factory. Alerts render in preview, read-only views, and the
@@ -482,3 +487,71 @@ used; previews use active-session resources. See the
 for the authoritative behavior. Cross-editor footnote collection and
 exam-sheet print/export layout, including numbered text on the printed page,
 remain separate follow-up work.
+
+## Session summary — 10–11 October 2026
+
+The session completed the Issue 35 reimplementation and extended the authoring
+workflow. The detailed settled behavior remains in the operational documents
+linked above.
+
+- Rebuilt on current `main`, removed the legacy Notes feature, and added the
+  shared Aufgaben/Material/EH workflow, task budgets, per-task bonus caps,
+  first-result locks, and rendered-only locked Markdown. Version is `1.3.0`.
+- Refined action bars, collapse controls, point controls/badges, alignment,
+  selection indicators, and editor-tab presentation. Material's action row now
+  sits above its Markdown, matching Aufgaben and EH. See
+  [application actions](../doc/ops/ApplicationActions.md) and
+  [the shared exam editor](../doc/ops/LevelOfExpectations.md).
+- Unified dialog construction through `TopTeacherDialogs`, with back/cancel on
+  the left and actions on the right. Added the mandatory dialog-opening
+  ellipsis rule to `AGENTS.md`.
+- Adopted query-parameter declarations for criteria and managed images. Added
+  Material image upload, database storage/deduplication, and safe session-scoped
+  rendering. Image processing is isolated in `MaterialImageProcessor` and uses
+  JDK image APIs, without an additional image-processing dependency. Corrected
+  preview widths and existing-image editing via `Bild bearbeiten` / `Übernehmen`.
+  The upload row is dashed drop target, `oder`, `Datei auswählen...`, without an
+  upload icon; only the dashed area accepts and highlights dragged files.
+- Added optional shared footnote commands, initially enabled only for Material.
+  Insertion places the reference at the cursor and appends the definition.
+  Preview/read-only footnotes stay editor-local and have no active reference
+  links or return icons. See
+  [footnotes](../doc/ops/LevelOfExpectations.md#footnotes).
+- Added all five GitHub alerts to Markdown editors, previews, read-only views,
+  and existing EH PDFs. Bundled the matching GitHub SVGs with their MIT notice;
+  PDF icons render as vectors. Added literal `> [!NUMBERED]` blocks for Material,
+  with clipping diagnostics, preserved blank lines, labels at 1/5/10/15/…, and
+  normal-sized, baseline-aligned numbers rather than superscript-like styling.
+  See [Markdown rendering](../doc/ops/Markdown.md).
+- Added TopTeacher's MIT licence naming Jens Westarp only, plus Maven metadata
+  and packaged licence text; third-party notices remain separate.
+- Corrected the manual local TT launch by disabling both Spring DevTools restart
+  and LiveReload. This removed the failed port-35729 browser connections without
+  changing the normal development configuration. The separate Vaadin/Atmosphere
+  `unload` warning remains a framework/browser compatibility follow-up; the
+  React DevTools message is informational.
+
+Verification: the required `mvn -pl topteacher-app -am test` reactor run passed
+(including 204 application tests), all 13 frontend tests passed, and
+`git diff --check` passed. Live preview checks confirmed sparse numbering and
+equal font size/baseline for line numbers and source text; actual PDF checks
+confirmed the five vector alert icons. TT was refreshed only after checking
+saved state and remains running with the Material editor reopened.
+
+Remaining scope: pupil-facing exam-sheet export, print-specific numbered-text
+layout, and cross-editor footnote collection/renumbering. The former blanket
+deferral of footnotes and line numbering no longer applies to Material authoring.
+
+### Morning follow-up — 11 October 2026
+
+Corrected literal line numbering to exclude empty and whitespace-only lines
+from the counter while retaining their visual spacing. Labels remain 1/5/10/15/…
+and restart at the first non-empty line of each block. Clipping diagnostics now
+use the same logical numbering, including unlabelled text lines after blanks.
+Regression tests cover stanza separators and leading/consecutive/trailing blank
+lines. See [the updated specification](../doc/ops/Markdown.md#literal-numbered-source-lines).
+
+Verification: all 16 frontend tests, the required Maven reactor tests, the
+freshly prepared frontend's TypeScript check, and `git diff --check` passed.
+The Markdown module was installed locally for the next TT startup; the server
+remains stopped as requested.

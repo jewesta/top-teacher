@@ -16,7 +16,7 @@ const source = readFileSync(new URL(
 const { outputText } = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2023 },
 });
-const { remarkMarkdownBlocks, markdownBlockPluginsFirst, markdownBlockSanitizeSchema } = await import(
+const { remarkMarkdownBlocks, markdownBlockPluginsFirst, markdownBlockSanitizeSchema, overflowingNumberedLines } = await import(
   `data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`
 );
 
@@ -75,32 +75,73 @@ test('leaves ordinary quotes, unknown markers and code samples alone', async () 
   assert.ok(text(tree).includes('[!TIP]'));
 });
 
-test('numbers literal lines including blanks and preserves links and footnotes', async () => {
+test('preserves blank spacing without counting it and retains links and footnotes', async () => {
   const tree = await render('> [!NUMBERED]\n> Erste **Zeile**.[^1]\n>\n> Zweite [Zeile][quelle]\n\n'
     + '[^1]: Eine Fußnote.\n\n[quelle]: https://example.com');
   const rows = nodes(tree, (node) => node.properties?.className?.includes('ws-markdown-numbered-line'));
   assert.equal(rows.length, 3);
   assert.deepEqual(rows.map((row) => text(row.children[0])), ['1', '', '']);
+  assert.deepEqual(rows.map((row) => row.children[1].properties.dataLineNumber), [1, undefined, 2]);
   assert.equal(text(rows[1].children[1]), '');
   assert.equal(nodes(rows[0], (node) => node.properties?.dataFootnoteRef).length, 1);
   assert.equal(nodes(rows[2], (node) => node.tagName === 'a')[0].properties.href, 'https://example.com');
   assert.equal(nodes(tree, (node) => node.properties?.dataFootnotes).length, 1);
 });
 
-test('shows the first and every fifth line number without skipping rows or blank lines', async () => {
+test('labels the first and every fifth non-empty line and restarts each block at one', async () => {
   const block = (count) => '> [!NUMBERED]\n' + Array.from({ length: count }, (_, index) =>
-    index === 4 ? '>' : `> Zeile ${index + 1}`).join('\n');
+    `${index === 4 ? '>\n' : ''}> Zeile ${index + 1}`).join('\n');
   const tree = await render(`${block(16)}\n\n${block(6)}`);
   const blocks = nodes(tree, (node) => node.properties?.className?.includes('ws-markdown-numbered'));
   assert.equal(blocks.length, 2);
   for (const [index, block] of blocks.entries()) {
     const rows = nodes(block, (node) => node.properties?.className?.includes('ws-markdown-numbered-line'));
-    assert.equal(rows.length, index === 0 ? 16 : 6);
+    assert.equal(rows.length, index === 0 ? 17 : 7);
     assert.deepEqual(rows.flatMap((row, index) => text(row.children[0]) ? [[index + 1, text(row.children[0])]] : []),
-      index === 0 ? [[1, '1'], [5, '5'], [10, '10'], [15, '15']] : [[1, '1'], [5, '5']]);
+      index === 0 ? [[1, '1'], [6, '5'], [11, '10'], [16, '15']] : [[1, '1'], [6, '5']]);
+    assert.deepEqual(rows.flatMap((row) => row.children[1].properties.dataLineNumber ?? []),
+      Array.from({ length: index === 0 ? 16 : 6 }, (_, line) => line + 1));
     assert.equal(text(rows[4].children[1]), '');
-    assert.equal(text(rows.at(-1).children[1]), `Zeile ${rows.length}`);
+    assert.equal(text(rows[4].children[0]), '');
+    assert.equal(text(rows.at(-1).children[1]), `Zeile ${rows.length - 1}`);
   }
+});
+
+test('skips leading, consecutive, trailing and whitespace-only blank lines', async () => {
+  const tree = await render('> [!NUMBERED]\n>\n>   \n> \t\n> Erste Zeile\n>\n> \t \n> Zweite Zeile\n>\n>   ');
+  const rows = nodes(tree, (node) => node.properties?.className?.includes('ws-markdown-numbered-line'));
+  assert.equal(rows.length, 9);
+  assert.deepEqual(rows.map((row) => row.children[1].properties.dataLineNumber),
+    [undefined, undefined, undefined, 1, undefined, undefined, 2, undefined, undefined]);
+  assert.deepEqual(rows.map((row) => text(row.children[0])), ['', '', '', '1', '', '', '', '', '']);
+});
+
+test('counts sixteen verse lines without counting their three stanza separators', async () => {
+  const stanzas = Array.from({ length: 4 }, (_, stanza) => Array.from({ length: 4 }, (_, line) =>
+    `> Strophe ${stanza + 1}, Zeile ${line + 1}`).join('\n'));
+  const tree = await render(`> [!NUMBERED]\n${stanzas.join('\n>\n')}`);
+  const rows = nodes(tree, (node) => node.properties?.className?.includes('ws-markdown-numbered-line'));
+  assert.equal(rows.length, 19);
+  assert.deepEqual(rows.flatMap((row, index) => text(row.children[0]) ? [[index + 1, text(row.children[0])]] : []),
+    [[1, '1'], [6, '5'], [12, '10'], [18, '15']]);
+  for (const separator of [4, 9, 14]) {
+    assert.equal(text(rows[separator].children[0]), '');
+    assert.equal(rows[separator].children[1].properties.dataLineNumber, undefined);
+  }
+});
+
+test('reports clipping using counted line numbers, including unlabelled lines after blanks', async () => {
+  const tree = await render('> [!NUMBERED]\n>\n> Erste Zeile\n>\n> Zweite Zeile\n> Dritte Zeile\n> Vierte Zeile\n>\n> Fünfte Zeile');
+  const rows = nodes(tree, (node) => node.properties?.className?.includes('ws-markdown-numbered-line'));
+  const measured = rows.map((row) => {
+    const lineNumber = row.children[1].properties.dataLineNumber;
+    return {
+      dataset: lineNumber === undefined ? {} : { lineNumber: String(lineNumber) },
+      scrollWidth: lineNumber === 1 ? 101 : 120,
+      clientWidth: 100,
+    };
+  });
+  assert.deepEqual(overflowingNumberedLines(measured), [2, 3, 4, 5]);
 });
 
 test('renders line numbers as normal text with the source line font size and line height', async () => {

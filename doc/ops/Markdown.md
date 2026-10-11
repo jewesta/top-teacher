@@ -43,16 +43,18 @@ without a selection it wraps the current line or inserts a text placeholder.
 > [!NUMBERED]
 > Erste Zeile mit **Hervorhebung**.[^1]
 >
-> Dritte Zeile.
+> Zweite gezählte Zeile.
 
 [^1]: Ein erläuternder Hinweis.
 ```
 
 Each source line after the marker is one displayed line. Each block starts at
-1; an explicitly empty quoted line also consumes a number. The marker and
-quote prefixes are hidden. The left margin shows only the first line number
-and multiples of five: 1, 5, 10, 15, and so on. All intervening lines still
-count, and the number column keeps the same width on unlabelled lines.
+1 for its first non-empty line. Empty and whitespace-only quoted lines remain
+visible as spacing but have no number and do not advance the counter. The
+marker and quote prefixes are hidden. The left margin shows only the first
+counted line number and multiples of five: 1, 5, 10, 15, and so on. All other
+non-empty lines still count, and the number column keeps the same width on
+unlabelled and empty lines.
 Line numbers use normal text at the source line's font size and baseline, not
 superscript styling; footnote references remain superscript.
 Inline formatting, links, and footnote references remain supported. Footnote
@@ -60,7 +62,8 @@ definitions stay outside the block and appear in the local footnote list.
 
 Numbered lines never wrap. Text that exceeds the rendering area's width is
 clipped on the right while the complete source remains stored. The preview
-identifies affected line numbers so the author can insert deliberate breaks.
+identifies affected counted line numbers, excluding blank lines, so the author
+can insert deliberate breaks.
 The preview's available width is not a guarantee that a line fits the eventual
 printed page. Font, size, and print width will determine how much fits, but
 literal numbering must remain stable when exam-sheet export is implemented.

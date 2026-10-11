@@ -51,9 +51,13 @@ library's built-in alert parser so it cannot consume the markers first.
 Literal numbered rows are parsed individually with a neutral
 text prefix so block syntax cannot introduce extra rows; document-level link
 and footnote definitions are included for inline reference resolution. Source
-positions preserve explicitly empty quoted lines. The shared schema permits
-only the required presentation classes. Numbered rows clip excess text and
-observe their available width to report clipping in the preview.
+positions preserve explicitly empty quoted lines as spacing, but only
+non-whitespace source lines advance the counter. Each counted text span carries
+its logical number in `data-line-number`, including lines without a visible
+gutter label; clipping diagnostics use this value rather than the physical row
+index. The shared schema permits the required presentation classes and numbering
+metadata. Numbered rows clip excess text and observe their available width to
+report clipping in the preview.
 
 The backend's CommonMark renderer has a matching alert node renderer and
 export CSS. The canonical GitHub Octicons and MIT licence live in
