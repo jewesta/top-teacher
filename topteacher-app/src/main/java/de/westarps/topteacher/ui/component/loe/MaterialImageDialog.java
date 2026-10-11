@@ -6,21 +6,28 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Image;
+import com.vaadin.flow.component.html.RangeInput;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.upload.Upload;
 import com.vaadin.flow.data.binder.Binder;
+import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.server.streams.InMemoryUploadHandler;
+import com.vaadin.flow.theme.lumo.LumoIcon;
 
 import de.westarps.topteacher.model.loe.LoeMaterialImage;
+import de.westarps.topteacher.model.loe.LoeMaterialImageReferences.Alignment;
 import de.westarps.topteacher.ui.component.Buttons;
+import de.westarps.topteacher.ui.component.SegmentedControl;
 import de.westarps.topteacher.ui.component.TopTeacherDialogs;
 
 final class MaterialImageDialog {
@@ -29,12 +36,16 @@ final class MaterialImageDialog {
 	private final Binder<ImageDetails> binder = new Binder<>(ImageDetails.class);
 	private final ImageDetails details = new ImageDetails();
 	private final TextField description = new TextField("Beschreibung / Alternativtext");
-	private final ComboBox<Integer> width = new ComboBox<>("Breite");
+	private final RangeInput width = new RangeInput();
+	private final Span widthValue = new Span();
+	private final SegmentedControl<Alignment> alignment = SegmentedControl.withComponents("Ausrichtung",
+			List.of(Alignment.values()), MaterialImageDialog::alignmentIcon, MaterialImageDialog::alignmentLabel);
 	private final Image preview = new Image();
 	private final Button confirm;
 	private LoeMaterialImage image;
 
 	MaterialImageDialog(final Action action, final String initialDescription, final Integer initialWidth,
+			final Alignment initialAlignment,
 			final LoeMaterialImage prefilledImage,
 			final Function<byte[], LoeMaterialImage> processor, final Consumer<Result> resultHandler) {
 		Objects.requireNonNull(action, "action must not be null");
@@ -43,11 +54,16 @@ final class MaterialImageDialog {
 		confirm = TopTeacherDialogs.primaryButton(action == Action.EDIT ? "Übernehmen" : "Einfügen");
 
 		description.setWidthFull();
-		width.setItems(List.of(25, 50, 75, 100));
-		width.setItemLabelGenerator(value -> value + " %");
-		width.setPlaceholder("Automatisch");
-		width.setClearButtonVisible(true);
+		width.setMin(0);
+		width.setMax(100);
+		width.setStep(5.0);
+		width.setValueChangeMode(ValueChangeMode.EAGER);
+		width.setAriaLabel("Breite in Prozent");
+		width.addClassName("tt-material-image-width-slider");
 		width.setWidthFull();
+		width.addValueChangeListener(event -> updateWidthValue());
+		widthValue.addClassName("tt-material-image-width-value");
+		alignment.setWidth("11rem");
 		preview.setVisible(false);
 		preview.setMaxWidth("100%");
 		preview.setMaxHeight("20rem");
@@ -55,10 +71,15 @@ final class MaterialImageDialog {
 		binder.forField(description).asRequired("Beschreibung ist erforderlich.")
 				.withValidator(value -> !value.isBlank(), "Beschreibung ist erforderlich.")
 				.bind(ImageDetails::getDescription, ImageDetails::setDescription);
-		binder.forField(width).bind(ImageDetails::getWidth, ImageDetails::setWidth);
+		binder.forField(width).withConverter(MaterialImageDialog::sliderValueToWidth,
+				MaterialImageDialog::widthToSliderValue)
+				.bind(ImageDetails::getWidth, ImageDetails::setWidth);
+		binder.forField(alignment).bind(ImageDetails::getAlignment, ImageDetails::setAlignment);
 		details.setDescription(initialDescription == null ? "" : initialDescription);
-		details.setWidth(initialWidth);
+		details.setWidth(sliderWidth(initialWidth));
+		details.setAlignment(initialAlignment == null ? Alignment.LEFT : initialAlignment);
 		binder.readBean(details);
+		updateWidthValue();
 		binder.addStatusChangeListener(event -> updateConfirmEnabled());
 		description.addValueChangeListener(event -> {
 			preview.setAlt(event.getValue());
@@ -74,7 +95,14 @@ final class MaterialImageDialog {
 		} else {
 			setImage(prefilledImage);
 		}
-		fields.add(preview, description, width);
+		final Div widthField = widthField();
+		final HorizontalLayout imageOptions = new HorizontalLayout(widthField, alignment);
+		imageOptions.addClassName("tt-material-image-options");
+		imageOptions.setAlignItems(FlexComponent.Alignment.END);
+		imageOptions.setFlexGrow(1, widthField);
+		imageOptions.setPadding(false);
+		imageOptions.setWidthFull();
+		fields.add(preview, description, imageOptions);
 
 		final Button cancel = new Button("Abbrechen");
 		dialog = TopTeacherDialogs.create(action == Action.EDIT ? "Bild bearbeiten" : "Bild einfügen", fields,
@@ -87,7 +115,8 @@ final class MaterialImageDialog {
 				updateConfirmEnabled();
 				return;
 			}
-			resultHandler.accept(new Result(image, details.getDescription().trim(), details.getWidth()));
+			resultHandler.accept(new Result(image, details.getDescription().trim(), details.getWidth(),
+					details.getAlignment()));
 			dialog.close();
 		});
 		updateConfirmEnabled();
@@ -95,6 +124,10 @@ final class MaterialImageDialog {
 
 	void open() {
 		dialog.open();
+	}
+
+	Dialog dialog() {
+		return dialog;
 	}
 
 	private Upload upload(final Function<byte[], LoeMaterialImage> processor) {
@@ -154,6 +187,54 @@ final class MaterialImageDialog {
 		confirm.setEnabled(image != null && !description.getValue().isBlank() && binder.isValid());
 	}
 
+	private Div widthField() {
+		final Span label = new Span("Breite");
+		label.addClassName("tt-material-image-options-label");
+		final Div control = new Div(width, widthValue);
+		control.addClassName("tt-material-image-width-control");
+		final Div field = new Div(label, control);
+		field.addClassName("tt-material-image-width-field");
+		return field;
+	}
+
+	private void updateWidthValue() {
+		final int value = width.getValue().intValue();
+		final String text = value == 0 ? "Auto" : value + " %";
+		widthValue.setText(text);
+		width.getElement().setAttribute("aria-valuetext", text);
+	}
+
+	private static Component alignmentIcon(final Alignment value) {
+		return switch (value) {
+			case LEFT -> LumoIcon.ALIGN_LEFT.create();
+			case CENTER -> LumoIcon.ALIGN_CENTER.create();
+			case RIGHT -> LumoIcon.ALIGN_RIGHT.create();
+		};
+	}
+
+	private static String alignmentLabel(final Alignment value) {
+		return switch (value) {
+			case LEFT -> "Linksbündig";
+			case CENTER -> "Zentriert";
+			case RIGHT -> "Rechtsbündig";
+		};
+	}
+
+	private static int sliderWidth(final Integer initialWidth) {
+		if (initialWidth == null) {
+			return 0;
+		}
+		return Math.max(5, Math.min(100, Math.round(initialWidth / 5.0f) * 5));
+	}
+
+	private static Integer sliderValueToWidth(final Double value) {
+		return value.intValue() == 0 ? null : value.intValue();
+	}
+
+	private static Double widthToSliderValue(final Integer value) {
+		return value == null ? 0.0 : value.doubleValue();
+	}
+
 	static InMemoryUploadHandler inMemoryHandler(final com.vaadin.flow.server.streams.InMemoryUploadCallback callback) {
 		return new InMemoryUploadHandler(callback) {
 
@@ -169,7 +250,7 @@ final class MaterialImageDialog {
 		};
 	}
 
-	record Result(LoeMaterialImage image, String description, Integer width) {
+	record Result(LoeMaterialImage image, String description, Integer width, Alignment alignment) {
 	}
 
 	enum Action {
@@ -181,6 +262,7 @@ final class MaterialImageDialog {
 
 		private String description = "";
 		private Integer width;
+		private Alignment alignment = Alignment.LEFT;
 
 		public String getDescription() {
 			return description;
@@ -196,6 +278,14 @@ final class MaterialImageDialog {
 
 		public void setWidth(final Integer width) {
 			this.width = width;
+		}
+
+		public Alignment getAlignment() {
+			return alignment;
+		}
+
+		public void setAlignment(final Alignment alignment) {
+			this.alignment = alignment;
 		}
 	}
 }

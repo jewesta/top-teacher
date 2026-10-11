@@ -169,7 +169,9 @@ class MarkdownFragmentHtmlRendererTests {
 		final LoeMaterialImage referenced = image("abc123xy");
 		final LoeMaterialImage unused = image("unused01");
 		final var fragment = renderer.render(new RenderRequest(List.of(new Section("Material", """
-				![Kartenausschnitt](img:abc123xy?width=50 "Karte")
+				![Kartenausschnitt](img:abc123xy?width=50&align=center "Karte")
+
+				![Rechts](img:abc123xy?align=right)
 
 				![Volle Breite](img:abc123xy)
 
@@ -185,12 +187,18 @@ class MarkdownFragmentHtmlRendererTests {
 
 		assertThat(fragment.imageResources()).containsOnlyKeys("tt-image:abc123xy");
 		assertThat(fragment.imageResources().get("tt-image:abc123xy").data()).containsExactly(1, 2, 3);
-		assertThat(html.select("img")).hasSize(2);
+		assertThat(html.select("img")).hasSize(3);
 		assertThat(html.selectFirst("img").attr("src")).isEqualTo("tt-image:abc123xy");
 		assertThat(html.selectFirst("img").attr("style")).isEqualTo("width:50%;height:auto");
 		assertThat(html.selectFirst("img").attr("width")).isEqualTo("100");
 		assertThat(html.selectFirst("img").attr("height")).isEqualTo("50");
 		assertThat(html.selectFirst("img").attr("title")).isEqualTo("Karte");
+		assertThat(html.selectFirst("img").classNames())
+				.containsExactlyInAnyOrder("tt-material-image", "tt-material-image-align-center");
+		assertThat(html.select("img").get(1).classNames())
+				.containsExactlyInAnyOrder("tt-material-image", "tt-material-image-align-right");
+		assertThat(html.select("img").get(2).classNames())
+				.containsExactlyInAnyOrder("tt-material-image", "tt-material-image-align-left");
 		assertThat(html.select("img").get(1).hasAttr("style")).isFalse();
 		assertThat(html.select(".tt-material-image-missing").eachText()).containsExactly(
 				"Bild nicht verfügbar: Nicht gefunden", "Bild nicht verfügbar: Ungültige Breite", "Bild nicht verfügbar: Extern",

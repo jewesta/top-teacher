@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
+import de.westarps.topteacher.model.loe.LoeMaterialImageReferences.Alignment;
+
 class LoeMaterialImageReferencesTests {
 
 	@Test
@@ -23,7 +25,7 @@ class LoeMaterialImageReferencesTests {
 	@Test
 	void changesOnlyActualImageDestinationsAndLeavesCaptionAndCodeExamplesUntouched() {
 		final String markdown = """
-			![Caption (img:4n8k2p7c) with [nested text]](img:4n8k2p7c?width=75)
+			![Caption (img:4n8k2p7c) with [nested text]](img:4n8k2p7c?width=75&align=center)
 			[Link](img:4n8k2p7c) plain (img:4n8k2p7c)
 			`![Inline example](img:4n8k2p7c)`
 			```markdown
@@ -32,7 +34,7 @@ class LoeMaterialImageReferencesTests {
 			![![Nested alt image](img:4n8k2p7c)](img:4n8k2p7c "Title (img:4n8k2p7c)")
 			""";
 		assertThat(LoeMaterialImageReferences.replaceId(markdown, "4n8k2p7c", "abcdefgh")).isEqualTo("""
-			![Caption (img:4n8k2p7c) with [nested text]](img:abcdefgh?width=75)
+			![Caption (img:4n8k2p7c) with [nested text]](img:abcdefgh?width=75&align=center)
 			[Link](img:4n8k2p7c) plain (img:4n8k2p7c)
 			`![Inline example](img:4n8k2p7c)`
 			```markdown
@@ -65,13 +67,14 @@ class LoeMaterialImageReferencesTests {
 	void unescapesOpeningAndClosingBracketsWhenEditingAnImageCaption() {
 		final String markdown = "![Chart \\[A\\]](img:abcdefgh)";
 		assertThat(LoeMaterialImageReferences.findAt(markdown, 3, 3)).contains(
-				new LoeMaterialImageReferences.Occurrence("abcdefgh", "Chart [A]", null, 0, markdown.length()));
+				new LoeMaterialImageReferences.Occurrence("abcdefgh", "Chart [A]", null, Alignment.LEFT, 0,
+						markdown.length()));
 	}
 
 	@Test
 	void findsManagedImageReferencesAndIgnoresOtherImages() {
 		assertThat(LoeMaterialImageReferences.ids("""
-			![Diagramm](img:4n8k2p7c?width=75)
+			![Diagramm](img:4n8k2p7c?width=75&align=right)
 			![Foto](img:abcdefgh)
 			![Extern](https://example.com/image.png)
 			![Ungültig](img:TOO-LONG)
@@ -91,7 +94,7 @@ class LoeMaterialImageReferencesTests {
 
 		assertThat(LoeMaterialImageReferences.findAt(markdown, markdown.indexOf("Diagramm"),
 				markdown.indexOf("Diagramm")))
-				.contains(new LoeMaterialImageReferences.Occurrence("4n8k2p7c", "Diagramm ] A", 50,
+				.contains(new LoeMaterialImageReferences.Occurrence("4n8k2p7c", "Diagramm ] A", 50, Alignment.LEFT,
 						markdown.indexOf("!["), markdown.indexOf(")") + 1));
 	}
 
@@ -100,7 +103,37 @@ class LoeMaterialImageReferencesTests {
 		final String markdown = "![Foto](img:abcdefgh)";
 
 		assertThat(LoeMaterialImageReferences.findAt(markdown, 2, 6))
-				.contains(new LoeMaterialImageReferences.Occurrence("abcdefgh", "Foto", null, 0, markdown.length()));
+				.contains(new LoeMaterialImageReferences.Occurrence("abcdefgh", "Foto", null, Alignment.LEFT, 0,
+						markdown.length()));
+	}
+
+	@Test
+	void parsesAndSerializesImageAlignmentIndependentlyOfWidth() {
+		assertThat(LoeMaterialImageReferences.target("img:abcdefgh?align=center"))
+				.contains(new LoeMaterialImageReferences.Target("abcdefgh", null, Alignment.CENTER));
+		assertThat(LoeMaterialImageReferences.target("img:abcdefgh?align=right&width=25"))
+				.contains(new LoeMaterialImageReferences.Target("abcdefgh", 25, Alignment.RIGHT));
+		assertThat(LoeMaterialImageReferences.destination("abcdefgh", null, Alignment.LEFT)).isEqualTo("img:abcdefgh");
+		assertThat(LoeMaterialImageReferences.destination("abcdefgh", 75, Alignment.CENTER))
+				.isEqualTo("img:abcdefgh?width=75&align=center");
+	}
+
+	@Test
+	void rejectsUnknownDuplicateOrMalformedImageParameters() {
+		for (final String target : new String[] { "img:abcdefgh?align=middle", "img:abcdefgh?align=CENTER",
+				"img:abcdefgh?align=right&align=center", "img:abcdefgh?width=50&width=75",
+				"img:abcdefgh?width=0", "img:abcdefgh?extra=1", "img:abcdefgh?" }) {
+			assertThat(LoeMaterialImageReferences.target(target)).as(target).isEmpty();
+		}
+	}
+
+	@Test
+	void findsImageAlignmentAtTheCursor() {
+		final String markdown = "![Foto](img:abcdefgh?align=right)";
+
+		assertThat(LoeMaterialImageReferences.findAt(markdown, 3, 3))
+				.contains(new LoeMaterialImageReferences.Occurrence("abcdefgh", "Foto", null, Alignment.RIGHT, 0,
+						markdown.length()));
 	}
 
 	@Test

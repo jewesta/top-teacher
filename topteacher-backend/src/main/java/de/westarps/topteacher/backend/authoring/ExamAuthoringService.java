@@ -41,6 +41,7 @@ import de.westarps.topteacher.model.loe.LoeCategory;
 import de.westarps.topteacher.model.loe.LoeCriterion;
 import de.westarps.topteacher.model.loe.LoeCriterionParser;
 import de.westarps.topteacher.model.loe.LoeMaterial;
+import de.westarps.topteacher.model.loe.LoeMaterialImageReferences;
 import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoePointUnits;
 import de.westarps.topteacher.model.loe.LoeRequirement;
@@ -603,8 +604,9 @@ public class ExamAuthoringService {
 					if (!material) {
 						throw new IllegalArgumentException("Managed images are supported only in Material");
 					}
-					if (!image.getDestination().matches("img:[a-z0-9]{8}(?:\\?width=(?:100|[1-9][0-9]?))?")) {
-						throw new IllegalArgumentException("Invalid managed image ID or width; use the image ID returned by import");
+					if (LoeMaterialImageReferences.target(image.getDestination()).isEmpty()) {
+						throw new IllegalArgumentException(
+								"Invalid managed image ID, width, or alignment; use the image ID returned by import");
 					}
 					final StringBuilder description = new StringBuilder();
 					image.accept(new AbstractVisitor() {

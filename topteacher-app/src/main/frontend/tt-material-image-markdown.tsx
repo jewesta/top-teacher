@@ -5,6 +5,7 @@ import {
   registerMarkdownExtension,
   type MarkdownExtensionContext,
 } from '@vaadin/flow-frontend/de/westarps/vaadin/markdown/ws-markdown-extensions';
+import { parseMaterialImageTarget } from './tt-material-image-reference';
 import './tt-material-image-markdown.css';
 
 type MarkdownNode = {
@@ -25,12 +26,12 @@ type ManagedImageProps = ImgHTMLAttributes<HTMLImageElement> & {
   node?: unknown;
   'data-material-image-id'?: string;
   'data-material-image-width'?: string;
+  'data-material-image-alignment'?: string;
   'data-material-image-missing'?: string;
   'data-material-pixel-width'?: string;
   'data-material-pixel-height'?: string;
 };
 
-const targetPattern = /^img:([a-z0-9]{8})(?:\?width=(100|[1-9][0-9]?))?$/;
 const skippedNodeTypes = new Set(['code', 'inlineCode', 'html']);
 
 function materialImageCommand(): ICommand {
@@ -68,15 +69,16 @@ function transformImages(node: MarkdownNode | undefined, images: Map<string, Man
   if (!node?.children || skippedNodeTypes.has(node.type)) return;
   node.children.forEach((child) => {
     if (child.type === 'image' && typeof child.url === 'string' && child.url.startsWith('img:')) {
-      const match = targetPattern.exec(child.url.trim());
-      const id = match?.[1];
+      const target = parseMaterialImageTarget(child.url.trim());
+      const id = target?.id;
       const image = id ? images.get(id) : undefined;
       child.url = image?.url ?? '';
       child.data = {
         ...(child.data ?? {}),
         hProperties: {
           dataMaterialImageId: id ?? '',
-          dataMaterialImageWidth: match?.[2] ?? '',
+          dataMaterialImageWidth: target?.width ?? '',
+          dataMaterialImageAlignment: target?.alignment ?? 'left',
           dataMaterialImageMissing: image ? 'false' : 'true',
           dataMaterialPixelWidth: image?.pixelWidth?.toString() ?? '',
           dataMaterialPixelHeight: image?.pixelHeight?.toString() ?? '',
@@ -103,6 +105,7 @@ function imageSanitizeSchema(schema: typeof defaultSchema): typeof defaultSchema
         ...(schema.attributes?.img ?? []),
         'dataMaterialImageId',
         'dataMaterialImageWidth',
+        'dataMaterialImageAlignment',
         'dataMaterialImageMissing',
         'dataMaterialPixelWidth',
         'dataMaterialPixelHeight',
@@ -117,6 +120,7 @@ function ManagedImage(props: ManagedImageProps): ReactElement {
     node: _node,
     'data-material-image-id': _id,
     'data-material-image-width': width,
+    'data-material-image-alignment': alignment = 'left',
     'data-material-image-missing': missing,
     'data-material-pixel-width': pixelWidth,
     'data-material-pixel-height': pixelHeight,
@@ -135,7 +139,8 @@ function ManagedImage(props: ManagedImageProps): ReactElement {
     style={{ width: width ? '100%' : undefined }}
   />;
   return <>
-    <button type="button" className="tt-material-image-open" onClick={() => setExpanded(true)}
+    <button type="button" className={`tt-material-image-open tt-material-image-align-${alignment}`}
+      onClick={() => setExpanded(true)}
       aria-label={`${imageProps.alt || 'Bild'} vergrößern`} title="Bild vergrößern"
       style={{ width: width ? `${width}%` : undefined }}>
       {image}

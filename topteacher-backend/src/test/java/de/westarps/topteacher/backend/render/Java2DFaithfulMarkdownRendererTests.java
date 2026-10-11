@@ -78,6 +78,8 @@ class Java2DFaithfulMarkdownRendererTests {
 		final RenderedPng result = render(new RenderRequest(List.of(new Section("", """
 			![First copy](img:image001?width=40)
 
+			Zwischentext.
+
 			![Second copy](img:image001?width=40)
 			""", Variant.MATERIAL)), List.of(image)));
 		final BufferedImage rendered = decode(result);
@@ -91,6 +93,32 @@ class Java2DFaithfulMarkdownRendererTests {
 			}
 			assertThat(bands.get(0).width()).isEqualTo(bands.get(1).width());
 			assertThat(bands.get(0).height()).isEqualTo(bands.get(1).height());
+		} finally {
+			rendered.flush();
+		}
+	}
+
+	@Test
+	void alignsManagedImagesWithinTheAvailableContentWidth() throws Exception {
+		final LoeMaterialImage image = image("image001", 32, 16, coloredPng(32, 16));
+		final BufferedImage rendered = decode(render(new RenderRequest(List.of(new Section("", """
+			![Left](img:image001?width=25)
+
+			![Center](img:image001?width=25&align=center)
+
+			![Right](img:image001?width=25&align=right)
+
+			![Automatic center](img:image001?align=center)
+			""", Variant.MATERIAL)), List.of(image))));
+		try {
+			final List<ImageBand> bands = imageBands(rendered);
+			assertThat(bands).hasSize(4);
+			assertThat(bands.get(0).left()).isLessThan(100);
+			assertThat(bands.get(1).left()).isBetween(300, 450);
+			assertThat(bands.get(2).left()).isGreaterThan(650);
+			assertThat(bands.get(3).left()).isBetween(430, 500);
+			assertThat(bands.subList(0, 3).stream().map(ImageBand::width).distinct()).hasSize(1);
+			assertThat(bands.get(3).width()).isBetween(30, 34);
 		} finally {
 			rendered.flush();
 		}
@@ -301,12 +329,15 @@ class Java2DFaithfulMarkdownRendererTests {
 	private static List<ImageBand> imageBands(final BufferedImage image) {
 		final List<ImageBand> bands = new ArrayList<>();
 		int start = -1;
+		int left = image.getWidth();
 		int width = 0;
 		for (int y = 0; y <= image.getHeight(); y++) {
 			int rowWidth = 0;
+			int rowLeft = image.getWidth();
 			if (y < image.getHeight()) {
 				for (int x = 0; x < image.getWidth(); x++) {
 					if ((image.getRGB(x, y) & 0xffffff) == IMAGE_COLOR) {
+						rowLeft = Math.min(rowLeft, x);
 						rowWidth++;
 					}
 				}
@@ -314,17 +345,24 @@ class Java2DFaithfulMarkdownRendererTests {
 			if (rowWidth > 0) {
 				if (start < 0) {
 					start = y;
+					left = rowLeft;
+				} else if (rowLeft != left) {
+					bands.add(new ImageBand(left, width, y - start));
+					start = y;
+					left = rowLeft;
+					width = 0;
 				}
 				width = Math.max(width, rowWidth);
 			} else if (start >= 0) {
-				bands.add(new ImageBand(width, y - start));
+				bands.add(new ImageBand(left, width, y - start));
 				start = -1;
+				left = image.getWidth();
 				width = 0;
 			}
 		}
 		return bands;
 	}
 
-	private record ImageBand(int width, int height) {
+	private record ImageBand(int left, int width, int height) {
 	}
 }

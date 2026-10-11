@@ -28,7 +28,7 @@ import de.westarps.topteacher.model.McpAccessLevel;
 public class McpContextTools {
 
 	public static final String CONTRACT_VERSION = "2.0";
-	public static final String MARKDOWN_GUIDE_VERSION = "1.0";
+	public static final String MARKDOWN_GUIDE_VERSION = "1.1";
 	private static final String GUIDE_RESOURCE = "/mcp/markdown-guide.md";
 	private static final Pattern GUIDE_SECTION = Pattern.compile("<!-- guide:([A-Z]+) -->");
 	private static final Map<String, String> GUIDE = loadGuide();

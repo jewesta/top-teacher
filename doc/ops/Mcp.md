@@ -375,8 +375,9 @@ only in Material. Preview width does not guarantee future print fit.
 ## Material image exchange
 
 `import_material_image` takes `examId`, `materialId`, absolute `sourcePath`,
-nonblank `altText`, optional `widthPercent` (1–100), `expectedRevision`, and
-`requestId`. Local installation resolves paths directly; remote installation
+nonblank `altText`, optional `widthPercent` (1–100), optional `alignment`
+(`LEFT`, `CENTER`, or `RIGHT`), `expectedRevision`, and `requestId`. Omitted
+alignment is left. Local installation resolves paths directly; remote installation
 uses configured shares. See [file access](SystemSettings.md#file-access).
 Private server roots are not disclosed by MCP.
 
@@ -391,7 +392,8 @@ Markdown reference to the selected material in one transaction. Its response
 returns image metadata and current canonical material. Use an `UPDATE_MATERIAL`
 command to reposition the returned declaration if needed; do not invent image
 IDs or put private paths/Base64 into Markdown. Omitted width uses automatic
-sizing. Metadata deduplication and image processing match the Material UI.
+sizing. Width and alignment belong to the Markdown occurrence rather than the
+stored image. Metadata deduplication and image processing match the Material UI.
 Only actual rendered Markdown image declarations grant managed-image access.
 Plain text, ordinary links, inline/fenced code and image alternative-text
 examples do not create managed references; image-ID rewriting touches actual

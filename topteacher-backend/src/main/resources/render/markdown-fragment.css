@@ -25,7 +25,10 @@ hr { border: 0; border-top: 1px solid #aaa; margin: 16px 0; }
 table { width: 100%; border-collapse: collapse; margin: 0 0 12px; table-layout: fixed; }
 th, td { padding: 5px 8px; border: 1px solid #ccc; vertical-align: top; }
 th { text-align: left; background: #f3f3f3; }
-img.tt-material-image { max-width: 100%; height: auto; }
+img.tt-material-image { display: block; max-width: 100%; height: auto; }
+img.tt-material-image-align-left { margin-left: 0; margin-right: auto; }
+img.tt-material-image-align-center { margin-left: auto; margin-right: auto; }
+img.tt-material-image-align-right { margin-left: auto; margin-right: 0; }
 .tt-material-image-missing { color: #777; font-style: italic; }
 .ws-markdown-alert { border-left: 4px solid #1678be; padding: 10px 14px; margin: 12px 0; background: #f5f8fb; }
 .ws-markdown-alert-title { color: #1678be; font-weight: 700; margin-bottom: 8px; }

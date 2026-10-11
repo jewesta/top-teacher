@@ -28,6 +28,7 @@ import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.model.loe.LoeMaterial;
 import de.westarps.topteacher.model.loe.LoeMaterialImage;
 import de.westarps.topteacher.model.loe.LoeMaterialImageReferences;
+import de.westarps.topteacher.model.loe.LoeMaterialImageReferences.Alignment;
 
 /** Imports an image and its material reference in one revision-checked transaction. */
 @Service
@@ -58,7 +59,15 @@ public class MaterialImageImportService {
 	public ImportImageSnapshot importImage(final int examId, final int materialId,
 			final String sourcePath, final String altText, final Integer widthPercent, final long expectedRevision,
 			final String requestId) {
+		return importImage(examId, materialId, sourcePath, altText, widthPercent, Alignment.LEFT, expectedRevision,
+				requestId);
+	}
+
+	public ImportImageSnapshot importImage(final int examId, final int materialId,
+			final String sourcePath, final String altText, final Integer widthPercent, final Alignment alignment,
+			final long expectedRevision, final String requestId) {
 		final String description = alternativeText(altText);
+		final Alignment resolvedAlignment = alignment == null ? Alignment.LEFT : alignment;
 		if (widthPercent != null && (widthPercent < 1 || widthPercent > 100)) {
 			throw new IllegalArgumentException("widthPercent must be between 1 and 100.");
 		}
@@ -69,10 +78,10 @@ public class MaterialImageImportService {
 			throw new IllegalArgumentException("sourcePath must not exceed " + MAX_SOURCE_PATH_LENGTH + " characters.");
 		}
 		final String fingerprint = ExamMutationExecutor.fingerprint(examId, expectedRevision, materialId, sourcePath,
-				description, widthPercent);
+				description, widthPercent, resolvedAlignment);
 		final MutationExecution<ImportedImage> mutation = mutations.execute(examId, expectedRevision, requestId,
 				"import_material_image", fingerprint,
-				() -> importAndReference(examId, materialId, sourcePath, description, widthPercent),
+				() -> importAndReference(examId, materialId, sourcePath, description, widthPercent, resolvedAlignment),
 				MaterialImageImportService::encodeMetadata, MaterialImageImportService::decodeMetadata);
 		return guard.read(examId, () -> new ImportImageSnapshot(guard.revision(examId), mutation.revision(),
 				mutation.replayed(), mutation.metadata(), repository.findMaterialsByExamId(examId).stream()
@@ -94,7 +103,7 @@ public class MaterialImageImportService {
 	}
 
 	private ImportedImage importAndReference(final int examId, final int materialId, final String sourcePath,
-			final String description, final Integer width) {
+			final String description, final Integer width, final Alignment alignment) {
 		final LoeMaterial material = material(examId, materialId);
 		if (repository.hasResultsForExam(examId)) {
 			throw new IllegalStateException("Exam material images cannot be changed after the first results.");
@@ -102,8 +111,8 @@ public class MaterialImageImportService {
 		final LoeMaterialImage pending = processor.process(randomImageId(
 				LoeMaterialImageReferences.ids(material.descriptionMarkdown()), random::nextInt), readImage(sourcePath));
 		final String reference = "![" + description.replace("\\", "\\\\").replace("[", "\\[").replace("]", "\\]")
-				.replace('\n', ' ').replace('\r', ' ') + "](img:" + pending.id()
-				+ (width == null ? "" : "?width=" + width) + ")";
+				.replace('\n', ' ').replace('\r', ' ') + "](" + LoeMaterialImageReferences.destination(pending.id(),
+						width, alignment) + ")";
 		final String markdown = material.descriptionMarkdown()
 				+ (material.descriptionMarkdown().isEmpty() ? "" : "\n\n") + reference;
 		final LoeMaterial saved = repository.saveMaterialWithImages(new LoeMaterial(material.id(), material.partId(),

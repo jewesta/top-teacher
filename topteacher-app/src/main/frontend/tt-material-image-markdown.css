@@ -1,10 +1,26 @@
 .tt-material-image-open {
   display: block;
+  width: fit-content;
   max-width: 100%;
   padding: 0;
   border: 0;
   background: transparent;
   cursor: zoom-in;
+}
+
+.tt-material-image-align-left {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.tt-material-image-align-center {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.tt-material-image-align-right {
+  margin-left: auto;
+  margin-right: 0;
 }
 
 .tt-material-image {

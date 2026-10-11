@@ -3,6 +3,7 @@ package de.westarps.topteacher.model.loe;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
@@ -20,12 +21,12 @@ import org.commonmark.parser.Parser;
 public final class LoeMaterialImageReferences {
 
 	private static final Parser PARSER = Parser.builder().includeSourceSpans(IncludeSourceSpans.BLOCKS_AND_INLINES).build();
-	private static final Pattern DESTINATION = Pattern
-			.compile("img:([a-z0-9]{8})(?:\\?width=(?:100|[1-9][0-9]?))?");
+	private static final Pattern DESTINATION = Pattern.compile("img:([a-z0-9]{8})(?:\\?([^\\s]+))?");
+	private static final Pattern WIDTH = Pattern.compile("100|[1-9][0-9]?");
 	private static final Pattern INLINE_DESTINATION = Pattern.compile(
-			"\\]\\(\\s*<?img:([a-z0-9]{8})(?:\\?width=(?:100|[1-9][0-9]?))?>?(?:\\s+(?:\"(?:\\\\.|[^\"\\\\])*\"|'(?:\\\\.|[^'\\\\])*'|\\((?:\\\\.|[^)\\\\])*\\)))?\\s*\\)$");
+			"\\]\\(\\s*<?img:([a-z0-9]{8})(?:\\?[^\\s)>]+)?>?(?:\\s+(?:\"(?:\\\\.|[^\"\\\\])*\"|'(?:\\\\.|[^'\\\\])*'|\\((?:\\\\.|[^)\\\\])*\\)))?\\s*\\)$");
 	private static final Pattern IMAGE_REFERENCE = Pattern.compile(
-			"!\\[((?:\\\\[\\s\\S]|[^\\\\\\]])*)\\]\\(img:([a-z0-9]{8})(?:\\?width=(100|[1-9][0-9]?))?\\)");
+			"!\\[((?:\\\\[\\s\\S]|[^\\\\\\]])*)\\]\\((img:[^\\s)]+)\\)");
 
 	private LoeMaterialImageReferences() {
 	}
@@ -33,12 +34,58 @@ public final class LoeMaterialImageReferences {
 	public static Set<String> ids(final String markdown) {
 		final Set<String> ids = new LinkedHashSet<>();
 		for (final Image image : managedDocument(markdown).images()) {
-			final Matcher matcher = DESTINATION.matcher(image.getDestination());
-			if (matcher.matches()) {
-				ids.add(matcher.group(1));
-			}
+			target(image.getDestination()).map(Target::id).ifPresent(ids::add);
 		}
 		return Set.copyOf(ids);
+	}
+
+	public static Optional<Target> target(final String destination) {
+		final Matcher matcher = DESTINATION.matcher(destination == null ? "" : destination.trim());
+		if (!matcher.matches()) {
+			return Optional.empty();
+		}
+		Integer width = null;
+		Alignment alignment = Alignment.LEFT;
+		boolean alignmentSpecified = false;
+		if (matcher.group(2) != null) {
+			for (final String parameter : matcher.group(2).split("&", -1)) {
+				final String[] pair = parameter.split("=", -1);
+				if (pair.length != 2) {
+					return Optional.empty();
+				}
+				if (pair[0].equals("width") && width == null && WIDTH.matcher(pair[1]).matches()) {
+					width = Integer.valueOf(pair[1]);
+				} else if (pair[0].equals("align") && !alignmentSpecified) {
+					final Optional<Alignment> parsed = Alignment.fromQueryValue(pair[1]);
+					if (parsed.isEmpty()) {
+						return Optional.empty();
+					}
+					alignment = parsed.orElseThrow();
+					alignmentSpecified = true;
+				} else {
+					return Optional.empty();
+				}
+			}
+		}
+		return Optional.of(new Target(matcher.group(1), width, alignment));
+	}
+
+	public static String destination(final String id, final Integer width, final Alignment alignment) {
+		if (id == null || !id.matches("[a-z0-9]{8}")) {
+			throw new IllegalArgumentException("Material image ID must contain eight lowercase letters or digits.");
+		}
+		if (width != null && (width < 1 || width > 100)) {
+			throw new IllegalArgumentException("Material image width must be between 1 and 100.");
+		}
+		final Alignment resolvedAlignment = alignment == null ? Alignment.LEFT : alignment;
+		final List<String> parameters = new ArrayList<>();
+		if (width != null) {
+			parameters.add("width=" + width);
+		}
+		if (resolvedAlignment != Alignment.LEFT) {
+			parameters.add("align=" + resolvedAlignment.queryValue());
+		}
+		return "img:" + id + (parameters.isEmpty() ? "" : "?" + String.join("&", parameters));
 	}
 
 	public static String replaceId(final String markdown, final String currentId, final String replacementId) {
@@ -48,8 +95,8 @@ public final class LoeMaterialImageReferences {
 		final ManagedDocument document = managedDocument(markdown);
 		final TreeSet<Integer> offsets = new TreeSet<>();
 		for (final Image image : document.images()) {
-			final Matcher destination = DESTINATION.matcher(image.getDestination());
-			if (!destination.matches() || !destination.group(1).equals(currentId)) {
+			final Optional<Target> destination = target(image.getDestination());
+			if (destination.isEmpty() || !destination.orElseThrow().id().equals(currentId)) {
 				continue;
 			}
 			final SourceRange range = sourceRange(image);
@@ -89,7 +136,7 @@ public final class LoeMaterialImageReferences {
 		PARSER.parse(markdown == null ? "" : markdown).accept(new AbstractVisitor() {
 			@Override
 			public void visit(final Image image) {
-				if (DESTINATION.matcher(image.getDestination()).matches()) {
+				if (target(image.getDestination()).isPresent()) {
 					images.add(image);
 				}
 				/* Nested image syntax in alternative text does not render another image. */
@@ -150,12 +197,16 @@ public final class LoeMaterialImageReferences {
 		final int end = Math.max(start, Math.min(selectionEnd, source.length()));
 		final Matcher matcher = IMAGE_REFERENCE.matcher(source);
 		while (matcher.find()) {
+			final Optional<Target> target = target(matcher.group(2));
+			if (target.isEmpty()) {
+				continue;
+			}
 			final boolean containsCaret = start == end && start >= matcher.start() && start <= matcher.end();
 			final boolean intersectsSelection = start < end && start < matcher.end() && end > matcher.start();
 			if (containsCaret || intersectsSelection) {
-				return Optional.of(new Occurrence(matcher.group(2), unescapeDescription(matcher.group(1)),
-						matcher.group(3) == null ? null : Integer.valueOf(matcher.group(3)), matcher.start(),
-						matcher.end()));
+				final Target parsed = target.orElseThrow();
+				return Optional.of(new Occurrence(parsed.id(), unescapeDescription(matcher.group(1)), parsed.width(),
+						parsed.alignment(), matcher.start(), matcher.end()));
 			}
 		}
 		return Optional.empty();
@@ -175,7 +226,24 @@ public final class LoeMaterialImageReferences {
 		return unescaped.toString();
 	}
 
-	public record Occurrence(String id, String description, Integer width, int start, int end) {
+	public enum Alignment {
+		LEFT,
+		CENTER,
+		RIGHT;
+
+		public String queryValue() {
+			return name().toLowerCase(Locale.ROOT);
+		}
+
+		private static Optional<Alignment> fromQueryValue(final String value) {
+			return List.of(values()).stream().filter(alignment -> alignment.queryValue().equals(value)).findFirst();
+		}
+	}
+
+	public record Target(String id, Integer width, Alignment alignment) {
+	}
+
+	public record Occurrence(String id, String description, Integer width, Alignment alignment, int start, int end) {
 	}
 
 	private record ManagedDocument(List<Image> images, DefinitionMap<LinkReferenceDefinition> definitions) {

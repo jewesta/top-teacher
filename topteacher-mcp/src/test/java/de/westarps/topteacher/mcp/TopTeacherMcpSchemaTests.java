@@ -119,6 +119,12 @@ class TopTeacherMcpSchemaTests extends FullMcpAccessTest {
 		assertThat(outputProperties(specifications, "get_exam_footer")).containsKey("footerMarkdown");
 		assertThat(outputProperties(specifications, "get_task_requirements")).containsKeys("task", "requirements");
 		assertThat(properties(specifications, "get_exam_structure")).doesNotContainKey("includeFaithfulRender");
+		final Map<String, Object> imageImportProperties = properties(specifications, "import_material_image");
+		assertThat(imageImportProperties).containsKeys("widthPercent", "alignment");
+		assertThat(list(map(imageImportProperties.get("alignment")).get("enum")))
+				.containsExactly("LEFT", "CENTER", "RIGHT");
+		assertThat(list(schema(specifications, "import_material_image", true).get("required")))
+				.doesNotContain("widthPercent", "alignment");
 
 		final Map<String, Object> createProperties = properties(specifications, "apply_exam_content_changes");
 		assertThat(createProperties).containsKeys("examId", "expectedRevision", "requestId", "commands", "requirementChanges")

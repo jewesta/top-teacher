@@ -512,7 +512,9 @@ class ExamAuthoringServiceTests {
 		}
 		for (final String source : List.of("![Beschreibung](img:placeholder)",
 				"![Beschreibung](img:missing1?width=101)", "![Beschreibung](img:missing1?width=0)",
-				"![Beschreibung](img:missing1?width=75&extra=1)", "![](img:missing1)",
+				"![Beschreibung](img:missing1?width=75&extra=1)",
+				"![Beschreibung](img:missing1?align=middle)", "![Beschreibung](img:missing1?align=CENTER)",
+				"![Beschreibung](img:missing1?align=center&align=right)", "![](img:missing1)",
 				"[Beschreibung](img:missing1)", "![Kriterium](crit:1)")) {
 			assertThatThrownBy(() -> apply(exam, "invalid-image-" + Math.abs(source.hashCode()), List.of(
 					update(Type.UPDATE_MATERIAL, material, null, source, null))))

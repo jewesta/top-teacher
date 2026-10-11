@@ -45,6 +45,7 @@ import de.westarps.topteacher.model.Subject;
 import de.westarps.topteacher.model.loe.LoeCategory;
 import de.westarps.topteacher.model.loe.LoeMaterial;
 import de.westarps.topteacher.model.loe.LoeMaterialImageReferences;
+import de.westarps.topteacher.model.loe.LoeMaterialImageReferences.Alignment;
 import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeRequirementResult;
@@ -133,6 +134,15 @@ class MaterialImageImportServiceTests {
 				revision, requestId);
 		assertThat(laterReplay.revision()).isEqualTo(guard.revision(exam.id())).isGreaterThan(imported.revision());
 		assertThat(laterReplay.mutationRevision()).isEqualTo(imported.mutationRevision());
+	}
+
+	@Test
+	void importsAnAlignedImageUsingTheCanonicalDeclaration() {
+		final var imported = images.importImage(exam.id(), material.id(), source.toString(), "Centered chart", 50,
+				Alignment.CENTER, guard.revision(exam.id()), UUID.randomUUID().toString());
+
+		assertThat(imported.material().descriptionMarkdown()).contains(
+				"![Centered chart](img:" + imported.metadata().imageId() + "?width=50&align=center)");
 	}
 
 	@Test

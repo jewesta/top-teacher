@@ -19,6 +19,7 @@ import de.westarps.topteacher.mcp.security.McpAccessContext;
 import de.westarps.topteacher.model.McpAccessLevel;
 import de.westarps.topteacher.model.loe.LoeMaterial;
 import de.westarps.topteacher.model.loe.LoeMaterialImage;
+import de.westarps.topteacher.model.loe.LoeMaterialImageReferences.Alignment;
 import io.modelcontextprotocol.spec.McpSchema.ImageContent;
 
 class MaterialImageMcpToolsTests {
@@ -49,10 +50,11 @@ class MaterialImageMcpToolsTests {
 	void exposesStableImportMetadataAndReplayStatusForBothAccessLevels(final McpAccessLevel level) {
 		final ImportedImage metadata = new ImportedImage(7, 9, "image001", "image/jpeg", 2, 3, 100);
 		final LoeMaterial material = new LoeMaterial(9, 2, "Chart", "![Chart](img:image001)", 0);
-		when(images.importImage(7, 9, "/Volumes/Share/chart.jpg", "Chart", null, 8, "request-1"))
+		when(images.importImage(7, 9, "/Volumes/Share/chart.jpg", "Chart", null, Alignment.CENTER, 8, "request-1"))
 				.thenReturn(new ImportImageSnapshot(12, 9, true, metadata, material));
 		try (McpAccessContext.Scope ignored = McpAccessContext.open(level)) {
-			final var result = tools.importMaterialImage(7, 9, "/Volumes/Share/chart.jpg", "Chart", null, 8, "request-1");
+			final var result = tools.importMaterialImage(7, 9, "/Volumes/Share/chart.jpg", "Chart", null,
+					Alignment.CENTER, 8, "request-1");
 
 			assertThat(result.revision()).isEqualTo(12);
 			assertThat(result.mutationRevision()).isEqualTo(9);
@@ -66,7 +68,8 @@ class MaterialImageMcpToolsTests {
 	void requiresAnAuthenticatedContextBeforeReadingFilesOrImages() {
 		assertThatThrownBy(() -> tools.getMaterialImage(7, 9, "image001"))
 				.isInstanceOf(SecurityException.class);
-		assertThatThrownBy(() -> tools.importMaterialImage(7, 9, "/Volumes/Share/chart.jpg", "Chart", 100, 8, "request-1"))
+		assertThatThrownBy(() -> tools.importMaterialImage(7, 9, "/Volumes/Share/chart.jpg", "Chart", 100,
+				Alignment.RIGHT, 8, "request-1"))
 				.isInstanceOf(SecurityException.class);
 		verifyNoInteractions(images);
 	}

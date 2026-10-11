@@ -16,6 +16,7 @@ import de.westarps.topteacher.backend.file.MaterialImageImportService.ImportedIm
 import de.westarps.topteacher.backend.file.MaterialImageImportService.ImportImageSnapshot;
 import de.westarps.topteacher.mcp.security.McpAccessContext;
 import de.westarps.topteacher.model.loe.LoeMaterial;
+import de.westarps.topteacher.model.loe.LoeMaterialImageReferences.Alignment;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 
 @Component
@@ -38,11 +39,12 @@ public class MaterialImageMcpTools {
 			@McpToolParam(description = "Absolute path supplied by the user, up to 4096 characters; remote installations apply configured share mappings.") final String sourcePath,
 			@McpToolParam(description = "Nonblank alternative text describing the image, up to 1000 characters.") final String altText,
 			@McpToolParam(required = false, description = "Image width percentage from 1 to 100; omit for automatic sizing.") final Integer widthPercent,
+			@McpToolParam(required = false, description = "Image alignment: LEFT, CENTER, or RIGHT; omit for LEFT.") final Alignment alignment,
 			@McpToolParam(description = "Current exam revision from get_exam.") final long expectedRevision,
 			@McpToolParam(description = "Unique request ID; reuse it only when retrying this exact request.") final String requestId) {
 		McpAccessContext.accessLevel();
 		final ImportImageSnapshot result = images.importImage(examId, materialId, sourcePath, altText,
-				widthPercent, expectedRevision, requestId);
+				widthPercent, alignment, expectedRevision, requestId);
 		return new ImportImageResult(result.revision(), result.mutationRevision(), result.replayed(), result.metadata(),
 				result.material());
 	}

@@ -822,3 +822,36 @@ Verification: the 24 focused Material/tab tests and all 706 Maven tests passed;
 `git diff --check` passed. The running demo was restarted with its existing
 database. DOM inspection confirmed `Material` before `Aufgaben` and the new
 first toolbar action, disabled as expected for the demo exam with results.
+
+## Material image alignment - 11 October 2026
+
+Managed Material images can now be left aligned, centered or right aligned.
+The image dialog stores the choice in the existing Markdown declaration;
+omitting alignment remains the compatible left-aligned default. The live
+preview and the faithful MCP PNG renderer share the same behavior, including
+alignment combined with either automatic or percentage width.
+
+`import_material_image` exposes the same optional `alignment` choice and the
+Markdown guide documents the canonical `align=left|center|right` parameter.
+No database migration or change to the existing EH PDF export is required.
+
+Verification: all 21 frontend tests and all 711 Maven tests passed;
+`git diff --check` passed. The faithful renderer test verifies the painted
+left, center and right positions at pixel level, including automatic width.
+
+## Material image dialog controls - 11 October 2026
+
+Replaced the Material image dialog's width and alignment combo boxes with a
+0%-to-100% slider in 5% steps and a reusable horizontal segmented control
+adapted from PEPPER 2. The alignment segments contain the Lumo left, center and
+right icons with German tooltips and accessible names. Both fields now share
+one row.
+
+The slider's 0% position represents automatic sizing and preserves an omitted
+width in the Markdown declaration. Its displayed value updates continuously
+while the thumb is moved. New insertions start at automatic width; existing
+non-step widths are shown at the nearest available 5% step.
+
+Verification: the 5 focused dialog/control tests and all 716 Maven tests
+passed; `git diff --check` passed. The running demo was restarted on port 8081
+with the rebuilt frontend bundle.

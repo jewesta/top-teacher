@@ -171,8 +171,11 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 		final String initialDescription = existingImage.map(existing -> existing.occurrence().description())
 				.orElse(insertionPoint.selectedText());
 		final Integer initialWidth = existingImage.map(existing -> existing.occurrence().width()).orElse(null);
+		final LoeMaterialImageReferences.Alignment initialAlignment = existingImage
+				.map(existing -> existing.occurrence().alignment()).orElse(LoeMaterialImageReferences.Alignment.LEFT);
 		final LoeMaterialImage dialogImage = existingImage.map(ExistingImage::image).orElse(prefilledImage);
-		new MaterialImageDialog(action, initialDescription, initialWidth, dialogImage, this::prepareImage, result -> {
+		new MaterialImageDialog(action, initialDescription, initialWidth, initialAlignment, dialogImage,
+				this::prepareImage, result -> {
 			final LoeMaterialImage image = result.image();
 			if (storedImages.stream().noneMatch(stored -> stored.id().equals(image.id()))) {
 				pendingImages.putIfAbsent(image.id(), image);
@@ -219,8 +222,8 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 	private static String declaration(final MaterialImageDialog.Result result) {
 		final String alternativeText = result.description().replace("\\", "\\\\").replace("[", "\\[").replace("]", "\\]")
 				.replace('\n', ' ').replace('\r', ' ');
-		return "![" + alternativeText + "](img:" + result.image().id()
-				+ (result.width() == null ? "" : "?width=" + result.width()) + ")";
+		return "![" + alternativeText + "](" + LoeMaterialImageReferences.destination(result.image().id(),
+				result.width(), result.alignment()) + ")";
 	}
 
 	private static boolean isSupportedMediaType(final String mediaType) {

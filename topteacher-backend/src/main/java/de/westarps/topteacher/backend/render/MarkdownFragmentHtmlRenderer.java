@@ -51,13 +51,13 @@ import org.jsoup.safety.Safelist;
 import de.westarps.topteacher.backend.render.FaithfulMarkdownRenderer.RenderRequest;
 import de.westarps.topteacher.backend.render.FaithfulMarkdownRenderer.Variant;
 import de.westarps.topteacher.model.loe.LoeMaterialImage;
+import de.westarps.topteacher.model.loe.LoeMaterialImageReferences;
 
 /** Converts a selected Markdown snapshot without export or browser dependencies. */
 public final class MarkdownFragmentHtmlRenderer {
 
 	private static final List<Extension> EXTENSIONS = List.of(FootnotesExtension.create(), TablesExtension.create(),
 			StrikethroughExtension.create());
-	private static final Pattern MATERIAL_IMAGE = Pattern.compile("^img:([a-z0-9]{8})(?:\\?width=(100|[1-9][0-9]?))?$");
 	private static final Pattern CRITERION = Pattern.compile("^crit:([^\\s)]+)$");
 	private static final Pattern POINT_VALUE = Pattern
 			.compile("(?:0[.,]5|(?:[1-9]\\d{0,1}|[1-8]\\d{2}|9(?:[0-8]\\d|9[0-8]))(?:[.,][05])?|999(?:[.,]0)?)");
@@ -316,9 +316,9 @@ public final class MarkdownFragmentHtmlRenderer {
 
 		private void renderImage(final Image image) {
 			final String alt = imageText(image);
-			final var target = MATERIAL_IMAGE.matcher(image.getDestination());
-			final LoeMaterialImage managed = variant == Variant.MATERIAL && target.matches()
-					? availableImages.get(target.group(1)) : null;
+			final var target = LoeMaterialImageReferences.target(image.getDestination());
+			final LoeMaterialImage managed = variant == Variant.MATERIAL && target.isPresent()
+					? availableImages.get(target.orElseThrow().id()) : null;
 			if (managed == null) {
 				html.tag("span", Map.of("class", "tt-material-image-missing"));
 				html.text("Bild nicht verfügbar: " + (alt.isBlank() ? "ohne Beschreibung" : alt));
@@ -328,13 +328,14 @@ public final class MarkdownFragmentHtmlRenderer {
 			final String uri = "tt-image:" + managed.id();
 			referencedImages.putIfAbsent(uri, managed);
 			final Map<String, String> attributes = new LinkedHashMap<>();
-			attributes.put("class", "tt-material-image");
+			final LoeMaterialImageReferences.Target parsed = target.orElseThrow();
+			attributes.put("class", "tt-material-image tt-material-image-align-" + parsed.alignment().queryValue());
 			attributes.put("src", uri);
 			attributes.put("alt", alt);
 			attributes.put("width", Integer.toString(managed.pixelWidth()));
 			attributes.put("height", Integer.toString(managed.pixelHeight()));
-			if (target.group(2) != null) {
-				attributes.put("style", "width:" + target.group(2) + "%;height:auto");
+			if (parsed.width() != null) {
+				attributes.put("style", "width:" + parsed.width() + "%;height:auto");
 			}
 			if (image.getTitle() != null) {
 				attributes.put("title", image.getTitle());

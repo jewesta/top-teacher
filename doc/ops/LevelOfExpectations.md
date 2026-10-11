@@ -119,24 +119,33 @@ now.
 
 Only Material Markdown supports managed images. Its image toolbar command opens
 one dialog for choosing a PNG or JPEG image, entering the required description
-or alternative text, and selecting automatic, 25%, 50%, 75%, or 100% content
-width. The upload row places the dashed file-drop target to the left, followed
-by `oder` and `Datei auswählen...` to the right. Confirmation inserts the
-declaration at the remembered cursor position. Only the dashed area accepts a
-dragged file; the separator and selection button are not drop targets:
+or alternative text, selecting automatic width or 5% to 100% content width in
+5% steps, and
+choosing left, centered, or right alignment with the horizontal icon selector.
+The slider's 0% position represents automatic width, and its displayed value is
+updated continuously while it is moved. Width and alignment share one row; new
+insertions start at automatic width. The upload row
+places the dashed file-drop target to the left, followed by `oder` and
+`Datei auswählen...` to the right. Confirmation inserts the declaration at the
+remembered cursor position. Only the dashed area accepts a dragged file; the
+separator and selection button are not drop targets:
 
 ```markdown
-![Diagramm 1](img:4n8k2p7c?width=75)
+![Diagramm 1](img:4n8k2p7c?width=75&align=center)
 ```
 
-The width is relative to the available content width and belongs to that
-occurrence, not to the stored image. An omitted width uses automatic sizing.
-Images preserve their aspect ratio, never exceed the available preview width,
-and can be opened in a larger inspection view. The future pupil printout must
-apply the same content-relative sizing contract.
+The width and alignment belong to that occurrence, not to the stored image.
+Width is relative to the available content width; omitted width uses automatic
+sizing, and omitted alignment means left. Images preserve their aspect ratio,
+never exceed the available preview width, and can be opened in a larger
+inspection view. The faithful MCP rendering applies the same sizing and
+alignment contract. The future pupil printout must do so as well. The Markdown
+format retains automatic sizing for compatibility, while the dialog has no
+separate unset state. Opening and saving an older declaration with omitted width
+preserves automatic sizing through the slider's 0% position.
 
 If the cursor or selection is inside an existing managed-image declaration,
-the image command opens `Bild bearbeiten` with its description and width
+the image command opens `Bild bearbeiten` with its description, width and alignment
 prefilled. `Übernehmen` replaces that declaration in place without requiring a
 new upload; the insert dialog continues to use `Einfügen`.
 

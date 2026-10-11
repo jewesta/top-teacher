@@ -12,7 +12,8 @@ Criterion URLs use `crit:<key>[?points=<value>]`. The small
 the editor, including custom-value selection; the domain parser validates the
 same parameter rules. The URL payload is consumed before HTML sanitization,
 not enabled as a browser protocol. Material image URLs use
-`img:<id>[?width=<percentage>]` and are likewise consumed by the
+`img:<id>[?width=<percentage>&align=<left|center|right>]`; either optional
+parameter may also appear alone. They are consumed by the
 `tt-material-image` extension before browser rendering. The extension resolves
 them to session-scoped resources supplied through extension state; neither
 `crit:` nor `img:` is enabled as a browser protocol.
@@ -65,8 +66,8 @@ index. The shared schema permits the required presentation classes and numbering
 metadata. Numbered rows clip excess text and observe their available width to
 report clipping in the preview.
 
-The backend's CommonMark renderer has a matching alert node renderer and
-export CSS. The canonical GitHub Octicons and MIT licence live in
+The backend's CommonMark renderer has matching managed-image sizing and
+alignment plus an alert node renderer and export CSS. The canonical GitHub Octicons and MIT licence live in
 `assets/markdown-alerts/`. Both modules copy these resources during Maven's
 resource phase, avoiding separate SVG path copies or a backend dependency on
 Vaadin. The shared preview uses the SVGs as CSS masks, inheriting the title
