@@ -23,6 +23,71 @@ top-level tabs.
 Additional system settings are added as sections rather than as new top-level
 settings tabs.
 
+## MCP access and pupil pseudonymization
+
+This is the agreed design; token maintenance and access-level enforcement are
+not implemented yet.
+
+`Systemeinstellungen` gains an `MCP-Zugriff` section for maintaining access
+tokens. Token records are persisted in the database and distinguish
+`Vollzugriff` from `Pseudonymisiert`. Credential storage must keep a one-way
+verifier rather than the reusable token itself; a newly generated credential
+is shown once for configuring the client.
+
+### Pseudonymized pupil identity
+
+A pseudonymized token protects pupil names while retaining normal academic
+operations. TopTeacher may expose the stable pupil ID, surname-first initials
+(for example, `Müller, Hans` becomes `MH`), class context such as `Q1` or `EF`,
+and other existing non-name domain data. This is pseudonymization, not a claim
+of complete anonymity.
+
+The pupil ID is the authoritative identifier. Initials need not be unique and
+are never expanded with additional name letters to resolve collisions. The
+AI can ask which `MH` the user means using class/course context; if that is
+still ambiguous, it must distinguish candidates by ID rather than guess.
+
+TopTeacher must suppress names obtained from pupil records throughout the MCP
+exchange: structured fields, generated messages, confirmation/elicitation
+text, errors, metadata, filenames, and generated document content. The same
+pupil must be represented consistently in pupil lists, course/exam rosters,
+results, and operation responses.
+
+Pseudonymized discovery and matching use IDs or the displayed pseudonyms and
+context. Real-name search or matching is unavailable, including queries that
+would reveal whether a guessed name exists. Pupil names cannot be recovered by
+calling a different tool or requesting a different response format.
+
+Pupil creation, import, and renaming are unavailable, including indirect
+creation through course-roster or assignment tools. Assigning existing pupils to a course must have an ID-based path that
+never creates or renames a pupil.
+
+All other operations remain available under their existing domain safeguards,
+including course/exam assignments and removals, result reading and entry, and
+exam, material, and level-of-expectations work. The access level does not make
+these operations read-only or bypass existing archive, validation, and lock
+rules. Permissions are enforced by TopTeacher for every operation.
+
+Exports remain available when names inserted by TopTeacher from pupil records
+are replaced with pseudonyms, including in filenames and metadata. The existing
+server-side database backup operation remains available because it returns
+only the backup filename, not its contents. Transmitting raw database contents
+would expose stored pupil names and cannot be offered through a pseudonymized
+token.
+
+### User content and AI interaction protocol
+
+Arbitrary user-authored content remains available, including comments, exam
+and EH text, images, and uploaded pupil work. TopTeacher does not promise
+automatic name detection or removal in that content. Users must remove or
+cover names before sharing such content with the AI, whether directly in chat
+or through TopTeacher material accessible to MCP.
+
+The AI interaction protocol must state that pupils are addressed by initials
+and IDs, ambiguous references require clarification using class/course context
+or IDs, and real names must not be requested or reconstructed. The settings
+explanation must describe the user-content boundary using `Du`.
+
 ## File access
 
 The first control in the `Dateizugriff` action bar is the `Installationsort`

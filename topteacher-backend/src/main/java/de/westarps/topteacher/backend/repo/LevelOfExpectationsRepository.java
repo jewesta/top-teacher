@@ -56,6 +56,32 @@ public class LevelOfExpectationsRepository {
 		this.jdbc = jdbc;
 	}
 
+	public String findExamFooterMarkdown(final int examId) {
+		return jdbc.queryForList("""
+			select footer_markdown
+			from exam
+			where id = :examId
+			""", Map.of("examId", examId), String.class).stream().findFirst()
+				.orElseThrow(() -> new IllegalArgumentException("Exam does not exist: " + examId));
+	}
+
+	@Transactional
+	public void saveExamFooterMarkdown(final int examId, final String footerMarkdown) {
+		final String existing = findExamFooterMarkdown(examId);
+		final String value = footerMarkdown == null ? "" : footerMarkdown;
+		if (!existing.equals(value)) {
+			assertNoResultsForExam(examId);
+		}
+		final int updated = jdbc.update("""
+			update exam
+			set footer_markdown = :footerMarkdown
+			where id = :examId
+			""", Map.of("examId", examId, "footerMarkdown", value));
+		if (updated != 1) {
+			throw new IllegalArgumentException("Exam does not exist: " + examId);
+		}
+	}
+
 	public List<LoePart> findPartsByExamId(final int examId) {
 		return jdbc.query("""
 			select id, exam_id, title, sort_order
@@ -213,6 +239,7 @@ public class LevelOfExpectationsRepository {
 
 	@Transactional
 	public void copyDesign(final int sourceExamId, final int targetExamId) {
+		saveExamFooterMarkdown(targetExamId, findExamFooterMarkdown(sourceExamId));
 		final Map<Integer, Integer> partIds = new HashMap<>();
 		final Map<Integer, Integer> categoryIds = new HashMap<>();
 		final Map<Integer, Integer> taskIds = new HashMap<>();

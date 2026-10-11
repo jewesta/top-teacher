@@ -44,6 +44,21 @@ permanent background edits it in the task summary's point column. Non-bonus
 requirements subsequently distribute that budget in EH, while bonus
 requirements remain separate.
 
+### Exam closing text
+
+An exam has an optional Markdown closing text, labelled `Abschlusstext` in
+`Aufgaben`. It belongs to the exam itself, not to a part, category, or task.
+The editor is a fixed block below the task tree, including when the exam has
+no parts. It cannot be reordered, deleted as a tree node, or collapsed with
+the tree. An empty value means there is no closing text.
+
+The closing text uses Aufgaben's existing save, confirmed discard, dirty-state
+and first-result locking behavior. Saving preserves the live editor and tree.
+It is copied when the exam design is duplicated; removing a part or updating
+exam metadata does not remove it. In the future pupil exam sheet, it appears
+once after all parts, outside the final part, and is omitted when empty.
+It is not a repeated page footer or part of the EH result document.
+
 ### Material
 
 Material is a parallel branch below a part rather than another level between a
@@ -55,6 +70,14 @@ diagrams, data, and similar material handed out with the exam.
   materials of that part.
 - It is authored in the dedicated `Material` tab.
 - Tasks refer to material in their wording; they do not own or duplicate it.
+
+All content authored in `Aufgaben` is pupil-facing. The future exam sheet starts
+with the exam heading and groups its content by part: the part heading is
+followed by its ordered material on separate pages, then its performance
+categories, category descriptions, task titles, and task text in tree order.
+Each subsequent part starts on a new page. The exam closing text follows all
+parts. Print generation and its detailed layout remain deferred; see
+[the export scope](LevelOfExpectationsPdfExport.md#deferred-exam-sheet-export).
 
 Material also provides literal source-line numbering using `> [!NUMBERED]`.
 All Markdown editors provide the five GitHub-style alert types through a
@@ -352,8 +375,12 @@ lost. `Abbrechen` or dismissing the dialog preserves all pending changes;
 only confirming `Verwerfen` reloads the saved state. Discard stays disabled
 while the editor is clean.
 
+In `Aufgaben`, adding, reordering, or deleting tree nodes requires saving or
+discarding pending changes first, including changes only to `Abschlusstext`.
+These actions must not silently reload away unsaved content.
+
 - `Aufgaben` is the sole editor for parts, performance categories, task titles,
-  task Markdown, task maxima, and their order.
+  task Markdown, task maxima, their order, and the exam closing text.
 - `Material` edits ordered material and its managed images below read-only part
   headings.
 - EH renders part, category, and task data as read-only context and edits only

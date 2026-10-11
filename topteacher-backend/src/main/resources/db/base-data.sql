@@ -1,3 +1,4 @@
+/* Base data defines no exams; new exams inherit the empty footer_markdown default from schema.sql. */
 insert into app_setting (setting_key, setting_value)
 select base.setting_key, base.setting_value
 from (

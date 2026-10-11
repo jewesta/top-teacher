@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -67,6 +69,60 @@ class LevelOfExpectationsRepositoryTests {
 	private NamedParameterJdbcTemplate jdbc;
 
 	@Test
+	void storesAnOptionalExamFooterWithoutPartsAndKeepsItWhenMetadataChanges() {
+		final Exam exam = createExam(2050, "Exam Footer");
+		final String footer = "  **Viel Erfolg!**\n\nPrüfe Deine Antworten.\n";
+
+		assertThat(levelOfExpectationsRepository.findExamFooterMarkdown(exam.id())).isEmpty();
+		levelOfExpectationsRepository.saveExamFooterMarkdown(exam.id(), footer);
+		assertThat(levelOfExpectationsRepository.findExamFooterMarkdown(exam.id())).isEqualTo(footer);
+		assertThat(levelOfExpectationsRepository.findPartsByExamId(exam.id())).isEmpty();
+
+		examRepository.save(new Exam(exam.id(), exam.courseId(), "Changed Exam Footer", exam.date().plusDays(1),
+				exam.originalExamId(), exam.gradingScaleId()));
+
+		assertThat(levelOfExpectationsRepository.findExamFooterMarkdown(exam.id())).isEqualTo(footer);
+		levelOfExpectationsRepository.saveExamFooterMarkdown(exam.id(), null);
+		assertThat(levelOfExpectationsRepository.findExamFooterMarkdown(exam.id())).isEmpty();
+	}
+
+	@Test
+	void rejectsUnknownExamsWhenReadingOrSavingTheFooter() {
+		assertThatThrownBy(() -> levelOfExpectationsRepository.findExamFooterMarkdown(Integer.MAX_VALUE))
+				.isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Exam does not exist");
+		assertThatThrownBy(() -> levelOfExpectationsRepository.saveExamFooterMarkdown(Integer.MAX_VALUE, "Footer"))
+				.isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Exam does not exist");
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void locksExamFooterChangesAfterTheFirstRequirementOrCriterionResult(final boolean criterionResult) {
+		final Exam exam = createExam(criterionResult ? 2052 : 2051, "Footer Result Lock");
+		levelOfExpectationsRepository.saveExamFooterMarkdown(exam.id(), "Original footer");
+		final LoePart part = levelOfExpectationsRepository.savePart(new LoePart(null, exam.id(), "Klausurteil A", 0));
+		final LoeCategory category = levelOfExpectationsRepository
+				.saveCategory(new LoeCategory(null, part.id(), "Inhalt", "", 0));
+		final LoeTask task = levelOfExpectationsRepository
+				.saveTask(new LoeTask(null, category.id(), "Aufgabe 1", "", 100, 0));
+		final LoeRequirement requirement = levelOfExpectationsRepository
+				.saveRequirement(new LoeRequirement(null, task.id(), "Nenne das [Argument](crit:1).", 100, false, 0));
+		final Pupil pupil = pupilRepository.save(new Pupil(null, "Footer", "Lock " + criterionResult, Lifecycle.ACTIVE));
+		if (criterionResult) {
+			final LoeCriterion criterion = levelOfExpectationsRepository.findActiveCriteriaByExamId(exam.id()).getFirst();
+			levelOfExpectationsRepository.saveCriterionResult(new LoeCriterionResult(criterion.id(), pupil.id(), 0));
+		} else {
+			levelOfExpectationsRepository.saveRequirementResult(new LoeRequirementResult(requirement.id(), pupil.id(), 0, ""));
+		}
+
+		assertThatThrownBy(() -> levelOfExpectationsRepository.saveExamFooterMarkdown(exam.id(), "Changed footer"))
+				.isInstanceOf(IllegalStateException.class).hasMessage(CORRECTION_MODE_MESSAGE);
+		assertThatThrownBy(() -> levelOfExpectationsRepository.saveExamFooterMarkdown(exam.id(), ""))
+				.isInstanceOf(IllegalStateException.class).hasMessage(CORRECTION_MODE_MESSAGE);
+		levelOfExpectationsRepository.saveExamFooterMarkdown(exam.id(), "Original footer");
+		assertThat(levelOfExpectationsRepository.findExamFooterMarkdown(exam.id())).isEqualTo("Original footer");
+	}
+
+	@Test
 	void savesAndFindsLevelOfExpectationsHierarchy() {
 		final Exam exam = createExam(2035, "EH Klausur");
 		final LoePart part = levelOfExpectationsRepository.savePart(new LoePart(null, exam.id(), "Klausurteil A",
@@ -97,6 +153,7 @@ class LevelOfExpectationsRepositoryTests {
 	@Test
 	void cascadesDeletedParents() {
 		final Exam exam = createExam(2036, "EH Cascade");
+		levelOfExpectationsRepository.saveExamFooterMarkdown(exam.id(), "This footer belongs to the exam.");
 		final LoePart part = levelOfExpectationsRepository.savePart(new LoePart(null, exam.id(), "Klausurteil A", 0));
 		final LoeCategory category = levelOfExpectationsRepository
 				.saveCategory(new LoeCategory(null, part.id(), "Sprache", "", 0));
@@ -113,6 +170,8 @@ class LevelOfExpectationsRepositoryTests {
 		assertThat(levelOfExpectationsRepository.findTasksByExamId(exam.id())).isEmpty();
 		assertThat(levelOfExpectationsRepository.findRequirementsByExamId(exam.id())).isEmpty();
 		assertThat(levelOfExpectationsRepository.findMaterialsByExamId(exam.id())).isEmpty();
+		assertThat(levelOfExpectationsRepository.findExamFooterMarkdown(exam.id()))
+				.isEqualTo("This footer belongs to the exam.");
 	}
 
 	@Test
@@ -434,6 +493,7 @@ class LevelOfExpectationsRepositoryTests {
 	void copiesDesignWithoutResults() {
 		final Exam sourceExam = createExam(2042, "EH Copy Source");
 		final Exam targetExam = createExam(2043, "EH Copy Target");
+		levelOfExpectationsRepository.saveExamFooterMarkdown(sourceExam.id(), "**Viel Erfolg!**\n\nPrüfe Deine Antworten.");
 		final LoePart part = levelOfExpectationsRepository
 				.savePart(new LoePart(null, sourceExam.id(), "Klausurteil A", 0));
 		final LoeCategory category = levelOfExpectationsRepository
@@ -456,6 +516,11 @@ class LevelOfExpectationsRepositoryTests {
 				.saveRequirementResult(new LoeRequirementResult(requirement.id(), pupil.id(), 4, "Schon erfasst."));
 
 		levelOfExpectationsRepository.copyDesign(sourceExam.id(), targetExam.id());
+		assertThat(levelOfExpectationsRepository.findExamFooterMarkdown(targetExam.id()))
+				.isEqualTo("**Viel Erfolg!**\n\nPrüfe Deine Antworten.");
+		levelOfExpectationsRepository.saveExamFooterMarkdown(targetExam.id(), "Footer for the duplicate.");
+		assertThat(levelOfExpectationsRepository.findExamFooterMarkdown(sourceExam.id()))
+				.isEqualTo("**Viel Erfolg!**\n\nPrüfe Deine Antworten.");
 
 		final LoePart copiedPart = levelOfExpectationsRepository.findPartsByExamId(targetExam.id()).getFirst();
 		final LoeCategory copiedCategory = levelOfExpectationsRepository.findCategoriesByExamId(targetExam.id())

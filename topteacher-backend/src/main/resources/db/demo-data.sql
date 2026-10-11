@@ -52,8 +52,8 @@ where not exists (
       and c.course_period = demo.course_period
 );
 
-insert into exam (course_id, title, exam_date, grading_scale_id)
-select c.id, demo.title, demo.exam_date, c.grading_scale_id
+insert into exam (course_id, title, exam_date, grading_scale_id, footer_markdown)
+select c.id, demo.title, demo.exam_date, c.grading_scale_id, ''
 from (
     values
         ('CLS_Q2', 'Englisch', 2026, 'FULL_YEAR', '1. Klausur Shakespeare', date '2026-11-17'),

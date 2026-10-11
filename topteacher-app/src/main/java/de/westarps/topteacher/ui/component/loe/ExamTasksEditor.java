@@ -18,6 +18,7 @@ import de.westarps.topteacher.model.loe.LoeTask;
 import de.westarps.topteacher.ui.component.AbstractDesigner;
 import de.westarps.topteacher.ui.component.DesignerViewport;
 import de.westarps.topteacher.ui.component.FullscreenButton;
+import de.westarps.vaadin.markdown.MarkdownEditor;
 
 public class ExamTasksEditor extends AbstractDesigner {
 
@@ -103,6 +104,8 @@ public class ExamTasksEditor extends AbstractDesigner {
 	private List<LoePartSection> partSections = List.of();
 	private List<ExamTaskSection> taskSections = List.of();
 	private LoePointBadge examPointsBadge;
+	private MarkdownEditor footerEditor;
+	private String savedFooterMarkdown = "";
 	private boolean locked;
 	private Runnable changeHandler = () -> {
 	};
@@ -149,6 +152,8 @@ public class ExamTasksEditor extends AbstractDesigner {
 		partSections = List.of();
 		taskSections = new ArrayList<>();
 		examPointsBadge = null;
+		footerEditor = null;
+		savedFooterMarkdown = "";
 		resetDesigner();
 		if (exam == null) {
 			showDesignerMessage(new Span("Bitte wähle eine Klausur aus."));
@@ -165,6 +170,7 @@ public class ExamTasksEditor extends AbstractDesigner {
 			partSections = parts.stream().map(this::createPartSection).toList();
 			partSections.forEach(content()::add);
 		}
+		content().add(createFooterBlock());
 		configureToolbar();
 		showDesigner();
 		saveController.update();
@@ -174,6 +180,23 @@ public class ExamTasksEditor extends AbstractDesigner {
 		parts = repository.findPartsByExamId(exam.id());
 		categories = repository.findCategoriesByExamId(exam.id());
 		tasks = repository.findTasksByExamId(exam.id());
+		final String footerMarkdown = repository.findExamFooterMarkdown(exam.id());
+		savedFooterMarkdown = footerMarkdown == null ? "" : footerMarkdown;
+	}
+
+	private Component createFooterBlock() {
+		final Component block;
+		if (locked) {
+			block = components.markdownViewBlock("Abschlusstext", savedFooterMarkdown);
+		} else {
+			footerEditor = components.markdownEditor(savedFooterMarkdown,
+					"Dieser Text erscheint einmal am Ende der Klausur, außerhalb der Klausurteile.");
+			components.trackDirty(footerEditor);
+			block = components.markdownBlock("Abschlusstext", footerEditor);
+		}
+		block.addClassName("tt-exam-footer");
+		DesignerViewport.mark(block, "exam-footer", "Abschlusstext");
+		return block;
 	}
 
 	private boolean ensureRequiredChildren() {
@@ -198,14 +221,8 @@ public class ExamTasksEditor extends AbstractDesigner {
 		final Button discard = components.discardButton();
 		final Button reload = saveController.registerClean(
 				components.iconButton("Neu laden", VaadinIcon.REFRESH, event -> viewport.refreshPreservingPosition(this::refresh)));
-		final Button addPart = components.commandButton("Klausurteil hinzufügen", VaadinIcon.PLUS, event -> {
-			final int sortOrder = repository.nextPartSortOrder(exam.id());
-			final LoePart part = repository
-					.savePart(new LoePart(null, exam.id(), "Klausurteil " + partLetter(sortOrder), sortOrder));
-			addDefaultCategory(part);
-			refreshAndScrollTo(detailKey("part", part.id()));
-			notifyChanged();
-		});
+		final Button addPart = components.commandButton("Klausurteil hinzufügen", VaadinIcon.PLUS,
+				event -> addPart());
 		if (locked) {
 			components.lockCorrectionModeAction(addPart);
 		}
@@ -286,34 +303,55 @@ public class ExamTasksEditor extends AbstractDesigner {
 		viewport.updateBreadcrumbSegment(detailKey("task", task.id()), title);
 	}
 
+	private void addPart() {
+		runStructureChange(() -> {
+			final int sortOrder = repository.nextPartSortOrder(exam.id());
+			final LoePart part = repository
+					.savePart(new LoePart(null, exam.id(), "Klausurteil " + partLetter(sortOrder), sortOrder));
+			addDefaultCategory(part);
+			refreshAndScrollTo(detailKey("part", part.id()));
+			notifyChanged();
+		});
+	}
+
 	private void addCategory(final LoePart part) {
-		final LoeCategory category = addDefaultCategory(part);
-		refreshAndScrollTo(detailKey("category", category.id()));
-		notifyChanged();
+		runStructureChange(() -> {
+			final LoeCategory category = addDefaultCategory(part);
+			refreshAndScrollTo(detailKey("category", category.id()));
+			notifyChanged();
+		});
 	}
 
 	private void addTask(final LoeCategory category) {
-		final LoeTask task = addDefaultTask(category);
-		refreshAndScrollTo(detailKey("task", task.id()));
-		notifyChanged();
+		runStructureChange(() -> {
+			final LoeTask task = addDefaultTask(category);
+			refreshAndScrollTo(detailKey("task", task.id()));
+			notifyChanged();
+		});
 	}
 
 	private void move(final LoePart part, final int offset) {
-		repository.movePart(part, offset);
-		refresh();
-		notifyChanged();
+		runStructureChange(() -> {
+			repository.movePart(part, offset);
+			refresh();
+			notifyChanged();
+		});
 	}
 
 	private void move(final LoeCategory category, final int offset) {
-		repository.moveCategory(category, categoriesFor(partFor(category)), offset);
-		refresh();
-		notifyChanged();
+		runStructureChange(() -> {
+			repository.moveCategory(category, categoriesFor(partFor(category)), offset);
+			refresh();
+			notifyChanged();
+		});
 	}
 
 	private void move(final LoeTask task, final int offset) {
-		repository.moveTask(task, tasksFor(categoryFor(task)), offset);
-		refresh();
-		notifyChanged();
+		runStructureChange(() -> {
+			repository.moveTask(task, tasksFor(categoryFor(task)), offset);
+			refresh();
+			notifyChanged();
+		});
 	}
 
 	private void delete(final LoePart part) {
@@ -329,10 +367,20 @@ public class ExamTasksEditor extends AbstractDesigner {
 	}
 
 	private void deleteSafely(final Runnable action) {
-		try {
+		runStructureChange(() -> {
 			action.run();
 			refresh();
 			notifyChanged();
+		});
+	}
+
+	private void runStructureChange(final Runnable action) {
+		if (isDirty()) {
+			Notification.show("Speichere oder verwirf zuerst die ungespeicherten Aufgaben.");
+			return;
+		}
+		try {
+			action.run();
 		} catch (final IllegalStateException exception) {
 			Notification.show(exception.getMessage());
 		}
@@ -410,6 +458,10 @@ public class ExamTasksEditor extends AbstractDesigner {
 					return;
 				}
 			}
+			if (isFooterDirty()) {
+				repository.saveExamFooterMarkdown(exam.id(), footerEditor.getValue());
+				savedFooterMarkdown = footerEditor.getValue();
+			}
 			refreshBadges();
 			notifyChanged();
 		} catch (final IllegalStateException exception) {
@@ -418,7 +470,11 @@ public class ExamTasksEditor extends AbstractDesigner {
 	}
 
 	private boolean isDirty() {
-		return partSections.stream().anyMatch(LoePartSection::isDirty);
+		return isFooterDirty() || partSections.stream().anyMatch(LoePartSection::isDirty);
+	}
+
+	private boolean isFooterDirty() {
+		return footerEditor != null && !savedFooterMarkdown.equals(footerEditor.getValue());
 	}
 
 	private void refreshBadges() {

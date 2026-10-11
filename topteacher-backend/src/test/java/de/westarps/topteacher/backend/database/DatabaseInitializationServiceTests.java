@@ -100,6 +100,23 @@ class DatabaseInitializationServiceTests {
 	}
 
 	@Test
+	void addsAnEmptyFooterToExistingExamsAndPreservesItWhenTheSchemaIsReapplied() {
+		initializationService.initialize(DatabaseInitializationMode.DEMO);
+		jdbc.execute("alter table exam drop column footer_markdown");
+
+		new ResourceDatabasePopulator(new ClassPathResource("db/schema.sql")).execute(dataSource);
+
+		assertThat(jdbc.queryForList("select footer_markdown from exam", String.class)).containsOnly("");
+		final int examId = jdbc.queryForObject("select min(id) from exam", Integer.class);
+		jdbc.update("update exam set footer_markdown = ? where id = ?", "**Existing footer**", examId);
+		new ResourceDatabasePopulator(new ClassPathResource("db/schema.sql"), new ClassPathResource("db/base-data.sql"),
+				new ClassPathResource("db/demo-data.sql")).execute(dataSource);
+
+		assertThat(jdbc.queryForObject("select footer_markdown from exam where id = ?", String.class, examId))
+				.isEqualTo("**Existing footer**");
+	}
+
+	@Test
 	void backfillsTaskPointBudgetsFromRegularRequirementsOnce() {
 		initializationService.initialize(DatabaseInitializationMode.DEMO);
 		jdbc.update("update eh_task set max_points = 0");

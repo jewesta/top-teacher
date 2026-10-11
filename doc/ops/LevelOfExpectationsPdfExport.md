@@ -113,8 +113,16 @@ boxes with German headings and print-safe symbols. This shared Markdown
 behavior is specified in [Markdown.md](Markdown.md#alerts).
 
 Generating the pupil-facing exam sheet from `Aufgaben` and `Material` is
-outside the current scope. That future output will group content by part and
-place the part's tasks before its materials. Its print layout, image handling,
-footnotes, line numbering, and any separate teacher variant are deliberately
-deferred; this does not remove or change the existing pupil and teacher
-variants of the level-of-expectations result PDF described above.
+outside the current scope. That future output starts with the exam heading and
+groups all pupil-facing Aufgaben content and Material by part. A part begins
+with its heading and ordered material on separate pages, followed by the
+performance categories, their descriptions, task titles, and task text in tree
+order. Each subsequent part starts on a new page. The optional exam-level
+`Abschlusstext` appears exactly once at the end, outside every part; empty
+closing text is omitted. It is not a repeated page footer and does not change
+the existing EH result PDFs.
+
+Detailed print layout, image handling, footnotes, line numbering, and any
+separate teacher variant remain deferred; this does not remove or change the
+existing pupil and teacher variants of the level-of-expectations result PDF
+described above.

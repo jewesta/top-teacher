@@ -3,6 +3,7 @@ package de.westarps.topteacher.ui.component.loe;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -199,7 +200,7 @@ class ExamTasksEditorTests {
 		assertThat(components(editor, TextField.class)).allMatch(TextField::isReadOnly);
 		assertThat(components(editor, MarkdownEditor.class)).isEmpty();
 		assertThat(components(editor, MarkdownViewer.class)).extracting(MarkdownViewer::getContent)
-				.containsExactly(CATEGORY.descriptionMarkdown(), TASK.descriptionMarkdown());
+				.containsExactly(CATEGORY.descriptionMarkdown(), TASK.descriptionMarkdown(), "");
 		final LoeWholePointStepper points = components(editor, LoeWholePointStepper.class).getFirst();
 		assertThat(buttonByAriaLabel(points, "Max. Punkte verringern").isEnabled()).isFalse();
 		assertThat(buttonByAriaLabel(points, "Max. Punkte erhöhen").isEnabled()).isFalse();
@@ -240,12 +241,181 @@ class ExamTasksEditorTests {
 		assertThat(details).extracting(Details::isOpened).containsExactly(true, true, false);
 	}
 
+	@Test
+	void footerIsAFixedBlockBelowTheTreeAndUnaffectedByCollapseAll() {
+		final ExamTasksEditor editor = new ExamTasksEditor(repository(false));
+		editor.setExam(EXAM);
+		final Component footer = footerBlock(editor);
+		final Component content = footer.getParent().orElseThrow();
+
+		assertThat(content.hasClassName("tt-designer-content")).isTrue();
+		assertThat(content.getChildren().toList().getLast()).isSameAs(footer);
+		assertThat(components(footer, Details.class)).isEmpty();
+		buttonsByDataAction(editor, "toggle-all").getFirst().click();
+
+		assertThat(components(editor, Details.class)).allMatch(detail -> !detail.isOpened());
+		assertThat(footer.isVisible()).isTrue();
+	}
+
+	@Test
+	void savesOnlyTheChangedFooterWithoutRebuildingTheTreeOrEditor() {
+		final LevelOfExpectationsRepository repository = repository(false);
+		final ExamTasksEditor editor = new ExamTasksEditor(repository);
+		editor.setExam(EXAM);
+		final Component footer = footerBlock(editor);
+		final Details part = components(editor, Details.class).getFirst();
+		final MarkdownEditor markdown = components(footer, MarkdownEditor.class).getFirst();
+		clearInvocations(repository);
+
+		markdown.setValue("**Viel Erfolg!**");
+		assertThat(editor.hasUnsavedChanges()).isTrue();
+		assertThat(saveButton(editor).isEnabled()).isTrue();
+		assertThat(buttonByAriaLabel(editor, "Verwerfen...").isEnabled()).isTrue();
+		assertThat(buttonByAriaLabel(editor, "Neu laden").isEnabled()).isFalse();
+		saveButton(editor).click();
+
+		verify(repository).saveExamFooterMarkdown(EXAM.id(), "**Viel Erfolg!**");
+		verify(repository, never()).saveTask(org.mockito.ArgumentMatchers.any());
+		verify(repository, never()).findExamFooterMarkdown(anyInt());
+		assertThat(footerBlock(editor)).isSameAs(footer);
+		assertThat(components(editor, Details.class).getFirst()).isSameAs(part);
+		assertThat(markdown.getValue()).isEqualTo("**Viel Erfolg!**");
+		assertThat(editor.hasUnsavedChanges()).isFalse();
+		assertThat(saveButton(editor).isEnabled()).isFalse();
+		assertThat(buttonByAriaLabel(editor, "Neu laden").isEnabled()).isTrue();
+	}
+
+	@Test
+	void restoringTheSavedFooterValueClearsDirtyState() {
+		final LevelOfExpectationsRepository repository = repository(false);
+		when(repository.findExamFooterMarkdown(EXAM.id())).thenReturn("Viel Erfolg!");
+		final ExamTasksEditor editor = new ExamTasksEditor(repository);
+		editor.setExam(EXAM);
+		final MarkdownEditor markdown = components(footerBlock(editor), MarkdownEditor.class).getFirst();
+
+		markdown.setValue("Anderer Text");
+		markdown.setValue("Viel Erfolg!");
+
+		assertThat(editor.hasUnsavedChanges()).isFalse();
+		assertThat(saveButton(editor).isEnabled()).isFalse();
+	}
+
+	@Test
+	void discardingFooterChangesRequiresConfirmationAndReloadsStoredContent() {
+		final LevelOfExpectationsRepository repository = repository(false);
+		when(repository.findExamFooterMarkdown(EXAM.id())).thenReturn("Viel Erfolg!");
+		final ExamTasksEditor editor = new ExamTasksEditor(repository);
+		editor.setExam(EXAM);
+		final MarkdownEditor markdown = components(footerBlock(editor), MarkdownEditor.class).getFirst();
+		markdown.setValue("Geänderter Abschlusstext");
+
+		buttonByAriaLabel(editor, "Verwerfen...").click();
+		final ConfirmDialog confirmation = components(editor, ConfirmDialog.class).getFirst();
+		confirmation.close();
+		assertThat(markdown.getValue()).isEqualTo("Geänderter Abschlusstext");
+		assertThat(editor.hasUnsavedChanges()).isTrue();
+		buttonByAriaLabel(editor, "Verwerfen...").click();
+		ComponentUtil.fireEvent(confirmation, new ConfirmDialog.ConfirmEvent(confirmation, false));
+
+		assertThat(components(footerBlock(editor), MarkdownEditor.class).getFirst().getValue()).isEqualTo("Viel Erfolg!");
+		assertThat(editor.hasUnsavedChanges()).isFalse();
+		verify(repository, never()).saveExamFooterMarkdown(anyInt(), org.mockito.ArgumentMatchers.anyString());
+	}
+
+	@Test
+	void keepsFooterChangesWhenSwitchingExamsOrChangingTheTree() {
+		final LevelOfExpectationsRepository repository = repository(false);
+		final LoeTask secondTask = new LoeTask(4, CATEGORY.id(), "Aufgabe 2", "Zweiter Text", 5, 1);
+		when(repository.findTasksByExamId(EXAM.id())).thenReturn(List.of(TASK, secondTask));
+		final ExamTasksEditor editor = new ExamTasksEditor(repository);
+		editor.setExam(EXAM);
+		final Component footer = footerBlock(editor);
+		components(footer, MarkdownEditor.class).getFirst().setValue("Noch nicht gespeichert");
+		clearInvocations(repository);
+
+		button(editor, "Klausurteil hinzufügen").click();
+		button(editor, "Leistungskategorie hinzufügen").click();
+		button(editor, "Teilaufgabe hinzufügen").click();
+		final Details firstTask = components(editor, Details.class).get(2);
+		buttonByAriaLabel(firstTask, "Nach unten").click();
+		buttonByAriaLabel(firstTask, "Löschen...").click();
+		final ConfirmDialog deleteConfirmation = components(ui, ConfirmDialog.class).stream()
+				.filter(ConfirmDialog::isOpened).findFirst().orElseThrow();
+		ComponentUtil.fireEvent(deleteConfirmation, new ConfirmDialog.ConfirmEvent(deleteConfirmation, false));
+		editor.setExam(new Exam(2, EXAM.courseId(), "Andere Klausur", EXAM.date()));
+
+		verify(repository, never()).savePart(org.mockito.ArgumentMatchers.any());
+		verify(repository, never()).saveCategory(org.mockito.ArgumentMatchers.any());
+		verify(repository, never()).saveTask(org.mockito.ArgumentMatchers.any());
+		verify(repository, never()).moveTask(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyList(), anyInt());
+		verify(repository, never()).deleteTask(anyInt());
+		verify(repository, never()).findPartsByExamId(anyInt());
+		assertThat(footerBlock(editor)).isSameAs(footer);
+		assertThat(components(footer, MarkdownEditor.class).getFirst().getValue()).isEqualTo("Noch nicht gespeichert");
+		assertThat(editor.hasUnsavedChanges()).isTrue();
+	}
+
+	@Test
+	void failedFooterSaveRetainsPendingChanges() {
+		final LevelOfExpectationsRepository repository = repository(false);
+		doThrow(new IllegalStateException("Klausur ist gesperrt.")).when(repository)
+				.saveExamFooterMarkdown(EXAM.id(), "Noch nicht gespeichert");
+		final ExamTasksEditor editor = new ExamTasksEditor(repository);
+		editor.setExam(EXAM);
+		final MarkdownEditor markdown = components(footerBlock(editor), MarkdownEditor.class).getFirst();
+		markdown.setValue("Noch nicht gespeichert");
+
+		saveButton(editor).click();
+
+		assertThat(markdown.getValue()).isEqualTo("Noch nicht gespeichert");
+		assertThat(editor.hasUnsavedChanges()).isTrue();
+		assertThat(saveButton(editor).isEnabled()).isTrue();
+	}
+
+	@Test
+	void examWithoutPartsStillHasAnEditableFooter() {
+		final LevelOfExpectationsRepository repository = repository(false);
+		when(repository.findPartsByExamId(EXAM.id())).thenReturn(List.of());
+		when(repository.findCategoriesByExamId(EXAM.id())).thenReturn(List.of());
+		when(repository.findTasksByExamId(EXAM.id())).thenReturn(List.of());
+		final ExamTasksEditor editor = new ExamTasksEditor(repository);
+		editor.setExam(EXAM);
+
+		assertThat(components(editor, Details.class)).isEmpty();
+		components(footerBlock(editor), MarkdownEditor.class).getFirst().setValue("Viel Erfolg!");
+		saveButton(editor).click();
+
+		verify(repository).saveExamFooterMarkdown(EXAM.id(), "Viel Erfolg!");
+		editor.setExam(null);
+		assertThat(components(editor, MarkdownEditor.class)).isEmpty();
+		assertThat(editor.hasUnsavedChanges()).isFalse();
+	}
+
+	@Test
+	void lockedFooterIsRenderedWithoutEditingControls() {
+		final LevelOfExpectationsRepository repository = repository(true);
+		when(repository.findExamFooterMarkdown(EXAM.id())).thenReturn("**Viel Erfolg!**");
+		final ExamTasksEditor editor = new ExamTasksEditor(repository);
+		editor.setExam(EXAM);
+
+		assertThat(components(footerBlock(editor), MarkdownEditor.class)).isEmpty();
+		assertThat(components(footerBlock(editor), MarkdownViewer.class)).extracting(MarkdownViewer::getContent)
+				.containsExactly("**Viel Erfolg!**");
+		assertThat(saveButton(editor).isEnabled()).isFalse();
+	}
+
+	private static Component footerBlock(final Component root) {
+		return components(root, VerticalLayout.class).stream().filter(component -> component.hasClassName("tt-exam-footer"))
+				.findFirst().orElseThrow();
+	}
+
 	private static LevelOfExpectationsRepository repository(final boolean locked) {
 		final LevelOfExpectationsRepository repository = mock(LevelOfExpectationsRepository.class);
 		when(repository.hasResultsForExam(EXAM.id())).thenReturn(locked);
 		when(repository.findPartsByExamId(EXAM.id())).thenReturn(List.of(PART));
 		when(repository.findCategoriesByExamId(EXAM.id())).thenReturn(List.of(CATEGORY));
 		when(repository.findTasksByExamId(EXAM.id())).thenReturn(List.of(TASK));
+		when(repository.findExamFooterMarkdown(EXAM.id())).thenReturn("");
 		return repository;
 	}
 

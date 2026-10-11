@@ -107,6 +107,7 @@ create table if not exists exam (
     exam_date date not null,
     original_exam_id integer,
     grading_scale_id integer not null,
+    footer_markdown clob default '' not null,
     constraint exam_course_fk foreign key (course_id) references course(id),
     constraint exam_original_exam_fk foreign key (original_exam_id) references exam(id),
     constraint exam_grading_scale_fk foreign key (grading_scale_id) references grading_scale(id),
@@ -115,6 +116,7 @@ create table if not exists exam (
 );
 
 alter table exam add column if not exists original_exam_id integer;
+alter table exam add column if not exists footer_markdown clob default '' not null;
 alter table exam add constraint if not exists exam_original_exam_fk foreign key (original_exam_id) references exam(id);
 alter table exam add constraint if not exists exam_original_exam_not_self_check check (original_exam_id is null or original_exam_id <> id);
 alter table exam add column if not exists grading_scale_id integer;

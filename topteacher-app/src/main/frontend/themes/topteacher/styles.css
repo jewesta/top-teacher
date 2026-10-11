@@ -1141,6 +1141,11 @@ vaadin-upload.tt-material-image-upload[dragover-valid] .tt-material-image-drop-t
 	gap: var(--lumo-space-xs);
 }
 
+.tt-exam-footer {
+	box-sizing: border-box;
+	padding-right: var(--tt-loe-content-right-inset);
+}
+
 .tt-field-label {
 	color: var(--lumo-secondary-text-color);
 	font-size: var(--lumo-font-size-s);

@@ -85,6 +85,16 @@ independent view state or dirty-state handling.
   access to client-visible shared-folder paths and conversion of stored
   material images to native Base64 MCP image content. See
   [system settings](../doc/ops/SystemSettings.md).
+- MCP access tokens will be maintained in `Systemeinstellungen` and persisted
+  in the database with full or pseudonymized access. Restricted access protects
+  pupil names, prevents pupil creation/renaming and real-name probing, and
+  retains other operations using pupil IDs, initials, and class context.
+  User-authored content follows the agreed name-removal protocol. See
+  [MCP access and pupil pseudonymization](../doc/ops/SystemSettings.md#mcp-access-and-pupil-pseudonymization).
+- `Aufgaben` also owns an optional exam-level Markdown closing text outside the
+  tree. It appears once after all parts in the future pupil exam sheet, not as
+  a repeated page footer; see
+  [exam closing text](../doc/ops/LevelOfExpectations.md#exam-closing-text).
 - Remove the `Notizen` tab and the complete exam-note-section feature. It was
   accidental legacy from the original exam template and must not be repurposed
   as the implementation of `Material`.
@@ -140,22 +150,11 @@ diagrams, images, data, and similar subject-specific material.
 - A material has a title and Markdown content.
 - Material remains separate from the task hierarchy; tasks refer to material
   through the wording of the task rather than owning or duplicating it.
-- The future pupil printout is organized by part. Within each part, all tasks
-  are printed first, followed by all materials assigned to that part:
-
-  ```text
-  Klausurteil A
-  Aufgabe 1
-  Aufgabe n
-  Quelle A
-  Quelle n
-
-  Klausurteil B
-  Aufgabe 1
-  Aufgabe n
-  Quelle A
-  Quelle n
-  ```
+- The future pupil printout places each part's material on separate pages
+  before its categories and tasks, with a new page for each subsequent part.
+  All Aufgaben content is pupil-facing. The optional exam closing text follows
+  all parts; see the
+  [authoritative export scope](../doc/ops/LevelOfExpectationsPdfExport.md#deferred-exam-sheet-export).
 
 The `Material` view uses the shared tree editor. Materials appear as
 collapsible, titled Markdown children beneath read-only `Klausurteil` headings,
@@ -287,6 +286,11 @@ The combined review pass is intended to provide the following end state:
   infrastructure.
 - `Aufgaben` owns editing for parts, categories, task Markdown, and explicit
   task maximum points.
+- The fixed `Abschlusstext` Markdown block below the Aufgaben tree is persisted
+  independently on the exam, copied with its design, and covered by save,
+  confirmed discard, dirty-state guards, and the first-result lock. Structural
+  tree actions cannot discard pending content; see
+  [the operational specification](../doc/ops/LevelOfExpectations.md#exam-closing-text).
 - Task maximum points use the shared compact minus/value/plus control with a
   permanent background in the task summary's point column; see the
   [operational specification](../doc/ops/LevelOfExpectations.md#task).
@@ -593,3 +597,11 @@ Verification: all 16 frontend tests, the required Maven reactor tests, the
 freshly prepared frontend's TypeScript check, and `git diff --check` passed.
 The Markdown module was installed locally for the next TT startup; the server
 remains stopped as requested.
+
+## MCP privacy decision — 11 October 2026
+
+Recorded the agreed name-focused pseudonymization contract in
+[system settings](../doc/ops/SystemSettings.md#mcp-access-and-pupil-pseudonymization).
+Implementation is pending: MCP still uses one unrestricted file-based bearer
+token. This discussion changed only the specification and decision record;
+no token maintenance, authorization, or runtime behavior has changed.
