@@ -58,12 +58,53 @@ only its filename; no raw database download is offered.
 | --- | --- |
 | `get_mcp_context`, `get_markdown_guide`, `get_exam_authoring_options` | Discover capabilities, supported syntax and current limits. |
 | `create_exam`, `duplicate_exam`, `update_exam`, `list_exams` | Create an exam shell, copy an academic design, and maintain title/date. |
+| `get_exam_structure` | Discover the exam outline and stable content IDs without authored content. |
+| `get_task`, `get_material`, `get_exam_footer` | Read only one requested pupil-facing task, material or exam closing text. |
+| `get_task_requirements` | Read only one requested task's EH requirements and criteria. |
 | `get_exam`, `apply_exam_content_changes` | Read and author pupil-facing Aufgaben, part-owned Material and exam closing text. |
 | `get_level_of_expectations`, `apply_level_of_expectations_changes` | Read and author requirements against existing task IDs. |
 | `import_material_image`, `get_material_image` | Import an image from a client-visible path or retrieve its stored pixels. |
 | Existing course/exam roster tools | Assign or remove existing pupils under the established integrity rules. |
 | `get_pupil_result`, `save_pupil_result` | Read or record one pupil's targeted assessment. |
 | `create_database_backup` | Create a server-side backup without returning its contents. |
+
+### Outline and focused reads
+
+For a request about one task, material, closing text or task's EH, discover the
+course/exam ID through the existing lists, then call `get_exam_structure` with
+`examId`. Its ordered `parts`, part-owned `materials` and `categories`, and
+category-owned `tasks` identify nodes by ID, title and order; task outlines also
+include `maxPoints`. `closingTextPresent` indicates whether the exam has closing
+text. The outline contains no authored Markdown, requirement/criterion text,
+image metadata or bytes, pupil rosters or results.
+
+Select the requested node from that outline and use its stable ID rather than
+guessing a task number or treating its display order as an ID:
+
+| Focused tool | Parameters | Returned content |
+| --- | --- | --- |
+| `get_task` | `examId`, `taskId` | The selected task's title, `descriptionMarkdown`, `maxPoints`, ID and order. |
+| `get_material` | `examId`, `materialId` | The selected material's title, `descriptionMarkdown`, ID, order and referenced-image metadata. |
+| `get_exam_footer` | `examId` | The exam's `footerMarkdown`; empty text means no closing text. |
+| `get_task_requirements` | `examId`, `taskId` | The selected task's context and ordered EH requirements with their derived criteria. |
+
+The outline and each focused response include the current exam-design
+`revision` and `permissions`. These reads return only the selected authored
+content with the identifiers/context needed to locate it; unrelated tasks,
+materials, closing text, EH, pupil rosters and results are excluded. Task and
+material IDs must belong to the supplied exam. Missing or foreign IDs are
+rejected; a foreign ID cannot be used to read content from another exam.
+
+`get_material` returns image metadata only. Retrieve requested stored pixels
+separately with `get_material_image`, using that exam, material and image ID.
+No focused read adds a PNG/render parameter or renders Markdown into an image.
+PNG rendering remains deferred; it must not inflate ordinary content reads.
+
+### Complete exam and EH reads
+
+`get_exam` and `get_level_of_expectations` retain their existing complete-read
+contracts for requests that need the whole definition or EH. They are not
+prerequisites for focused reads.
 
 `get_exam` returns course and exam metadata, `revision`, grading-scale context,
 `permissions`, point summary, structured readiness `diagnostics`, ordered

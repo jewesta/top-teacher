@@ -78,11 +78,14 @@ class TopTeacherMcpExamAuthoringHttpTests {
 			inventory.path("tools").forEach(tool -> toolNames.add(tool.path("name").asString()));
 			assertThat(toolNames).contains("get_mcp_context", "get_markdown_guide", "get_exam",
 					"get_exam_authoring_options", "apply_exam_content_changes", "apply_level_of_expectations_changes",
-					"import_material_image", "get_material_image", "save_pupil_result").doesNotContain("create_level_of_expectations");
+					"import_material_image", "get_material_image", "save_pupil_result", "get_exam_structure", "get_task",
+					"get_material", "get_exam_footer", "get_task_requirements").doesNotContain("create_level_of_expectations");
 			final JsonNode context = data(call(exchange, "get_mcp_context", Map.of()));
 			assertThat(context.path("accessLevel").asString()).isEqualTo(mode.name());
 			assertThat(context.path("imageImport").path("installationLocation").asString()).isEqualTo("LOCAL");
 			assertThat(context.toString()).doesNotContain("serverPath", "clientPath");
+			assertThat(context.path("availableOperations").toString()).contains("get_exam_structure", "get_task",
+					"get_material", "get_exam_footer", "get_task_requirements");
 			assertGuides(exchange);
 
 			final Map<String, Object> creationArguments = Map.of("courseId", course.id(),
@@ -191,6 +194,21 @@ class TopTeacherMcpExamAuthoringHttpTests {
 			assertThat(levels.findRequirementsByExamId(examId).stream().filter(requirement -> requirement.id() == requirementA)
 					.findFirst().orElseThrow().taskId()).isEqualTo(taskA);
 			assertThat(levels.isPointDistributionValidForExam(examId)).isTrue();
+			assertFocusedReads(exchange, examId, reordered.path("revision").asLong(), partA, partB, taskA,
+					taskZero, materialId, requirementA, imageId);
+			final int otherExamId = data(call(exchange, "create_exam", Map.of("courseId", course.id(),
+					"title", "Other exam " + unique, "date", "2076-05-02", "initialPupilIds", List.of(),
+					"requestId", "other-shell"))).path("exam").path("id").asInt();
+			assertFailure(exchange, "get_task", Map.of("examId", otherExamId, "taskId", taskA));
+			assertFailure(exchange, "get_task_requirements", Map.of("examId", otherExamId, "taskId", taskA));
+			assertFailure(exchange, "get_material", Map.of("examId", otherExamId, "materialId", materialId));
+			assertFailure(exchange, "get_task", Map.of("examId", examId, "taskId", Integer.MAX_VALUE));
+			assertFailure(exchange, "get_material", Map.of("examId", examId, "materialId", Integer.MAX_VALUE));
+			assertThat(data(call(exchange, "get_exam_footer", Map.of("examId", otherExamId)))
+					.path("footerMarkdown").asString()).isEmpty();
+			final JsonNode emptyStructure = data(call(exchange, "get_exam_structure", Map.of("examId", otherExamId)));
+			assertThat(emptyStructure.path("parts").size()).isZero();
+			assertThat(emptyStructure.path("closingTextPresent").asBoolean()).isFalse();
 			final JsonNode replay = content(exchange, examId, additionRevision, "addition", additions);
 			assertThat(replay.path("replayed").asBoolean()).isTrue();
 			assertThat(createdId(replay, "part-b")).isEqualTo(partB);
@@ -235,6 +253,53 @@ class TopTeacherMcpExamAuthoringHttpTests {
 			assertThat(levels.findRequirementResultsByExamAndPupil(examId, pupil.id())).singleElement()
 					.satisfies(result -> assertThat(result.pointUnits()).isZero());
 			assertThat(snapshot(exchange, examId).path("footerMarkdown").asString()).isEqualTo("**Good luck!**");
+			assertThat(data(call(exchange, "get_task_requirements", Map.of("examId", examId, "taskId", taskA)))
+					.path("requirements").get(0).path("criteria").get(0).path("label").asString()).isEqualTo("precise evidence");
+			assertThat(data(call(exchange, "get_task", Map.of("examId", examId, "taskId", taskA)))
+					.path("permissions").path("canEditExamContent").asBoolean()).isFalse();
+		}
+	}
+
+	private void assertFocusedReads(final Exchange exchange, final int examId, final long revision,
+			final int partA, final int partB, final int taskA, final int taskZero,
+			final int materialId, final int requirementA, final String imageId) throws Exception {
+		final JsonNode outline = data(call(exchange, "get_exam_structure", Map.of("examId", examId)));
+		assertThat(outline.path("revision").asLong()).isEqualTo(revision);
+		assertThat(outline.path("closingTextPresent").asBoolean()).isTrue();
+		assertThat(outline.path("parts").get(0).path("id").asInt()).isEqualTo(partB);
+		assertThat(outline.path("parts").get(1).path("id").asInt()).isEqualTo(partA);
+		final JsonNode category = findById(outline.path("parts"), partA).path("categories").get(0);
+		assertThat(category.path("tasks").get(0).path("id").asInt()).isEqualTo(taskZero);
+		assertThat(category.path("tasks").get(1).path("id").asInt()).isEqualTo(taskA);
+		assertThat(outline.toString()).doesNotContain("descriptionMarkdown", "footerMarkdown", "images", "requirements",
+				"Explain with evidence.", "Synthetic source text.", "Uses [evidence]");
+		final JsonNode task = data(call(exchange, "get_task", Map.of("examId", examId, "taskId", taskA)));
+		assertThat(task.path("task").path("id").asInt()).isEqualTo(taskA);
+		assertThat(task.path("task").path("descriptionMarkdown").asString()).isEqualTo("Explain with evidence.");
+		assertThat(task.path("task").path("maxPoints").asInt()).isEqualTo(40);
+		assertThat(task.toString()).doesNotContain("Discuss the implications.", "Synthetic source text.", "requirements", "footerMarkdown");
+		final JsonNode material = data(call(exchange, "get_material", Map.of("examId", examId, "materialId", materialId)));
+		assertThat(material.path("material").path("id").asInt()).isEqualTo(materialId);
+		assertThat(material.path("material").path("descriptionMarkdown").asString()).startsWith("Synthetic source text.");
+		assertThat(material.path("material").path("images").get(0).path("imageId").asString()).isEqualTo(imageId);
+		assertThat(material.path("material").path("images").get(0).has("data")).isFalse();
+		assertThat(material.toString()).doesNotContain("Explain with evidence.", "Discuss the implications.", "requirements", "footerMarkdown");
+		final JsonNode footer = data(call(exchange, "get_exam_footer", Map.of("examId", examId)));
+		assertThat(footer.path("footerMarkdown").asString()).isEqualTo("**Good luck!**");
+		assertThat(footer.toString()).doesNotContain("Explain with evidence.", "Synthetic source text.", "requirements");
+		final JsonNode requirements = data(call(exchange, "get_task_requirements", Map.of("examId", examId, "taskId", taskA)));
+		assertThat(requirements.path("task").path("id").asInt()).isEqualTo(taskA);
+		assertThat(requirements.path("requirements").size()).isOne();
+		assertThat(requirements.path("requirements").get(0).path("id").asInt()).isEqualTo(requirementA);
+		assertThat(requirements.path("requirements").get(0).path("criteria").get(0).path("label").asString()).isEqualTo("evidence");
+		assertThat(requirements.toString()).doesNotContain("Explain with evidence.", "Shows [reasoning]", "Synthetic source text.");
+		final JsonNode emptyRequirements = data(call(exchange, "get_task_requirements", Map.of("examId", examId, "taskId", taskZero)));
+		assertThat(emptyRequirements.path("requirements").size()).isZero();
+		for (final JsonNode response : List.of(outline, task, material, footer, requirements, emptyRequirements)) {
+			assertThat(response.path("examId").asInt()).isEqualTo(examId);
+			assertThat(response.path("revision").asLong()).isEqualTo(revision);
+			assertThat(response.path("permissions").path("correctionMode").asBoolean()).isFalse();
+			assertThat(response.toString()).doesNotContain("pupils", "results", "SyntheticAuthoring");
 		}
 	}
 

@@ -684,3 +684,19 @@ the authoritative [system settings structure](../doc/ops/SystemSettings.md#setti
 
 Verification: the required Maven reactor tests and `git diff --check` passed.
 The local demo was restarted with its existing database and tokens.
+
+## Focused MCP reads follow-up - 11 October 2026
+
+Added outline-first discovery through `get_exam_structure` and focused reads
+for one task, material, exam closing text or task's EH. Each response carries
+the current revision and permissions; node reads enforce exam ownership and
+exclude unrelated authored content. Material reads expose image metadata,
+with pixels still retrieved through `get_material_image`. Existing complete
+exam/EH reads remain compatible. The authoritative contract is
+[the focused-read specification](../doc/ops/Mcp.md#outline-and-focused-reads).
+
+PNG rendering and its optional parameter remain deferred.
+
+Verification: `mvn -pl topteacher-app -am test` passed with 661 tests, including
+focused reads over HTTP in both access modes, ownership checks and payload
+isolation. `git diff --check` passed. The MCP inventory now contains 33 tools.

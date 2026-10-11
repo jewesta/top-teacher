@@ -35,7 +35,8 @@ public class McpContextTools {
 	private static final List<String> SHARED_OPERATIONS = List.of("get_mcp_context", "get_markdown_guide",
 			"get_course_creation_options", "get_exam_authoring_options", "list_courses", "list_pupils",
 			"list_course_pupils", "list_exams", "list_exam_pupils", "create_course_with_pupils", "create_exam",
-			"update_exam", "duplicate_exam", "get_exam", "apply_exam_content_changes", "get_level_of_expectations",
+			"update_exam", "duplicate_exam", "get_exam", "get_exam_structure", "get_task", "get_material",
+			"get_exam_footer", "get_task_requirements", "apply_exam_content_changes", "get_level_of_expectations",
 			"apply_level_of_expectations_changes", "assign_pupils_to_course", "remove_pupils_from_course",
 			"assign_pupils_to_exam", "remove_pupils_from_exam", "get_pupil_result", "save_pupil_result", "import_material_image",
 			"get_material_image", "create_database_backup");
@@ -64,6 +65,7 @@ public class McpContextTools {
 						10L * 1024 * 1024, 40_000_000L, 3000,
 						"Absolute client paths resolve directly in LOCAL mode or through configured shares in REMOTE mode. Server roots are not disclosed."),
 				List.of("Discover course/options and permitted pupil IDs; create the exam shell, author Aufgaben/Material/footer, then EH against existing task IDs. Adding a task never creates requirements.",
+						"For selected content, locate IDs with get_exam_structure, then use get_task, get_material, get_exam_footer or get_task_requirements. Use aggregate reads for a complete design and readiness diagnostics.",
 						"Use current revision and unique requestId for atomic authoring. Retry identical requests with the same key. Omitted fields stay unchanged; deletion/reordering is explicit.",
 						"Capabilities do not override archive, validation or first-result locks. Check get_exam permissions/diagnostics before editing or result entry.",
 						full ? "Full access may maintain pupil names; academic writes still address existing pupils by stable IDs."

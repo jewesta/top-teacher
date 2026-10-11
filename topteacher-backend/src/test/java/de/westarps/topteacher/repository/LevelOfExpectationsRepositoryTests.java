@@ -31,15 +31,18 @@ import de.westarps.topteacher.model.SchoolClass;
 import de.westarps.topteacher.model.SchoolYear;
 import de.westarps.topteacher.model.Subject;
 import de.westarps.topteacher.model.loe.LoeCategory;
+import de.westarps.topteacher.model.loe.LoeCategoryOutline;
 import de.westarps.topteacher.model.loe.LoeCriterion;
 import de.westarps.topteacher.model.loe.LoeCriterionResult;
 import de.westarps.topteacher.model.loe.LoeMaterial;
+import de.westarps.topteacher.model.loe.LoeMaterialOutline;
 import de.westarps.topteacher.model.loe.LoeMaterialImage;
 import de.westarps.topteacher.model.loe.LoeMaterialImageReferences;
 import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeRequirementResult;
 import de.westarps.topteacher.model.loe.LoeTask;
+import de.westarps.topteacher.model.loe.LoeTaskOutline;
 
 @SpringBootTest
 class LevelOfExpectationsRepositoryTests {
@@ -148,6 +151,106 @@ class LevelOfExpectationsRepositoryTests {
 
 		assertThat(levelOfExpectationsRepository.findRequirementsByExamId(exam.id()))
 				.containsExactly(updatedRequirement);
+	}
+
+	@Test
+	void scopesIndividualTaskAndMaterialReadsToTheirOwningExam() {
+		final Exam exam = createExam(2053, "Focused Content Reads");
+		final Exam otherExam = createExam(2054, "Other Focused Content Reads");
+		final LoePart part = levelOfExpectationsRepository.savePart(new LoePart(null, exam.id(), "Teil A", 0));
+		final LoeCategory category = levelOfExpectationsRepository
+				.saveCategory(new LoeCategory(null, part.id(), "Inhalt", "", 0));
+		final LoeTask task = levelOfExpectationsRepository
+				.saveTask(new LoeTask(null, category.id(), "Aufgabe 1", "**Aufgabentext**", 10, 0));
+		final LoeMaterial material = levelOfExpectationsRepository
+				.saveMaterial(new LoeMaterial(null, part.id(), "Quelle 1", "**Quellentext**", 0));
+
+		assertThat(levelOfExpectationsRepository.findTaskByExamIdAndId(exam.id(), task.id())).contains(task);
+		assertThat(levelOfExpectationsRepository.findMaterialByExamIdAndId(exam.id(), material.id()))
+				.contains(material);
+		assertThat(levelOfExpectationsRepository.findTaskByExamIdAndId(otherExam.id(), task.id())).isEmpty();
+		assertThat(levelOfExpectationsRepository.findMaterialByExamIdAndId(otherExam.id(), material.id())).isEmpty();
+		assertThat(levelOfExpectationsRepository.findTaskByExamIdAndId(exam.id(), Integer.MAX_VALUE)).isEmpty();
+		assertThat(levelOfExpectationsRepository.findMaterialByExamIdAndId(exam.id(), Integer.MAX_VALUE)).isEmpty();
+	}
+
+	@Test
+	void scopesTaskAssessmentReadsAndPreservesRequirementAndActiveCriterionOrder() {
+		final Exam exam = createExam(2055, "Focused Assessment Reads");
+		final Exam otherExam = createExam(2056, "Other Focused Assessment Reads");
+		final LoePart part = levelOfExpectationsRepository.savePart(new LoePart(null, exam.id(), "Teil A", 0));
+		final LoeCategory category = levelOfExpectationsRepository
+				.saveCategory(new LoeCategory(null, part.id(), "Inhalt", "", 0));
+		final LoeTask task = levelOfExpectationsRepository
+				.saveTask(new LoeTask(null, category.id(), "Aufgabe 1", "", 20, 0));
+		final LoeTask sibling = levelOfExpectationsRepository
+				.saveTask(new LoeTask(null, category.id(), "Aufgabe 2", "", 10, 1));
+		final LoeRequirement late = levelOfExpectationsRepository.saveRequirement(new LoeRequirement(null,
+				task.id(), "[Removed](crit:1) [Late](crit:2)", 4, false, 5));
+		final LoeRequirement early = levelOfExpectationsRepository.saveRequirement(new LoeRequirement(null,
+				task.id(), "[First](crit:3) [Second](crit:4)", 4, false, 0));
+		final LoeRequirement tied = levelOfExpectationsRepository
+				.saveRequirement(new LoeRequirement(null, task.id(), "[Tied](crit:8)", 4, false, 0));
+		levelOfExpectationsRepository
+				.saveRequirement(new LoeRequirement(null, sibling.id(), "[Sibling](crit:1)", 4, false, 0));
+		final LoeRequirement updatedLate = levelOfExpectationsRepository.saveRequirement(
+				new LoeRequirement(late.id(), task.id(), "[Late](crit:2)", 4, false, 5));
+
+		assertThat(jdbc.queryForObject("""
+			select count(*) from eh_criterion where requirement_id = :id and active = false
+			""", Map.of("id", late.id()), Integer.class)).isEqualTo(1);
+		assertThat(levelOfExpectationsRepository.findRequirementsByExamIdAndTaskId(exam.id(), task.id()))
+				.containsExactly(early, tied, updatedLate);
+		assertThat(levelOfExpectationsRepository.findActiveCriteriaByExamIdAndTaskId(exam.id(), task.id()))
+				.extracting(LoeCriterion::requirementId, LoeCriterion::criterionKey, LoeCriterion::active)
+				.containsExactly(tuple(early.id(), "3", true), tuple(early.id(), "4", true),
+						tuple(tied.id(), "8", true), tuple(late.id(), "2", true));
+		assertThat(levelOfExpectationsRepository.findRequirementsByExamIdAndTaskId(otherExam.id(), task.id()))
+				.isEmpty();
+		assertThat(levelOfExpectationsRepository.findActiveCriteriaByExamIdAndTaskId(otherExam.id(), task.id()))
+				.isEmpty();
+		assertThat(levelOfExpectationsRepository.findRequirementsByExamIdAndTaskId(exam.id(), Integer.MAX_VALUE))
+				.isEmpty();
+		assertThat(levelOfExpectationsRepository.findActiveCriteriaByExamIdAndTaskId(exam.id(), Integer.MAX_VALUE))
+				.isEmpty();
+	}
+
+	@Test
+	void readsContentFreeOutlinesInHierarchyOrderWithinOneExam() {
+		final Exam exam = createExam(2057, "Exam Outline Reads");
+		final Exam otherExam = createExam(2058, "Other Exam Outline Reads");
+		final LoePart laterPart = levelOfExpectationsRepository
+				.savePart(new LoePart(null, exam.id(), "Teil B", 1));
+		final LoePart earlierPart = levelOfExpectationsRepository
+				.savePart(new LoePart(null, exam.id(), "Teil A", 0));
+		final LoeCategory laterCategory = levelOfExpectationsRepository
+				.saveCategory(new LoeCategory(null, laterPart.id(), "Sprache", "Hidden category content", 0));
+		final LoeCategory earlierCategory = levelOfExpectationsRepository
+				.saveCategory(new LoeCategory(null, earlierPart.id(), "Inhalt", "Hidden category content", 0));
+		final LoeTask laterTask = levelOfExpectationsRepository
+				.saveTask(new LoeTask(null, laterCategory.id(), "B1", "Hidden task content", 12, 0));
+		final LoeTask secondTask = levelOfExpectationsRepository
+				.saveTask(new LoeTask(null, earlierCategory.id(), "A2", "Hidden task content", 8, 1));
+		final LoeTask firstTask = levelOfExpectationsRepository
+				.saveTask(new LoeTask(null, earlierCategory.id(), "A1", "Hidden task content", 10, 0));
+		final LoeMaterial laterMaterial = levelOfExpectationsRepository
+				.saveMaterial(new LoeMaterial(null, laterPart.id(), "Quelle B", "Hidden material content", 0));
+		final LoeMaterial earlierMaterial = levelOfExpectationsRepository
+				.saveMaterial(new LoeMaterial(null, earlierPart.id(), "Quelle A", "Hidden material content", 0));
+
+		assertThat(levelOfExpectationsRepository.findCategoryOutlinesByExamId(exam.id())).containsExactly(
+				new LoeCategoryOutline(earlierCategory.id(), earlierPart.id(), "Inhalt", 0),
+				new LoeCategoryOutline(laterCategory.id(), laterPart.id(), "Sprache", 0));
+		assertThat(levelOfExpectationsRepository.findTaskOutlinesByExamId(exam.id())).containsExactly(
+				new LoeTaskOutline(firstTask.id(), earlierCategory.id(), "A1", 10, 0),
+				new LoeTaskOutline(secondTask.id(), earlierCategory.id(), "A2", 8, 1),
+				new LoeTaskOutline(laterTask.id(), laterCategory.id(), "B1", 12, 0));
+		assertThat(levelOfExpectationsRepository.findMaterialOutlinesByExamId(exam.id())).containsExactly(
+				new LoeMaterialOutline(earlierMaterial.id(), earlierPart.id(), "Quelle A", 0),
+				new LoeMaterialOutline(laterMaterial.id(), laterPart.id(), "Quelle B", 0));
+		assertThat(levelOfExpectationsRepository.findCategoryOutlinesByExamId(otherExam.id())).isEmpty();
+		assertThat(levelOfExpectationsRepository.findTaskOutlinesByExamId(otherExam.id())).isEmpty();
+		assertThat(levelOfExpectationsRepository.findMaterialOutlinesByExamId(otherExam.id())).isEmpty();
 	}
 
 	@Test

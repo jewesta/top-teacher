@@ -36,7 +36,8 @@ class TopTeacherMcpSchemaTests extends FullMcpAccessTest {
 			ExamWriteMcpTools.class, ExamPupilAssignmentMcpTools.class, ExamPupilRemovalMcpTools.class,
 			CourseRosterMcpTools.class, CoursePupilAssignmentMcpTools.class, CoursePupilRemovalMcpTools.class,
 			DatabaseBackupMcpTools.class, LevelOfExpectationsMcpTools.class, PupilMcpTools.class,
-			PupilResultMcpTools.class, PupilResultWriteMcpTools.class, ExamDesignMcpTools.class, McpContextTools.class, MaterialImageMcpTools.class);
+			PupilResultMcpTools.class, PupilResultWriteMcpTools.class, ExamDesignMcpTools.class, ExamContentReadMcpTools.class,
+			McpContextTools.class, MaterialImageMcpTools.class);
 
 	@Test
 	void exposesExamFirstOperationsInsteadOfTheObsoleteCombinedEhCreator() {
@@ -47,8 +48,8 @@ class TopTeacherMcpSchemaTests extends FullMcpAccessTest {
 		assertThat(tools).containsExactly("apply_exam_content_changes", "apply_level_of_expectations_changes",
 				"assign_pupils_to_course", "assign_pupils_to_exam", "create_course_with_pupils", "create_database_backup",
 				"create_exam", "create_pupils", "duplicate_exam", "get_course_creation_options", "get_exam", "get_exam_authoring_options",
-				"get_level_of_expectations", "get_markdown_guide", "get_material_image", "get_mcp_context",
-				"get_pupil_result", "import_material_image", "list_course_pupils", "list_courses", "list_exam_pupils",
+				"get_exam_footer", "get_exam_structure", "get_level_of_expectations", "get_markdown_guide", "get_material", "get_material_image", "get_mcp_context",
+				"get_pupil_result", "get_task", "get_task_requirements", "import_material_image", "list_course_pupils", "list_courses", "list_exam_pupils",
 				"list_exams", "list_pupils", "remove_pupils_from_course", "remove_pupils_from_exam", "save_pupil_result", "update_exam", "update_pupil");
 	}
 
@@ -99,7 +100,7 @@ class TopTeacherMcpSchemaTests extends FullMcpAccessTest {
 		final List<SyncToolSpecification> specifications = new SyncMcpToolProvider(toolGroups())
 				.getToolSpecifications();
 
-		assertThat(specifications).hasSize(28).allSatisfy(specification -> {
+		assertThat(specifications).hasSize(33).allSatisfy(specification -> {
 			assertThat(specification.tool().inputSchema()).containsEntry("type", "object");
 			if (!specification.tool().name().equals("get_material_image")) {
 				assertThat(specification.tool().outputSchema()).containsEntry("type", "object");
@@ -258,6 +259,7 @@ class TopTeacherMcpSchemaTests extends FullMcpAccessTest {
 				new CoursePupilRemovalMcpTools(courses, removalWriter), new DatabaseBackupMcpTools(backupService),
 				new LevelOfExpectationsMcpTools(support, authoring),
 				new ExamDesignMcpTools(support, authoring, courses, gradingScales),
+				new ExamContentReadMcpTools(support, levelOfExpectations),
 				new McpContextTools(mock(FileAccessSettingsService.class)),
 				new MaterialImageMcpTools(mock(MaterialImageImportService.class)),
 				new PupilResultWriteMcpTools(mock(ExamAssessmentService.class), mock(PupilResultMcpTools.class), mock(ExamDesignGuard.class)),

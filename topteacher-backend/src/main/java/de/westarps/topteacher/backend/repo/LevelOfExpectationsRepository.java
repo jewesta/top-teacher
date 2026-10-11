@@ -23,10 +23,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import de.westarps.topteacher.backend.authoring.ExamDesignGuard;
 import de.westarps.topteacher.model.loe.LoeCategory;
+import de.westarps.topteacher.model.loe.LoeCategoryOutline;
 import de.westarps.topteacher.model.loe.LoeCriterion;
 import de.westarps.topteacher.model.loe.LoeCriterionParser;
 import de.westarps.topteacher.model.loe.LoeCriterionResult;
 import de.westarps.topteacher.model.loe.LoeMaterial;
+import de.westarps.topteacher.model.loe.LoeMaterialOutline;
 import de.westarps.topteacher.model.loe.LoeMaterialImage;
 import de.westarps.topteacher.model.loe.LoeMaterialImageMetadata;
 import de.westarps.topteacher.model.loe.LoeMaterialImageReferences;
@@ -34,6 +36,7 @@ import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeRequirementResult;
 import de.westarps.topteacher.model.loe.LoeTask;
+import de.westarps.topteacher.model.loe.LoeTaskOutline;
 import de.westarps.topteacher.model.loe.LoeValidator;
 
 @Repository
@@ -144,6 +147,17 @@ public class LevelOfExpectationsRepository {
 			""", Map.of("examId", examId), categoryRowMapper);
 	}
 
+	public List<LoeCategoryOutline> findCategoryOutlinesByExamId(final int examId) {
+		return jdbc.query("""
+			select c.id, c.part_id, c.title, c.sort_order
+			from eh_category c
+			join eh_part p on p.id = c.part_id
+			where p.exam_id = :examId
+			order by p.sort_order, p.id, c.sort_order, c.id
+			""", Map.of("examId", examId), (row, index) -> new LoeCategoryOutline(row.getInt("id"),
+					row.getInt("part_id"), row.getString("title"), row.getInt("sort_order")));
+	}
+
 	public List<LoeTask> findTasksByExamId(final int examId) {
 		return jdbc.query("""
 			select t.id, t.category_id, t.title, t.description_markdown, t.max_points, t.sort_order
@@ -155,6 +169,30 @@ public class LevelOfExpectationsRepository {
 			""", Map.of("examId", examId), taskRowMapper);
 	}
 
+	public List<LoeTaskOutline> findTaskOutlinesByExamId(final int examId) {
+		return jdbc.query("""
+			select t.id, t.category_id, t.title, t.max_points, t.sort_order
+			from eh_task t
+			join eh_category c on c.id = t.category_id
+			join eh_part p on p.id = c.part_id
+			where p.exam_id = :examId
+			order by p.sort_order, p.id, c.sort_order, c.id, t.sort_order, t.id
+			""", Map.of("examId", examId), (row, index) -> new LoeTaskOutline(row.getInt("id"),
+					row.getInt("category_id"), row.getString("title"), row.getInt("max_points"),
+					row.getInt("sort_order")));
+	}
+
+	public Optional<LoeTask> findTaskByExamIdAndId(final int examId, final int taskId) {
+		return jdbc.query("""
+			select t.id, t.category_id, t.title, t.description_markdown, t.max_points, t.sort_order
+			from eh_task t
+			join eh_category c on c.id = t.category_id
+			join eh_part p on p.id = c.part_id
+			join exam e on e.id = p.exam_id
+			where e.id = :examId and t.id = :taskId
+			""", Map.of("examId", examId, "taskId", taskId), taskRowMapper).stream().findFirst();
+	}
+
 	public List<LoeMaterial> findMaterialsByExamId(final int examId) {
 		return jdbc.query("""
 			select material.id, material.part_id, material.title, material.description_markdown, material.sort_order
@@ -163,6 +201,27 @@ public class LevelOfExpectationsRepository {
 			where part.exam_id = :examId
 			order by part.sort_order, part.id, material.sort_order, material.id
 			""", Map.of("examId", examId), materialRowMapper);
+	}
+
+	public List<LoeMaterialOutline> findMaterialOutlinesByExamId(final int examId) {
+		return jdbc.query("""
+			select material.id, material.part_id, material.title, material.sort_order
+			from loe_material material
+			join eh_part part on part.id = material.part_id
+			where part.exam_id = :examId
+			order by part.sort_order, part.id, material.sort_order, material.id
+			""", Map.of("examId", examId), (row, index) -> new LoeMaterialOutline(row.getInt("id"),
+					row.getInt("part_id"), row.getString("title"), row.getInt("sort_order")));
+	}
+
+	public Optional<LoeMaterial> findMaterialByExamIdAndId(final int examId, final int materialId) {
+		return jdbc.query("""
+			select material.id, material.part_id, material.title, material.description_markdown, material.sort_order
+			from loe_material material
+			join eh_part part on part.id = material.part_id
+			join exam e on e.id = part.exam_id
+			where e.id = :examId and material.id = :materialId
+			""", Map.of("examId", examId, "materialId", materialId), materialRowMapper).stream().findFirst();
 	}
 
 	public List<LoeMaterialImage> findMaterialImagesByIds(final Collection<String> ids) {
@@ -224,6 +283,19 @@ public class LevelOfExpectationsRepository {
 			""", Map.of("examId", examId), requirementRowMapper);
 	}
 
+	public List<LoeRequirement> findRequirementsByExamIdAndTaskId(final int examId, final int taskId) {
+		return jdbc.query("""
+			select r.id, r.task_id, r.description_markdown, r.max_points, r.bonus, r.sort_order
+			from eh_requirement r
+			join eh_task t on t.id = r.task_id
+			join eh_category c on c.id = t.category_id
+			join eh_part p on p.id = c.part_id
+			join exam e on e.id = p.exam_id
+			where e.id = :examId and t.id = :taskId
+			order by r.sort_order, r.id
+			""", Map.of("examId", examId, "taskId", taskId), requirementRowMapper);
+	}
+
 	public List<LoeCriterion> findActiveCriteriaByExamId(final int examId) {
 		return jdbc.query("""
 			select cr.id, cr.requirement_id, cr.criterion_key, cr.label, cr.point_units, cr.sort_order, cr.active
@@ -237,6 +309,20 @@ public class LevelOfExpectationsRepository {
 			order by p.sort_order, p.id, c.sort_order, c.id, t.sort_order, t.id, r.sort_order, r.id,
 			         cr.sort_order, cr.id
 			""", Map.of("examId", examId), criterionRowMapper);
+	}
+
+	public List<LoeCriterion> findActiveCriteriaByExamIdAndTaskId(final int examId, final int taskId) {
+		return jdbc.query("""
+			select cr.id, cr.requirement_id, cr.criterion_key, cr.label, cr.point_units, cr.sort_order, cr.active
+			from eh_criterion cr
+			join eh_requirement r on r.id = cr.requirement_id
+			join eh_task t on t.id = r.task_id
+			join eh_category c on c.id = t.category_id
+			join eh_part p on p.id = c.part_id
+			join exam e on e.id = p.exam_id
+			where e.id = :examId and t.id = :taskId and cr.active = true
+			order by r.sort_order, r.id, cr.sort_order, cr.id
+			""", Map.of("examId", examId, "taskId", taskId), criterionRowMapper);
 	}
 
 	public List<LoeCriterionResult> findCriterionResultsByExamAndPupil(final int examId, final int pupilId) {

@@ -28,6 +28,7 @@ import de.westarps.topteacher.mcp.ExamDesignMcpSchema.MaterialView;
 import de.westarps.topteacher.mcp.ExamDesignMcpSchema.PartView;
 import de.westarps.topteacher.mcp.ExamDesignMcpSchema.PointSummaryView;
 import de.westarps.topteacher.mcp.ExamDesignMcpSchema.TaskView;
+import de.westarps.topteacher.mcp.ExamMcpTools.ExamView;
 import de.westarps.topteacher.mcp.security.McpAccessContext;
 import de.westarps.topteacher.model.Course;
 import de.westarps.topteacher.model.Exam;
@@ -43,7 +44,7 @@ import de.westarps.topteacher.model.loe.LoeRequirement;
 import de.westarps.topteacher.model.loe.LoeTask;
 import de.westarps.topteacher.model.loe.LoeValidator;
 
-/** Builds consistent, pupil-independent design snapshots shared by the two authoring reads. */
+/** Builds consistent, pupil-independent context for aggregate and focused design reads. */
 @Component
 public class ExamDesignMcpSupport {
 
@@ -66,6 +67,16 @@ public class ExamDesignMcpSupport {
 	public <T> T read(final int examId, final Function<DesignSnapshot, T> projection) {
 		McpAccessContext.accessLevel();
 		return guard.read(examId, () -> projection.apply(snapshot(examId)));
+	}
+
+	public <T> T readContext(final int examId, final Function<ExamReadContext, T> projection) {
+		McpAccessContext.accessLevel();
+		return guard.read(examId, () -> projection.apply(context(examId)));
+	}
+
+	public ExamView examMetadata(final ExamReadContext context) {
+		return ExamMcpTools.examView(context.exam(), exams.findNumberById(context.exam().id()).orElse(null),
+				context.permissions().correctionMode());
 	}
 
 	public ExamDefinitionView examView(final DesignSnapshot snapshot) {
@@ -98,11 +109,21 @@ public class ExamDesignMcpSupport {
 						range.minPoints(), range.maxPoints())).toList());
 	}
 
-	private DesignSnapshot snapshot(final int examId) {
+	private ExamReadContext context(final int examId) {
 		final Exam exam = exams.findById(examId)
 				.orElseThrow(() -> new IllegalArgumentException("Exam does not exist: " + examId));
 		final Course course = courses.findById(exam.courseId())
 				.orElseThrow(() -> new IllegalArgumentException("Course does not exist: " + exam.courseId()));
+		final boolean correctionMode = design.hasResultsForExam(examId);
+		final boolean active = course.lifecycle() == Lifecycle.ACTIVE;
+		final ExamPermissions permissions = new ExamPermissions(active && !correctionMode, active && !correctionMode,
+				active && !correctionMode, active, correctionMode, !active);
+		return new ExamReadContext(exam, course, guard.revision(examId), permissions);
+	}
+
+	private DesignSnapshot snapshot(final int examId) {
+		final ExamReadContext context = context(examId);
+		final Exam exam = context.exam();
 		final List<LoePart> parts = sorted(design.findPartsByExamId(examId), LoePart::sortOrder, LoePart::id);
 		final List<LoeCategory> categories = sorted(design.findCategoriesByExamId(examId), LoeCategory::sortOrder,
 				LoeCategory::id);
@@ -121,10 +142,6 @@ public class ExamDesignMcpSupport {
 		final GradingScaleView scale = exam.gradingScaleId() == null ? null
 				: gradingScales.findById(exam.gradingScaleId()).map(this::gradingScaleView).orElse(null);
 		final List<DesignDiagnostic> diagnostics = diagnostics(examId, tasks, materials, requirements, images, scale);
-		final boolean correctionMode = design.hasResultsForExam(examId);
-		final boolean active = course.lifecycle() == Lifecycle.ACTIVE;
-		final ExamPermissions permissions = new ExamPermissions(active && !correctionMode, active && !correctionMode,
-				active && !correctionMode, active, correctionMode, !active);
 		final int maximum = tasks.stream().mapToInt(LoeTask::maxPoints).sum();
 		final int bonus = requirements.stream().filter(LoeRequirement::bonus).mapToInt(LoeRequirement::maxPoints).sum();
 		final boolean taskMatch = tasks.stream().allMatch(task -> requirements.stream()
@@ -133,8 +150,8 @@ public class ExamDesignMcpSupport {
 		final boolean scaleMatch = scale != null && maximum == scale.maxPoints();
 		final PointSummaryView points = new PointSummaryView(maximum, bonus, scale == null ? null : scale.maxPoints(),
 				scaleMatch, taskMatch, scaleMatch && taskMatch);
-		return new DesignSnapshot(exam, course, guard.revision(examId), scale,
-				Objects.requireNonNullElse(design.findExamFooterMarkdown(examId), ""), permissions, points,
+		return new DesignSnapshot(exam, context.course(), context.revision(), scale,
+				Objects.requireNonNullElse(design.findExamFooterMarkdown(examId), ""), context.permissions(), points,
 				List.copyOf(diagnostics), parts, categories, tasks, materials, requirements, criteria, images);
 	}
 
@@ -175,6 +192,9 @@ public class ExamDesignMcpSupport {
 	private static <T> List<T> sorted(final Collection<T> values, final Function<T, Integer> sortOrder,
 			final Function<T, Integer> id) {
 		return values.stream().sorted(Comparator.comparing(sortOrder).thenComparing(id)).toList();
+	}
+
+	public record ExamReadContext(Exam exam, Course course, long revision, ExamPermissions permissions) {
 	}
 
 	public record DesignSnapshot(Exam exam, Course course, long revision, GradingScaleView gradingScale,
