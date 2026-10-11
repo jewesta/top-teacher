@@ -26,12 +26,14 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.contextmenu.MenuItem;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.menubar.MenuBar;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.popover.Popover;
+import com.vaadin.flow.component.shared.Tooltip;
 import com.vaadin.flow.component.textfield.TextArea;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
@@ -387,14 +389,13 @@ class ExamResultsEditorTests {
 		assertThat(components(editor, Popover.class)).isEmpty();
 		assertThat(components(editor, ResultsRequirementPointCell.class))
 				.allSatisfy(cell -> assertThat(cell.getElement().getAttribute("role")).isNull());
-		assertThat(components(editor, Span.class).stream()
-				.filter(span -> span.getClassNames().contains("tt-results-adjustment-label"))
-				.map(Span::getText)).containsExactly("Frei vergebene Pkt.", "Frei vergebene Pkt.");
-		assertThat(components(editor, Span.class).stream()
-				.filter(span -> span.getClassNames().contains("tt-results-adjustment-label")))
-				.allSatisfy(span -> {
-					assertThat(span.getElement().getAttribute("aria-label")).isEqualTo("Frei vergebene Punkte");
-					assertThat(span.getElement().getAttribute("title")).isEqualTo("Frei vergebene Punkte");
+		assertThat(components(editor, Icon.class).stream()
+				.filter(icon -> icon.getClassNames().contains("tt-results-adjustment-icon")))
+				.hasSize(2).allSatisfy(icon -> {
+					assertThat(icon.getElement().getAttribute("icon")).isEqualTo("vaadin:scale");
+					assertThat(icon.getElement().getAttribute("aria-label")).isEqualTo("Frei vergebene Punkte");
+					assertThat(icon.getTooltip().getText()).isEqualTo("Frei vergebene Punkte");
+					assertThat(icon.getParent().orElseThrow().getClassNames()).contains("tt-results-points-status");
 				});
 
 		increase(free);
@@ -420,7 +421,7 @@ class ExamResultsEditorTests {
 	}
 
 	@Test
-	void showsBonusStarOnlyForBonusRequirements() {
+	void usesNumberedStarOnlyForBonusRequirements() {
 		final LevelOfExpectationsRepository levelOfExpectationsRepository = levelOfExpectationsRepository(
 				List.of(REQUIREMENT, BONUS_REQUIREMENT), List.of(CRITERION),
 				List.of(new LoeRequirementResult(REQUIREMENT.id(), PUPIL.id(), 1)));
@@ -430,16 +431,25 @@ class ExamResultsEditorTests {
 
 		editor.setExam(EXAM);
 
-		final Icon bonusIcon = bonusIcons(editor).getFirst();
-		final Component marker = bonusIcon.getParent().orElseThrow();
+		final Div bonusNumber = bonusNumberBadges(editor).getFirst();
+		final Component marker = bonusNumber.getParent().orElseThrow();
 		final Component requirement = marker.getParent().orElseThrow();
+		final List<Component> bonusNumberChildren = bonusNumber.getChildren().toList();
 		final List<Component> markerChildren = marker.getChildren().toList();
 		final List<Component> requirementChildren = requirement.getChildren().toList();
-		assertThat(bonusIcons(editor)).hasSize(1);
+		assertThat(bonusNumberBadges(editor)).hasSize(1);
+		assertThat(bonusNumberChildren).hasSize(2);
+		assertThat(bonusNumberChildren.getFirst()).isInstanceOf(Icon.class);
+		assertThat(((Icon) bonusNumberChildren.getFirst()).getIcon()).isEqualTo("vaadin:star");
+		assertThat(bonusNumberChildren.getLast()).isInstanceOf(Span.class);
+		assertThat(((Span) bonusNumberChildren.getLast()).getText()).isEqualTo("2");
+		assertThat(bonusNumber.getElement().getAttribute("aria-label"))
+				.isEqualTo("Anforderung 2, Sternchen-Aufgabe");
+		assertThat(Tooltip.forComponent(bonusNumber).getText()).isEqualTo("Sternchen-Aufgabe / Bonusaufgabe");
 		assertThat(requirement.getClassNames()).contains("tt-results-requirement");
 		assertThat(marker.getClassNames()).contains("tt-results-requirement-marker");
-		assertThat(markerChildren.get(0).getClassNames()).contains("tt-results-requirement-number");
-		assertThat(markerChildren.get(1)).isSameAs(bonusIcon);
+		assertThat(markerChildren).containsExactly(bonusNumber);
+		assertThat(bonusNumber.getClassNames()).contains("tt-results-requirement-number", "tt-results-bonus-number");
 		assertThat(requirementChildren.get(0)).isSameAs(marker);
 		assertThat(requirementChildren.get(1).getClassNames()).contains("tt-results-requirement-content");
 		assertThat(requirementChildren.get(2).getClassNames()).contains("tt-results-requirement-points-area");
@@ -649,7 +659,7 @@ class ExamResultsEditorTests {
 			assertThat(badgeTexts(editor)).containsOnly(String.valueOf(Math.min(5, regularPoints + 2)));
 			assertThat(components(editor, ResultsRequirementPointCell.class))
 					.extracting(cell -> cell.value().getText()).containsExactly(String.valueOf(regularPoints), "2");
-			assertThat(bonusIcons(editor)).hasSize(1);
+			assertThat(bonusNumberBadges(editor)).hasSize(1);
 
 			decrease(freePointSteppers(editor).getLast());
 			decrease(freePointSteppers(editor).getLast());
@@ -802,9 +812,9 @@ class ExamResultsEditorTests {
 		return components(root, LoePointBadge.class).stream().map(LoePointBadge::getText).toList();
 	}
 
-	private static List<Icon> bonusIcons(final Component root) {
-		return components(root, Icon.class).stream()
-				.filter(icon -> icon.getClassNames().contains("tt-results-bonus-icon")).toList();
+	private static List<Div> bonusNumberBadges(final Component root) {
+		return components(root, Div.class).stream()
+				.filter(div -> div.getClassNames().contains("tt-results-bonus-number")).toList();
 	}
 
 	private static List<String> requirementNumberTexts(final Component root) {

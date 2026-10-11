@@ -27,6 +27,7 @@ import com.vaadin.flow.component.menubar.MenuBarVariant;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.shared.Tooltip;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.data.value.ValueChangeMode;
 
@@ -682,30 +683,35 @@ public class ExamResultsEditor extends AbstractDesigner {
 
 	private Component requirementMarker(final LoeTask task, final LoeRequirement requirement) {
 		final String requirementNumber = requirementNumber(task, requirement);
-		final VerticalLayout marker = new VerticalLayout(requirementNumberBadge(requirementNumber));
+		final VerticalLayout marker = new VerticalLayout(requirementNumberBadge(requirementNumber, requirement.bonus()));
 		marker.addClassName("tt-results-requirement-marker");
 		marker.setAlignItems(Alignment.CENTER);
 		marker.setPadding(false);
 		marker.setSpacing(false);
-		if (requirement.bonus()) {
-			marker.add(bonusIcon());
-		}
 		return marker;
 	}
 
-	private static Span requirementNumberBadge(final String requirementNumber) {
+	private static Component requirementNumberBadge(final String requirementNumber, final boolean bonus) {
+		if (bonus) {
+			return bonusRequirementNumberBadge(requirementNumber);
+		}
 		final Span number = new Span(requirementNumber);
 		number.addClassName("tt-results-requirement-number");
 		number.getElement().setAttribute("aria-label", "Anforderung " + requirementNumber);
 		return number;
 	}
 
-	private static Icon bonusIcon() {
+	private static Div bonusRequirementNumberBadge(final String requirementNumber) {
 		final Icon star = VaadinIcon.STAR.create();
-		star.addClassName("tt-results-bonus-icon");
-		star.getElement().setAttribute("aria-label", "Sternchen-Aufgabe");
-		star.setTooltipText("Sternchen-Aufgabe / Bonusaufgabe");
-		return star;
+		star.addClassName("tt-results-bonus-star");
+		star.getElement().setAttribute("aria-hidden", "true");
+		final Span number = new Span(requirementNumber);
+		number.addClassName("tt-results-bonus-number-text");
+		final Div badge = new Div(star, number);
+		badge.addClassNames("tt-results-requirement-number", "tt-results-bonus-number");
+		badge.getElement().setAttribute("aria-label", "Anforderung " + requirementNumber + ", Sternchen-Aufgabe");
+		Tooltip.forComponent(badge).withText("Sternchen-Aufgabe / Bonusaufgabe");
+		return badge;
 	}
 
 	private Component pointsControl(final LoeRequirement requirement, final List<LoeCriterion> requirementCriteria) {
@@ -728,11 +734,11 @@ public class ExamResultsEditor extends AbstractDesigner {
 		final LoePointStepper free = new LoePointStepper("Frei vergebene Punkte");
 		free.setChangeHandler(units -> setFreePointUnits(requirement, units));
 		freePointControls.put(requirement.id(), free);
-		final Span freeLabel = new Span("Frei vergebene Pkt.");
-		freeLabel.addClassName("tt-results-adjustment-label");
-		freeLabel.getElement().setAttribute("aria-label", "Frei vergebene Punkte");
-		freeLabel.getElement().setAttribute("title", "Frei vergebene Punkte");
-		final VerticalLayout freeArea = new VerticalLayout(freeLabel, new ResultsPointsRow(free));
+		final Icon freeIcon = VaadinIcon.SCALE.create();
+		freeIcon.addClassName("tt-results-adjustment-icon");
+		freeIcon.getElement().setAttribute("aria-label", "Frei vergebene Punkte");
+		freeIcon.setTooltipText("Frei vergebene Punkte");
+		final VerticalLayout freeArea = new VerticalLayout(new ResultsPointsRow(freeIcon, free));
 		freeArea.addClassName("tt-results-adjustment");
 		freeArea.setPadding(false);
 		freeArea.setSpacing(false);

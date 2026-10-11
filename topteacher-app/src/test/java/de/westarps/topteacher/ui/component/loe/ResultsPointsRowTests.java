@@ -32,7 +32,7 @@ class ResultsPointsRowTests {
 	}
 
 	@Test
-	void totalsAndFreeAwardsReserveAnEmptyStatusColumnWithoutAddingAnIcon() {
+	void pointOnlyRowsReserveAnEmptyStatusColumnWithoutAddingAnIcon() {
 		for (final Component points : List.of(new ResultsRequirementPointCell(), new LoePointStepper("Freie Punkte"))) {
 			final ResultsPointsRow row = new ResultsPointsRow(points);
 			final List<Component> columns = row.getChildren().toList();

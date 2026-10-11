@@ -15,6 +15,7 @@ import {
 } from '@vaadin/flow-frontend/de/westarps/vaadin/markdown/ws-markdown-extensions';
 import './tt-criterion-markdown.css';
 import { CRITERION_NAMESPACE, criterionTarget, parseCriterionTarget } from './tt-criterion-reference';
+import { allowClassNames } from './tt-markdown-sanitize';
 
 type MarkdownNode = {
   type: string;
@@ -312,11 +313,8 @@ function tagSanitizeSchema(schema: typeof defaultSchema, tagRenderMode: Markdown
         'value',
       ],
       mark: [...(schema.attributes?.mark ?? []), ['className', 'tt-criterion-highlight']],
-      span: [
-        ...(schema.attributes?.span ?? []),
-        ['className', 'tt-criterion', 'tt-criterion-badge'],
-        'dataCriterionKey',
-      ],
+      span: [...allowClassNames(schema.attributes?.span, 'tt-criterion', 'tt-criterion-badge'),
+        'dataCriterionKey'],
       button: [
         ...(schema.attributes?.button ?? []),
         ['className', 'tt-criterion-badge', 'tt-criterion-point-button'],

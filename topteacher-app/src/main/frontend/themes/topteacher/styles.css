@@ -4,6 +4,7 @@
 	--lumo-primary-color-10pct: hsla(350, 48%, 34%, 0.1);
 	--lumo-primary-text-color: hsl(350, 54%, 30%);
 	--lumo-primary-contrast-color: #fff;
+	--tt-bonus-color: hsl(45, 100%, 58%);
 	/* Prevent horizontal trackpad swipes from triggering browser history navigation. */
 	overscroll-behavior-x: contain;
 }
@@ -801,6 +802,36 @@ vaadin-upload.tt-material-image-upload[dragover-valid] .tt-material-image-drop-t
 	padding: 0 var(--lumo-space-xs);
 }
 
+.tt-results-requirement-number.tt-results-bonus-number {
+	background: transparent;
+	border-radius: 0;
+	display: inline-grid;
+	height: calc(var(--lumo-size-xs) + var(--lumo-space-s));
+	min-width: calc(var(--lumo-size-xs) + var(--lumo-space-s));
+	padding: 0;
+	place-items: center;
+	width: calc(var(--lumo-size-xs) + var(--lumo-space-s));
+}
+
+.tt-results-bonus-star,
+.tt-results-bonus-number-text {
+	grid-area: 1 / 1;
+}
+
+.tt-results-bonus-star {
+	color: var(--tt-bonus-color);
+	height: var(--lumo-size-m);
+	width: var(--lumo-size-m);
+}
+
+.tt-results-bonus-number-text {
+	color: hsl(214, 35%, 21%);
+	font-size: var(--lumo-font-size-s);
+	font-weight: 700;
+	line-height: 1;
+	z-index: 1;
+}
+
 .tt-results-requirement-marker {
 	align-items: center;
 	background: var(--lumo-contrast-5pct);
@@ -847,11 +878,6 @@ vaadin-upload.tt-material-image-upload[dragover-valid] .tt-material-image-drop-t
 	justify-content: flex-start;
 	padding: 0 var(--lumo-space-s) var(--lumo-space-m) var(--lumo-space-s);
 	width: calc(var(--tt-points-column-width) + var(--lumo-space-s) + var(--lumo-space-s));
-}
-
-.tt-results-bonus-icon {
-	color: hsl(43, 86%, 42%);
-	flex: 0 0 auto;
 }
 
 .tt-results-points-control {
@@ -971,6 +997,12 @@ vaadin-upload.tt-material-image-upload[dragover-valid] .tt-material-image-drop-t
 	padding-top: var(--lumo-space-s);
 }
 
+.tt-results-adjustment-icon {
+	color: var(--lumo-secondary-text-color);
+	height: var(--lumo-icon-size-s);
+	width: var(--lumo-icon-size-s);
+}
+
 .tt-results-points-field {
 	max-width: 100%;
 	min-width: 0;
@@ -981,8 +1013,7 @@ vaadin-upload.tt-material-image-upload[dragover-valid] .tt-material-image-drop-t
 	min-width: 0;
 }
 
-.tt-results-points-text,
-.tt-results-adjustment-label {
+.tt-results-points-text {
 	align-self: flex-start;
 	color: var(--lumo-secondary-text-color);
 	font-size: var(--lumo-font-size-xs);
@@ -1178,7 +1209,7 @@ vaadin-upload.tt-material-image-upload[dragover-valid] .tt-material-image-drop-t
 }
 
 .tt-eh-bonus-toggle-active {
-	color: hsl(43, 86%, 42%);
+	color: var(--tt-bonus-color);
 }
 
 .tt-markdown-block {

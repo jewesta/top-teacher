@@ -25,6 +25,12 @@ or preview transforms. Their Java components carry those IDs and an optional
 extension state map. Extension events travel through the generic
 `markdown-extension-event` bridge.
 
+When an extension adds allowed CSS classes for an element, it merges them into
+the element's existing `className` sanitizer definition. Adding a second
+definition is ineffective because `hast-util-sanitize` uses the first matching
+property definition; this would retain the element while silently stripping
+the later extension's classes.
+
 TopTeacher activates `tt-criterion` through `CriterionMarkdownEditor` and
 `CriterionMarkdownViewer`; their `@JsModule` imports register the TypeScript
 module. The criterion extension and its CSS live under

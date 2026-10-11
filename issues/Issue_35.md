@@ -754,3 +754,48 @@ remaining backup settings. The authoritative behavior is in
 
 Verification: `mvn -pl topteacher-app -am test` passed all 703 tests and
 `git diff --check` passed.
+
+## Criterion point-pill regression - 11 October 2026
+
+Fixed the Markdown preview sanitizer composition so the criterion extension's
+span classes are merged with the standard Markdown block classes. The preview
+therefore retains the styled point pill instead of appending its value as plain
+highlighted text. Added a focused frontend regression test for the composed
+class allow-list. The expected pill behavior remains specified in
+[the level-of-expectations specification](../doc/ops/LevelOfExpectations.md#tag-syntax).
+
+Verification: all 19 frontend tests and all 703 Maven tests passed;
+`git diff --check` passed. The running installation was then reloaded and its
+preview DOM retained both `tt-criterion` and `tt-criterion-badge`.
+
+## Free-point control icon - 11 October 2026
+
+Replaced the separate `Frei vergebene Pkt.` label in result entry with the
+`vaadin:scale` icon. The icon occupies the same leading status column as a
+criterion's full-points checkbox and retains `Frei vergebene Punkte` as its
+accessible label and tooltip.
+
+Verification: the 25 focused result-entry tests and all 703 Maven tests passed;
+`git diff --check` passed. The running installation exposed all 32 free-point
+controls with a `vaadin:scale` icon in `tt-results-points-status` immediately
+before the unchanged point stepper.
+
+## Numbered bonus marker - 11 October 2026
+
+Combined the result-entry requirement number and separate bonus icon into one
+numbered marker. Ordinary requirement numbers remain circular; bonus requirement
+numbers use the same `vaadin:star` glyph as the EH bonus toggle, layer the number
+over a slightly larger, brighter gold star, and retain the
+`Sternchen-Aufgabe / Bonusaufgabe` tooltip.
+
+Verification: all 59 focused EH and result-entry tests and all 703 Maven tests
+passed; `git diff --check` passed. In the running installation, ordinary
+numbered markers remain 26 px circles while the numbered bonus markers use a
+34 px `vaadin:star`. Both that marker and the active EH toggle resolve to the
+same brighter `rgb(255, 201, 41)` color.
+
+The numbered result marker keeps its compact layout footprint but renders the
+star glyph at `var(--lumo-size-m)` in both dimensions, giving the overlaid
+number more visible star around it without widening every requirement row. The
+explicit square size avoids the grid resolving a percentage width against the
+number. Live verification resolves the Lumo token to 36 x 36 px.
