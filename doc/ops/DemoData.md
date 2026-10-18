@@ -41,6 +41,12 @@ and three language requirements worth 10 points each. Their individual rubric
 rows remain explanatory content within those requirements, without invented
 per-row point allocations.
 
+Requirement wording follows the original EH, including its sentence-completing
+verbs after the shared pupil heading. It must not be paraphrased into nominal
+labels or rewritten examples. Criterion markup may highlight original text but
+does not change the displayed words. Shared wording for language correctness is
+repeated where necessary to retain its context within TT's existing groups.
+
 Each part includes its source text, attribution and source URL. Original source
 lines use the supported numbered Markdown block; vocabulary annotations use
 local Markdown footnotes. Part A additionally includes its introductory hints.

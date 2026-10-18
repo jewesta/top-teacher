@@ -73,3 +73,17 @@ cover 9, 10, 27, 99 and 100 footnotes plus ordinary-section preservation.
 TypeScript and `git diff --check` passed. The local app's generated shared
 resources match the updated module, and its development bundle was rebuilt.
 Browser automation was unavailable, so visual verification remains manual.
+
+## Original EH wording
+
+Restored the Spanish demo's original sentence continuations and rubric examples
+instead of paraphrased criterion headings. The existing export heading is
+`Anforderungen: Der/die Schüler:in...`; it remains unchanged. Points, criteria
+identities, category settings, and assessment grouping are preserved. See
+[Demo Data](../doc/ops/DemoData.md#spanish-exam).
+
+Verification: all 725 Maven tests passed. Regression assertions cover the
+original bonus sentence, verb-led requirement openings and Part B rubric rows.
+The local review database was updated only where the prior seeded text still
+matched; criterion IDs and points were retained. Its task total remains 160.
+`git diff --check` passed.

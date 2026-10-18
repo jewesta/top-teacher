@@ -508,36 +508,36 @@ from (
 - verwendet angemessenen und differenzierten allgemeinen, thematischen und funktionalen Wortschatz
 - verwendet variablen und zieltextangemessenen Satzbau'),
         ('Englisch', 'Klausurteil B: Sprachmittlung D-E (isoliert)', 'Sprachliche Leistung / Darstellungsleistung', 'Sprachrichtigkeit (Sprachmittlung)', 0, 9, false, '[Sprachrichtigkeit](crit:1): beachtet die Normen sprachlicher Korrektheit in den Bereichen Wortschatz, Grammatik und Orthographie (Rechtschreibung und Zeichensetzung).'),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 1: Resumen', 0, 4, false, '[Bibliographische Angaben und Thematik](crit:1?points=4): nennt die bibliographischen Angaben und stellt das erfolgreiche Integrationsprogramm Joves Futur+ für benachteiligte Jugendliche vor.'),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 1: Resumen', 1, 5, false, '[Rahmenbedingungen des Projekts](crit:1?points=5):
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 1: Resumen', 0, 4, false, '[nennt die bibliografischen Angaben und als Thematik die Vorstellung des erfolgreichen Integrationsprogramms Joves Futur+ für benachteiligte Jugendliche.](crit:1?points=4)'),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 1: Resumen', 1, 5, false, '[macht Angaben zu den Rahmenbedingungen des Projekts:](crit:1?points=5)
 - organización ejecutora: Fundación del Barça,
 - oferta para jóvenes que viven en Cataluña, especialmente en Barcelona,
 - acompañamiento de jóvenes entre 18 y 25 años, sobre todo inmigrantes sin familia,
 - tercera edición del proyecto, participación de unos 100 jóvenes al año,
 - cooperación con empresas y otras fundaciones,
 - alto porcentaje de éxito.'),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 1: Resumen', 2, 5, false, '[Ablauf und Zielsetzung des Projekts](crit:1?points=5):
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 1: Resumen', 2, 5, false, '[fasst den Ablauf und die Zielsetzung des Projektes zusammen:](crit:1?points=5)
 - participación voluntaria, entrevistas de selección,
 - adaptación a las necesidades individuales, concepto personalizado,
 - apoyo psicosocial,
-- ayuda concreta a la formación y a la búsqueda de empleo,
+- ayuda concreta a la formación y la búsqueda de empleo,
 - integración en el mercado laboral,
 - meta: autonomía de los participantes.'),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 2: Análisis', 0, 3, false, '[Schwierige Lebensbedingungen vor der Teilnahme](crit:1?points=3): erarbeitet für Eric und Jawad z. B.:
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 2: Análisis', 0, 3, false, '[erarbeitet die schwierigen Lebensbedingungen für Eric und Jawad vor der Teilnahme am Projekt Joves Futur+, hinsichtlich z. B.:](crit:1?points=3)
 - vida sin familiares en un país extranjero, pérdida del estatuto de protección,
 - sobrecarga con la vida cotidiana, inseguridad y miedo.'),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 2: Análisis', 1, 4, false, '[Positive Wirkungen auf die berufliche Entwicklung](crit:1?points=4): erarbeitet z. B.:
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 2: Análisis', 1, 4, false, '[erarbeitet die positive Wirkung des Projekts auf die berufliche Entwicklung der beiden jungen Männer, hinsichtlich z. B.:](crit:1?points=4)
 - ayuda para formación y búsqueda de empleo con éxito,
 - creación de perspectivas,
 - vinculación entre fútbol y educación en el caso de Eric.'),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 2: Análisis', 2, 5, false, '[Positive Effekte auf die persönliche Entwicklung](crit:1?points=5): untersucht z. B.:
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 2: Análisis', 2, 5, false, '[untersucht den positiven Effekt des Projekts auf die persönliche Entwicklung der beiden, hinsichtlich z. B.:](crit:1?points=5)
 - sentido de la responsabilidad, voluntad de rendimiento y de trabajo,
 - independencia, confianza en las propias fuerzas,
 - mejora de conocimientos lingüísticos,
 - satisfacción con la situación actual, serenidad,
 - visión reflexiva de las competencias adquiridas.'),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 2: Análisis', 3, 2, true, '[Weiteres aufgabenbezogenes Kriterium](crit:1?points=2).'),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 3: Comentario', 0, 4, false, '[Möglichkeiten der Hilfsorganisationen](crit:1?points=4): erörtert ausgehend vom Text positive Impulse für ein besseres Zusammenleben in Spanien, z. B.:
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 2: Análisis', 3, 2, true, '[erfüllt ein weiteres aufgabenbezogenes Kriterium.](crit:1?points=2)'),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 3: Comentario', 0, 4, false, '[erörtert kommentierend ausgehend vom Text die Möglichkeiten von Hilfsorganisationen wie der Fundación del Barça, positive Impulse für ein gelingendes Zusammenleben von Menschen mit unterschiedlichem kulturellem Hintergrund in Spanien zu geben, hinsichtlich z. B.:](crit:1?points=4)
 - influencia decisiva en la vida futura de los adolescentes,
 - creación de oportunidades,
 - apoyo lingüístico para inmigrantes,
@@ -545,66 +545,73 @@ from (
 - gran reputación del patrocinador como puerta de acceso,
 - aprovechamiento del potencial de los jóvenes,
 - fomento de la cohesión social.'),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 3: Comentario', 1, 4, false, '[Grenzen der Hilfsorganisationen](crit:1?points=4): erörtert z. B.:
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 3: Comentario', 1, 4, false, '[erörtert kommentierend ausgehend vom Text die Grenzen für Hilfsorganisationen wie der Fundación del Barça, positive Impulse für ein gelingendes Zusammenleben von Menschen mit unterschiedlichem kulturellem Hintergrund in Spanien zu geben, hinsichtlich z. B.:](crit:1?points=4)
 - alcance limitado,
-- dependencia de la situación económica,
+- dependencia de la situación en el mercado laboral,
 - falta de apoyo político,
-- ayuda individual en lugar de cambios estructurales,
-- desorientación de algunos jóvenes,
+- asistencia individual en lugar de cambios estructurales,
+- desorientación de muchos jóvenes,
 - obstáculos financieros.'),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 3: Comentario', 2, 6, false, '[Bedeutung der Projekte für das Zusammenleben](crit:1?points=6): diskutiert Herausforderungen der multikulturellen spanischen Gesellschaft, z. B.:
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 3: Comentario', 2, 6, false, '[diskutiert ausgehend vom Text die besondere Bedeutung von Projekten wie dem der Fundación del Barça angesichts der Vielschichtigkeit der Herausforderungen des Zusammenlebens in der multikulturellen spanischen Gesellschaft, hinsichtlich z. B.:](crit:1?points=6)
 - desventajas sociales y laborales de muchos inmigrantes,
 - desconocimiento de la lengua, la cultura y las costumbres españolas,
 - existencia de prejuicios y estereotipos,
 - falta de perspectivas para muchos jóvenes,
 - discriminación en situaciones cotidianas,
 - falta de contactos entre autóctonos y recién llegados.'),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 3: Comentario', 3, 4, false, '[Begründetes Fazit](crit:1?points=4): formuliert ein begründetes Fazit zur Reichweite von Projekten der Fundación del Barça als Maßnahmen für ein gelingendes Zusammenleben in einer multikulturellen Gesellschaft.'),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 3: Comentario', 4, 2, true, '[Weiteres aufgabenbezogenes Kriterium](crit:1?points=2).'),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 0, 6, false, '[Intention und Adressaten](crit:1?points=6): richtet den Text konsequent und explizit im Sinne der Aufgabenstellung auf Intention und Adressaten aus.'),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 1, 4, false, '[Textsortenmerkmale](crit:1?points=4): beachtet die Textsortenmerkmale der jeweils geforderten Zieltextformate.'),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 2, 5, false, '[Textstruktur](crit:1?points=5): erstellt einen sachgerecht strukturierten Text.'),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 3, 4, false, '[Ausführlichkeit und Prägnanz](crit:1?points=4): gestaltet den Text hinreichend ausführlich, ohne unnötige Wiederholungen und Umständlichkeiten.'),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 4, 3, false, '[Verweise und Zitate](crit:1?points=3): belegt Aussagen durch eine funktionale Verwendung von Verweisen und Zitaten.'),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 0, 5, false, '[Eigenständige Formulierung](crit:1?points=5): löst sich vom Wortlaut des Ausgangstextes und formuliert eigenständig.'),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 1, 6, false, '[Allgemeiner und thematischer Wortschatz](crit:1?points=6): verwendet funktional einen sachlich wie stilistisch angemessenen und differenzierten allgemeinen und thematischen Wortschatz.'),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 2, 4, false, '[Funktionswortschatz](crit:1?points=4): verwendet funktional einen angemessenen Wortschatz zur Textproduktion und Textbesprechung.'),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 3, 7, false, '[Satzbau](crit:1?points=7): verwendet einen variablen und dem jeweiligen Zieltextformat angemessenen Satzbau.'),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Sprachrichtigkeit', 0, 9, false, '[Wortschatz](crit:1?points=9): beachtet die Normen der sprachlichen Korrektheit im Sinne einer gelingenden Kommunikation.'),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Sprachrichtigkeit', 1, 9, false, '[Grammatik](crit:1?points=9): beachtet die Normen der sprachlichen Korrektheit im Sinne einer gelingenden Kommunikation.'),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Sprachrichtigkeit', 2, 4, false, '[Orthografie](crit:1?points=4): beachtet die Normen der sprachlichen Korrektheit im Sinne einer gelingenden Kommunikation.'),
-        ('Spanisch', 'Klausurteil B: Sprachmittlung', 'Inhaltliche Leistung', 'Aufgabe 1: Sprachmittlung', 0, 20, false, '[Inhalte der Sprachmittlung](crit:1?points=20): gibt die wesentlichen Inhalte im Sinne der Aufgabenstellung sinngemäß zusammenfassend wieder.
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 3: Comentario', 3, 4, false, '[formuliert mit Blick auf die Reichweite von Projekten wie dem der Fundación del Barça ein begründetes Fazit zu wirksamen Maßnahmen zur Gestaltung eines gelingenden Zusammenlebens in einer multikulturellen Gesellschaft.](crit:1?points=4)'),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 3: Comentario', 4, 2, true, '[erfüllt ein weiteres aufgabenbezogenes Kriterium.](crit:1?points=2)'),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 0, 6, false, '[richtet seinen Text konsequent und explizit im Sinne der Aufgabenstellung auf die Intention und den Adressaten aus.](crit:1?points=6)'),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 1, 4, false, '[beachtet die Textsortenmerkmale der jeweils geforderten Zieltextformate.](crit:1?points=4)'),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 2, 5, false, '[erstellt einen sachgerecht strukturierten Text.](crit:1?points=5)'),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 3, 4, false, '[gestaltet seinen Text hinreichend ausführlich, aber ohne unnötige Wiederholungen und Umständlichkeiten.](crit:1?points=4)'),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 4, 3, false, '[belegt seine Aussagen durch eine funktionale Verwendung von Verweisen und Zitaten.](crit:1?points=3)'),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 0, 5, false, '[löst sich vom Wortlaut des Ausgangstextes und formuliert eigenständig.](crit:1?points=5)'),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 1, 6, false, '[verwendet funktional einen sachlich wie stilistisch angemessenen und differenzierten allgemeinen und thematischen Wortschatz.](crit:1?points=6)'),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 2, 4, false, '[verwendet einen funktional angemessenen Wortschatz zur Textproduktion und Textbesprechung.](crit:1?points=4)'),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 3, 7, false, '[verwendet einen variablen und dem jeweiligen Zieltextformat angemessenen Satzbau.](crit:1?points=7)'),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Sprachrichtigkeit', 0, 9, false, 'beachtet die Normen der sprachlichen Korrektheit im Sinne einer gelingenden Kommunikation.
 
-1. Grundlegende Angaben zur Einrichtung „Tausendfüßler“:
+[Wortschatz](crit:1?points=9)'),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Sprachrichtigkeit', 1, 9, false, 'beachtet die Normen der sprachlichen Korrektheit im Sinne einer gelingenden Kommunikation.
+
+[Grammatik](crit:1?points=9)'),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Sprachrichtigkeit', 2, 4, false, 'beachtet die Normen der sprachlichen Korrektheit im Sinne einer gelingenden Kommunikation.
+
+[Orthografie](crit:1?points=4)'),
+        ('Spanisch', 'Klausurteil B: Sprachmittlung', 'Inhaltliche Leistung', 'Aufgabe 1: Sprachmittlung', 0, 20, false, '[gibt die wesentlichen Inhalte im Sinne der Aufgabenstellung sinngemäß zusammenfassend wieder.](crit:1?points=20)
+
+1. macht grundlegende Angaben zur Einrichtung „Tausendfüßler“:
    - guardería en Colonia,
    - educación bilingüe en alemán y español,
    - educadoras de Alemania, España y Latinoamérica.
-2. Bilinguales Konzept:
+2. stellt das bilinguale Konzept vor:
    - presentación de palabras en las dos lenguas,
    - aprendizaje del idioma jugando,
-   - despedirse, saludar, contar, cantar en español,
+   - despedirse, saludarse, contar, cantar en español,
    - intercambio lingüístico entre niños y educadoras.
-3. Positive Effekte:
+3. nennt die positiven Effekte des Konzeptes:
    - para las educadoras extranjeras: oportunidad de trabajar en su profesión,
    - para los niños: desarrollo de estrategias para situaciones de contacto bilingües en la vida diaria,
    - mejor oferta de asistencia en la guardería,
-   - percibido mayoritariamente como un modelo de éxito.
-4. Konzentriert sich dabei, bezogen auf den situativen Kontext, auf wesentliche Inhalte.'),
-        ('Spanisch', 'Klausurteil B: Sprachmittlung', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 0, 10, false, '[Kommunikative Textgestaltung](crit:1?points=10):
-- richtet den Text konsequent und explizit auf die Intention und den Adressatenkreis im Sinne der Aufgabenstellung aus,
-- berücksichtigt den situativen Kontext,
-- beachtet die Textsortenmerkmale des geforderten Zieltextformats,
-- erstellt einen sachgerecht strukturierten Text,
-- gestaltet den Text hinreichend ausführlich, ohne unnötige Wiederholungen und Umständlichkeiten.'),
-        ('Spanisch', 'Klausurteil B: Sprachmittlung', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 0, 10, false, '[Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel](crit:1?points=10):
-- löst sich vom Wortlaut des Ausgangstextes und formuliert eigenständig, ggf. unter Verwendung von Kompensationsstrategien,
-- verwendet funktional einen sachlich wie stilistisch angemessenen und differenzierten allgemeinen und thematischen Wortschatz,
-- verwendet funktional einen sachlich wie stilistisch angemessenen und differenzierten Funktionswortschatz,
+   - percibido mayoritariamente como modelo de éxito.
+4. konzentriert sich dabei - bezogen auf den situativen Kontext - auf wesentliche Inhalte.'),
+        ('Spanisch', 'Klausurteil B: Sprachmittlung', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 0, 10, false, '[richtet seinen Text konsequent und explizit auf die Intention und den Adressatenkreis im Sinne der Aufgabenstellung aus.](crit:1?points=10)
+
+- berücksichtigt den situativen Kontext.
+- beachtet die Textsortenmerkmale des geforderten Zieltextformats.
+- erstellt einen sachgerecht strukturierten Text.
+- gestaltet seinen Text hinreichend ausführlich, aber ohne unnötige Wiederholungen und Umständlichkeiten.'),
+        ('Spanisch', 'Klausurteil B: Sprachmittlung', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 0, 10, false, '[löst sich vom Wortlaut des Ausgangstextes und formuliert eigenständig, ggf. unter Verwendung von Kompensationsstrategien.](crit:1?points=10)
+
+- verwendet funktional einen sachlich wie stilistisch angemessenen und differenzierten allgemeinen und thematischen Wortschatz.
+- verwendet funktional einen sachlich wie stilistisch angemessenen und differenzierten Funktionswortschatz.
 - verwendet einen variablen und dem jeweiligen Zieltextformat angemessenen Satzbau.'),
-        ('Spanisch', 'Klausurteil B: Sprachmittlung', 'Sprachliche Leistung / Darstellungsleistung', 'Sprachrichtigkeit', 0, 10, false, '[Sprachrichtigkeit](crit:1?points=10): beachtet die Normen der sprachlichen Korrektheit im Sinne einer gelingenden Kommunikation in den Bereichen:
-- Wortschatz,
-- Grammatik,
-- Orthografie.')
+        ('Spanisch', 'Klausurteil B: Sprachmittlung', 'Sprachliche Leistung / Darstellungsleistung', 'Sprachrichtigkeit', 0, 10, false, '[beachtet die Normen der sprachlichen Korrektheit im Sinne einer gelingenden Kommunikation.](crit:1?points=10)
+
+- Wortschatz
+- Grammatik
+- Orthografie')
 ) demo(subject_name, part_title, category_title, task_title, sort_order, max_points, bonus, description_markdown)
 join course c
     on c.calendar_year = 2026
@@ -679,34 +686,34 @@ from (
         ('Englisch', 'Klausurteil B: Sprachmittlung D-E (isoliert)', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung (Sprachmittlung)', 0, '1', 'Kommunikative Textgestaltung', 0),
         ('Englisch', 'Klausurteil B: Sprachmittlung D-E (isoliert)', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel (Sprachmittlung)', 0, '1', 'Ausdrucksvermögen und sprachliche Mittel', 0),
         ('Englisch', 'Klausurteil B: Sprachmittlung D-E (isoliert)', 'Sprachliche Leistung / Darstellungsleistung', 'Sprachrichtigkeit (Sprachmittlung)', 0, '1', 'Sprachrichtigkeit', 0),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 1: Resumen', 0, '1', 'Bibliographische Angaben und Thematik', 0),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 1: Resumen', 1, '1', 'Rahmenbedingungen des Projekts', 0),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 1: Resumen', 2, '1', 'Ablauf und Zielsetzung des Projekts', 0),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 2: Análisis', 0, '1', 'Schwierige Lebensbedingungen vor der Teilnahme', 0),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 2: Análisis', 1, '1', 'Positive Wirkungen auf die berufliche Entwicklung', 0),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 2: Análisis', 2, '1', 'Positive Effekte auf die persönliche Entwicklung', 0),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 2: Análisis', 3, '1', 'Weiteres aufgabenbezogenes Kriterium', 0),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 3: Comentario', 0, '1', 'Möglichkeiten der Hilfsorganisationen', 0),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 3: Comentario', 1, '1', 'Grenzen der Hilfsorganisationen', 0),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 3: Comentario', 2, '1', 'Bedeutung der Projekte für das Zusammenleben', 0),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 3: Comentario', 3, '1', 'Begründetes Fazit', 0),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 3: Comentario', 4, '1', 'Weiteres aufgabenbezogenes Kriterium', 0),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 0, '1', 'Intention und Adressaten', 0),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 1, '1', 'Textsortenmerkmale', 0),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 2, '1', 'Textstruktur', 0),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 3, '1', 'Ausführlichkeit und Prägnanz', 0),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 4, '1', 'Verweise und Zitate', 0),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 0, '1', 'Eigenständige Formulierung', 0),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 1, '1', 'Allgemeiner und thematischer Wortschatz', 0),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 2, '1', 'Funktionswortschatz', 0),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 3, '1', 'Satzbau', 0),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 1: Resumen', 0, '1', 'nennt die bibliografischen Angaben und als Thematik die Vorstellung des erfolgreichen Integrationsprogramms Joves Futur+ für benachteiligte Jugendliche.', 0),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 1: Resumen', 1, '1', 'macht Angaben zu den Rahmenbedingungen des Projekts:', 0),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 1: Resumen', 2, '1', 'fasst den Ablauf und die Zielsetzung des Projektes zusammen:', 0),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 2: Análisis', 0, '1', 'erarbeitet die schwierigen Lebensbedingungen für Eric und Jawad vor der Teilnahme am Projekt Joves Futur+, hinsichtlich z. B.:', 0),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 2: Análisis', 1, '1', 'erarbeitet die positive Wirkung des Projekts auf die berufliche Entwicklung der beiden jungen Männer, hinsichtlich z. B.:', 0),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 2: Análisis', 2, '1', 'untersucht den positiven Effekt des Projekts auf die persönliche Entwicklung der beiden, hinsichtlich z. B.:', 0),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 2: Análisis', 3, '1', 'erfüllt ein weiteres aufgabenbezogenes Kriterium.', 0),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 3: Comentario', 0, '1', 'erörtert kommentierend ausgehend vom Text die Möglichkeiten von Hilfsorganisationen wie der Fundación del Barça, positive Impulse für ein gelingendes Zusammenleben von Menschen mit unterschiedlichem kulturellem Hintergrund in Spanien zu geben, hinsichtlich z. B.:', 0),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 3: Comentario', 1, '1', 'erörtert kommentierend ausgehend vom Text die Grenzen für Hilfsorganisationen wie der Fundación del Barça, positive Impulse für ein gelingendes Zusammenleben von Menschen mit unterschiedlichem kulturellem Hintergrund in Spanien zu geben, hinsichtlich z. B.:', 0),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 3: Comentario', 2, '1', 'diskutiert ausgehend vom Text die besondere Bedeutung von Projekten wie dem der Fundación del Barça angesichts der Vielschichtigkeit der Herausforderungen des Zusammenlebens in der multikulturellen spanischen Gesellschaft, hinsichtlich z. B.:', 0),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 3: Comentario', 3, '1', 'formuliert mit Blick auf die Reichweite von Projekten wie dem der Fundación del Barça ein begründetes Fazit zu wirksamen Maßnahmen zur Gestaltung eines gelingenden Zusammenlebens in einer multikulturellen Gesellschaft.', 0),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Inhaltliche Leistung', 'Aufgabe 3: Comentario', 4, '1', 'erfüllt ein weiteres aufgabenbezogenes Kriterium.', 0),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 0, '1', 'richtet seinen Text konsequent und explizit im Sinne der Aufgabenstellung auf die Intention und den Adressaten aus.', 0),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 1, '1', 'beachtet die Textsortenmerkmale der jeweils geforderten Zieltextformate.', 0),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 2, '1', 'erstellt einen sachgerecht strukturierten Text.', 0),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 3, '1', 'gestaltet seinen Text hinreichend ausführlich, aber ohne unnötige Wiederholungen und Umständlichkeiten.', 0),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 4, '1', 'belegt seine Aussagen durch eine funktionale Verwendung von Verweisen und Zitaten.', 0),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 0, '1', 'löst sich vom Wortlaut des Ausgangstextes und formuliert eigenständig.', 0),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 1, '1', 'verwendet funktional einen sachlich wie stilistisch angemessenen und differenzierten allgemeinen und thematischen Wortschatz.', 0),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 2, '1', 'verwendet einen funktional angemessenen Wortschatz zur Textproduktion und Textbesprechung.', 0),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 3, '1', 'verwendet einen variablen und dem jeweiligen Zieltextformat angemessenen Satzbau.', 0),
         ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Sprachrichtigkeit', 0, '1', 'Wortschatz', 0),
         ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Sprachrichtigkeit', 1, '1', 'Grammatik', 0),
         ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 'Sprachliche Leistung / Darstellungsleistung', 'Sprachrichtigkeit', 2, '1', 'Orthografie', 0),
-        ('Spanisch', 'Klausurteil B: Sprachmittlung', 'Inhaltliche Leistung', 'Aufgabe 1: Sprachmittlung', 0, '1', 'Inhalte der Sprachmittlung', 0),
-        ('Spanisch', 'Klausurteil B: Sprachmittlung', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 0, '1', 'Kommunikative Textgestaltung', 0),
-        ('Spanisch', 'Klausurteil B: Sprachmittlung', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 0, '1', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 0),
-        ('Spanisch', 'Klausurteil B: Sprachmittlung', 'Sprachliche Leistung / Darstellungsleistung', 'Sprachrichtigkeit', 0, '1', 'Sprachrichtigkeit', 0)
+        ('Spanisch', 'Klausurteil B: Sprachmittlung', 'Inhaltliche Leistung', 'Aufgabe 1: Sprachmittlung', 0, '1', 'gibt die wesentlichen Inhalte im Sinne der Aufgabenstellung sinngemäß zusammenfassend wieder.', 0),
+        ('Spanisch', 'Klausurteil B: Sprachmittlung', 'Sprachliche Leistung / Darstellungsleistung', 'Kommunikative Textgestaltung', 0, '1', 'richtet seinen Text konsequent und explizit auf die Intention und den Adressatenkreis im Sinne der Aufgabenstellung aus.', 0),
+        ('Spanisch', 'Klausurteil B: Sprachmittlung', 'Sprachliche Leistung / Darstellungsleistung', 'Ausdrucksvermögen / Verfügbarkeit sprachlicher Mittel', 0, '1', 'löst sich vom Wortlaut des Ausgangstextes und formuliert eigenständig, ggf. unter Verwendung von Kompensationsstrategien.', 0),
+        ('Spanisch', 'Klausurteil B: Sprachmittlung', 'Sprachliche Leistung / Darstellungsleistung', 'Sprachrichtigkeit', 0, '1', 'beachtet die Normen der sprachlichen Korrektheit im Sinne einer gelingenden Kommunikation.', 0)
 ) demo(subject_name, part_title, category_title, task_title, requirement_sort_order, criterion_key, label, criterion_sort_order)
 join course c
     on c.calendar_year = 2026

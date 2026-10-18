@@ -357,7 +357,15 @@ class DatabaseInitializationServiceTests {
 		assertThat(tasks).filteredOn(task -> task.maxPoints() == 18).singleElement()
 				.satisfies(task -> assertThat(task.descriptionMarkdown()).startsWith("Discute, a partir del texto"));
 		assertThat(requirements).hasSize(28);
-		assertThat(requirements).filteredOn(LoeRequirement::bonus).hasSize(2);
+		assertThat(requirements).filteredOn(LoeRequirement::bonus).hasSize(2)
+				.extracting(LoeRequirement::descriptionMarkdown)
+				.containsOnly("[erfüllt ein weiteres aufgabenbezogenes Kriterium.](crit:1?points=2)");
+		assertThat(requirements).extracting(LoeRequirement::descriptionMarkdown)
+				.anySatisfy(markdown -> assertThat(markdown).startsWith("[macht Angaben zu den Rahmenbedingungen des Projekts:"))
+				.anySatisfy(markdown -> assertThat(markdown).startsWith("[fasst den Ablauf und die Zielsetzung des Projektes zusammen:"))
+				.anySatisfy(markdown -> assertThat(markdown).contains("dependencia de la situación en el mercado laboral"))
+				.anySatisfy(markdown -> assertThat(markdown).contains("1. macht grundlegende Angaben", "2. stellt das bilinguale Konzept vor:",
+						"3. nennt die positiven Effekte des Konzeptes:", "4. konzentriert sich dabei - bezogen auf den situativen Kontext -"));
 		assertThat(LoeValidator.validate(160, tasks, requirements).getResults()).isEmpty();
 		final var materials = jdbc.queryForList("""
 			select m.description_markdown from loe_material m join eh_part p on p.id = m.part_id
