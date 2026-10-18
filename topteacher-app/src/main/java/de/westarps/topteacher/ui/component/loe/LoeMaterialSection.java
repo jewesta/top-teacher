@@ -12,7 +12,8 @@ import java.util.Set;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.icon.SvgIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.upload.Upload;
@@ -20,6 +21,7 @@ import com.vaadin.flow.component.upload.Upload;
 import de.westarps.topteacher.model.loe.LoeMaterial;
 import de.westarps.topteacher.model.loe.LoeMaterialImage;
 import de.westarps.topteacher.model.loe.LoeMaterialImageReferences;
+import de.westarps.topteacher.ui.UiUrls;
 import de.westarps.vaadin.markdown.MarkdownEditor;
 
 final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
@@ -32,7 +34,7 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 	private final MaterialImageProcessor imageProcessor = new MaterialImageProcessor();
 	private final SecureRandom random = new SecureRandom();
 	private MaterialMarkdownEditor.InsertionPoint droppedInsertionPoint;
-	private final Checkbox dedicatedPage = new Checkbox("Auf eigener Seite");
+	private boolean dedicatedPage;
 	private boolean savedDedicatedPage;
 	private String savedTitle;
 	private String savedDescriptionMarkdown;
@@ -56,10 +58,18 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 		this.storedImages = new ArrayList<>(images == null ? List.of() : images);
 		this.savedTitle = material.title();
 		this.savedDedicatedPage = material.dedicatedPage();
-		dedicatedPage.setValue(material.dedicatedPage());
-		dedicatedPage.setReadOnly(locked);
-		dedicatedPage.setTooltipText("Dieses Material beginnt auf einer neuen Seite. Der folgende Inhalt beginnt ebenfalls auf einer neuen Seite.");
-		components.trackDirty(dedicatedPage);
+		this.dedicatedPage = material.dedicatedPage();
+		final Button pageToggle = new Button(new SvgIcon(UiUrls.contextRelative("/icons/page-break.svg")), event -> {
+			dedicatedPage = !dedicatedPage;
+			updatePageToggle(event.getSource());
+			components.updateDirty();
+		});
+		pageToggle.addClassName("tt-material-page-toggle");
+		pageToggle.getElement().setAttribute("data-action", "toggle-dedicated-page");
+		updatePageToggle(pageToggle);
+		if (locked) {
+			components.lockCorrectionModeAction(pageToggle);
+		}
 		this.savedDescriptionMarkdown = normalized(material.descriptionMarkdown());
 		title.setReadOnly(locked);
 		components.trackDirty(title);
@@ -82,7 +92,7 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 			description.addFileDropListener(drop -> handleFileDrop(drop, dropUpload));
 			descriptionBlock = components.markdownBlock("Inhalt", description);
 		}
-		final Component actions = editorBlockWithMoveButtons(components, siblings, handler, List.of(dedicatedPage), List.of(delete),
+		final Component actions = editorBlockWithMoveButtons(components, siblings, handler, List.of(pageToggle), List.of(delete),
 				locked);
 		if (dropUpload == null) {
 			addToBody(actions, descriptionBlock);
@@ -91,9 +101,19 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 		}
 	}
 
+	private void updatePageToggle(final Button button) {
+		final String label = dedicatedPage ? "Im laufenden Text platzieren" : "Auf eigener Seite platzieren";
+		button.setText(label);
+		/* Retain the icon theme after label changes, as with the category eye toggle. */
+		button.addThemeVariants(ButtonVariant.LUMO_ICON);
+		button.setAriaLabel(label);
+		button.setTooltipText(label);
+		button.getElement().setAttribute("aria-pressed", Boolean.toString(dedicatedPage));
+	}
+
 	@Override
 	protected boolean isSectionDirty() {
-		return savedDedicatedPage != dedicatedPage.getValue() || !Objects.equals(savedTitle, title.getValue())
+		return savedDedicatedPage != dedicatedPage || !Objects.equals(savedTitle, title.getValue())
 				|| description != null
 						&& !Objects.equals(savedDescriptionMarkdown, normalized(description.getValue()));
 	}
@@ -108,7 +128,7 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 			return false;
 		}
 		final String descriptionMarkdown = normalized(description.getValue());
-		final LoeMaterial saved = handler.save(item(), title.getValue(), descriptionMarkdown, pendingImages.values(), dedicatedPage.getValue());
+		final LoeMaterial saved = handler.save(item(), title.getValue(), descriptionMarkdown, pendingImages.values(), dedicatedPage);
 		savedDedicatedPage = saved.dedicatedPage();
 		description.setValue(saved.descriptionMarkdown());
 		savedTitle = title.getValue();

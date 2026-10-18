@@ -92,7 +92,7 @@ matched; criterion IDs and points were retained. Its task total remains 160.
 Implemented anonymous and personalized downloads in Aufgaben, portrait A5 flow
 imposed two-up on landscape A4 using the EH renderer. Personalized copies can
 cover one assigned pupil or the full exam roster. Material pagination uses the
-persisted `Auf eigener Seite` checkbox, defaulting to true. Hidden categories
+persisted `Auf eigener Seite` setting, defaulting to true. Hidden categories
 print only their title and regular maximum. Hilfsmittel is an inline material at
 the start of Part A in the Spanish demo.
 
@@ -112,3 +112,16 @@ was moved to Part A after creating a backup. `git diff --check` passes.
 
 Raised the reactor, module parent references, and packaging/production launcher
 defaults to `1.4.0`. Historical issue notes retain their original release versions.
+
+## Material page-break toggle
+
+Replaced the material checkbox with a custom page-break SVG toggle. It keeps
+its glyph and icon theme across state changes, with a pressed highlight and
+German action tooltips. Save/discard, live editor preservation and correction
+locking follow the existing material setting. See
+[Pupil task-sheet PDF export](../doc/ops/ExamTaskSheetPdfExport.md#material-pagination).
+
+Verification: all 735 Maven tests and `git diff --check` pass. Toggle coverage
+checks the unchanged SVG instance and icon theme in both states, accessible
+pressed state and German action labels, save/discard and correction locking.
+Browser automation was unavailable for visual hover verification.

@@ -22,8 +22,13 @@ numbers refer to the logical A5 pages within each copy.
 
 ## Material pagination
 
-Every material has a persisted `Auf eigener Seite` checkbox, enabled by default
-for new and existing materials. If enabled, the material starts on a fresh page
+Every material has a persisted `Auf eigener Seite` setting, enabled by default
+for new and existing materials. Its action bar contains a page-break icon toggle:
+two page fragments separated by a dashed horizontal line. The glyph stays the
+same and centered in both states; enabled means pressed and highlighted. The
+German action tooltip is `Im laufenden Text platzieren` when enabled and
+`Auf eigener Seite platzieren` when disabled. The accessible pressed state
+matches the saved/draft setting. If enabled, the material starts on a fresh page
 and the content following it starts on another fresh page. Material can span
 several pages; its introduction, source and footnotes stay in the material flow.
 If it is the first content in a part, the opening/part heading can share its page.

@@ -22,7 +22,6 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -59,16 +58,52 @@ class ExamMaterialEditorTests {
 		final var repository = repository(false);
 		final var editor = new ExamMaterialEditor(repository);
 		editor.setExam(EXAM);
-		final var checkbox = components(editor, Checkbox.class).stream().filter(field -> field.getLabel().equals("Auf eigener Seite")).findFirst().orElseThrow();
-		assertThat(checkbox.getValue()).isTrue();
-		checkbox.setValue(false);
+		final Button toggle = pageToggle(editor);
+		final Component icon = toggle.getIcon();
+		final MarkdownEditor source = components(editor, MarkdownEditor.class).getFirst();
+		assertThat(toggle.getElement().getAttribute("aria-pressed")).isEqualTo("true");
+		assertThat(toggle.getAriaLabel()).contains("Im laufenden Text platzieren");
+		assertThat(toggle.getThemeNames()).contains("icon");
+		assertThat(icon.getElement().getAttribute("src")).isEqualTo("/icons/page-break.svg");
+		toggle.click();
+		assertThat(toggle.getIcon()).isSameAs(icon);
+		assertThat(toggle.getThemeNames()).contains("icon");
+		assertThat(toggle.getElement().getAttribute("aria-pressed")).isEqualTo("false");
+		assertThat(toggle.getAriaLabel()).contains("Auf eigener Seite platzieren");
+		assertThat(toggle.getTooltip().getText()).isEqualTo("Auf eigener Seite platzieren");
+		assertThat(components(editor, MarkdownEditor.class).getFirst()).isSameAs(source);
 		assertThat(editor.hasUnsavedChanges()).isTrue();
 		buttonsByAriaLabel(editor, "Speichern").getFirst().click();
 		verify(repository).saveMaterialWithImages(new LoeMaterial(MATERIAL.id(), MATERIAL.partId(), MATERIAL.title(), MATERIAL.descriptionMarkdown(), MATERIAL.sortOrder(), false), List.of());
 		assertThat(editor.hasUnsavedChanges()).isFalse();
 		final var locked = new ExamMaterialEditor(repository(true));
 		locked.setExam(EXAM);
-		assertThat(components(locked, Checkbox.class).getFirst().isReadOnly()).isTrue();
+		assertThat(pageToggle(locked).isEnabled()).isFalse();
+	}
+
+	@Test
+	void pageToggleCanRestoreCleanStateAndDiscardRestoresItsSavedState() {
+		final var editor = new ExamMaterialEditor(repository(false));
+		editor.setExam(EXAM);
+		final Button toggle = pageToggle(editor);
+		toggle.click();
+		assertThat(editor.hasUnsavedChanges()).isTrue();
+		toggle.click();
+		assertThat(editor.hasUnsavedChanges()).isFalse();
+		assertThat(toggle.getElement().getAttribute("aria-pressed")).isEqualTo("true");
+		assertThat(toggle.getThemeNames()).contains("icon");
+		toggle.click();
+		buttonsByAriaLabel(editor, "Verwerfen...").getFirst().click();
+		final ConfirmDialog confirmation = components(editor, ConfirmDialog.class).getFirst();
+		ComponentUtil.fireEvent(confirmation, new ConfirmDialog.ConfirmEvent(confirmation, false));
+		assertThat(editor.hasUnsavedChanges()).isFalse();
+		assertThat(pageToggle(editor).getElement().getAttribute("aria-pressed")).isEqualTo("true");
+	}
+
+	private static Button pageToggle(final Component root) {
+		return components(root, Button.class).stream()
+				.filter(button -> "toggle-dedicated-page".equals(button.getElement().getAttribute("data-action")))
+				.findFirst().orElseThrow();
 	}
 
 	@Test
