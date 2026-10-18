@@ -59,7 +59,7 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 		this.savedTitle = material.title();
 		this.savedDedicatedPage = material.dedicatedPage();
 		this.dedicatedPage = material.dedicatedPage();
-		final Button pageToggle = new Button(new SvgIcon(UiUrls.contextRelative("/icons/page-break.svg")), event -> {
+		final Button pageToggle = new Button(new SvgIcon(), event -> {
 			dedicatedPage = !dedicatedPage;
 			updatePageToggle(event.getSource());
 			components.updateDirty();
@@ -103,8 +103,10 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 
 	private void updatePageToggle(final Button button) {
 		final String label = dedicatedPage ? "Im laufenden Text platzieren" : "Auf eigener Seite platzieren";
+		((SvgIcon) button.getIcon()).setSrc(UiUrls.contextRelative(
+				dedicatedPage ? "/icons/page-break.svg" : "/icons/page-flow.svg"));
 		button.setText(label);
-		/* Retain the icon theme after label changes, as with the category eye toggle. */
+		/* Retain the icon theme after state changes, as with the category eye toggle. */
 		button.addThemeVariants(ButtonVariant.LUMO_ICON);
 		button.setAriaLabel(label);
 		button.setTooltipText(label);

@@ -115,13 +115,14 @@ defaults to `1.4.0`. Historical issue notes retain their original release versio
 
 ## Material page-break toggle
 
-Replaced the material checkbox with a custom page-break SVG toggle. It keeps
-its glyph and icon theme across state changes, with a pressed highlight and
+Replaced the material checkbox with a custom SVG toggle. Separate-page mode
+uses the page-break glyph; flowing mode uses a closed page frame without the
+dotted line. Both modes retain the icon theme and centered alignment, with a pressed highlight and
 German action tooltips. Save/discard, live editor preservation and correction
 locking follow the existing material setting. See
 [Pupil task-sheet PDF export](../doc/ops/ExamTaskSheetPdfExport.md#material-pagination).
 
 Verification: all 735 Maven tests and `git diff --check` pass. Toggle coverage
-checks the unchanged SVG instance and icon theme in both states, accessible
+checks the unchanged SVG instance, state-specific source and icon theme in both states, accessible
 pressed state and German action labels, save/discard and correction locking.
 Browser automation was unavailable for visual hover verification.

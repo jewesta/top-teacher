@@ -67,6 +67,7 @@ class ExamMaterialEditorTests {
 		assertThat(icon.getElement().getAttribute("src")).isEqualTo("/icons/page-break.svg");
 		toggle.click();
 		assertThat(toggle.getIcon()).isSameAs(icon);
+		assertThat(icon.getElement().getAttribute("src")).isEqualTo("/icons/page-flow.svg");
 		assertThat(toggle.getThemeNames()).contains("icon");
 		assertThat(toggle.getElement().getAttribute("aria-pressed")).isEqualTo("false");
 		assertThat(toggle.getAriaLabel()).contains("Auf eigener Seite platzieren");
@@ -91,6 +92,7 @@ class ExamMaterialEditorTests {
 		toggle.click();
 		assertThat(editor.hasUnsavedChanges()).isFalse();
 		assertThat(toggle.getElement().getAttribute("aria-pressed")).isEqualTo("true");
+		assertThat(toggle.getIcon().getElement().getAttribute("src")).isEqualTo("/icons/page-break.svg");
 		assertThat(toggle.getThemeNames()).contains("icon");
 		toggle.click();
 		buttonsByAriaLabel(editor, "Verwerfen...").getFirst().click();
@@ -98,6 +100,7 @@ class ExamMaterialEditorTests {
 		ComponentUtil.fireEvent(confirmation, new ConfirmDialog.ConfirmEvent(confirmation, false));
 		assertThat(editor.hasUnsavedChanges()).isFalse();
 		assertThat(pageToggle(editor).getElement().getAttribute("aria-pressed")).isEqualTo("true");
+		assertThat(pageToggle(editor).getIcon().getElement().getAttribute("src")).isEqualTo("/icons/page-break.svg");
 	}
 
 	private static Button pageToggle(final Component root) {

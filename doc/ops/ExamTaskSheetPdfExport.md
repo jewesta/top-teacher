@@ -24,8 +24,10 @@ numbers refer to the logical A5 pages within each copy.
 
 Every material has a persisted `Auf eigener Seite` setting, enabled by default
 for new and existing materials. Its action bar contains a page-break icon toggle:
-two page fragments separated by a dashed horizontal line. The glyph stays the
-same and centered in both states; enabled means pressed and highlighted. The
+separate-page mode shows two page fragments separated by a dashed horizontal
+line; flowing mode shows the matching closed page frame without that line.
+Both SVGs share their dimensions, stroke and centered alignment. Enabled means
+pressed and highlighted. The
 German action tooltip is `Im laufenden Text platzieren` when enabled and
 `Auf eigener Seite platzieren` when disabled. The accessible pressed state
 matches the saved/draft setting. If enabled, the material starts on a fresh page
