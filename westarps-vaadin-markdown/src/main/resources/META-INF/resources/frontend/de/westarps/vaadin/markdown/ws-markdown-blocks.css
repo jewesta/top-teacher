@@ -73,3 +73,8 @@
   .wmde-markdown .ws-markdown-alert { background: transparent; }
   .wmde-markdown .ws-markdown-numbered-overflow { display: none; }
 }
+
+/* Reserve the full marker width, including multi-digit numbers, at the current font size. */
+.wmde-markdown section.footnotes > ol {
+  padding-left: calc((var(--ws-footnote-marker-digits, 2) + 2) * 1ch);
+}

@@ -60,3 +60,16 @@ no longer rewrites existing task text or budgets. See
 Verification: all 725 Maven tests passed, including full Spanish demo validation
 against the 160-point scale, category/part budgets, source/footnote coverage and
 seed reapplication without overwriting edited tasks. `git diff --check` passed.
+
+## Footnote marker alignment
+
+The shared Markdown preview/viewer replaces the library's fixed footnote-list
+inset with a font-relative marker width derived from the number of footnotes.
+This prevents clipping at 10, 100, and subsequent digit boundaries. The functional
+contract is in [Markdown](../doc/ops/Markdown.md#footnote-list-numbering).
+
+Verification: 725 Maven tests and all 31 frontend tests passed. Rendering tests
+cover 9, 10, 27, 99 and 100 footnotes plus ordinary-section preservation.
+TypeScript and `git diff --check` passed. The local app's generated shared
+resources match the updated module, and its development bundle was rebuilt.
+Browser automation was unavailable, so visual verification remains manual.

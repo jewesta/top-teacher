@@ -79,3 +79,11 @@ Block formatting such as lists and headings does not create additional lines
 inside a numbered block. Numbered blocks cannot be nested. Other Markdown
 surfaces can render manually authored numbered blocks; their toolbar command
 is currently enabled only for Material.
+
+## Footnote list numbering
+
+Editor previews and read-only views reserve enough font-relative space for the
+complete footnote number, including two or more digits. The marker column grows
+with the number of footnotes. Numbers must not be clipped or overlap the text;
+wrapped footnote text keeps the normal hanging list indentation. Ordinary lists
+and section layouts remain unchanged.

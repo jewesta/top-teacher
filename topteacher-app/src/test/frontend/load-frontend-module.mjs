@@ -9,7 +9,7 @@ export function loadFrontendModule(name, overrides = {}) {
     if (cache.has(url.href)) return cache.get(url.href);
     const module = { exports: {} };
     cache.set(url.href, module.exports);
-    const require = createRequire(url);
+    const require = createRequire(import.meta.url);
     const source = readFileSync(url, 'utf8');
     const { outputText } = ts.transpileModule(source, {
       compilerOptions: {
@@ -34,5 +34,5 @@ export function loadFrontendModule(name, overrides = {}) {
     new Function('require', 'module', 'exports', outputText)(frontendRequire, module, module.exports);
     return module.exports;
   }
-  return load(new URL(`../../main/frontend/${name}`, import.meta.url));
+  return load(name instanceof URL ? name : new URL(`../../main/frontend/${name}`, import.meta.url));
 }
