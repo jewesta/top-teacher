@@ -34,6 +34,9 @@ categories, is specified in
 - TypeScript checking and the production package build passed.
 - `git diff --check` passed.
 
+The eye button explicitly retains Vaadin's icon theme after label/glyph updates,
+so toggling keeps it centered in the hover highlight without layout CSS changes.
+
 ## Category setting verification
 
 - `mvn -pl topteacher-app -am test`: 723 tests passed.

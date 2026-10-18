@@ -6,6 +6,7 @@ import java.util.function.Supplier;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.textfield.TextField;
@@ -79,6 +80,8 @@ final class LoeCategorySection extends AbstractLoeSection<LoeCategory> {
 				: "Aufgaben im Aufgabenblatt anzeigen";
 		button.setIcon((printTasksOnExamSheet ? VaadinIcon.EYE : VaadinIcon.EYE_SLASH).create());
 		button.setText(label);
+		/* Vaadin resets the icon theme when text or icons change; retain toolbar alignment. */
+		button.addThemeVariants(ButtonVariant.LUMO_ICON);
 		button.setAriaLabel(label);
 		button.setTooltipText(label);
 		button.getElement().setAttribute("aria-pressed", Boolean.toString(printTasksOnExamSheet));

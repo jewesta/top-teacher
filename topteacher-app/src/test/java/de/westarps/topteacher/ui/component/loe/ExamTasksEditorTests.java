@@ -71,11 +71,13 @@ class ExamTasksEditorTests {
 		assertThat(components(blocks.getFirst(), Button.class)).contains(eye);
 		assertThat(components(blocks.get(1), MarkdownEditor.class)).contains(description);
 		assertThat(eye.getIcon().getElement().getAttribute("icon")).isEqualTo("vaadin:eye");
+		assertThat(eye.getThemeNames()).contains("icon");
 		clearInvocations(repository);
 
 		eye.click();
 
 		assertThat(eye.getIcon().getElement().getAttribute("icon")).isEqualTo("vaadin:eye-slash");
+		assertThat(eye.getThemeNames()).contains("icon");
 		assertThat(eye.getAriaLabel()).contains("Aufgaben im Aufgabenblatt anzeigen");
 		assertThat(eye.getElement().getAttribute("aria-pressed")).isEqualTo("false");
 		assertThat(editor.hasUnsavedChanges()).isTrue();
@@ -103,6 +105,7 @@ class ExamTasksEditorTests {
 		eye.click();
 		assertThat(editor.hasUnsavedChanges()).isFalse();
 		assertThat(eye.getAriaLabel()).contains("Aufgaben im Aufgabenblatt ausblenden");
+		assertThat(eye.getThemeNames()).contains("icon");
 		eye.click();
 		buttonByAriaLabel(editor, "Verwerfen...").click();
 		final ConfirmDialog confirmation = components(editor, ConfirmDialog.class).getFirst();
