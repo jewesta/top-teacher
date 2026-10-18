@@ -107,3 +107,8 @@ personalized copies. All seven demo A5 pages and four imposed A4 pages were
 visually reviewed, including source continuation and multi-digit footnotes.
 The local review database retains its existing data; unchanged seeded Hilfsmittel
 was moved to Part A after creating a backup. `git diff --check` passes.
+
+## Release version
+
+Raised the reactor, module parent references, and packaging/production launcher
+defaults to `1.4.0`. Historical issue notes retain their original release versions.
