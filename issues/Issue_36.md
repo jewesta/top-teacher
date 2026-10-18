@@ -44,3 +44,19 @@ so toggling keeps it centered in the hover highlight without layout CSS changes.
   stale and failed saves, correction-mode locking, unchanged task budgets,
   database upgrades/reinitialization, exam copies, and authoring edits/reordering.
 - `git diff --check` passed.
+
+## Replacement Spanish demo
+
+Replaced the former Spanish migration/listening demo seed with the supplied
+2026 exam, retaining the English demo. The Spanish course and exam use the
+existing 160-point grading scale. Both source texts, footnotes, task wording,
+complete EH, category eye settings, and bonus requirements are included.
+Alternative task 3.2, images, and pupil PDF output remain excluded.
+
+Part B preserves the source's group-level assessment budgets. Reapplying seeds
+no longer rewrites existing task text or budgets. See
+[Demo Data](../doc/ops/DemoData.md) for the authoritative demo contract.
+
+Verification: all 725 Maven tests passed, including full Spanish demo validation
+against the 160-point scale, category/part budgets, source/footnote coverage and
+seed reapplication without overwriting edited tasks. `git diff --check` passed.

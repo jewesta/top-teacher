@@ -230,3 +230,8 @@ client-visible path through the configured installation mode and saves the
 normalized image together with its material declaration. Both access levels
 receive unchanged stored pixels; users must remove or cover names first. See
 [the image exchange contract](Mcp.md#material-image-exchange).
+
+## Demo dataset
+
+The demo initialization content and its supported exam-design examples are
+specified in [Demo Data](DemoData.md).

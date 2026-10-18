@@ -18,6 +18,9 @@ import org.springframework.mock.env.MockEnvironment;
 import de.westarps.topteacher.backend.repo.SettingsRepository;
 import de.westarps.topteacher.backend.settings.AppSettings;
 import de.westarps.topteacher.model.InstallationLocation;
+import de.westarps.topteacher.model.loe.LoeTask;
+import de.westarps.topteacher.model.loe.LoeRequirement;
+import de.westarps.topteacher.model.loe.LoeValidator;
 
 class DatabaseInitializationServiceTests {
 
@@ -255,14 +258,14 @@ class DatabaseInitializationServiceTests {
 			        and gs.max_points = 150)
 			   or (c.school_class = 'CLS_Q1' and subject.name = 'Spanisch'
 			        and gs.name = 'Qualifikationsphase ab ''25'
-			        and gs.max_points = 150)
+			        and gs.max_points = 160)
 			""")).isEqualTo(2);
 		assertThat(count("""
 			select count(*)
 			from exam
 			where title in (
 			    '1. Klausur Shakespeare',
-			    'Examen No 3: Migración'
+			    'Abiturprüfung 2026 Spanisch (Demo)'
 			)
 			""")).isEqualTo(2);
 		assertThat(count("""
@@ -286,6 +289,7 @@ class DatabaseInitializationServiceTests {
 			from (
 			    select e.id
 			    from exam e
+			    join grading_scale gs on gs.id = e.grading_scale_id
 			    join eh_part part
 			        on part.exam_id = e.id
 			    join eh_category category
@@ -294,8 +298,8 @@ class DatabaseInitializationServiceTests {
 			        on task.category_id = category.id
 			    join eh_requirement requirement
 			        on requirement.task_id = task.id
-			    group by e.id
-			    having sum(case when requirement.bonus then 0 else requirement.max_points end) = 150
+			    group by e.id, gs.max_points
+			    having sum(case when requirement.bonus then 0 else requirement.max_points end) = gs.max_points
 			       and sum(case when requirement.bonus then requirement.max_points else 0 end) > 0
 			) demo_exam
 			""")).isEqualTo(2);
@@ -315,6 +319,71 @@ class DatabaseInitializationServiceTests {
 		assertThat(countRows("eh_requirement_result")).isZero();
 		assertThat(countRows("eh_criterion_result")).isZero();
 		assertThat(appSettings.ttDatabaseInitializationCompleted()).isTrue();
+	}
+
+	@Test
+	void spanishDemoContainsTheCompleteExamAndMatchesTheExisting160PointScale() {
+		initializationService.initialize(DatabaseInitializationMode.DEMO);
+		final int examId = jdbc.queryForObject("select id from exam where title = 'Abiturprüfung 2026 Spanisch (Demo)'", Integer.class);
+		assertThat(jdbc.queryForObject("select gs.max_points from exam e join grading_scale gs on gs.id = e.grading_scale_id where e.id = ?",
+				Integer.class, examId)).isEqualTo(160);
+		assertThat(jdbc.queryForList("""
+			select sum(t.max_points) from eh_part p
+			join eh_category c on c.part_id = p.id join eh_task t on t.category_id = c.id
+			where p.exam_id = ? group by p.id, p.sort_order order by p.sort_order
+			""", Integer.class, examId)).containsExactly(110, 50);
+		assertThat(jdbc.queryForList("""
+			select sum(t.max_points) from eh_part p
+			join eh_category c on c.part_id = p.id join eh_task t on t.category_id = c.id
+			where p.exam_id = ? and not c.print_tasks_on_exam_sheet
+			group by p.id, p.sort_order order by p.sort_order
+			""", Integer.class, examId)).containsExactly(66, 30);
+		assertThat(jdbc.queryForList("""
+			select c.print_tasks_on_exam_sheet from eh_category c join eh_part p on p.id = c.part_id
+			where p.exam_id = ? order by p.sort_order, c.sort_order
+			""", Boolean.class, examId)).containsExactly(true, false, true, false);
+		final var tasks = jdbc.query("""
+			select t.* from eh_task t join eh_category c on c.id = t.category_id
+			join eh_part p on p.id = c.part_id where p.exam_id = ?
+			""", (row, index) -> new LoeTask(row.getInt("id"), row.getInt("category_id"), row.getString("title"),
+				row.getString("description_markdown"), row.getInt("max_points"), row.getInt("sort_order")), examId);
+		final var requirements = jdbc.query("""
+			select r.* from eh_requirement r join eh_task t on t.id = r.task_id
+			join eh_category c on c.id = t.category_id join eh_part p on p.id = c.part_id
+			where p.exam_id = ?
+			""", (row, index) -> new LoeRequirement(row.getInt("id"), row.getInt("task_id"),
+				row.getString("description_markdown"), row.getInt("max_points"), row.getBoolean("bonus"), row.getInt("sort_order")), examId);
+		assertThat(tasks).hasSize(10);
+		assertThat(tasks).filteredOn(task -> task.maxPoints() == 18).singleElement()
+				.satisfies(task -> assertThat(task.descriptionMarkdown()).startsWith("Discute, a partir del texto"));
+		assertThat(requirements).hasSize(28);
+		assertThat(requirements).filteredOn(LoeRequirement::bonus).hasSize(2);
+		assertThat(LoeValidator.validate(160, tasks, requirements).getResults()).isEmpty();
+		final var materials = jdbc.queryForList("""
+			select m.description_markdown from loe_material m join eh_part p on p.id = m.part_id
+			where p.exam_id = ? order by p.sort_order, m.sort_order
+			""", String.class, examId);
+		assertThat(materials).hasSize(2).allSatisfy(markdown -> {
+			assertThat(markdown).contains("> [!NUMBERED]", "[^", "**Materialgrundlage:**", "https://");
+			assertThat(markdown.length()).isGreaterThan(3000);
+		});
+		assertThat(materials.getFirst()).contains("Joves Futur+", "[^azulgrana]", "[^a26]");
+		assertThat(materials.getLast()).contains("Tausendfüßler", "[^dw]", "[^paritaet]");
+		assertThat(jdbc.queryForObject("select footer_markdown from exam where id = ?", String.class, examId))
+				.contains("Zugelassene Hilfsmittel");
+		assertThat(count("select count(*) from exam where title = 'Examen No 3: Migración'")).isZero();
+	}
+
+	@Test
+	void reapplyingDemoSeedsPreservesAuthoredTaskTextAndBudgets() {
+		initializationService.initialize(DatabaseInitializationMode.DEMO);
+		final int taskId = jdbc.queryForObject("select min(id) from eh_task", Integer.class);
+		jdbc.update("update eh_task set description_markdown = 'Eigener Aufgabentext', max_points = 17 where id = ?", taskId);
+		new ResourceDatabasePopulator(new ClassPathResource("db/demo-data.sql")).execute(dataSource);
+		assertThat(jdbc.queryForObject("select description_markdown from eh_task where id = ?", String.class, taskId))
+				.isEqualTo("Eigener Aufgabentext");
+		assertThat(jdbc.queryForObject("select max_points from eh_task where id = ?", Integer.class, taskId)).isEqualTo(17);
+		assertThat(countRows("exam")).isEqualTo(2);
 	}
 
 	private void assertBaseGradingScales() {
