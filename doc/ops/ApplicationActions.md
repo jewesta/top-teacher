@@ -106,3 +106,12 @@ The page says `Das hat leider nicht geklappt` and explains that an error occurre
 while displaying the page. `Seite neu laden` reloads the current URL, including
 when the application is deployed under a context path. Before reloading, the page
 warns that unsaved input may be lost. Reloading is always an explicit user action.
+
+## Icon state toggles
+
+The category eye toggle and material page-mode toggle use the same icon-toggle
+component. Each mode has its own glyph and German action tooltip. Both modes
+retain the same centered icon-only button layout and normal toolbar styling,
+without a persistent selected-state background. Ordinary hover feedback stays
+available. The accessible `aria-pressed` state follows the current draft value;
+changes use the owning editor's normal save/discard and locking behavior.

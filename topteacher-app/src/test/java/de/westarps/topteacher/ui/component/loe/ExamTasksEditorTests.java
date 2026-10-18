@@ -40,6 +40,7 @@ import de.westarps.topteacher.model.loe.LoeCategory;
 import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoeTask;
 import de.westarps.topteacher.ui.component.ActionToolbar;
+import de.westarps.topteacher.ui.component.IconToggleButton;
 import de.westarps.vaadin.markdown.MarkdownEditor;
 import de.westarps.vaadin.markdown.MarkdownViewer;
 
@@ -98,6 +99,7 @@ class ExamTasksEditorTests {
 		final Button eye = buttonsByDataAction(category, "toggle-print-tasks").getFirst();
 		assertThat(components(blocks.getFirst(), Button.class)).contains(eye);
 		assertThat(components(blocks.get(1), MarkdownEditor.class)).contains(description);
+		assertThat(eye).isInstanceOf(IconToggleButton.class);
 		assertThat(eye.getIcon().getElement().getAttribute("icon")).isEqualTo("vaadin:eye");
 		assertThat(eye.getThemeNames()).contains("icon");
 		clearInvocations(repository);

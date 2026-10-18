@@ -6,12 +6,13 @@ import java.util.function.Supplier;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.textfield.TextField;
 
 import de.westarps.topteacher.model.loe.LoeCategory;
+import de.westarps.topteacher.ui.component.IconToggleButton;
+import de.westarps.topteacher.ui.component.IconToggleButton.State;
 import de.westarps.vaadin.markdown.MarkdownEditor;
 
 final class LoeCategorySection extends AbstractLoeSection<LoeCategory> {
@@ -21,7 +22,7 @@ final class LoeCategorySection extends AbstractLoeSection<LoeCategory> {
 	private final Handler handler;
 	private String savedTitle;
 	private String savedDescriptionMarkdown;
-	private boolean printTasksOnExamSheet;
+	private final IconToggleButton printTasks;
 	private boolean savedPrintTasksOnExamSheet;
 
 	<C extends Component & LoeEditable> LoeCategorySection(final LoeCategory category,
@@ -46,21 +47,18 @@ final class LoeCategorySection extends AbstractLoeSection<LoeCategory> {
 		this.handler = handler;
 		this.savedTitle = category.title();
 		this.savedDescriptionMarkdown = normalized(category.descriptionMarkdown());
-		this.printTasksOnExamSheet = category.printTasksOnExamSheet();
-		this.savedPrintTasksOnExamSheet = printTasksOnExamSheet;
+		this.savedPrintTasksOnExamSheet = category.printTasksOnExamSheet();
 		title.setReadOnly(correctionMode);
 		description.setEnabled(!correctionMode);
 		components.trackDirty(title);
 		components.trackDirty(description);
 		final Button addTask = components.commandButton("Teilaufgabe hinzufügen", VaadinIcon.PLUS,
 				event -> handler.addTask(category));
-		final Button printTasks = components.iconButton("", VaadinIcon.EYE, event -> {
-			printTasksOnExamSheet = !printTasksOnExamSheet;
-			updatePrintTasksButton(event.getSource());
-			components.updateDirty();
-		});
+		this.printTasks = new IconToggleButton(category.printTasksOnExamSheet(),
+				new State(VaadinIcon.EYE.create(), "Aufgaben im Aufgabenblatt ausblenden"),
+				new State(VaadinIcon.EYE_SLASH.create(), "Aufgaben im Aufgabenblatt anzeigen"),
+				value -> components.updateDirty());
 		printTasks.getElement().setAttribute("data-action", "toggle-print-tasks");
-		updatePrintTasksButton(printTasks);
 		final Button delete = components.deleteButton("Leistungskategorie löschen?", () -> handler.delete(category));
 		if (correctionMode) {
 			components.lockCorrectionModeAction(addTask);
@@ -75,23 +73,11 @@ final class LoeCategorySection extends AbstractLoeSection<LoeCategory> {
 		addToBody(tasks);
 	}
 
-	private void updatePrintTasksButton(final Button button) {
-		final String label = printTasksOnExamSheet ? "Aufgaben im Aufgabenblatt ausblenden"
-				: "Aufgaben im Aufgabenblatt anzeigen";
-		button.setIcon((printTasksOnExamSheet ? VaadinIcon.EYE : VaadinIcon.EYE_SLASH).create());
-		button.setText(label);
-		/* Vaadin resets the icon theme when text or icons change; retain toolbar alignment. */
-		button.addThemeVariants(ButtonVariant.LUMO_ICON);
-		button.setAriaLabel(label);
-		button.setTooltipText(label);
-		button.getElement().setAttribute("aria-pressed", Boolean.toString(printTasksOnExamSheet));
-	}
-
 	@Override
 	protected boolean isSectionDirty() {
 		return !Objects.equals(savedTitle, title.getValue())
 				|| !Objects.equals(savedDescriptionMarkdown, componentsValue(description))
-				|| savedPrintTasksOnExamSheet != printTasksOnExamSheet;
+				|| savedPrintTasksOnExamSheet != printTasks.getValue();
 	}
 
 	@Override
@@ -101,10 +87,10 @@ final class LoeCategorySection extends AbstractLoeSection<LoeCategory> {
 			return false;
 		}
 		final String descriptionMarkdown = componentsValue(description);
-		handler.save(item(), title.getValue(), descriptionMarkdown, printTasksOnExamSheet);
+		handler.save(item(), title.getValue(), descriptionMarkdown, printTasks.getValue());
 		savedTitle = title.getValue();
 		savedDescriptionMarkdown = descriptionMarkdown;
-		savedPrintTasksOnExamSheet = printTasksOnExamSheet;
+		savedPrintTasksOnExamSheet = printTasks.getValue();
 		return true;
 	}
 

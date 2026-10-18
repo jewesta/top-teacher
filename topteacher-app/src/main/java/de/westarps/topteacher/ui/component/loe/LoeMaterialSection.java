@@ -12,7 +12,6 @@ import java.util.Set;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.icon.SvgIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.textfield.TextField;
@@ -22,6 +21,8 @@ import de.westarps.topteacher.model.loe.LoeMaterial;
 import de.westarps.topteacher.model.loe.LoeMaterialImage;
 import de.westarps.topteacher.model.loe.LoeMaterialImageReferences;
 import de.westarps.topteacher.ui.UiUrls;
+import de.westarps.topteacher.ui.component.IconToggleButton;
+import de.westarps.topteacher.ui.component.IconToggleButton.State;
 import de.westarps.vaadin.markdown.MarkdownEditor;
 
 final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
@@ -34,7 +35,7 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 	private final MaterialImageProcessor imageProcessor = new MaterialImageProcessor();
 	private final SecureRandom random = new SecureRandom();
 	private MaterialMarkdownEditor.InsertionPoint droppedInsertionPoint;
-	private boolean dedicatedPage;
+	private final IconToggleButton pageToggle;
 	private boolean savedDedicatedPage;
 	private String savedTitle;
 	private String savedDescriptionMarkdown;
@@ -58,15 +59,11 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 		this.storedImages = new ArrayList<>(images == null ? List.of() : images);
 		this.savedTitle = material.title();
 		this.savedDedicatedPage = material.dedicatedPage();
-		this.dedicatedPage = material.dedicatedPage();
-		final Button pageToggle = new Button(new SvgIcon(), event -> {
-			dedicatedPage = !dedicatedPage;
-			updatePageToggle(event.getSource());
-			components.updateDirty();
-		});
-		pageToggle.addClassName("tt-material-page-toggle");
+		this.pageToggle = new IconToggleButton(material.dedicatedPage(),
+				new State(new SvgIcon(UiUrls.contextRelative("/icons/page-break.svg")), "Im laufenden Text platzieren"),
+				new State(new SvgIcon(UiUrls.contextRelative("/icons/page-flow.svg")), "Auf eigener Seite platzieren"),
+				value -> components.updateDirty());
 		pageToggle.getElement().setAttribute("data-action", "toggle-dedicated-page");
-		updatePageToggle(pageToggle);
 		if (locked) {
 			components.lockCorrectionModeAction(pageToggle);
 		}
@@ -101,21 +98,9 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 		}
 	}
 
-	private void updatePageToggle(final Button button) {
-		final String label = dedicatedPage ? "Im laufenden Text platzieren" : "Auf eigener Seite platzieren";
-		((SvgIcon) button.getIcon()).setSrc(UiUrls.contextRelative(
-				dedicatedPage ? "/icons/page-break.svg" : "/icons/page-flow.svg"));
-		button.setText(label);
-		/* Retain the icon theme after state changes, as with the category eye toggle. */
-		button.addThemeVariants(ButtonVariant.LUMO_ICON);
-		button.setAriaLabel(label);
-		button.setTooltipText(label);
-		button.getElement().setAttribute("aria-pressed", Boolean.toString(dedicatedPage));
-	}
-
 	@Override
 	protected boolean isSectionDirty() {
-		return savedDedicatedPage != dedicatedPage || !Objects.equals(savedTitle, title.getValue())
+		return savedDedicatedPage != pageToggle.getValue() || !Objects.equals(savedTitle, title.getValue())
 				|| description != null
 						&& !Objects.equals(savedDescriptionMarkdown, normalized(description.getValue()));
 	}
@@ -130,7 +115,7 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 			return false;
 		}
 		final String descriptionMarkdown = normalized(description.getValue());
-		final LoeMaterial saved = handler.save(item(), title.getValue(), descriptionMarkdown, pendingImages.values(), dedicatedPage);
+		final LoeMaterial saved = handler.save(item(), title.getValue(), descriptionMarkdown, pendingImages.values(), pageToggle.getValue());
 		savedDedicatedPage = saved.dedicatedPage();
 		description.setValue(saved.descriptionMarkdown());
 		savedTitle = title.getValue();

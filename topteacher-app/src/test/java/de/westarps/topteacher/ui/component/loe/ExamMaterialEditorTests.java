@@ -31,6 +31,7 @@ import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.loe.LoeMaterial;
 import de.westarps.topteacher.model.loe.LoePart;
+import de.westarps.topteacher.ui.component.IconToggleButton;
 import de.westarps.vaadin.markdown.MarkdownEditor;
 import de.westarps.vaadin.markdown.MarkdownViewer;
 
@@ -66,8 +67,8 @@ class ExamMaterialEditorTests {
 		assertThat(toggle.getThemeNames()).contains("icon");
 		assertThat(icon.getElement().getAttribute("src")).isEqualTo("/icons/page-break.svg");
 		toggle.click();
-		assertThat(toggle.getIcon()).isSameAs(icon);
-		assertThat(icon.getElement().getAttribute("src")).isEqualTo("/icons/page-flow.svg");
+		assertThat(toggle).isInstanceOf(IconToggleButton.class);
+		assertThat(toggle.getIcon().getElement().getAttribute("src")).isEqualTo("/icons/page-flow.svg");
 		assertThat(toggle.getThemeNames()).contains("icon");
 		assertThat(toggle.getElement().getAttribute("aria-pressed")).isEqualTo("false");
 		assertThat(toggle.getAriaLabel()).contains("Auf eigener Seite platzieren");

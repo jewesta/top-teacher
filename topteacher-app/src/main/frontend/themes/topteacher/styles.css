@@ -1382,8 +1382,3 @@ vaadin-grid.tt-multi-selection-grid::part(tt-selected-row) {
 vaadin-grid.tt-multi-selection-grid::part(tt-selected-row):hover {
 	background: var(--lumo-primary-color-10pct);
 }
-
-/* A pressed page-break toggle reserves dedicated pages for the material. */
-.tt-material-page-toggle[aria-pressed="true"] {
-	background-color: var(--lumo-primary-color-10pct);
-}

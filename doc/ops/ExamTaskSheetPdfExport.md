@@ -26,8 +26,9 @@ Every material has a persisted `Auf eigener Seite` setting, enabled by default
 for new and existing materials. Its action bar contains a page-break icon toggle:
 separate-page mode shows two page fragments separated by a dashed horizontal
 line; flowing mode shows the matching closed page frame without that line.
-Both SVGs share their dimensions, stroke and centered alignment. Enabled means
-pressed and highlighted. The
+Both SVGs share their dimensions, stroke and centered alignment. As with the
+category eye toggle, the icon communicates the mode; neither state has a
+persistent background highlight. The
 German action tooltip is `Im laufenden Text platzieren` when enabled and
 `Auf eigener Seite platzieren` when disabled. The accessible pressed state
 matches the saved/draft setting. If enabled, the material starts on a fresh page

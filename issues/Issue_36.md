@@ -117,12 +117,26 @@ defaults to `1.4.0`. Historical issue notes retain their original release versio
 
 Replaced the material checkbox with a custom SVG toggle. Separate-page mode
 uses the page-break glyph; flowing mode uses a closed page frame without the
-dotted line. Both modes retain the icon theme and centered alignment, with a pressed highlight and
+dotted line. Both modes retain the icon theme and centered alignment, with
 German action tooltips. Save/discard, live editor preservation and correction
 locking follow the existing material setting. See
 [Pupil task-sheet PDF export](../doc/ops/ExamTaskSheetPdfExport.md#material-pagination).
 
 Verification: all 735 Maven tests and `git diff --check` pass. Toggle coverage
-checks the unchanged SVG instance, state-specific source and icon theme in both states, accessible
+checks the state-specific source and icon theme in both states, accessible
 pressed state and German action labels, save/discard and correction locking.
 Browser automation was unavailable for visual hover verification.
+
+## Shared icon toggles
+
+Removed the material-only selected background and replaced the two independent
+implementations with `IconToggleButton`. It owns state, icon/action-label changes,
+accessible pressed state and icon-theme retention for both eye and page toggles.
+Each editor retains its existing save/discard and correction locking. See
+[Application Actions](../doc/ops/ApplicationActions.md#icon-state-toggles).
+
+Verification: all 740 Maven tests and `git diff --check` pass. Shared-control
+tests exercise both native Vaadin and custom SVG icons, both initial modes,
+repeated changes, action-bar integration, neutral styling, accessible labels and
+pressed state, notification behavior and disabled clicks. Both editor suites
+verify use of the shared control and retain save/discard/locking coverage.
