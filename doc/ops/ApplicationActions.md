@@ -8,7 +8,9 @@
   bulk status changes,
   grading-scale editing, backup settings, and file-access mappings.
   Task and requirement reorder/delete bars appear above their Markdown content
-  within the section, below its header.
+  within the section, below its header. The `Aufgaben` category action bar also
+  appears below its header and before `Beschreibung`; its eye toggle controls
+  future task-sheet details for that category.
 - Action bars adapt to their visible elements. A lone action shows its icon
   and German label as a neutral secondary button. With two or more visible
   elements, actions show only their icons, without a persistent button

@@ -55,12 +55,13 @@ public class ExamTasksEditor extends AbstractDesigner {
 
 		@Override
 		public void saveTitle(final LoeCategory category, final String title) {
-			ExamTasksEditor.this.save(category, title, category.descriptionMarkdown());
+			ExamTasksEditor.this.save(category, title, category.descriptionMarkdown(), category.printTasksOnExamSheet());
 		}
 
 		@Override
-		public void save(final LoeCategory category, final String title, final String descriptionMarkdown) {
-			ExamTasksEditor.this.save(category, title, descriptionMarkdown);
+		public void save(final LoeCategory category, final String title, final String descriptionMarkdown,
+				final boolean printTasksOnExamSheet) {
+			ExamTasksEditor.this.save(category, title, descriptionMarkdown, printTasksOnExamSheet);
 		}
 
 		@Override
@@ -292,9 +293,10 @@ public class ExamTasksEditor extends AbstractDesigner {
 		viewport.updateBreadcrumbSegment(detailKey("part", part.id()), title);
 	}
 
-	private void save(final LoeCategory category, final String title, final String descriptionMarkdown) {
+	private void save(final LoeCategory category, final String title, final String descriptionMarkdown,
+			final boolean printTasksOnExamSheet) {
 		final LoeCategory updated = new LoeCategory(category.id(), category.partId(), title, descriptionMarkdown,
-				category.sortOrder());
+				category.sortOrder(), printTasksOnExamSheet);
 		repository.saveCategory(updated);
 		categories = categories.stream().map(current -> current.id().equals(updated.id()) ? updated : current).toList();
 		viewport.updateBreadcrumbSegment(detailKey("category", category.id()), title);

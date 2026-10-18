@@ -34,9 +34,43 @@ language performance. It has a title, optional markdown description, and sort
 order. Its regular point budget is aggregated from the explicit maxima of its
 tasks. The EH shows the regular requirement points currently assigned below it.
 
+### Category task visibility on the exam sheet
+
+Each performance category owns one `printTasksOnExamSheet` setting. New
+categories and existing categories upgraded from an older database default to
+`true`. The setting applies to the complete category; there are no task-level
+overrides or title-based rules for existing data.
+
+In `Aufgaben`, the category action bar sits immediately below the category
+header and above `Beschreibung`. It contains the existing add, move, and delete
+actions plus an eye toggle:
+
+- Open eye: task details are enabled. Tooltip and accessible action name:
+  `Aufgaben im Aufgabenblatt ausblenden`.
+- Crossed-out eye: task details are disabled. Tooltip and accessible action name:
+  `Aufgaben im Aufgabenblatt anzeigen`.
+
+The eye reflects the pending setting and exposes its state to assistive
+technology. Toggling changes the setting in place and participates in the normal
+save, confirmed discard, dirty-state, stale-design, and first-result locking
+behavior. Saving preserves the rendered sections, editors, and collapse state.
+Copies retain the setting; unrelated text edits and reordering preserve it.
+
+This controls future pupil output only. Tasks and category descriptions remain
+visible and editable in `Aufgaben`; EH, result entry, assessment validation,
+regular point totals, and part percentages continue to include the complete
+category. A category whose tasks are omitted from the future sheet still
+contributes its complete point budget. For example, the future sheet can show
+`Sprachliche Leistung: maximal 66 Punkte` while omitting its description and
+assessment groups. Exam and part totals include these points as well.
+
+This change stores and edits the setting. Pupil PDF generation, summary lines,
+and printed numbering remain deferred.
+
 ### Task
 
-A task represents an actual exam task and groups its later assessment
+A task represents an actual exam task or an assessment group within an implicit
+performance category, such as language performance. It groups its later assessment
 requirements. It has a title, Markdown content, an explicitly assigned integer
 maximum, and a sort order. The task maximum is authored in `Aufgaben`; it is not
 derived from the requirements. A compact minus/value/plus control with a
@@ -71,10 +105,12 @@ diagrams, data, and similar material handed out with the exam.
 - It is authored in the dedicated `Material` tab.
 - Tasks refer to material in their wording; they do not own or duplicate it.
 
-All content authored in `Aufgaben` is pupil-facing. The future exam sheet starts
-with the exam heading and groups its content by part: the part heading is
-followed by its ordered material on separate pages, then its performance
-categories, category descriptions, task titles, and task text in tree order.
+The future exam sheet starts with the exam heading and groups its content by
+part: the part heading is followed by its ordered material on separate pages,
+then its performance categories in tree order. Categories with task details
+enabled include their descriptions, task titles, and task text. Categories with
+task details disabled appear only as a single line with the category name and
+its complete regular task-point budget.
 Each subsequent part starts on a new page. The exam closing text follows all
 parts. Print generation and its detailed layout remain deferred; see
 [the export scope](LevelOfExpectationsPdfExport.md#deferred-exam-sheet-export).

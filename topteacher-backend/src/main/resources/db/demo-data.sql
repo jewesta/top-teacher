@@ -173,18 +173,18 @@ where not exists (
       and material.title = demo.title
 );
 
-insert into eh_category (part_id, title, description_markdown, sort_order)
-select part.id, demo.title, demo.description_markdown, demo.sort_order
+insert into eh_category (part_id, title, description_markdown, sort_order, print_tasks_on_exam_sheet)
+select part.id, demo.title, demo.description_markdown, demo.sort_order, demo.print_tasks_on_exam_sheet
 from (
     values
-        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 0, 'Inhaltliche Leistung', ''),
-        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 1, 'Sprachliche Leistung / Darstellungsleistung', 'Bewertung orientiert an den Referenzniveaus des Gemeinsamen europäischen Referenzrahmens (GeR).'),
-        ('Englisch', 'Klausurteil B: Sprachmittlung D-E (isoliert)', 0, 'Inhaltliche Leistung', ''),
-        ('Englisch', 'Klausurteil B: Sprachmittlung D-E (isoliert)', 1, 'Sprachliche Leistung / Darstellungsleistung', 'Bewertung orientiert an den Referenzniveaus des Gemeinsamen europäischen Referenzrahmens (GeR).'),
-        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 0, 'Inhaltliche Leistung', ''),
-        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 1, 'Sprachliche Leistung / Darstellungsleistung', ''),
-        ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 0, 'Lösung', '')
-) demo(subject_name, part_title, sort_order, title, description_markdown)
+        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 0, 'Inhaltliche Leistung', '', true),
+        ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 1, 'Sprachliche Leistung / Darstellungsleistung', 'Bewertung orientiert an den Referenzniveaus des Gemeinsamen europäischen Referenzrahmens (GeR).', false),
+        ('Englisch', 'Klausurteil B: Sprachmittlung D-E (isoliert)', 0, 'Inhaltliche Leistung', '', true),
+        ('Englisch', 'Klausurteil B: Sprachmittlung D-E (isoliert)', 1, 'Sprachliche Leistung / Darstellungsleistung', 'Bewertung orientiert an den Referenzniveaus des Gemeinsamen europäischen Referenzrahmens (GeR).', false),
+        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 0, 'Inhaltliche Leistung', '', true),
+        ('Spanisch', 'Klausurteil A: Leseverstehen integriert', 1, 'Sprachliche Leistung / Darstellungsleistung', '', false),
+        ('Spanisch', 'Klausurteil B: Hörverstehen isoliert', 0, 'Lösung', '', true)
+) demo(subject_name, part_title, sort_order, title, description_markdown, print_tasks_on_exam_sheet)
 join course c
     on c.calendar_year = 2026
    and c.course_period = 'FULL_YEAR'

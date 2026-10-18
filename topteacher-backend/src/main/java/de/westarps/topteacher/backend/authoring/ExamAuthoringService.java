@@ -238,7 +238,8 @@ public class ExamAuthoringService {
 				}
 				case CATEGORY -> {
 					final LoeCategory old = state.categories().get(id);
-					repository.saveCategory(new LoeCategory(id, old.partId(), title, markdown, old.sortOrder()));
+					repository.saveCategory(new LoeCategory(id, old.partId(), title, markdown, old.sortOrder(),
+							old.printTasksOnExamSheet()));
 				}
 				case TASK -> {
 					final LoeTask old = state.tasks().get(id);
@@ -353,7 +354,8 @@ public class ExamAuthoringService {
 				}
 				case CATEGORY -> {
 					final LoeCategory old = state.categories().get(id);
-					repository.saveCategory(new LoeCategory(id, old.partId(), old.title(), old.descriptionMarkdown(), index));
+					repository.saveCategory(new LoeCategory(id, old.partId(), old.title(), old.descriptionMarkdown(),
+							index, old.printTasksOnExamSheet()));
 				}
 				case TASK -> {
 					final LoeTask old = state.tasks().get(id);

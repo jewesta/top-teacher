@@ -139,7 +139,7 @@ public class LevelOfExpectationsRepository {
 
 	public List<LoeCategory> findCategoriesByExamId(final int examId) {
 		return jdbc.query("""
-			select c.id, c.part_id, c.title, c.description_markdown, c.sort_order
+			select c.id, c.part_id, c.title, c.description_markdown, c.sort_order, c.print_tasks_on_exam_sheet
 			from eh_category c
 			join eh_part p on p.id = c.part_id
 			where p.exam_id = :examId
@@ -400,7 +400,8 @@ public class LevelOfExpectationsRepository {
 
 		for (final LoeCategory category : findCategoriesByExamId(sourceExamId)) {
 			final LoeCategory copiedCategory = saveCategory(new LoeCategory(null, partIds.get(category.partId()),
-					category.title(), category.descriptionMarkdown(), category.sortOrder()));
+					category.title(), category.descriptionMarkdown(), category.sortOrder(),
+					category.printTasksOnExamSheet()));
 			categoryIds.put(category.id(), copiedCategory.id());
 		}
 
@@ -454,11 +455,13 @@ public class LevelOfExpectationsRepository {
 			update eh_category
 			set title = :title,
 			    description_markdown = :descriptionMarkdown,
+			    print_tasks_on_exam_sheet = :printTasksOnExamSheet,
 			    sort_order = :sortOrder
 			where id = :id
 			""",
 				new MapSqlParameterSource().addValue("id", category.id()).addValue("title", category.title())
 						.addValue("descriptionMarkdown", category.descriptionMarkdown())
+						.addValue("printTasksOnExamSheet", category.printTasksOnExamSheet())
 						.addValue("sortOrder", category.sortOrder()));
 		return category;
 	}
@@ -894,7 +897,7 @@ public class LevelOfExpectationsRepository {
 
 	private LoeCategory findCategoryById(final int id) {
 		return jdbc.queryForObject("""
-			select id, part_id, title, description_markdown, sort_order
+			select id, part_id, title, description_markdown, sort_order, print_tasks_on_exam_sheet
 			from eh_category
 			where id = :id
 			""", Map.of("id", id), categoryRowMapper);
@@ -997,17 +1000,18 @@ public class LevelOfExpectationsRepository {
 	private LoeCategory insertCategory(final LoeCategory category) {
 		final KeyHolder keyHolder = new GeneratedKeyHolder();
 		jdbc.update("""
-			insert into eh_category (part_id, title, description_markdown, sort_order)
-			values (:partId, :title, :descriptionMarkdown, :sortOrder)
+			insert into eh_category (part_id, title, description_markdown, sort_order, print_tasks_on_exam_sheet)
+			values (:partId, :title, :descriptionMarkdown, :sortOrder, :printTasksOnExamSheet)
 			""",
 				new MapSqlParameterSource().addValue("partId", category.partId()).addValue("title", category.title())
 						.addValue("descriptionMarkdown", category.descriptionMarkdown())
+						.addValue("printTasksOnExamSheet", category.printTasksOnExamSheet())
 						.addValue("sortOrder", category.sortOrder()),
 				keyHolder, new String[] {
 						"id"
 				});
 		return new LoeCategory(generatedId(keyHolder, "EH category"), category.partId(), category.title(),
-				category.descriptionMarkdown(), category.sortOrder());
+				category.descriptionMarkdown(), category.sortOrder(), category.printTasksOnExamSheet());
 	}
 
 	private LoeTask insertTask(final LoeTask task) {
@@ -1346,7 +1350,8 @@ public class LevelOfExpectationsRepository {
 
 	private LoeCategory mapCategory(final ResultSet resultSet, final int rowNumber) throws SQLException {
 		return new LoeCategory(resultSet.getInt("id"), resultSet.getInt("part_id"), resultSet.getString("title"),
-				resultSet.getString("description_markdown"), resultSet.getInt("sort_order"));
+				resultSet.getString("description_markdown"), resultSet.getInt("sort_order"),
+				resultSet.getBoolean("print_tasks_on_exam_sheet"));
 	}
 
 	private LoeTask mapTask(final ResultSet resultSet, final int rowNumber) throws SQLException {

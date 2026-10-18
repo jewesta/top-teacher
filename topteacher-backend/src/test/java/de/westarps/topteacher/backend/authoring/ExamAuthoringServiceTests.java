@@ -198,6 +198,22 @@ class ExamAuthoringServiceTests {
 	}
 
 	@Test
+	void contentUpdatesAndReorderingPreserveCategoryPrintSettings() {
+		final Exam exam = exam();
+		final var initial = initial(exam, 6);
+		final LoeCategory category = repository.findCategoriesByExamId(exam.id()).getFirst();
+		repository.saveCategory(new LoeCategory(category.id(), category.partId(), category.title(),
+				category.descriptionMarkdown(), category.sortOrder(), false));
+		apply(exam, "rename-category", List.of(update(Type.UPDATE_CATEGORY, category.id(), "Sprache", "Hinweis", null)));
+		assertThat(repository.findCategoriesByExamId(exam.id()).getFirst().printTasksOnExamSheet()).isFalse();
+		final var sibling = apply(exam, "category-sibling", List.of(
+				create(Type.CREATE_CATEGORY, "sibling", id(initial, "part"), null, "Inhalt", null, null)));
+		apply(exam, "category-order", List.of(reorder(Type.REORDER_CATEGORIES, id(initial, "part"),
+				List.of(ref(id(sibling, "sibling")), ref(category.id())))));
+		assertThat(repository.findCategoriesByExamId(exam.id()).getLast().printTasksOnExamSheet()).isFalse();
+	}
+
+	@Test
 	void reordersEachContentLevelAndRequirementsWithoutChangingIdentity() {
 		final Exam exam = exam();
 		final var initial = initial(exam, 6);

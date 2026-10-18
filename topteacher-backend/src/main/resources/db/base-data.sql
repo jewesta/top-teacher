@@ -1,5 +1,6 @@
 /* MCP credentials are created interactively; no base or demo token grants access. */
 /* Base data defines no exams; new exams inherit empty footer and revision 0 from schema.sql. */
+/* Categories default to printing their task details; base data defines no categories. */
 /* Retry receipts are empty; the shared image-lock singleton is maintained by schema.sql. */
 insert into app_setting (setting_key, setting_value)
 select base.setting_key, base.setting_value

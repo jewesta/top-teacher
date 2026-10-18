@@ -100,6 +100,23 @@ class DatabaseInitializationServiceTests {
 	}
 
 	@Test
+	void existingCategoriesDefaultToPrintingAndReapplyingSchemaPreservesExplicitSettings() {
+		initializationService.initialize(DatabaseInitializationMode.DEMO);
+		assertThat(jdbc.queryForList("select print_tasks_on_exam_sheet from eh_category where title like 'Sprachliche%'",
+				Boolean.class)).isNotEmpty().containsOnly(false);
+		jdbc.execute("alter table eh_category drop column print_tasks_on_exam_sheet");
+		new ResourceDatabasePopulator(new ClassPathResource("db/schema.sql")).execute(dataSource);
+		assertThat(jdbc.queryForList("select print_tasks_on_exam_sheet from eh_category", Boolean.class))
+				.isNotEmpty().containsOnly(true);
+		final int categoryId = jdbc.queryForObject("select min(id) from eh_category", Integer.class);
+		jdbc.update("update eh_category set print_tasks_on_exam_sheet = false where id = ?", categoryId);
+		new ResourceDatabasePopulator(new ClassPathResource("db/schema.sql"), new ClassPathResource("db/base-data.sql"),
+				new ClassPathResource("db/demo-data.sql")).execute(dataSource);
+		assertThat(jdbc.queryForObject("select print_tasks_on_exam_sheet from eh_category where id = ?",
+				Boolean.class, categoryId)).isFalse();
+	}
+
+	@Test
 	void addsAnEmptyFooterToExistingExamsAndPreservesItWhenTheSchemaIsReapplied() {
 		initializationService.initialize(DatabaseInitializationMode.DEMO);
 		jdbc.execute("alter table exam drop column footer_markdown");

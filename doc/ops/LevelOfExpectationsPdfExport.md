@@ -116,8 +116,11 @@ Generating the pupil-facing exam sheet from `Aufgaben` and `Material` is
 outside the current scope. That future output starts with the exam heading and
 groups all pupil-facing Aufgaben content and Material by part. A part begins
 with its heading and ordered material on separate pages, followed by the
-performance categories, their descriptions, task titles, and task text in tree
-order. Each subsequent part starts on a new page. The optional exam-level
+performance categories in tree order. The category-level task visibility setting
+specified in [Level of Expectations](LevelOfExpectations.md#category-task-visibility-on-the-exam-sheet)
+selects either full details or a single category-name/total-points summary line.
+Both modes contribute the complete category budget to part and exam totals.
+Each subsequent part starts on a new page. The optional exam-level
 `Abschlusstext` appears exactly once at the end, outside every part; empty
 closing text is omitted. It is not a repeated page footer and does not change
 the existing EH result PDFs.

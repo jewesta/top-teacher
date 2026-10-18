@@ -58,6 +58,91 @@ class ExamTasksEditorTests {
 	}
 
 	@Test
+	void categoryActionsPrecedeDescriptionAndEyeToggleSavesWithoutRebuildingOrHidingEditors() {
+		final LevelOfExpectationsRepository repository = repository(false);
+		final ExamTasksEditor editor = new ExamTasksEditor(repository);
+		editor.setExam(EXAM);
+		final LoeCategorySection category = components(editor, LoeCategorySection.class).getFirst();
+		final MarkdownEditor description = markdownEditor(category, CATEGORY.descriptionMarkdown());
+		final MarkdownEditor taskSource = markdownEditor(category, TASK.descriptionMarkdown());
+		final Component body = description.getParent().orElseThrow().getParent().orElseThrow();
+		final List<Component> blocks = body.getChildren().toList();
+		final Button eye = buttonsByDataAction(category, "toggle-print-tasks").getFirst();
+		assertThat(components(blocks.getFirst(), Button.class)).contains(eye);
+		assertThat(components(blocks.get(1), MarkdownEditor.class)).contains(description);
+		assertThat(eye.getIcon().getElement().getAttribute("icon")).isEqualTo("vaadin:eye");
+		clearInvocations(repository);
+
+		eye.click();
+
+		assertThat(eye.getIcon().getElement().getAttribute("icon")).isEqualTo("vaadin:eye-slash");
+		assertThat(eye.getAriaLabel()).contains("Aufgaben im Aufgabenblatt anzeigen");
+		assertThat(eye.getElement().getAttribute("aria-pressed")).isEqualTo("false");
+		assertThat(editor.hasUnsavedChanges()).isTrue();
+		assertThat(saveButton(editor).isEnabled()).isTrue();
+		assertThat(taskSource.isVisible()).isTrue();
+		assertThat(badgeTexts(editor)).containsOnly("5", "100 %");
+		verify(repository, never()).saveCategory(org.mockito.ArgumentMatchers.any());
+		saveButton(editor).click();
+
+		verify(repository).saveCategory(new LoeCategory(CATEGORY.id(), CATEGORY.partId(), CATEGORY.title(),
+				CATEGORY.descriptionMarkdown(), CATEGORY.sortOrder(), false));
+		verify(repository, never()).findPartsByExamId(anyInt());
+		assertThat(components(editor, LoeCategorySection.class).getFirst()).isSameAs(category);
+		assertThat(markdownEditor(editor, TASK.descriptionMarkdown())).isSameAs(taskSource);
+		assertThat(editor.hasUnsavedChanges()).isFalse();
+		assertThat(saveButton(editor).isEnabled()).isFalse();
+	}
+
+	@Test
+	void togglingTwiceRestoresCleanStateAndDiscardRestoresTheStoredEyeSetting() {
+		final ExamTasksEditor editor = new ExamTasksEditor(repository(false));
+		editor.setExam(EXAM);
+		final Button eye = buttonsByDataAction(editor, "toggle-print-tasks").getFirst();
+		eye.click();
+		eye.click();
+		assertThat(editor.hasUnsavedChanges()).isFalse();
+		assertThat(eye.getAriaLabel()).contains("Aufgaben im Aufgabenblatt ausblenden");
+		eye.click();
+		buttonByAriaLabel(editor, "Verwerfen...").click();
+		final ConfirmDialog confirmation = components(editor, ConfirmDialog.class).getFirst();
+		ComponentUtil.fireEvent(confirmation, new ConfirmDialog.ConfirmEvent(confirmation, false));
+		assertThat(editor.hasUnsavedChanges()).isFalse();
+		assertThat(buttonsByDataAction(editor, "toggle-print-tasks").getFirst().getIcon()
+				.getElement().getAttribute("icon")).isEqualTo("vaadin:eye");
+	}
+
+	@Test
+	void editingCategoryTextPreservesAStoredHiddenTasksSetting() {
+		final LevelOfExpectationsRepository repository = repository(false);
+		when(repository.findCategoriesByExamId(EXAM.id())).thenReturn(List.of(new LoeCategory(CATEGORY.id(),
+				CATEGORY.partId(), CATEGORY.title(), CATEGORY.descriptionMarkdown(), CATEGORY.sortOrder(), false)));
+		final ExamTasksEditor editor = new ExamTasksEditor(repository);
+		editor.setExam(EXAM);
+		assertThat(buttonsByDataAction(editor, "toggle-print-tasks").getFirst().getIcon()
+				.getElement().getAttribute("icon")).isEqualTo("vaadin:eye-slash");
+		titleField(editor, CATEGORY.title()).setValue("Sprache");
+		saveButton(editor).click();
+		verify(repository).saveCategory(new LoeCategory(CATEGORY.id(), CATEGORY.partId(), "Sprache",
+				CATEGORY.descriptionMarkdown(), CATEGORY.sortOrder(), false));
+	}
+
+	@Test
+	void failedCategorySaveRetainsThePendingEyeSetting() {
+		final LevelOfExpectationsRepository repository = repository(false);
+		doThrow(new IllegalStateException("Klausur ist gesperrt.")).when(repository)
+				.saveCategory(org.mockito.ArgumentMatchers.any());
+		final ExamTasksEditor editor = new ExamTasksEditor(repository);
+		editor.setExam(EXAM);
+		final Button eye = buttonsByDataAction(editor, "toggle-print-tasks").getFirst();
+		eye.click();
+		saveButton(editor).click();
+		assertThat(editor.hasUnsavedChanges()).isTrue();
+		assertThat(eye.getElement().getAttribute("aria-pressed")).isEqualTo("false");
+		assertThat(saveButton(editor).isEnabled()).isTrue();
+	}
+
+	@Test
 	void staleSavePreservesDirtyTaskSourceAndFooterWithoutInvokingAnyPersistence() {
 		final LevelOfExpectationsRepository repository = repository(false);
 		when(repository.designRevision(EXAM.id())).thenReturn(4L);
@@ -67,6 +152,8 @@ class ExamTasksEditorTests {
 		final MarkdownEditor footer = components(footerBlock(editor), MarkdownEditor.class).getFirst();
 		source.setValue("Unsaved task source");
 		footer.setValue("Unsaved footer");
+		final Button eye = buttonsByDataAction(editor, "toggle-print-tasks").getFirst();
+		eye.click();
 		clearInvocations(repository);
 		RepositoryDesignTestSupport.rejectDesignWrites(repository, 4, 5);
 
@@ -74,9 +161,11 @@ class ExamTasksEditorTests {
 
 		assertThat(source.getValue()).isEqualTo("Unsaved task source");
 		assertThat(footer.getValue()).isEqualTo("Unsaved footer");
+		assertThat(eye.getElement().getAttribute("aria-pressed")).isEqualTo("false");
 		assertThat(editor.hasUnsavedChanges()).isTrue();
 		assertThat(saveButton(editor).isEnabled()).isTrue();
 		verify(repository, never()).saveTask(org.mockito.ArgumentMatchers.any());
+		verify(repository, never()).saveCategory(org.mockito.ArgumentMatchers.any());
 		verify(repository, never()).saveExamFooterMarkdown(anyInt(), org.mockito.ArgumentMatchers.anyString());
 		verify(repository, never()).findPartsByExamId(anyInt());
 	}
@@ -257,6 +346,7 @@ class ExamTasksEditorTests {
 		assertThat(button(editor, "Klausurteil hinzufügen").isEnabled()).isFalse();
 		assertThat(button(editor, "Leistungskategorie hinzufügen").isEnabled()).isFalse();
 		assertThat(button(editor, "Teilaufgabe hinzufügen").isEnabled()).isFalse();
+		assertThat(buttonsByDataAction(editor, "toggle-print-tasks").getFirst().isEnabled()).isFalse();
 		assertThat(buttonsByAriaLabel(editor, "Löschen...")).extracting(Button::isEnabled).containsOnly(false);
 		assertThat(buttonsByAriaLabel(editor, "Nach oben")).extracting(Button::isEnabled).containsOnly(false);
 		assertThat(buttonsByAriaLabel(editor, "Nach unten")).extracting(Button::isEnabled).containsOnly(false);
