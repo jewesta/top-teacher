@@ -93,3 +93,14 @@ visible but disabled. Archive is still hidden for a new or already archived
 scale. Selecting an unused scale removes the lock and enables archive;
 creating a new scale restores the new-record plus and the lone labeled
 `Anlegen` action.
+
+## Unexpected display errors
+
+Unexpected errors while rendering a page show a German application error page
+instead of framework instructions, stack traces, or exception details. Technical
+diagnostics remain available in the browser console.
+
+The page says `Das hat leider nicht geklappt` and explains that an error occurred
+while displaying the page. `Seite neu laden` reloads the current URL, including
+when the application is deployed under a context path. Before reloading, the page
+warns that unsaved input may be lost. Reloading is always an explicit user action.

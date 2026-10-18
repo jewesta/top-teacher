@@ -4,6 +4,13 @@ TopTeacher's Markdown editors and read-only views share the following rendering
 conventions. Material-specific footnotes and managed images are specified in
 [LevelOfExpectations.md](LevelOfExpectations.md#material).
 
+## Empty criterion editors
+
+An empty criterion editor is valid. Opening its point selector must not cause
+an error. Point options stay disabled and show `Text markieren` until a word
+or suitable text selection is available. Existing word and selection behavior
+remains unchanged for non-empty text.
+
 ## Alerts
 
 All current Markdown editors provide a separate `Hinweisblock einfügen...`

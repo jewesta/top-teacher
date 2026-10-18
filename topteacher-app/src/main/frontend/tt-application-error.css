@@ -1,0 +1,23 @@
+.tt-application-error {
+  box-sizing: border-box;
+  max-width: 42rem;
+  margin: 10vh auto;
+  padding: 2rem;
+  color: var(--lumo-body-text-color, #243448);
+  font-family: var(--lumo-font-family, sans-serif);
+  line-height: 1.5;
+}
+
+.tt-application-error h1 {
+  font-size: 1.5rem;
+}
+
+.tt-application-error button {
+  padding: 0.6rem 1rem;
+  border: 1px solid currentColor;
+  border-radius: 0.25rem;
+  background: var(--lumo-contrast-5pct, #f1f3f5);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
