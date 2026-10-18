@@ -57,11 +57,7 @@ where not exists (
 
 insert into exam (course_id, title, exam_date, grading_scale_id, footer_markdown)
 select c.id, demo.title, demo.exam_date, c.grading_scale_id,
-       case when demo.subject_name = 'Spanisch' then '## Zugelassene Hilfsmittel
-
-- Ein- und zweisprachiges Wörterbuch
-- Herkunftssprachliches Wörterbuch, wenn Deine Herkunftssprache nicht Deutsch ist
-- Wörterbuch zur deutschen Rechtschreibung' else '' end
+       ''
 from (
     values
         ('CLS_Q2', 'Englisch', 2026, 'FULL_YEAR', '1. Klausur Shakespeare', date '2026-11-17'),
@@ -152,13 +148,17 @@ where not exists (
       and part.title = demo.title
 );
 
-insert into loe_material (part_id, title, description_markdown, sort_order)
-select part.id, demo.title, demo.description_markdown, demo.sort_order
+insert into loe_material (part_id, title, description_markdown, sort_order, dedicated_page)
+select part.id, demo.title, demo.description_markdown, demo.sort_order,
+       case when demo.title = 'Zugelassene Hilfsmittel' then false else true end
 from (
     values
         ('Englisch', 'Klausurteil A: Schreiben mit Leseverstehen (integriert)', 0, 'Ausgangstext', 'William Shakespeare prägt Literatur und Sprache bis heute. Dieser Demo-Text dient als **Material** für die Aufgaben.'),
         ('Englisch', 'Klausurteil B: Sprachmittlung D-E (isoliert)', 0, 'Deutscher Ausgangstext', 'Ein kurzer deutscher Demo-Quellentext zur Bedeutung Shakespeares.'),
-        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 0, 'De la calle al refugio azulgrana', '> [!NOTE]
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 0, 'Zugelassene Hilfsmittel', '- Ein- und zweisprachiges Wörterbuch
+- Herkunftssprachliches Wörterbuch, wenn Deine Herkunftssprache nicht Deutsch ist
+- Wörterbuch zur deutschen Rechtschreibung'),
+        ('Spanisch', 'Klausurteil A: Schreiben/Leseverstehen integriert', 1, 'De la calle al refugio azulgrana', '> [!NOTE]
 > Junge Einwanderer gelten in Spanien bis zum 18. Lebensjahr als besonders schutzbedürftig und haben Anspruch auf Schulbildung und medizinische Versorgung. Mit Erreichen der Volljährigkeit verlieren sie diesen Schutz.
 >
 > Die Stiftung des spanischen Fußballklubs FC Barcelona, Fundación del Barça, fördert Projekte zur Unterstützung von Jugendlichen in schwierigen Lebensumständen und Bildungsprogramme.

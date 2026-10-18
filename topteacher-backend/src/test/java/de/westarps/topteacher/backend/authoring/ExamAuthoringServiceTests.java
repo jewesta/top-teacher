@@ -66,6 +66,18 @@ class ExamAuthoringServiceTests {
 	@Autowired private NamedParameterJdbcTemplate jdbc;
 
 	@Test
+	void materialPageSettingSurvivesAuthoringEditsAndReordering() {
+		final Exam exam = exam();
+		final var initial = initial(exam, 6);
+		final int materialId = id(initial, "material");
+		final var material = repository.findMaterialByExamIdAndId(exam.id(), materialId).orElseThrow();
+		repository.saveMaterial(new LoeMaterial(material.id(), material.partId(), material.title(), material.descriptionMarkdown(), material.sortOrder(), false));
+		apply(exam, "inline-edit", List.of(update(Type.UPDATE_MATERIAL, materialId, "Revised material", "Revised body", null)));
+		apply(exam, "inline-reorder", List.of(reorder(Type.REORDER_MATERIALS, material.partId(), List.of(ref(materialId)))));
+		assertThat(repository.findMaterialByExamIdAndId(exam.id(), materialId).orElseThrow().dedicatedPage()).isFalse();
+	}
+
+	@Test
 	void createsPupilContentByLocalParentKeysWithoutGeneratingRequirements() {
 		final Exam exam = exam();
 		final var result = apply(exam, "initial", List.of(

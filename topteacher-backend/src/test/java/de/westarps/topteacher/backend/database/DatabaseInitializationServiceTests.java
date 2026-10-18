@@ -53,6 +53,19 @@ class DatabaseInitializationServiceTests {
 	}
 
 	@Test
+	void existingMaterialsDefaultToDedicatedPagesAndKeepExplicitSettingsOnReinitialization() {
+		initializationService.initialize(DatabaseInitializationMode.DEMO);
+		jdbc.execute("alter table loe_material drop column dedicated_page");
+		new ResourceDatabasePopulator(new ClassPathResource("db/schema.sql")).execute(dataSource);
+		assertThat(jdbc.queryForList("select dedicated_page from loe_material", Boolean.class)).isNotEmpty().containsOnly(true);
+		final int materialId = jdbc.queryForObject("select min(id) from loe_material", Integer.class);
+		jdbc.update("update loe_material set dedicated_page = false where id = ?", materialId);
+		new ResourceDatabasePopulator(new ClassPathResource("db/schema.sql"), new ClassPathResource("db/base-data.sql"),
+				new ClassPathResource("db/demo-data.sql")).execute(dataSource);
+		assertThat(jdbc.queryForObject("select dedicated_page from loe_material where id = ?", Boolean.class, materialId)).isFalse();
+	}
+
+	@Test
 	void promptsForFirstStartWhenDatabaseContainsOnlyBaseData() {
 		assertThat(initializationService.shouldPromptForFirstStart()).isTrue();
 		assertThat(appSettings.ttDatabaseInitializationCompleted()).isFalse();
@@ -283,7 +296,7 @@ class DatabaseInitializationServiceTests {
 			) course_roster
 			""")).isEqualTo(2);
 		assertThat(countRows("exam_pupil")).isEqualTo(12);
-		assertThat(countRows("loe_material")).isEqualTo(4);
+		assertThat(countRows("loe_material")).isEqualTo(5);
 		assertThat(count("""
 			select count(*)
 			from (
@@ -371,14 +384,17 @@ class DatabaseInitializationServiceTests {
 			select m.description_markdown from loe_material m join eh_part p on p.id = m.part_id
 			where p.exam_id = ? order by p.sort_order, m.sort_order
 			""", String.class, examId);
-		assertThat(materials).hasSize(2).allSatisfy(markdown -> {
+		assertThat(materials).hasSize(3);
+		assertThat(materials.getFirst()).contains("Ein- und zweisprachiges Wörterbuch");
+		assertThat(materials.subList(1, 3)).allSatisfy(markdown -> {
 			assertThat(markdown).contains("> [!NUMBERED]", "[^", "**Materialgrundlage:**", "https://");
 			assertThat(markdown.length()).isGreaterThan(3000);
 		});
-		assertThat(materials.getFirst()).contains("Joves Futur+", "[^azulgrana]", "[^a26]");
+		assertThat(materials.get(1)).contains("Joves Futur+", "[^azulgrana]", "[^a26]");
 		assertThat(materials.getLast()).contains("Tausendfüßler", "[^dw]", "[^paritaet]");
 		assertThat(jdbc.queryForObject("select footer_markdown from exam where id = ?", String.class, examId))
-				.contains("Zugelassene Hilfsmittel");
+				.isEmpty();
+		assertThat(jdbc.queryForObject("select dedicated_page from loe_material where title = 'Zugelassene Hilfsmittel'", Boolean.class)).isFalse();
 		assertThat(count("select count(*) from exam where title = 'Examen No 3: Migración'")).isZero();
 	}
 

@@ -192,3 +192,5 @@ update course
 set grading_scale_id = (select gs.id from grading_scale gs where gs.name = 'Einführungsphase')
 where grading_scale_id is null;
 /* Exam creation retry receipts are empty in a newly initialized dataset. */
+
+-- Materials default to dedicated pages in pupil task sheets (loe_material.dedicated_page).

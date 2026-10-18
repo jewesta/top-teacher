@@ -195,7 +195,7 @@ public class LevelOfExpectationsRepository {
 
 	public List<LoeMaterial> findMaterialsByExamId(final int examId) {
 		return jdbc.query("""
-			select material.id, material.part_id, material.title, material.description_markdown, material.sort_order
+			select material.id, material.part_id, material.title, material.description_markdown, material.sort_order, material.dedicated_page
 			from loe_material material
 			join eh_part part on part.id = material.part_id
 			where part.exam_id = :examId
@@ -216,7 +216,7 @@ public class LevelOfExpectationsRepository {
 
 	public Optional<LoeMaterial> findMaterialByExamIdAndId(final int examId, final int materialId) {
 		return jdbc.query("""
-			select material.id, material.part_id, material.title, material.description_markdown, material.sort_order
+			select material.id, material.part_id, material.title, material.description_markdown, material.sort_order, material.dedicated_page
 			from loe_material material
 			join eh_part part on part.id = material.part_id
 			join exam e on e.id = part.exam_id
@@ -395,7 +395,7 @@ public class LevelOfExpectationsRepository {
 
 		for (final LoeMaterial material : findMaterialsByExamId(sourceExamId)) {
 			saveMaterial(new LoeMaterial(null, partIds.get(material.partId()), material.title(),
-					material.descriptionMarkdown(), material.sortOrder()));
+					material.descriptionMarkdown(), material.sortOrder(), material.dedicatedPage()));
 		}
 
 		for (final LoeCategory category : findCategoriesByExamId(sourceExamId)) {
@@ -513,11 +513,12 @@ public class LevelOfExpectationsRepository {
 			set part_id = :partId,
 			    title = :title,
 			    description_markdown = :descriptionMarkdown,
-			    sort_order = :sortOrder
+			    sort_order = :sortOrder,
+			    dedicated_page = :dedicatedPage
 			where id = :id
 			""", new MapSqlParameterSource().addValue("id", material.id()).addValue("partId", material.partId())
 			.addValue("title", material.title()).addValue("descriptionMarkdown", material.descriptionMarkdown())
-			.addValue("sortOrder", material.sortOrder()));
+			.addValue("sortOrder", material.sortOrder()).addValue("dedicatedPage", material.dedicatedPage()));
 		return material;
 	}
 
@@ -913,7 +914,7 @@ public class LevelOfExpectationsRepository {
 
 	private LoeMaterial findMaterialById(final int id) {
 		return jdbc.queryForObject("""
-			select id, part_id, title, description_markdown, sort_order
+			select id, part_id, title, description_markdown, sort_order, dedicated_page
 			from loe_material
 			where id = :id
 			""", Map.of("id", id), materialRowMapper);
@@ -1033,15 +1034,15 @@ public class LevelOfExpectationsRepository {
 	private LoeMaterial insertMaterial(final LoeMaterial material) {
 		final KeyHolder keyHolder = new GeneratedKeyHolder();
 		jdbc.update("""
-			insert into loe_material (part_id, title, description_markdown, sort_order)
-			values (:partId, :title, :descriptionMarkdown, :sortOrder)
+			insert into loe_material (part_id, title, description_markdown, sort_order, dedicated_page)
+			values (:partId, :title, :descriptionMarkdown, :sortOrder, :dedicatedPage)
 			""", new MapSqlParameterSource().addValue("partId", material.partId())
 			.addValue("title", material.title()).addValue("descriptionMarkdown", material.descriptionMarkdown())
-			.addValue("sortOrder", material.sortOrder()), keyHolder, new String[] {
+			.addValue("sortOrder", material.sortOrder()).addValue("dedicatedPage", material.dedicatedPage()), keyHolder, new String[] {
 					"id"
 			});
 		return new LoeMaterial(generatedId(keyHolder, "material"), material.partId(), material.title(),
-				material.descriptionMarkdown(), material.sortOrder());
+				material.descriptionMarkdown(), material.sortOrder(), material.dedicatedPage());
 	}
 
 	private void insertMaterialImage(final LoeMaterialImage image) {
@@ -1112,7 +1113,7 @@ public class LevelOfExpectationsRepository {
 
 	private static LoeMaterial withDescription(final LoeMaterial material, final String descriptionMarkdown) {
 		return new LoeMaterial(material.id(), material.partId(), material.title(), descriptionMarkdown,
-				material.sortOrder());
+				material.sortOrder(), material.dedicatedPage());
 	}
 
 	private static LoeMaterial replaceMaterialImageId(final LoeMaterial material, final String currentId,
@@ -1362,7 +1363,7 @@ public class LevelOfExpectationsRepository {
 
 	private LoeMaterial mapMaterial(final ResultSet resultSet, final int rowNumber) throws SQLException {
 		return new LoeMaterial(resultSet.getInt("id"), resultSet.getInt("part_id"), resultSet.getString("title"),
-				resultSet.getString("description_markdown"), resultSet.getInt("sort_order"));
+				resultSet.getString("description_markdown"), resultSet.getInt("sort_order"), resultSet.getBoolean("dedicated_page"));
 	}
 
 	private LoeMaterialImage mapMaterialImage(final ResultSet resultSet, final int rowNumber) throws SQLException {

@@ -22,6 +22,7 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -51,6 +52,23 @@ class ExamMaterialEditorTests {
 	void clearUi() {
 		UI.setCurrent(null);
 		ui = null;
+	}
+
+	@Test
+	void materialPageSettingUsesDirtySaveAndCorrectionLock() {
+		final var repository = repository(false);
+		final var editor = new ExamMaterialEditor(repository);
+		editor.setExam(EXAM);
+		final var checkbox = components(editor, Checkbox.class).stream().filter(field -> field.getLabel().equals("Auf eigener Seite")).findFirst().orElseThrow();
+		assertThat(checkbox.getValue()).isTrue();
+		checkbox.setValue(false);
+		assertThat(editor.hasUnsavedChanges()).isTrue();
+		buttonsByAriaLabel(editor, "Speichern").getFirst().click();
+		verify(repository).saveMaterialWithImages(new LoeMaterial(MATERIAL.id(), MATERIAL.partId(), MATERIAL.title(), MATERIAL.descriptionMarkdown(), MATERIAL.sortOrder(), false), List.of());
+		assertThat(editor.hasUnsavedChanges()).isFalse();
+		final var locked = new ExamMaterialEditor(repository(true));
+		locked.setExam(EXAM);
+		assertThat(components(locked, Checkbox.class).getFirst().isReadOnly()).isTrue();
 	}
 
 	@Test

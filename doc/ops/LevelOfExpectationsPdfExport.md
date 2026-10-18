@@ -106,26 +106,10 @@ not resemble interactive checkboxes or controls.
 - PDF output must contain no controls, popovers, hover behavior, or internal
   criterion keys.
 
-## Deferred exam-sheet export
+## Pupil task-sheet export
 
-GitHub-style Markdown alerts in exported EH content already render as bordered
-boxes with German headings and print-safe symbols. This shared Markdown
-behavior is specified in [Markdown.md](Markdown.md#alerts).
-
-Generating the pupil-facing exam sheet from `Aufgaben` and `Material` is
-outside the current scope. That future output starts with the exam heading and
-groups all pupil-facing Aufgaben content and Material by part. A part begins
-with its heading and ordered material on separate pages, followed by the
-performance categories in tree order. The category-level task visibility setting
-specified in [Level of Expectations](LevelOfExpectations.md#category-task-visibility-on-the-exam-sheet)
-selects either full details or a single category-name/total-points summary line.
-Both modes contribute the complete category budget to part and exam totals.
-Each subsequent part starts on a new page. The optional exam-level
-`Abschlusstext` appears exactly once at the end, outside every part; empty
-closing text is omitted. It is not a repeated page footer and does not change
-the existing EH result PDFs.
-
-Detailed print layout, image handling, footnotes, line numbering, and any
-separate teacher variant remain deferred; this does not remove or change the
-existing pupil and teacher variants of the level-of-expectations result PDF
-described above.
+The separate pupil-facing exam sheet generated from `Aufgaben` and `Material`
+is specified in [Pupil task-sheet PDF export](ExamTaskSheetPdfExport.md).
+It reuses the A5-to-A4 imposition without altering the existing pupil and teacher
+EH result PDFs. GitHub-style Markdown alerts retain their shared semantics,
+as specified in [Markdown.md](Markdown.md#alerts).

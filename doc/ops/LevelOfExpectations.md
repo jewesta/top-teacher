@@ -89,7 +89,7 @@ the tree. An empty value means there is no closing text.
 The closing text uses Aufgaben's existing save, confirmed discard, dirty-state
 and first-result locking behavior. Saving preserves the live editor and tree.
 It is copied when the exam design is duplicated; removing a part or updating
-exam metadata does not remove it. In the future pupil exam sheet, it appears
+exam metadata does not remove it. In the pupil exam sheet, it appears
 once after all parts, outside the final part, and is omitted when empty.
 It is not a repeated page footer or part of the EH result document.
 
@@ -105,15 +105,16 @@ diagrams, data, and similar material handed out with the exam.
 - It is authored in the dedicated `Material` tab.
 - Tasks refer to material in their wording; they do not own or duplicate it.
 
-The future exam sheet starts with the exam heading and groups its content by
-part: the part heading is followed by its ordered material on separate pages,
+The pupil exam sheet starts with the exam heading and groups its content by
+part: the part heading is followed by its ordered material, with page breaks
+controlled by each material’s `Auf eigener Seite` setting,
 then its performance categories in tree order. Categories with task details
 enabled include their descriptions, task titles, and task text. Categories with
 task details disabled appear only as a single line with the category name and
 its complete regular task-point budget.
 Each subsequent part starts on a new page. The exam closing text follows all
-parts. Print generation and its detailed layout remain deferred; see
-[the export scope](LevelOfExpectationsPdfExport.md#deferred-exam-sheet-export).
+parts. See [Pupil task-sheet PDF export](ExamTaskSheetPdfExport.md) for layout
+and download options.
 
 Material also provides literal source-line numbering using `> [!NUMBERED]`.
 All Markdown editors provide the five GitHub-style alert types through a
@@ -137,9 +138,8 @@ The generated identifier is the next number after the highest numeric
 footnote identifier already present in that Material. Definitions written by
 hand may occur anywhere in the source; the Markdown renderer collects them and
 shows the local footnote list at the bottom of that Material's preview or
-read-only rendering. Numbering in this editor-local rendering is provisional
-for a future composed exam output, which may collect and renumber footnotes
-across several Markdown sources.
+read-only rendering. The composed pupil task sheet also keeps footnote
+numbering local to each material.
 
 The local preview and read-only renderer show references as plain superscript
 numbers. They deliberately do not activate the otherwise generated in-page
@@ -527,3 +527,8 @@ If the first task receives 58 regular plus five bonus points, its effective
 result is capped at 60. If the second task receives 35 points, the effective
 exam result is 95, not 98. The task badges show 60 and 35; the exam badge shows
 95. Individual requirement values remain visible for assessment transparency.
+
+## Pupil task-sheet output
+
+The implemented output and material page setting are specified in
+[Pupil task-sheet PDF export](ExamTaskSheetPdfExport.md).

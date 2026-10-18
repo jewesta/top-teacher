@@ -2,7 +2,13 @@ package de.westarps.topteacher.model.loe;
 
 import java.util.Objects;
 
-public record LoeMaterial(Integer id, Integer partId, String title, String descriptionMarkdown, int sortOrder) {
+public record LoeMaterial(Integer id, Integer partId, String title, String descriptionMarkdown, int sortOrder,
+		boolean dedicatedPage) {
+
+	public LoeMaterial(final Integer id, final Integer partId, final String title, final String descriptionMarkdown,
+			final int sortOrder) {
+		this(id, partId, title, descriptionMarkdown, sortOrder, true);
+	}
 
 	public LoeMaterial {
 		partId = Objects.requireNonNull(partId, "partId must not be null");

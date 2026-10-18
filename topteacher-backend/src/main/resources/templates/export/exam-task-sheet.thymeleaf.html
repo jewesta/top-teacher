@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="de">
+<head><meta charset="UTF-8"/><title th:text="${model.title}">Aufgabenblatt</title>
+<link rel="stylesheet" href="exam-task-sheet.css"/></head>
+<body>
+<div class="page-footer">Seite <span class="page-number"></span> / <span class="page-count"></span></div>
+<header>
+    <p class="course" th:text="${model.course}"></p>
+    <h1 th:text="${model.title}"></h1>
+    <table class="metadata"><tr><td th:text="${'Datum: ' + model.date}"></td><td class="points" th:text="${'Gesamt: ' + model.points + ' Punkte'}"></td></tr></table>
+    <div class="name-line">Name: <span class="pupil-name" th:style="${model.nameStyle()}" th:text="${model.pupilName}"></span></div>
+</header>
+<section class="part" th:each="part, state : ${model.parts}" th:classappend="${state.first ? 'first-part' : ''}">
+    <h2 th:text="${part.title + ' · ' + part.points + ' Punkte'}"></h2>
+    <section class="material" th:each="material : ${part.materials}" th:classappend="${material.newPage ? 'new-page' : ''}">
+        <h3 th:if="${material.showTitle}" th:text="${material.title}"></h3><div th:utext="${material.html}"></div>
+    </section>
+    <section class="tasks" th:classappend="${part.tasksOnNewPage ? 'new-page' : ''}">
+        <h2 th:if="${part.tasksOnNewPage}" th:text="${part.title + ' · ' + part.points + ' Punkte'}"></h2>
+        <h3>Aufgaben</h3>
+        <section class="category" th:each="category : ${part.categories}">
+            <h4 th:text="${category.title + ' · ' + category.points + ' Punkte'}"></h4>
+            <div th:if="${category.printTasks}">
+                <div th:utext="${category.html}"></div>
+                <section class="task" th:each="task : ${category.tasks}">
+                    <h5 th:text="${task.title + ' (' + task.points + ' Punkte)'}"></h5>
+                    <div th:utext="${task.html}"></div>
+                </section>
+            </div>
+        </section>
+    </section>
+</section>
+<div class="closing" th:if="${!#strings.isEmpty(model.footerHtml)}" th:utext="${model.footerHtml}"></div>
+</body></html>

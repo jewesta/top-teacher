@@ -2,7 +2,7 @@
 
 ## Status
 
-Exam-sheet printing has not started. The prerequisite error-handling fixes are implemented:
+Exam-sheet printing and its prerequisite error-handling fixes are implemented:
 
 - Empty criterion editor text no longer reaches the Markdown library's word
   lookup. The selector remains usable after text is entered.
@@ -18,10 +18,9 @@ Implemented the category-level eye toggle in `Aufgaben`, with the complete
 category action bar moved above its description. The setting uses normal
 save/discard and correction-mode locking, defaults to printing on database
 upgrade, and survives copies and unrelated authoring operations. Editors and
-assessment totals retain all tasks in both modes. Pupil PDF generation remains
-deferred.
+assessment totals retain all tasks in both modes. Pupil PDF generation is implemented below.
 
-The agreed behavior, including the future summary line for implicit assessment
+The agreed behavior, including the summary line for implicit assessment
 categories, is specified in
 [Level of Expectations](../doc/ops/LevelOfExpectations.md#category-task-visibility-on-the-exam-sheet).
 
@@ -51,7 +50,7 @@ Replaced the former Spanish migration/listening demo seed with the supplied
 2026 exam, retaining the English demo. The Spanish course and exam use the
 existing 160-point grading scale. Both source texts, footnotes, task wording,
 complete EH, category eye settings, and bonus requirements are included.
-Alternative task 3.2, images, and pupil PDF output remain excluded.
+Alternative task 3.2 and demo source images remain excluded.
 
 Part B preserves the source's group-level assessment budgets. Reapplying seeds
 no longer rewrites existing task text or budgets. See
@@ -87,3 +86,24 @@ original bonus sentence, verb-led requirement openings and Part B rubric rows.
 The local review database was updated only where the prior seeded text still
 matched; criterion IDs and points were retained. Its task total remains 160.
 `git diff --check` passed.
+
+## Pupil task-sheet export
+
+Implemented anonymous and personalized downloads in Aufgaben, portrait A5 flow
+imposed two-up on landscape A4 using the EH renderer. Personalized copies can
+cover one assigned pupil or the full exam roster. Material pagination uses the
+persisted `Auf eigener Seite` checkbox, defaulting to true. Hidden categories
+print only their title and regular maximum. Hilfsmittel is an inline material at
+the start of Part A in the Spanish demo.
+
+The authoritative behavior is in
+[Pupil task-sheet PDF export](../doc/ops/ExamTaskSheetPdfExport.md).
+
+Verification: `mvn -pl topteacher-app -am test` passes all 734 tests.
+Regression coverage includes existing-database defaults, setting persistence and
+copies, authoring edits/reordering, dirty and locked material UI, download choices,
+pupil-only content, page breaks, long pupil names and separate imposition of
+personalized copies. All seven demo A5 pages and four imposed A4 pages were
+visually reviewed, including source continuation and multi-digit footnotes.
+The local review database retains its existing data; unchanged seeded Hilfsmittel
+was moved to Part A after creating a backup. `git diff --check` passes.

@@ -116,7 +116,7 @@ public class MaterialImageImportService {
 		final String markdown = material.descriptionMarkdown()
 				+ (material.descriptionMarkdown().isEmpty() ? "" : "\n\n") + reference;
 		final LoeMaterial saved = repository.saveMaterialWithImages(new LoeMaterial(material.id(), material.partId(),
-				material.title(), markdown, material.sortOrder()), List.of(pending));
+				material.title(), markdown, material.sortOrder(), material.dedicatedPage()), List.of(pending));
 		authoring.validateDesignLimits(examId);
 		final LoeMaterialImage stored = repository.findMaterialImageByContentHash(pending.contentHash())
 				.orElseThrow(() -> new IllegalStateException("Imported image was not persisted."));

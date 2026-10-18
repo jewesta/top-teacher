@@ -12,6 +12,7 @@ import java.util.Set;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.upload.Upload;
@@ -31,6 +32,8 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 	private final MaterialImageProcessor imageProcessor = new MaterialImageProcessor();
 	private final SecureRandom random = new SecureRandom();
 	private MaterialMarkdownEditor.InsertionPoint droppedInsertionPoint;
+	private final Checkbox dedicatedPage = new Checkbox("Auf eigener Seite");
+	private boolean savedDedicatedPage;
 	private String savedTitle;
 	private String savedDescriptionMarkdown;
 
@@ -52,6 +55,11 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 		this.handler = handler;
 		this.storedImages = new ArrayList<>(images == null ? List.of() : images);
 		this.savedTitle = material.title();
+		this.savedDedicatedPage = material.dedicatedPage();
+		dedicatedPage.setValue(material.dedicatedPage());
+		dedicatedPage.setReadOnly(locked);
+		dedicatedPage.setTooltipText("Dieses Material beginnt auf einer neuen Seite. Der folgende Inhalt beginnt ebenfalls auf einer neuen Seite.");
+		components.trackDirty(dedicatedPage);
 		this.savedDescriptionMarkdown = normalized(material.descriptionMarkdown());
 		title.setReadOnly(locked);
 		components.trackDirty(title);
@@ -74,7 +82,7 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 			description.addFileDropListener(drop -> handleFileDrop(drop, dropUpload));
 			descriptionBlock = components.markdownBlock("Inhalt", description);
 		}
-		final Component actions = editorBlockWithMoveButtons(components, siblings, handler, List.of(), List.of(delete),
+		final Component actions = editorBlockWithMoveButtons(components, siblings, handler, List.of(dedicatedPage), List.of(delete),
 				locked);
 		if (dropUpload == null) {
 			addToBody(actions, descriptionBlock);
@@ -85,7 +93,7 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 
 	@Override
 	protected boolean isSectionDirty() {
-		return !Objects.equals(savedTitle, title.getValue())
+		return savedDedicatedPage != dedicatedPage.getValue() || !Objects.equals(savedTitle, title.getValue())
 				|| description != null
 						&& !Objects.equals(savedDescriptionMarkdown, normalized(description.getValue()));
 	}
@@ -100,7 +108,8 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 			return false;
 		}
 		final String descriptionMarkdown = normalized(description.getValue());
-		final LoeMaterial saved = handler.save(item(), title.getValue(), descriptionMarkdown, pendingImages.values());
+		final LoeMaterial saved = handler.save(item(), title.getValue(), descriptionMarkdown, pendingImages.values(), dedicatedPage.getValue());
+		savedDedicatedPage = saved.dedicatedPage();
 		description.setValue(saved.descriptionMarkdown());
 		savedTitle = title.getValue();
 		savedDescriptionMarkdown = saved.descriptionMarkdown();
@@ -244,7 +253,7 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 	interface Handler extends LoeSectionHandler<LoeMaterial> {
 
 		LoeMaterial save(LoeMaterial material, String title, String descriptionMarkdown,
-				Collection<LoeMaterialImage> pendingImages);
+				Collection<LoeMaterialImage> pendingImages, boolean dedicatedPage);
 
 		Optional<LoeMaterialImage> findImageByContentHash(String contentHash);
 

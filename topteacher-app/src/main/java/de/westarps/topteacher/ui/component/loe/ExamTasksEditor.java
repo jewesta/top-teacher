@@ -3,8 +3,18 @@ package de.westarps.topteacher.ui.component.loe;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.BooleanSupplier;
+import java.util.function.IntFunction;
+
+import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.menubar.MenuBar;
+import com.vaadin.flow.component.menubar.MenuBarVariant;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -12,9 +22,11 @@ import com.vaadin.flow.component.notification.Notification;
 
 import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.model.Exam;
+import de.westarps.topteacher.model.Pupil;
 import de.westarps.topteacher.model.loe.LoeCategory;
 import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoeTask;
+import de.westarps.topteacher.ui.UiUrls;
 import de.westarps.topteacher.ui.component.AbstractDesigner;
 import de.westarps.topteacher.ui.component.DesignerViewport;
 import de.westarps.topteacher.ui.component.FullscreenButton;
@@ -108,6 +120,8 @@ public class ExamTasksEditor extends AbstractDesigner {
 	private MarkdownEditor footerEditor;
 	private String savedFooterMarkdown = "";
 	private boolean locked;
+	private IntFunction<List<Pupil>> pupilSupplier = id -> List.of();
+	private BooleanSupplier exportReady = () -> true;
 	private long loadedRevision;
 	private Runnable changeHandler = () -> {
 	};
@@ -142,6 +156,82 @@ public class ExamTasksEditor extends AbstractDesigner {
 	public void setChangeHandler(final Runnable changeHandler) {
 		this.changeHandler = changeHandler == null ? () -> {
 		} : changeHandler;
+	}
+
+	public void configureTaskSheetExport(final IntFunction<List<Pupil>> pupilSupplier, final BooleanSupplier exportReady) {
+		this.pupilSupplier = pupilSupplier;
+		this.exportReady = exportReady;
+	}
+
+	private MenuBar taskSheetDownload() {
+		final MenuBar menu = new MenuBar();
+		menu.addClassName("tt-pdf-menu");
+		menu.addThemeVariants(MenuBarVariant.LUMO_SMALL);
+		final var item = menu.addItem("");
+		item.addComponentAsFirst(VaadinIcon.DOWNLOAD.create());
+		item.setAriaLabel("Aufgabenblatt herunterladen");
+		menu.setTooltipText(item, "Aufgabenblatt herunterladen");
+		item.getSubMenu().addItem("Anonym", event -> downloadTaskSheet("task-sheet.pdf"));
+		item.getSubMenu().addItem("Personalisiert...", event -> openPersonalizedDownload());
+		return menu;
+	}
+
+	private boolean canExportTaskSheet() {
+		if (exam == null || isDirty() || !exportReady.getAsBoolean()) {
+			Notification.show("Speichere oder verwirf zuerst die ungespeicherten Aufgaben und Materialien.");
+			return false;
+		}
+		return true;
+	}
+
+	private void openPersonalizedDownload() {
+		if (!canExportTaskSheet()) {
+			return;
+		}
+		final var pupils = pupilSupplier.apply(exam.id());
+		if (pupils.isEmpty()) {
+			Notification.show("Ordne der Klausur zuerst Schüler:innen zu.");
+			return;
+		}
+		final Dialog dialog = new Dialog();
+		dialog.setHeaderTitle("Personalisiertes Aufgabenblatt");
+		final Checkbox all = new Checkbox("Alle zugeordneten Schüler:innen", true);
+		final ComboBox<Pupil> pupil = new ComboBox<>("Schüler:in");
+		pupil.setItemLabelGenerator(value -> value.name() + " " + value.surname());
+		pupil.setItems(pupils);
+		pupil.setValue(pupils.getFirst());
+		pupil.setEnabled(false);
+		pupil.setWidthFull();
+		all.addValueChangeListener(event -> pupil.setEnabled(!event.getValue()));
+		dialog.add(new VerticalLayout(all, pupil));
+		dialog.getFooter().add(new Button("Abbrechen", event -> dialog.close()), new Button("Herunterladen", event -> {
+			if (!all.getValue() && pupil.getValue() == null) {
+				pupil.setInvalid(true);
+				pupil.setErrorMessage("Bitte wähle eine Schülerin oder einen Schüler.");
+				return;
+			}
+			downloadTaskSheet(all.getValue() ? "task-sheets.pdf" : "pupils/" + pupil.getValue().id() + "/task-sheet.pdf");
+			dialog.close();
+		}));
+		dialog.addClosedListener(event -> dialog.getElement().removeFromParent());
+		if (UI.getCurrent() != null) {
+			UI.getCurrent().add(dialog);
+		}
+		dialog.open();
+	}
+
+	private void downloadTaskSheet(final String path) {
+		if (!canExportTaskSheet()) {
+			return;
+		}
+		getUI().ifPresent(ui -> ui.getPage().executeJs("""
+			const anchor = document.createElement('a');
+			anchor.href = $0;
+			anchor.download = '';
+			document.body.appendChild(anchor);
+			anchor.click();
+			anchor.remove();
+			""", UiUrls.contextRelative("/export/exams/" + exam.id() + "/" + path)));
 	}
 
 	public boolean hasUnsavedChanges() {
@@ -235,7 +325,7 @@ public class ExamTasksEditor extends AbstractDesigner {
 		examPointsBadge = components.pointBadge("Gesamt", () -> new LoePoints(totalTaskPoints(), 0));
 		breadcrumb.addClassName("tt-designer-breadcrumb");
 		toolbar().add(addPart, save, discard, collapseState.toggleAllButton(allDetailKeys()), fullscreenButton,
-				components.discardConfirmation(), reload);
+				components.discardConfirmation(), taskSheetDownload(), reload);
 		toolbarSummary().add(breadcrumb, examPointsBadge);
 		toolbarSummary().expand(breadcrumb);
 		viewport.bindBreadcrumb(breadcrumb, "Aufgaben", "Aufgaben");

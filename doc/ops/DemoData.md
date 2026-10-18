@@ -33,7 +33,7 @@ additional criteria from analysis and discussion remain two-point bonus
 requirements and do not increase the regular maximum.
 
 Each part has a content category with full task details enabled and a language
-performance category with task details disabled for the future pupil sheet.
+performance category with task details disabled for the pupil sheet.
 Both language categories retain their complete EH and points. Part A's language
 requirements have the individual point allocations from the source. Part B
 retains the source's grouped budgets: one content requirement worth 20 points
@@ -59,3 +59,7 @@ New seed records contain explicit task text, budgets, and category print setting
 Reapplying demo inserts preserves existing records' edited text and point
 budgets. Demo initialization itself remains the explicit database replacement
 operation described by the application. Pupil print generation remains deferred.
+
+The Spanish demo places permitted aids as the first, inline material in Part A.
+Its two source materials retain dedicated pages. The exam closing text is empty.
+See [Pupil task-sheet PDF export](ExamTaskSheetPdfExport.md).

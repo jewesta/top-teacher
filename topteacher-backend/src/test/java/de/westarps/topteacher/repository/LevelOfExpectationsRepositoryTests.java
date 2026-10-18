@@ -72,6 +72,23 @@ class LevelOfExpectationsRepositoryTests {
 	private NamedParameterJdbcTemplate jdbc;
 
 	@Test
+	void materialPageSettingSurvivesSaveLookupReorderAndCopy() {
+		final Exam source = createExam(2087, "Material source");
+		final Exam target = createExam(2088, "Material copy");
+		final var part = levelOfExpectationsRepository.savePart(new LoePart(null, source.id(), "A", 0));
+		final var first = levelOfExpectationsRepository.saveMaterial(new LoeMaterial(null, part.id(), "Inline", "Text", 0, false));
+		final var second = levelOfExpectationsRepository.saveMaterial(new LoeMaterial(null, part.id(), "Dedicated", "Text", 1));
+		assertThat(levelOfExpectationsRepository.findMaterialByExamIdAndId(source.id(), first.id()).orElseThrow().dedicatedPage()).isFalse();
+		assertThat(second.dedicatedPage()).isTrue();
+		levelOfExpectationsRepository.moveMaterial(first, 1);
+		assertThat(levelOfExpectationsRepository.findMaterialsByExamId(source.id()).getLast().dedicatedPage()).isFalse();
+		levelOfExpectationsRepository.copyDesign(source.id(), target.id());
+		assertThat(levelOfExpectationsRepository.findMaterialsByExamId(target.id())).extracting(LoeMaterial::dedicatedPage).containsExactly(true, false);
+		levelOfExpectationsRepository.saveMaterial(new LoeMaterial(first.id(), first.partId(), first.title(), first.descriptionMarkdown(), 1, true));
+		assertThat(levelOfExpectationsRepository.findMaterialByExamIdAndId(source.id(), first.id()).orElseThrow().dedicatedPage()).isTrue();
+	}
+
+	@Test
 	void storesCategoryPrintSettingWithoutChangingTaskBudgetsOrTheAssessmentTree() {
 		final Exam exam = createExam(2059, "Category print setting");
 		final LoePart part = levelOfExpectationsRepository.savePart(new LoePart(null, exam.id(), "A", 0));
@@ -626,10 +643,10 @@ class LevelOfExpectationsRepositoryTests {
 		final LoeTask task = levelOfExpectationsRepository
 				.saveTask(new LoeTask(null, category.id(), "Teilaufgabe 1", "Aufgabentext", 100, 0));
 		final LoeMaterial material = levelOfExpectationsRepository
-				.saveMaterial(new LoeMaterial(null, part.id(), "Quelle 1", "Quellentext", 0));
+				.saveMaterial(new LoeMaterial(null, part.id(), "Quelle 1", "Quellentext", 0, false));
 		final LoeMaterial materialWithImage = levelOfExpectationsRepository.saveMaterialWithImages(
 				new LoeMaterial(material.id(), material.partId(), material.title(),
-						"Quellentext\n\n![Diagramm](img:copyimg1?width=75)", material.sortOrder()),
+						"Quellentext\n\n![Diagramm](img:copyimg1?width=75)", material.sortOrder(), material.dedicatedPage()),
 				List.of(image("copyimg1", "b".repeat(64))));
 		final LoeRequirement requirement = levelOfExpectationsRepository.saveRequirement(
 				new LoeRequirement(null, task.id(), "Nutzt die [korrekte Zeitform](crit:1).", 100, false, 0));
@@ -664,7 +681,7 @@ class LevelOfExpectationsRepositoryTests {
 				.isEqualTo(new LoeTask(copiedTask.id(), copiedCategory.id(), task.title(), task.descriptionMarkdown(),
 						task.maxPoints(), task.sortOrder()));
 		assertThat(copiedMaterial).isEqualTo(new LoeMaterial(copiedMaterial.id(), copiedPart.id(), material.title(),
-				materialWithImage.descriptionMarkdown(), material.sortOrder()));
+				materialWithImage.descriptionMarkdown(), material.sortOrder(), material.dedicatedPage()));
 		assertThat(levelOfExpectationsRepository.findMaterialImagesByIds(List.of("copyimg1"))).hasSize(1);
 		assertThat(copiedRequirement).isEqualTo(
 				new LoeRequirement(copiedRequirement.id(), copiedTask.id(), requirement.descriptionMarkdown(),
