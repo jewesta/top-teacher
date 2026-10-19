@@ -19,6 +19,7 @@ p { margin: 1.5mm 0; orphans: 3; widows: 3; }
 .metadata { width: 100%; border-collapse: collapse; margin-bottom: 4mm; }
 .metadata td { padding: 0; }
 .points { text-align: right; }
+.task-points { page-break-before: avoid; }
 .opening-line { table-layout: fixed; font-size: 8pt; margin-bottom: 3mm; }
 .opening-line td { padding: 0; line-height: 1.3; vertical-align: baseline; }
 .course-date-column { width: 76mm; }

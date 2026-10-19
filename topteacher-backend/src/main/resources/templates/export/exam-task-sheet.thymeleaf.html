@@ -29,8 +29,9 @@
             <div th:if="${category.printTasks}">
                 <div th:utext="${category.html}"></div>
                 <section class="task" th:each="task : ${category.tasks}">
-                    <h5 th:text="${task.title + ' (' + task.points + ' Punkte)'}"></h5>
+                    <h5 th:text="${task.title}"></h5>
                     <div th:utext="${task.html}"></div>
+                    <p class="points task-points" th:text="${task.points + ' Punkte'}"></p>
                 </section>
             </div>
         </section>

@@ -238,3 +238,14 @@ The 8 pt size and right-hand name entry remain unchanged. See
 Verification: all 757 Maven tests and `git diff --check` pass. The rendered
 header was visually checked. Local TT was updated with the existing review
 database retained.
+
+## Task points below the task
+
+Removed point budgets from task headings. They now appear after each task's
+text on their own right-aligned line, without brackets; the point line avoids
+a page break from the preceding task text. See
+[Pupil task-sheet PDF export](../doc/ops/ExamTaskSheetPdfExport.md#pupil-facing-content).
+
+Verification: all 757 Maven tests and `git diff --check` pass. Both demo task
+pages were visually checked for plain headings and separate, right-aligned
+point lines without brackets. Local TT was updated with its review data retained.

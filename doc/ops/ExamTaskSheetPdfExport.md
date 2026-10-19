@@ -56,6 +56,9 @@ absent. All categories still contribute to part and exam totals.
 
 Assessment requirements, criteria, bonus rubric rows, grades and results are not
 part of a pupil task sheet. The task budget is authoritative for printed points.
+Task headings contain only their title. Each task's point budget appears below
+its text on a separate, right-aligned line, formatted as `14 Punkte` without
+brackets. The point line stays with the preceding task text at page breaks.
 No writing spaces or alternative-task mechanism are introduced.
 
 TT's Klausurteil headings retain their horizontal divider. Authored Markdown
