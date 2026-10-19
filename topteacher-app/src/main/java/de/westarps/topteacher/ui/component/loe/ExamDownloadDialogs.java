@@ -20,7 +20,7 @@ import de.westarps.topteacher.ui.component.TopTeacherDialogs;
 final class ExamDownloadDialogs {
 
 	enum TaskSheetScope {
-		ANONYMOUS("Anonym"), ALL_PUPILS("Alle Schüler:innen"), SELECTED_PUPIL("Ausgewählte Schüler:in");
+		ANONYMOUS("Kopiervorlage mit Freifeld für Name"), ALL_PUPILS("Für alle Schüler:innen"), SELECTED_PUPIL("Für ausgewählte Schüler:in");
 
 		private final String label;
 

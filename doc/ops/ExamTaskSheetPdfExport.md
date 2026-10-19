@@ -2,8 +2,8 @@
 
 The download icon in `Aufgaben` opens `Aufgabenblatt laden` directly, using the
 shared application dialog and action bar. It offers three vertical radio
-options in this order: `Anonym` (default), `Alle Schüler:innen`, and
-`Ausgewählte Schüler:in`. Only the last option shows a pupil selector, limited
+options in this order: `Kopiervorlage mit Freifeld für Name` (default), `Für alle Schüler:innen`, and
+`Für ausgewählte Schüler:in`. Only the last option shows a pupil selector, limited
 to the exam's assigned pupils; a selection is required for that output. Without
 assigned pupils, only anonymous output is available. `Abbrechen` cancels and
 `Laden` starts the selected download.

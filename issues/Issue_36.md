@@ -276,3 +276,12 @@ radio ordering/defaults, all task-sheet routes, selected-pupil Binder validation
 empty rosters, both result audiences, cancellation, standard dialog styling and
 button bars, menu/button wiring and unsaved-work guards. Browser access was
 unavailable for visual review. Local TT was rebuilt with its review data retained.
+
+## Task-sheet output labels
+
+The three options now read `Kopiervorlage mit Freifeld für Name`,
+`Für alle Schüler:innen` and `Für ausgewählte Schüler:in`, in that order. See
+[Task-sheet export](../doc/ops/ExamTaskSheetPdfExport.md).
+
+Verification: all 765 Maven tests and `git diff --check` pass, including the
+exact option labels and their order. Local TT was updated.

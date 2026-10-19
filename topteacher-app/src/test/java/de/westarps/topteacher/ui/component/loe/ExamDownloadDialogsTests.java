@@ -51,7 +51,7 @@ class ExamDownloadDialogsTests {
 		assertThat(components(dialog, Span.class)).extracting(Span::getText).contains("Aufgabenblatt laden");
 		final var scope = scope(dialog);
 		assertThat(scope.getDataProvider().fetch(new Query<>()).map(scope.getItemLabelGenerator()::apply))
-				.containsExactly("Anonym", "Alle Schüler:innen", "Ausgewählte Schüler:in");
+				.containsExactly("Kopiervorlage mit Freifeld für Name", "Für alle Schüler:innen", "Für ausgewählte Schüler:in");
 		assertThat(scope.getThemeNames()).contains("vertical");
 		assertThat(scope.getValue()).isEqualTo(TaskSheetScope.ANONYMOUS);
 		assertThat(components(dialog, Button.class)).extracting(Button::getText).containsExactly("Abbrechen", "Laden");
