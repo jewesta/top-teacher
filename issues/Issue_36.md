@@ -181,3 +181,12 @@ coverage checks the 9 pt ceiling, actual narrow/wide glyph widths, uniform
 block sizing, bold/italic text, superscript footnotes, narrower containers and
 150 logical lines across page breaks. The demo and synthetic PDFs were
 visually checked for intact source lines, margins, numbering and A4 imposition.
+
+## Short footnote divider
+
+The Aufgabenblatt footnote divider follows the width of its “Fußnoten” heading
+instead of spanning the page. See
+[Pupil task-sheet PDF export](../doc/ops/ExamTaskSheetPdfExport.md).
+
+Verification: all 757 Maven tests and `git diff --check` pass. The rendered PDF
+was visually checked; the divider and label widths match (34.5 pt).

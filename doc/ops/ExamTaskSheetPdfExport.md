@@ -61,7 +61,8 @@ tables, local footnotes and managed images. Alert boxes have a wider left border
 matching the alert icon's type color and a light gray background, consistent
 with the editor preview. Logical line numbering continues
 across page breaks. Footnote numbering is local to its material, with sufficient
-space for multi-digit markers. Numbered source text starts at 9 pt. Each block
+space for multi-digit markers. The footnote divider spans only the width of
+the “Fußnoten” heading. Numbered source text starts at 9 pt. Each block
 shrinks uniformly only when its longest rendered line exceeds the available
 width, including the line-number gutter and any enclosing container. Inline
 formatting and footnote references participate in the measurement. Numbered

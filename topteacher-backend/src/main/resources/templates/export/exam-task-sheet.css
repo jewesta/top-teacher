@@ -39,8 +39,8 @@ tr { page-break-inside: avoid; }
 .ws-markdown-numbered td { border: 0; padding: 0; }
 .ws-markdown-numbered .ws-markdown-line-number { width: 5mm; padding-right: 2mm; text-align: right; font-size: 0.8666667em; color: #555; }
 .ws-markdown-line-text { white-space: pre; word-wrap: normal; }
-.footnotes { font-size: 7pt; line-height: 1.25; border-top: 0.2mm solid #aaa; margin-top: 3mm; }
-.footnotes h4 { font-size: 8pt; margin: 2mm 0; }
+.footnotes { font-size: 7pt; line-height: 1.25; margin-top: 3mm; }
+.footnotes h4 { display: inline-block; font-size: 8pt; border-top: 0.2mm solid #aaa; padding-top: 2mm; margin: 0 0 2mm; }
 .footnotes ol { padding-left: 7mm; }
 .footnotes li { margin: 1mm 0; }
 .footnotes p { margin: 0; }
