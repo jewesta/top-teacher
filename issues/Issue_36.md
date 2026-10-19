@@ -203,3 +203,15 @@ Verification: all 757 Maven tests and `git diff --check` pass. The demo PDF was
 visually checked: Markdown source titles have no divider, while Klausurteil
 headings retain theirs. The local app was rebuilt with the shared preview CSS;
 browser automation was unavailable for a live preview check.
+
+## Compact date and name header
+
+Moved the unlabeled date to the centered top position. The name field begins
+just to its right and extends to the right margin; personalized name fitting
+uses the narrower field. See
+[Pupil task-sheet PDF export](../doc/ops/ExamTaskSheetPdfExport.md#page-format-and-reading-order).
+
+Verification: all 757 Maven tests and `git diff --check` pass, including long
+pupil names and matching anonymous/personalized pagination. Both header
+variants were visually checked in the rendered PDFs. Local TT was updated
+without resetting its review database.

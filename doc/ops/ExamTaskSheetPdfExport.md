@@ -14,8 +14,12 @@ reading order, not booklet imposition. An odd final A5 page leaves the right hal
 blank. Combined personalized output imposes each pupil's copy separately before
 merging, so two pupils never share a physical sheet.
 
-The opening contains course, exam title, date, the name area and the regular
-maximum for the entire exam. Each part starts on a fresh A5 page and identifies
+The opening starts with the date centered across the A5 content width, without
+an additional date label. On that same top line, the `Name:` field begins just
+after the date, with a small gap, and extends to the right margin. Anonymous
+copies leave that field blank; personalized names shrink to fit its available
+width without changing pagination. Course, exam title and the regular maximum
+for the entire exam follow below. Each part starts on a fresh A5 page and identifies
 its title and regular point maximum. Materials precede tasks within their part,
 in the authored order. The closing text appears once after the final part. Page
 numbers refer to the logical A5 pages within each copy.

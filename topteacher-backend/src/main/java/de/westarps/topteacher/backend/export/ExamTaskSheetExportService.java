@@ -163,7 +163,7 @@ public class ExamTaskSheetExportService {
 			List<PartModel> parts, String footerHtml) {
 		public String nameStyle() {
 			final double width = NAME_FONT.getStringBounds(pupilName, new FontRenderContext(null, true, true)).getWidth();
-			final double points = Math.min(9, 9 * (108 * 72 / 25.4) / Math.max(1, width));
+			final double points = Math.min(9, 9 * (42 * 72 / 25.4) / Math.max(1, width));
 			return String.format(Locale.ROOT, "font-size: %.3fpt", points);
 		}
 	}

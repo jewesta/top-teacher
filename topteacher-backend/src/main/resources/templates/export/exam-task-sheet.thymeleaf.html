@@ -5,10 +5,15 @@
 <body>
 <div class="page-footer">Seite <span class="page-number"></span> / <span class="page-count"></span></div>
 <header>
+    <table class="opening-line">
+        <colgroup><col class="opening-side"/><col class="date-column"/><col class="opening-side"/></colgroup>
+        <tr><td></td><td class="exam-date" th:text="${model.date}"></td><td>
+            <div class="name-line">Name: <span class="pupil-name" th:style="${model.nameStyle()}" th:text="${model.pupilName}"></span></div>
+        </td></tr>
+    </table>
     <p class="course" th:text="${model.course}"></p>
     <h1 th:text="${model.title}"></h1>
-    <table class="metadata"><tr><td th:text="${'Datum: ' + model.date}"></td><td class="points" th:text="${'Gesamt: ' + model.points + ' Punkte'}"></td></tr></table>
-    <div class="name-line">Name: <span class="pupil-name" th:style="${model.nameStyle()}" th:text="${model.pupilName}"></span></div>
+    <table class="metadata"><tr><td class="points" th:text="${'Gesamt: ' + model.points + ' Punkte'}"></td></tr></table>
 </header>
 <section class="part" th:each="part, state : ${model.parts}" th:classappend="${state.first ? 'first-part' : ''}">
     <h2 class="part-heading" th:text="${part.title + ' · ' + part.points + ' Punkte'}"></h2>
