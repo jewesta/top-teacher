@@ -44,8 +44,7 @@ blocks keep their ordinary Markdown behavior.
 Alert rendering is shared by editable previews and read-only views. The
 level-of-expectations and pupil Aufgabenblatt PDFs render these alerts as styled
 boxes with visible vector icons for all five types. All five SVGs are bundled locally; rendering needs no GitHub
-connection. Labels and borders preserve their meaning in monochrome printing. The future
-pupil-facing exam-sheet export remains outside this implementation.
+connection. Labels and borders preserve their meaning in monochrome printing.
 
 ## Literal numbered source lines
 
@@ -69,18 +68,23 @@ marker and quote prefixes are hidden. The left margin shows only the first
 counted line number and multiples of five: 1, 5, 10, 15, and so on. All other
 non-empty lines still count, and the number column keeps the same width on
 unlabelled and empty lines.
-Line numbers use normal text at the source line's font size and baseline, not
-superscript styling; footnote references remain superscript.
+In the preview, line numbers use normal text at the source line's font size and
+baseline, not superscript styling; footnote references remain superscript.
 Inline formatting, links, and footnote references remain supported. Footnote
 definitions stay outside the block and appear in the local footnote list.
 
-Numbered lines never wrap. Text that exceeds the rendering area's width is
-clipped on the right while the complete source remains stored. The preview
-identifies affected counted line numbers, excluding blank lines, so the author
-can insert deliberate breaks.
-The preview's available width is not a guarantee that a line fits the eventual
-printed page. Font, size, and print width will determine how much fits, but
-literal numbering must remain stable when exam-sheet export is implemented.
+Numbered lines never wrap. In the preview, text that exceeds the rendering
+area's width is clipped on the right while the complete source remains stored.
+The preview identifies affected counted line numbers, excluding blank lines,
+so the author can insert deliberate breaks.
+
+The pupil task-sheet PDF starts numbered source text at 9 pt and fits each block
+to its actual available width. Only an overflowing block shrinks, uniformly
+across all its lines, according to its longest rendered line. The gutter's
+smaller line numbers scale with the text. Source lines never wrap in the PDF;
+authored breaks and numbering remain unchanged across page breaks. The
+preview's width and font size do not determine the printed size. See
+[Pupil task-sheet PDF export](ExamTaskSheetPdfExport.md).
 
 Block formatting such as lists and headings does not create additional lines
 inside a numbered block. Numbered blocks cannot be nested. Other Markdown

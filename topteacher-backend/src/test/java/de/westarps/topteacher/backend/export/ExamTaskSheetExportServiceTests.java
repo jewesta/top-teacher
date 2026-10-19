@@ -49,7 +49,7 @@ class ExamTaskSheetExportServiceTests {
 		final List<String> pages = pages(a5);
 		assertThat(pages).allSatisfy(page -> assertThat(page.replaceAll("Seite \\d+ / \\d+", "").trim()).isNotEmpty());
 		assertThat(pages.getFirst()).contains("Name:", "Gesamt: 160 Punkte", "Zugelassene Hilfsmittel");
-		assertThat(pages).anySatisfy(page -> assertThat(page).contains("27.", "Betreuung, Begleitung"));
+		assertThat(String.join("\n", pages)).contains("27.", "Betreuung, Begleitung");
 		assertThat(pages).anySatisfy(page -> assertThat(page).contains("Sprachliche Leistung / Darstellungsleistung", "66 Punkte"));
 		assertThat(pages).anySatisfy(page -> assertThat(page).contains("Klausurteil B", "50 Punkte"));
 		try (final var imposed = PDDocument.load(a4)) {

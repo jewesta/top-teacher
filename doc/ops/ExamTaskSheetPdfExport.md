@@ -61,8 +61,13 @@ tables, local footnotes and managed images. Alert boxes have a wider left border
 matching the alert icon's type color and a light gray background, consistent
 with the editor preview. Logical line numbering continues
 across page breaks. Footnote numbering is local to its material, with sufficient
-space for multi-digit markers. Source lines can wrap to fit the paper without
-creating additional logical line numbers.
+space for multi-digit markers. Numbered source text starts at 9 pt. Each block
+shrinks uniformly only when its longest rendered line exceeds the available
+width, including the line-number gutter and any enclosing container. Inline
+formatting and footnote references participate in the measurement. Numbered
+lines never wrap; their authored breaks and logical numbering remain stable.
+Blocks fit independently, and ordinary text and footnote lists keep their usual
+font sizes.
 
 ## Export routes
 

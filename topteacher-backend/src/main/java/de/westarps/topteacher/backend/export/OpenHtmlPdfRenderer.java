@@ -42,15 +42,27 @@ public class OpenHtmlPdfRenderer implements PdfRenderer {
 
 	@Override
 	public byte[] renderA5Pdf(final String html) {
-		try (ByteArrayOutputStream output = new ByteArrayOutputStream();
-				BatikSVGDrawer svgDrawer = new BatikSVGDrawer()) {
-			final PdfRendererBuilder builder = new PdfRendererBuilder();
-			builder.useFastMode();
-			builder.useSVGDrawer(svgDrawer);
-			builder.withHtmlContent(toXhtml(html), TEMPLATE_BASE_URI);
-			builder.toStream(output);
-			builder.run();
-			return output.toByteArray();
+		final Document document = toDocument(html);
+		final NumberedBlockFitter fitter = new NumberedBlockFitter(document);
+		try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+			for (int pass = 0; pass < 8; pass++) {
+				try (BatikSVGDrawer svgDrawer = new BatikSVGDrawer()) {
+					final PdfRendererBuilder builder = new PdfRendererBuilder();
+					builder.useFastMode();
+					builder.useSVGDrawer(svgDrawer);
+					builder.withHtmlContent(document.html(), TEMPLATE_BASE_URI);
+					builder.toStream(output);
+					try (var renderer = builder.buildPdfRenderer(); var pdfDocument = renderer.getPdfDocument()) {
+						renderer.layout();
+						if (fitter.shrinkOverflowingBlocks(renderer.getRootBox())) {
+							continue;
+						}
+						renderer.createPDF();
+						return output.toByteArray();
+					}
+				}
+			}
+			throw new IllegalStateException("Der nummerierte Text konnte nicht auf die verfügbare Breite angepasst werden.");
 		} catch (final IOException | RuntimeException exception) {
 			throw new IllegalStateException("PDF konnte nicht erzeugt werden.", exception);
 		}
@@ -94,12 +106,12 @@ public class OpenHtmlPdfRenderer implements PdfRenderer {
 		}
 	}
 
-	private static String toXhtml(final String html) {
+	private static Document toDocument(final String html) {
 		final Document document = Jsoup.parse(html == null ? "" : html);
 		MarkdownAlertIcons.embedIn(document);
 		document.outputSettings().syntax(Syntax.xml).escapeMode(org.jsoup.nodes.Entities.EscapeMode.xhtml)
 				.charset(StandardCharsets.UTF_8).prettyPrint(false);
-		return document.html();
+		return document;
 	}
 
 	private static void drawSourcePage(final PDDocument source, final PDDocument target, final int sourcePageIndex,

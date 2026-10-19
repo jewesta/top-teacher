@@ -171,3 +171,21 @@ in the local Maven repository, even during a reactor build. After changing
 building the app frontend. Otherwise a successful app bundle can silently use
 an older editor implementation. The TypeScript check should run only after
 Vaadin has refreshed `generated/jar-resources`.
+
+## Fitting numbered text in task-sheet PDFs
+
+`NumberedBlockFitter` starts each numbered table at 9 pt. After the PDF engine
+lays out the document, it compares the table and its laid-out `LineBox` extents
+with the containing block's content width. The table's intrinsic width alone
+can underestimate mixed bold and italic runs; include the actual line extents.
+This also accounts for footnote markers and narrower enclosing containers
+without estimating character widths or using a separate font engine.
+
+Keep the gutter's physical width and padding separate from the scalable text
+width. Apply one font size to the entire overflowing block, then lay out again
+so pagination follows the new line heights. Keep source cells non-wrapping and
+line-number sizes relative to the block font. Fit blocks independently and
+bound the number of layout passes. Close the PDF document for every discarded
+layout pass as well as the final renderer; only write the final fitting layout
+to the output stream. The functional contract is in
+[Pupil task-sheet PDF export](../ops/ExamTaskSheetPdfExport.md).

@@ -35,10 +35,10 @@ blockquote { margin: 2mm 0; border-left: 0.4mm solid #999; padding-left: 2mm; }
 table { border-collapse: collapse; width: 100%; }
 th, td { text-align: left; vertical-align: top; padding: 1mm; }
 tr { page-break-inside: avoid; }
-.ws-markdown-numbered { font-size: 7.5pt; line-height: 1.4; margin: 3mm 0; }
+.ws-markdown-numbered { font-size: 9pt; line-height: 1.4; margin: 3mm 0; }
 .ws-markdown-numbered td { border: 0; padding: 0; }
-.ws-markdown-numbered .ws-markdown-line-number { width: 5mm; padding-right: 2mm; text-align: right; font-size: 6.5pt; color: #555; }
-.ws-markdown-line-text { white-space: pre-wrap; }
+.ws-markdown-numbered .ws-markdown-line-number { width: 5mm; padding-right: 2mm; text-align: right; font-size: 0.8666667em; color: #555; }
+.ws-markdown-line-text { white-space: pre; word-wrap: normal; }
 .footnotes { font-size: 7pt; line-height: 1.25; border-top: 0.2mm solid #aaa; margin-top: 3mm; }
 .footnotes h4 { font-size: 8pt; margin: 2mm 0; }
 .footnotes ol { padding-left: 7mm; }

@@ -166,3 +166,18 @@ unchanged. See [Pupil task-sheet PDF export](../doc/ops/ExamTaskSheetPdfExport.m
 Verification: all 753 Maven tests and `git diff --check` pass. The rendered
 source alert and all five alert types were visually checked for matching border
 and icon colors, a pale gray fill, padding, readable text and preserved symbols.
+
+## Automatic fitting of numbered source text
+
+Numbered PDF blocks start at 9 pt and shrink uniformly only when their longest
+rendered line exceeds the available width. Fitting uses the PDF engine's actual
+layout, including inline formatting, footnote references, the number gutter
+and narrower containers. Authored lines never wrap; other blocks and ordinary
+text retain their font sizes. See
+[Pupil task-sheet PDF export](../doc/ops/ExamTaskSheetPdfExport.md).
+
+Verification: all 757 Maven tests and `git diff --check` pass. PDF regression
+coverage checks the 9 pt ceiling, actual narrow/wide glyph widths, uniform
+block sizing, bold/italic text, superscript footnotes, narrower containers and
+150 logical lines across page breaks. The demo and synthetic PDFs were
+visually checked for intact source lines, margins, numbering and A4 imposition.
