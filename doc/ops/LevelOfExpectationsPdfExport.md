@@ -7,6 +7,18 @@ defined in [LevelOfExpectations.md](LevelOfExpectations.md) and the awarded
 values defined in
 [LevelOfExpectationsResults.md](LevelOfExpectationsResults.md).
 
+## Download dialogs
+
+The individual result-sheet download icon in `Ergebnisse` opens `Ergebnisbogen
+laden` directly for the currently selected pupil. The shared application dialog
+has a radio group labeled `Für:` with `Schüler:innen` (default) and
+`Lehrer:innen`. `Laden` downloads that version; `Abbrechen` cancels. The action
+remains unavailable without a selected pupil or while results are unsaved.
+
+In `Auswertungen`, the download menu keeps `Punktetabelle` as a separate direct
+action and offers one `Alle Ergebnisbögen...` entry. It opens `Alle Ergebnisbögen
+laden` with the same audience choice and `Laden` action for the combined output.
+
 ## Variants
 
 TopTeacher produces a pupil version and a teacher version from the same level

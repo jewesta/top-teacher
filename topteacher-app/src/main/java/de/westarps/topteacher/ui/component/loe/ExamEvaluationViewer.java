@@ -80,10 +80,14 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 		downloadMenu.setTooltipText(downloadItem, "Dateien herunterladen");
 
 		downloadItem.getSubMenu().addItem("Punktetabelle", event -> download(this::excelUrl, this::excelFileName));
-		downloadItem.getSubMenu().addItem("Alle Ergebnisbögen (Schüler:innen-Version)",
-				event -> download(this::pupilResultSheetsUrl, this::pupilResultSheetsFileName));
-		downloadItem.getSubMenu().addItem("Alle Ergebnisbögen (Lehrer:innen-Version)",
-				event -> download(this::teacherResultSheetsUrl, this::teacherResultSheetsFileName));
+		downloadItem.getSubMenu().addItem("Alle Ergebnisbögen...", event ->
+				ExamDownloadDialogs.openResultSheet("Alle Ergebnisbögen laden", teacher -> {
+					if (teacher) {
+						download(this::teacherResultSheetsUrl, this::teacherResultSheetsFileName);
+					} else {
+						download(this::pupilResultSheetsUrl, this::pupilResultSheetsFileName);
+					}
+				}));
 	}
 
 	public void setExam(final Exam exam) {

@@ -1,10 +1,18 @@
 # Pupil task-sheet PDF export
 
-The download menu in `Aufgaben` offers `Anonym` and `Personalisiert...`.
+The download icon in `Aufgaben` opens `Aufgabenblatt laden` directly, using the
+shared application dialog and action bar. It offers three vertical radio
+options in this order: `Anonym` (default), `Alle Schüler:innen`, and
+`Ausgewählte Schüler:in`. Only the last option shows a pupil selector, limited
+to the exam's assigned pupils; a selection is required for that output. Without
+assigned pupils, only anonymous output is available. `Abbrechen` cancels and
+`Laden` starts the selected download.
+
 Anonymous copies reserve a blank `Name:` line for photocopying. Personalized
-output fills that same space with the selected assigned pupil's name, or exports
-one copy for every assigned pupil. Both variants retain the same pagination.
-Tasks and materials must be saved or discarded before downloading.
+output fills that same space with the selected pupil's name, or exports one
+copy for every assigned pupil. Both variants retain the same pagination.
+Tasks and materials must be saved or discarded before opening the dialog or
+starting the download.
 
 ## Page format and reading order
 

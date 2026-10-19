@@ -259,3 +259,20 @@ their separate right-aligned line below the task text.
 Verification: all 757 Maven tests and `git diff --check` pass. Export template,
 stylesheet and functional specification match the previously verified layout
 from before the reverted change. Local TT was updated without resetting data.
+
+## Shared download dialogs
+
+Replaced the Aufgabenblatt menu/manual dialog with a direct icon action and
+standard dialog offering anonymous, all pupils and a selected pupil. Individual
+and combined result sheets share the audience dialog. Auswertungen keeps the
+point-table action separate and has one result-sheet entry. All confirmation
+actions use `Laden`; saved-state guards and export routes remain in place.
+The shared dialog requirement is recorded in `AGENTS.md`. See
+[Task-sheet export](../doc/ops/ExamTaskSheetPdfExport.md) and
+[Result-sheet export](../doc/ops/LevelOfExpectationsPdfExport.md#download-dialogs).
+
+Verification: all 765 Maven tests and `git diff --check` pass. Coverage includes
+radio ordering/defaults, all task-sheet routes, selected-pupil Binder validation,
+empty rosters, both result audiences, cancellation, standard dialog styling and
+button bars, menu/button wiring and unsaved-work guards. Browser access was
+unavailable for visual review. Local TT was rebuilt with its review data retained.

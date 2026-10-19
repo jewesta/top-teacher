@@ -25,12 +25,12 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
-import com.vaadin.flow.component.contextmenu.MenuItem;
+import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.menubar.MenuBar;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.popover.Popover;
 import com.vaadin.flow.component.shared.Tooltip;
@@ -174,7 +174,7 @@ class ExamResultsEditorTests {
 		final Button saveButton = saveButton(editor);
 		final Button discardButton = buttonByAriaLabel(editor, "Änderungen verwerfen...");
 		final ConfirmDialog discardConfirmation = confirmation(editor, "Änderungen verwerfen?");
-		final MenuBar pdfMenu = pdfMenu(editor);
+		final Button pdfDownload = pdfDownloadButton(editor);
 		final LoePointStepper adjustment = adjustmentStepper(editor);
 		assertThat(saveButton.isEnabled()).isFalse();
 		assertThat(discardButton.isEnabled()).isFalse();
@@ -183,13 +183,16 @@ class ExamResultsEditorTests {
 		assertThat(deleteButton(editor).getTooltip().getText()).isEqualTo("Ergebnisse löschen...");
 		assertThat(discardButton.getIcon()).isInstanceOf(Icon.class).extracting(icon -> ((Icon) icon).getIcon())
 				.isEqualTo(VaadinIcon.ROTATE_LEFT.create().getIcon());
-		assertThat(pdfMenu.isEnabled()).isTrue();
-		final MenuItem pdfMenuItem = pdfMenu.getItems().getFirst();
-		assertThat(pdfMenuItem.getText()).isEmpty();
-		assertThat(iconName(pdfMenuItem)).isEqualTo(VaadinIcon.DOWNLOAD.create().getIcon());
-		assertThat(pdfMenuItem.getSubMenu().getItems().stream().map(MenuItem::getText))
-				.containsExactly("Ergebnisbogen (Schüler:innen-Version)", "Ergebnisbogen (Lehrer:innen-Version)");
-		assertThat(pdfMenuItem.getSubMenu().getItems()).allMatch(item -> item.getChildren().findAny().isEmpty());
+		assertThat(pdfDownload.isEnabled()).isTrue();
+		assertThat(pdfDownload.getAriaLabel()).contains("Ergebnisbogen laden...");
+		assertThat(((Icon) pdfDownload.getIcon()).getIcon()).isEqualTo(VaadinIcon.DOWNLOAD.create().getIcon());
+		withUi(() -> {
+			pdfDownload.click();
+			final var dialog = components(UI.getCurrent(), Dialog.class).getFirst();
+			assertThat(dialog.getClassNames()).contains("tt-dialog");
+			assertThat(components(dialog, RadioButtonGroup.class).getFirst().getLabel()).isEqualTo("Für:");
+			dialog.close();
+		});
 		assertThat(pointsText(editor)).containsExactly("1 von 5 Pkt.");
 		assertThat(adjustment.getPointUnits()).isZero();
 		assertThat(criterionCheckboxes(editor)).hasSize(2);
@@ -203,7 +206,7 @@ class ExamResultsEditorTests {
 
 		assertThat(saveButton.isEnabled()).isTrue();
 		assertThat(discardButton.isEnabled()).isTrue();
-		assertThat(pdfMenu.isEnabled()).isFalse();
+		assertThat(pdfDownload.isEnabled()).isFalse();
 		assertThat(pointsText(editor)).containsExactly("2 von 5 Pkt.");
 		assertThat(badgeTexts(editor)).containsOnly("2");
 		verify(levelOfExpectationsRepository, never()).saveRequirementResult(any());
@@ -226,7 +229,7 @@ class ExamResultsEditorTests {
 		assertThat(badgeTexts(editor)).containsOnly("1");
 		assertThat(saveButton.isEnabled()).isFalse();
 		assertThat(discardButton.isEnabled()).isFalse();
-		assertThat(pdfMenu.isEnabled()).isTrue();
+		assertThat(pdfDownload.isEnabled()).isTrue();
 		verify(levelOfExpectationsRepository, never()).saveRequirementResult(any());
 		verify(levelOfExpectationsRepository, never()).saveCriterionResult(any());
 
@@ -239,7 +242,7 @@ class ExamResultsEditorTests {
 		verify(levelOfExpectationsRepository, never()).saveCriterionResult(any(LoeCriterionResult.class));
 		assertThat(saveButton.isEnabled()).isFalse();
 		assertThat(discardButton.isEnabled()).isFalse();
-		assertThat(pdfMenu.isEnabled()).isTrue();
+		assertThat(pdfDownload.isEnabled()).isTrue();
 		assertThat(changes).hasValue(1);
 	}
 
@@ -793,8 +796,8 @@ class ExamResultsEditorTests {
 		}
 	}
 
-	private static MenuBar pdfMenu(final Component root) {
-		return components(root, MenuBar.class).stream().filter(menu -> menu.getClassNames().contains("tt-pdf-menu"))
+	private static Button pdfDownloadButton(final Component root) {
+		return components(root, Button.class).stream().filter(button -> button.hasClassName("tt-pdf-download"))
 				.findFirst().orElseThrow();
 	}
 
@@ -803,10 +806,6 @@ class ExamResultsEditorTests {
 				.filter(layout -> layout.getClassNames().contains("tt-designer-toolbar")).findFirst().orElseThrow();
 	}
 
-	private static String iconName(final MenuItem item) {
-		return item.getChildren().filter(Icon.class::isInstance).map(Icon.class::cast).map(Icon::getIcon).findFirst()
-				.orElseThrow();
-	}
 
 	private static List<String> badgeTexts(final Component root) {
 		return components(root, LoePointBadge.class).stream().map(LoePointBadge::getText).toList();

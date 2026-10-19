@@ -17,13 +17,10 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBoxVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
-import com.vaadin.flow.component.contextmenu.MenuItem;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.menubar.MenuBar;
-import com.vaadin.flow.component.menubar.MenuBarVariant;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -68,7 +65,8 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private final Button deleteButton = Buttons.dialogIcon("Ergebnisse löschen", VaadinIcon.TRASH,
 			event -> openDeleteConfirmation());
 	private final Button reloadButton = Buttons.icon("Neu laden", VaadinIcon.REFRESH, event -> refreshFromDatabase());
-	private final MenuBar pdfMenu = new MenuBar();
+	private final Button pdfDownload = Buttons.dialogIcon("Ergebnisbogen laden", VaadinIcon.DOWNLOAD,
+			event -> openPdfDownload());
 	private final ConfirmDialog discardConfirmation = TopTeacherDialogs.discardConfirmation("Änderungen verwerfen?",
 			saveController::discard);
 	private final ConfirmDialog deleteConfirmation = TopTeacherDialogs.deleteConfirmation("Ergebnisse löschen?",
@@ -106,9 +104,6 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private List<LoeCriterion> criteria = List.of();
 	private LoePointBadge examPointsBadge;
 	private final Span breadcrumb = new Span();
-	private MenuItem pdfMenuItem;
-	private MenuItem pupilPdfItem;
-	private MenuItem teacherPdfItem;
 	private LoePointRules pointRules;
 	private Map<Integer, Integer> persistedCriterionResults = Map.of();
 	private Map<Integer, Integer> persistedRequirementResults = Map.of();
@@ -228,17 +223,15 @@ public class ExamResultsEditor extends AbstractDesigner {
 	}
 
 	private void configurePdfDownload() {
-		pdfMenu.addClassName("tt-pdf-menu");
-		pdfMenu.addThemeVariants(MenuBarVariant.LUMO_SMALL);
-		pdfMenuItem = pdfMenu.addItem("");
-		pdfMenuItem.addComponentAsFirst(VaadinIcon.DOWNLOAD.create());
-		pdfMenuItem.setAriaLabel("Ergebnisbogen herunterladen");
-		pdfMenu.setTooltipText(pdfMenuItem, "Ergebnisbogen herunterladen");
-		pupilPdfItem = pdfMenuItem.getSubMenu().addItem("Ergebnisbogen (Schüler:innen-Version)",
-				event -> downloadPdf(false));
-		teacherPdfItem = pdfMenuItem.getSubMenu().addItem("Ergebnisbogen (Lehrer:innen-Version)",
-				event -> downloadPdf(true));
+		pdfDownload.addClassName("tt-pdf-download");
+		pdfDownload.addThemeVariants(ButtonVariant.LUMO_SMALL);
 		updatePdfDownload();
+	}
+
+	private void openPdfDownload() {
+		if (exam != null && selectedPupil != null && !isDirty()) {
+			ExamDownloadDialogs.openResultSheet("Ergebnisbogen laden", this::downloadPdf);
+		}
 	}
 
 	private void refresh() {
@@ -271,7 +264,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 	private void configureToolbar() {
 		examPointsBadge = new LoePointBadge("Gesamt", this::pointsForExam);
 		breadcrumb.addClassName("tt-designer-breadcrumb");
-		toolbar().add(pupilSelector, saveButton, discardButton, deleteButton, pdfMenu, fullscreenButton,
+		toolbar().add(pupilSelector, saveButton, discardButton, deleteButton, pdfDownload, fullscreenButton,
 				discardConfirmation, deleteConfirmation, reloadButton);
 		toolbarSummary().add(breadcrumb, examPointsBadge);
 		toolbarSummary().expand(breadcrumb);
@@ -1071,10 +1064,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 
 	private void updatePdfDownload() {
 		final boolean enabled = exam != null && selectedPupil != null && !isDirty();
-		pdfMenu.setEnabled(enabled);
-		pdfMenuItem.setEnabled(enabled);
-		pupilPdfItem.setEnabled(enabled);
-		teacherPdfItem.setEnabled(enabled);
+		pdfDownload.setEnabled(enabled);
 	}
 
 	private void downloadPdf(final boolean teacherVersion) {

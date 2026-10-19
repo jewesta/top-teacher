@@ -25,11 +25,10 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
-import com.vaadin.flow.component.contextmenu.MenuItem;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.menubar.MenuBar;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
@@ -65,25 +64,40 @@ class ExamTasksEditorTests {
 	}
 
 	@Test
-	void taskSheetMenuOffersAnonymousAndPersonalizedAndChecksUnsavedWork() {
+	@SuppressWarnings("unchecked")
+	void taskSheetButtonOpensSharedDialogAndChecksUnsavedWork() {
 		final var editor = new ExamTasksEditor(repository(false));
 		editor.configureTaskSheetExport(id -> List.of(new de.westarps.topteacher.model.Pupil(42, "Mia", "Weber", de.westarps.topteacher.model.Lifecycle.ACTIVE)), () -> true);
 		editor.setExam(EXAM);
-		final var menu = components(editor, MenuBar.class).getFirst();
-		final var options = menu.getItems().getFirst().getSubMenu().getItems();
-		assertThat(options).extracting(MenuItem::getText).containsExactly("Anonym", "Personalisiert...");
-		ComponentUtil.fireEvent(options.get(1), new ClickEvent<>(options.get(1)));
+		final Button download = components(editor, Button.class).stream()
+				.filter(button -> button.getAriaLabel().orElse("").equals("Aufgabenblatt laden...")).findFirst().orElseThrow();
+		download.click();
 		final var dialog = components(ui, Dialog.class).stream().filter(Dialog::isOpened).findFirst().orElseThrow();
-		final var all = components(dialog, Checkbox.class).getFirst();
+		assertThat(dialog.getClassNames()).contains("tt-dialog");
+		final var scope = (RadioButtonGroup<ExamDownloadDialogs.TaskSheetScope>) components(dialog, RadioButtonGroup.class).getFirst();
 		final var pupil = components(dialog, ComboBox.class).getFirst();
-		assertThat(all.getValue()).isTrue();
-		assertThat(pupil.isEnabled()).isFalse();
-		all.setValue(false);
-		assertThat(pupil.isEnabled()).isTrue();
+		assertThat(scope.getValue()).isEqualTo(ExamDownloadDialogs.TaskSheetScope.ANONYMOUS);
+		assertThat(pupil.isVisible()).isFalse();
+		scope.setValue(ExamDownloadDialogs.TaskSheetScope.SELECTED_PUPIL);
+		assertThat(pupil.isVisible()).isTrue();
 		dialog.close();
 		components(editor, MarkdownEditor.class).getFirst().setValue("Unsaved tasks");
-		ComponentUtil.fireEvent(options.get(1), new ClickEvent<>(options.get(1)));
+		download.click();
 		assertThat(components(ui, Dialog.class)).noneMatch(Dialog::isOpened);
+	}
+
+	@Test
+	void taskSheetDialogRequiresSavedMaterialsAndAllowsAnonymousWithoutPupils() {
+		final var editor = new ExamTasksEditor(repository(false));
+		editor.configureTaskSheetExport(id -> List.of(), () -> false);
+		editor.setExam(EXAM);
+		final Button download = components(editor, Button.class).stream()
+				.filter(button -> button.getAriaLabel().orElse("").equals("Aufgabenblatt laden...")).findFirst().orElseThrow();
+		download.click();
+		assertThat(components(ui, Dialog.class)).noneMatch(Dialog::isOpened);
+		editor.configureTaskSheetExport(id -> List.of(), () -> true);
+		download.click();
+		assertThat(components(ui, Dialog.class)).anyMatch(Dialog::isOpened);
 	}
 
 	@Test

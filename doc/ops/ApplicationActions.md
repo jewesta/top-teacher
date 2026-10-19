@@ -115,3 +115,13 @@ retain the same centered icon-only button layout and normal toolbar styling,
 without a persistent selected-state background. Ordinary hover feedback stays
 available. The accessible `aria-pressed` state follows the current draft value;
 changes use the owning editor's normal save/discard and locking behavior.
+
+## Export dialogs
+
+PDF options are selected in shared application dialogs with the standard
+`Abbrechen`/primary `Laden` button bar. The Aufgabenblatt and individual
+Ergebnisbogen download icons open their dialogs directly. Auswertungen keeps
+Punktetabelle as a separate menu action and combines both result-sheet audiences
+under `Alle Ergebnisbögen...`. See
+[Pupil task-sheet PDF export](ExamTaskSheetPdfExport.md) and
+[Level of expectations PDF export](LevelOfExpectationsPdfExport.md#download-dialogs).

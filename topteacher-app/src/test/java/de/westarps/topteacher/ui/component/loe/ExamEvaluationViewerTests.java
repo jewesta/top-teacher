@@ -13,9 +13,14 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.ClickEvent;
+import com.vaadin.flow.component.ComponentUtil;
+import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.contextmenu.MenuItem;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.menubar.MenuBar;
@@ -103,9 +108,22 @@ class ExamEvaluationViewerTests {
 		assertThat(downloadItem.getText()).isEmpty();
 		assertThat(iconName(downloadItem)).isEqualTo(VaadinIcon.DOWNLOAD.create().getIcon());
 		assertThat(downloadItem.getSubMenu().getItems().stream().map(MenuItem::getText)).containsExactly(
-				"Punktetabelle", "Alle Ergebnisbögen (Schüler:innen-Version)",
-				"Alle Ergebnisbögen (Lehrer:innen-Version)");
+				"Punktetabelle", "Alle Ergebnisbögen...");
 		assertThat(downloadItem.getSubMenu().getItems()).allMatch(item -> item.getChildren().findAny().isEmpty());
+		final var previousUi = UI.getCurrent();
+		final var ui = new UI();
+		UI.setCurrent(ui);
+		try {
+			final var resultSheets = downloadItem.getSubMenu().getItems().get(1);
+			ComponentUtil.fireEvent(resultSheets, new ClickEvent<>(resultSheets));
+			final var dialog = components(ui, Dialog.class).getFirst();
+			assertThat(dialog.getClassNames()).contains("tt-dialog");
+			assertThat(components(dialog, Span.class)).extracting(Span::getText).contains("Alle Ergebnisbögen laden");
+			dialog.close();
+		} finally {
+			UI.setCurrent(previousUi);
+		}
+
 		assertThat(
 				components(viewer, Button.class).stream().map(button -> button.getElement().getAttribute("aria-label")))
 						.contains("Vollbild");

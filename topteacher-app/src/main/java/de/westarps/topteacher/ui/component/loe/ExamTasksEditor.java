@@ -6,15 +6,7 @@ import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntFunction;
 
-import com.vaadin.flow.component.checkbox.Checkbox;
-import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.dialog.Dialog;
-import com.vaadin.flow.component.menubar.MenuBar;
-import com.vaadin.flow.component.menubar.MenuBarVariant;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -28,6 +20,7 @@ import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoeTask;
 import de.westarps.topteacher.ui.UiUrls;
 import de.westarps.topteacher.ui.component.AbstractDesigner;
+import de.westarps.topteacher.ui.component.Buttons;
 import de.westarps.topteacher.ui.component.DesignerViewport;
 import de.westarps.topteacher.ui.component.FullscreenButton;
 import de.westarps.vaadin.markdown.MarkdownEditor;
@@ -163,17 +156,12 @@ public class ExamTasksEditor extends AbstractDesigner {
 		this.exportReady = exportReady;
 	}
 
-	private MenuBar taskSheetDownload() {
-		final MenuBar menu = new MenuBar();
-		menu.addClassName("tt-pdf-menu");
-		menu.addThemeVariants(MenuBarVariant.LUMO_SMALL);
-		final var item = menu.addItem("");
-		item.addComponentAsFirst(VaadinIcon.DOWNLOAD.create());
-		item.setAriaLabel("Aufgabenblatt herunterladen");
-		menu.setTooltipText(item, "Aufgabenblatt herunterladen");
-		item.getSubMenu().addItem("Anonym", event -> downloadTaskSheet("task-sheet.pdf"));
-		item.getSubMenu().addItem("Personalisiert...", event -> openPersonalizedDownload());
-		return menu;
+	private Button taskSheetDownload() {
+		return Buttons.dialogIcon("Aufgabenblatt laden", VaadinIcon.DOWNLOAD, event -> {
+			if (canExportTaskSheet()) {
+				ExamDownloadDialogs.openTaskSheet(pupilSupplier.apply(exam.id()), this::downloadTaskSheet);
+			}
+		});
 	}
 
 	private boolean canExportTaskSheet() {
@@ -182,42 +170,6 @@ public class ExamTasksEditor extends AbstractDesigner {
 			return false;
 		}
 		return true;
-	}
-
-	private void openPersonalizedDownload() {
-		if (!canExportTaskSheet()) {
-			return;
-		}
-		final var pupils = pupilSupplier.apply(exam.id());
-		if (pupils.isEmpty()) {
-			Notification.show("Ordne der Klausur zuerst Schüler:innen zu.");
-			return;
-		}
-		final Dialog dialog = new Dialog();
-		dialog.setHeaderTitle("Personalisiertes Aufgabenblatt");
-		final Checkbox all = new Checkbox("Alle zugeordneten Schüler:innen", true);
-		final ComboBox<Pupil> pupil = new ComboBox<>("Schüler:in");
-		pupil.setItemLabelGenerator(value -> value.name() + " " + value.surname());
-		pupil.setItems(pupils);
-		pupil.setValue(pupils.getFirst());
-		pupil.setEnabled(false);
-		pupil.setWidthFull();
-		all.addValueChangeListener(event -> pupil.setEnabled(!event.getValue()));
-		dialog.add(new VerticalLayout(all, pupil));
-		dialog.getFooter().add(new Button("Abbrechen", event -> dialog.close()), new Button("Herunterladen", event -> {
-			if (!all.getValue() && pupil.getValue() == null) {
-				pupil.setInvalid(true);
-				pupil.setErrorMessage("Bitte wähle eine Schülerin oder einen Schüler.");
-				return;
-			}
-			downloadTaskSheet(all.getValue() ? "task-sheets.pdf" : "pupils/" + pupil.getValue().id() + "/task-sheet.pdf");
-			dialog.close();
-		}));
-		dialog.addClosedListener(event -> dialog.getElement().removeFromParent());
-		if (UI.getCurrent() != null) {
-			UI.getCurrent().add(dialog);
-		}
-		dialog.open();
 	}
 
 	private void downloadTaskSheet(final String path) {
