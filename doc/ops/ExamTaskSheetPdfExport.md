@@ -57,7 +57,9 @@ No writing spaces or alternative-task mechanism are introduced.
 
 Material Markdown uses the shared safe renderer, including authored logical
 source lines, line markers at 1 and every fifth line, annotations, source links,
-tables, local footnotes and managed images. Logical line numbering continues
+tables, local footnotes and managed images. Alert boxes have a wider left border
+matching the alert icon's type color and a light gray background, consistent
+with the editor preview. Logical line numbering continues
 across page breaks. Footnote numbering is local to its material, with sufficient
 space for multi-digit markers. Source lines can wrap to fit the paper without
 creating additional logical line numbers.

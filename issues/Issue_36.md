@@ -156,3 +156,13 @@ cancellation, adjacent content, nested quotes/lists, code examples, numbered
 source blocks, Markdown formatting and CRLF preservation. Actual Aufgabenblatt
 PDFs contain all six expected vector icons (five test alerts and the existing
 demo NOTE); the source NOTE and all five test symbols were visually inspected.
+
+## PDF alert box styling
+
+The Aufgabenblatt alert boxes use a wider (0.8 mm) left border in the matching
+icon color and a light gray background with internal padding. Typography stays
+unchanged. See [Pupil task-sheet PDF export](../doc/ops/ExamTaskSheetPdfExport.md).
+
+Verification: all 753 Maven tests and `git diff --check` pass. The rendered
+source alert and all five alert types were visually checked for matching border
+and icon colors, a pale gray fill, padding, readable text and preserved symbols.

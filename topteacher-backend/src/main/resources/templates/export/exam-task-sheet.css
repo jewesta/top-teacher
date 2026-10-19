@@ -50,7 +50,16 @@ img { max-width: 100%; height: auto; page-break-inside: avoid; }
 .tt-material-image-align-right { display: block; margin-left: auto; }
 pre { white-space: pre-wrap; }
 
-.ws-markdown-alert { margin: 2mm 0; border-left: 0.3mm solid #777; padding-left: 2mm; }
+.ws-markdown-alert {
+    margin: 2mm 0;
+    padding: 2mm 3mm;
+    border-left: 0.8mm solid #0969da;
+    background-color: #f6f8fa;
+}
+.ws-markdown-alert-tip { border-left-color: #1a7f37; }
+.ws-markdown-alert-important { border-left-color: #8250df; }
+.ws-markdown-alert-warning { border-left-color: #9a6700; }
+.ws-markdown-alert-caution { border-left-color: #cf222e; }
 .ws-markdown-alert-title { font-weight: bold; }
 .ws-markdown-alert-icon {
     display: inline-block;
