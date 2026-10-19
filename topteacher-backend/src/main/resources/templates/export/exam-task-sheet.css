@@ -11,6 +11,9 @@ body { font-family: "Frugal Sans", sans-serif; font-size: 9pt; line-height: 1.3;
 h1 { font-size: 15pt; margin: 1mm 0 3mm; }
 h2 { font-size: 12pt; margin: 0 0 4mm; padding-bottom: 2mm; }
 .part-heading { border-bottom: 0.3mm solid #333; }
+.budget-heading { display: table; width: 100%; }
+.heading-title, .heading-points { display: table-cell; vertical-align: baseline; }
+.heading-points { width: 1%; padding-left: 3mm; text-align: right; white-space: nowrap; }
 h3 { font-size: 11pt; margin: 4mm 0 2mm; }
 h4 { font-size: 9.5pt; margin: 4mm 0 2mm; }
 h5 { font-size: 9pt; margin: 3mm 0 1mm; }

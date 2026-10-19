@@ -249,3 +249,16 @@ a page break from the preceding task text. See
 Verification: all 757 Maven tests and `git diff --check` pass. Both demo task
 pages were visually checked for plain headings and separate, right-aligned
 point lines without brackets. Local TT was updated with its review data retained.
+
+## Right-aligned heading budgets
+
+Klausurteil and performance-category headings now separate title and budget
+into left/right columns, with no dot separator. The shared heading layout
+reserves room for the complete budget and permits long titles to wrap. This
+also covers repeated part headings and categories whose tasks are hidden. See
+[Pupil task-sheet PDF export](../doc/ops/ExamTaskSheetPdfExport.md#pupil-facing-content).
+
+Verification: all 757 Maven tests and `git diff --check` pass. The rendered
+demo headings were visually checked for aligned budgets, intact part dividers
+and readable titles, including the hidden language category. Local TT was
+updated with its review data retained.
