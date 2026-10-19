@@ -300,3 +300,12 @@ labels/order, current-pupil label/default, both versions with both scopes, all
 four emitted PDF URLs/file names, cancellation and the direct point-table URL.
 Existing unsaved-work guards remain covered. Browser access was unavailable
 for visual review. Local TT was updated with its review data retained.
+
+## Vertical version selection
+
+Renamed the result-sheet version group to `Version für` and stacked its options
+vertically, matching the pupil-scope group. See
+[Result-sheet export](../doc/ops/LevelOfExpectationsPdfExport.md#download-dialogs).
+
+Verification: all 767 Maven tests and `git diff --check` pass, including the
+updated group label and vertical layout. Local TT was updated.

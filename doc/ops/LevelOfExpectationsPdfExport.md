@@ -12,11 +12,11 @@ values defined in
 The result-sheet download icon in `Ergebnisse` opens `Ergebnisbogen laden`
 directly. Its shared application dialog contains two radio groups in this order:
 
-- `Version`: `Schüler:innen` (default) and `Lehrer:innen`.
+- `Version für`: `Schüler:innen` (default) and `Lehrer:innen`.
 - `Schüler:in`: the current pupil as `Surname, Name (Aktuell ausgewählt)`
   (default), then `Alle Schüler:innen` for all pupils assigned to the exam.
 
-Neither group label has a colon. `Laden` downloads the selected version for
+Both groups stack their options vertically. Neither group label has a colon. `Laden` downloads the selected version for
 one pupil or as a combined document for the whole exam; `Abbrechen` cancels.
 The action remains unavailable without a selected pupil or while results are
 unsaved. Changing export scope does not change the pupil selected in the editor.

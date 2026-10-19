@@ -233,7 +233,7 @@ class ExamResultsEditorTests {
 			pdfDownload.click();
 			final var dialog = components(UI.getCurrent(), Dialog.class).getFirst();
 			assertThat(dialog.getClassNames()).contains("tt-dialog");
-			assertThat(components(dialog, RadioButtonGroup.class).getFirst().getLabel()).isEqualTo("Version");
+			assertThat(components(dialog, RadioButtonGroup.class).getFirst().getLabel()).isEqualTo("Version für");
 			dialog.close();
 		});
 		assertThat(pointsText(editor)).containsExactly("1 von 5 Pkt.");

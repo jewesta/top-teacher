@@ -122,11 +122,12 @@ class ExamDownloadDialogsTests {
 		final Dialog dialog = dialog();
 		assertThat(dialog.getClassNames()).contains("tt-dialog");
 		assertThat(components(dialog, RadioButtonGroup.class)).extracting(RadioButtonGroup::getLabel)
-				.containsExactly("Version", "Schüler:in");
+				.containsExactly("Version für", "Schüler:in");
 		assertThat(audience(dialog).getDataProvider().fetch(new Query<>()).map(audience(dialog).getItemLabelGenerator()::apply))
 				.containsExactly("Schüler:innen", "Lehrer:innen");
 		assertThat(resultScope(dialog).getDataProvider().fetch(new Query<>()).map(resultScope(dialog).getItemLabelGenerator()::apply))
 				.containsExactly("Weber, Mia (Aktuell ausgewählt)", "Alle Schüler:innen");
+		assertThat(audience(dialog).getThemeNames()).contains("vertical");
 		assertThat(audience(dialog).getValue()).isEqualTo(Audience.PUPILS);
 		assertThat(resultScope(dialog).getValue()).isEqualTo(ResultSheetScope.CURRENT_PUPIL);
 		button(dialog, "Laden").click();

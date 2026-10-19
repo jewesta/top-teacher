@@ -91,7 +91,8 @@ final class ExamDownloadDialogs {
 
 	static void openResultSheet(final Pupil currentPupil, final Consumer<ResultSheetSelection> download) {
 		final RadioButtonGroup<Audience> audience = new RadioButtonGroup<>();
-		audience.setLabel("Version");
+		audience.setLabel("Version für");
+		audience.addThemeVariants(RadioGroupVariant.LUMO_VERTICAL);
 		audience.setItems(Audience.values());
 		audience.setItemLabelGenerator(value -> value.label);
 		audience.setValue(Audience.PUPILS);
