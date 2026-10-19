@@ -61,10 +61,7 @@ its text on a separate, right-aligned line, formatted as `14 Punkte` without
 brackets. The point line stays with the preceding task text at page breaks.
 No writing spaces or alternative-task mechanism are introduced.
 
-Klausurteil and performance-category headings place their point budgets at
-the right margin on the heading row, without a dot separator. Titles remain
-left-aligned and can wrap without overlapping the point budget. TT's
-Klausurteil headings retain their horizontal divider. Authored Markdown
+TT's Klausurteil headings retain their horizontal divider. Authored Markdown
 headings have no automatic divider; explicit thematic breaks remain supported.
 
 Material Markdown uses the shared safe renderer, including authored logical
