@@ -285,3 +285,18 @@ The three options now read `Kopiervorlage mit Freifeld für Name`,
 
 Verification: all 765 Maven tests and `git diff --check` pass, including the
 exact option labels and their order. Local TT was updated.
+
+## Result-sheet version and pupil scope
+
+Moved all-pupil result-sheet export into `Ergebnisbogen laden`. The dialog now
+combines `Version` (pupil/teacher) with `Schüler:in` (current pupil, shown as
+surname/name, or all pupils), defaulting to the current pupil's pupil version.
+Auswertungen now directly downloads only the point table. Existing PDF routes,
+file names and unsaved-result guards remain in use. See
+[Result-sheet export](../doc/ops/LevelOfExpectationsPdfExport.md#download-dialogs).
+
+Verification: all 767 Maven tests and `git diff --check` pass. Tests cover group
+labels/order, current-pupil label/default, both versions with both scopes, all
+four emitted PDF URLs/file names, cancellation and the direct point-table URL.
+Existing unsaved-work guards remain covered. Browser access was unavailable
+for visual review. Local TT was updated with its review data retained.

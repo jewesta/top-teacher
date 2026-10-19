@@ -230,7 +230,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 
 	private void openPdfDownload() {
 		if (exam != null && selectedPupil != null && !isDirty()) {
-			ExamDownloadDialogs.openResultSheet("Ergebnisbogen laden", this::downloadPdf);
+			ExamDownloadDialogs.openResultSheet(selectedPupil, this::downloadPdf);
 		}
 	}
 
@@ -1067,7 +1067,7 @@ public class ExamResultsEditor extends AbstractDesigner {
 		pdfDownload.setEnabled(enabled);
 	}
 
-	private void downloadPdf(final boolean teacherVersion) {
+	private void downloadPdf(final ExamDownloadDialogs.ResultSheetSelection selection) {
 		if (exam == null || selectedPupil == null || isDirty()) {
 			return;
 		}
@@ -1079,12 +1079,13 @@ public class ExamResultsEditor extends AbstractDesigner {
 			document.body.appendChild(anchor);
 			anchor.click();
 			anchor.remove();
-			""", pdfUrl(teacherVersion), pdfFileName(teacherVersion)));
+			""", pdfUrl(selection), pdfFileName(selection)));
 	}
 
-	private String pdfUrl(final boolean teacherVersion) {
-		final String fileName = teacherVersion ? "level-of-expectations-teacher.pdf" : "level-of-expectations.pdf";
-		return UiUrls.contextRelative("/export/exams/" + exam.id() + "/pupils/" + selectedPupil.id() + "/" + fileName);
+	private String pdfUrl(final ExamDownloadDialogs.ResultSheetSelection selection) {
+		final String fileName = selection.teacherVersion() ? "level-of-expectations-teacher.pdf" : "level-of-expectations.pdf";
+		final String pupilPath = selection.allPupils() ? "" : "pupils/" + selectedPupil.id() + "/";
+		return UiUrls.contextRelative("/export/exams/" + exam.id() + "/" + pupilPath + fileName);
 	}
 
 	private boolean hasPersistedResults() {
@@ -1154,8 +1155,12 @@ public class ExamResultsEditor extends AbstractDesigner {
 		return (pupil.surname().substring(0, 1) + pupil.name().substring(0, 1)).toUpperCase(Locale.GERMAN);
 	}
 
-	private String pdfFileName(final boolean teacherVersion) {
-		final String prefix = teacherVersion ? "lehrerversion-erwartungshorizont" : "erwartungshorizont";
+	private String pdfFileName(final ExamDownloadDialogs.ResultSheetSelection selection) {
+		if (selection.allPupils()) {
+			final String prefix = selection.teacherVersion() ? "lehrerversion-ergebnisboegen" : "ergebnisboegen";
+			return prefix + "-" + fileNamePart(exam.title()) + ".pdf";
+		}
+		final String prefix = selection.teacherVersion() ? "lehrerversion-erwartungshorizont" : "erwartungshorizont";
 		return prefix + "-" + fileNamePart(exam.title()) + "-" + fileNamePart(selectedPupil.surname()) + "-"
 				+ fileNamePart(selectedPupil.name()) + ".pdf";
 	}

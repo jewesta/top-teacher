@@ -33,6 +33,7 @@ import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.popover.Popover;
+import com.vaadin.flow.component.page.Page;
 import com.vaadin.flow.component.shared.Tooltip;
 import com.vaadin.flow.component.textfield.TextArea;
 
@@ -161,6 +162,48 @@ class ExamResultsEditorTests {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
+	void resultSheetDialogDownloadsCurrentOrAllPupilsInBothVersions() {
+		final Page page = mock(Page.class);
+		final UI ui = new UI() {
+			@Override
+			public Page getPage() {
+				return page;
+			}
+		};
+		final UI previousUi = UI.getCurrent();
+		UI.setCurrent(ui);
+		try {
+			final var editor = new ExamResultsEditor(courseRepository(), examRepository(),
+					levelOfExpectationsRepository(), gradingScaleRepository());
+			editor.setExam(EXAM);
+			ui.add(editor);
+			for (final var version : ExamDownloadDialogs.Audience.values()) {
+				for (final var scope : ExamDownloadDialogs.ResultSheetScope.values()) {
+					pdfDownloadButton(editor).click();
+					final var dialog = components(ui, Dialog.class).stream().filter(Dialog::isOpened).findFirst().orElseThrow();
+					final var groups = components(dialog, RadioButtonGroup.class);
+					((RadioButtonGroup<ExamDownloadDialogs.Audience>) groups.get(0)).setValue(version);
+					((RadioButtonGroup<ExamDownloadDialogs.ResultSheetScope>) groups.get(1)).setValue(scope);
+					final boolean teacher = version == ExamDownloadDialogs.Audience.TEACHERS;
+					final boolean all = scope == ExamDownloadDialogs.ResultSheetScope.ALL_PUPILS;
+					final String endpoint = teacher ? "level-of-expectations-teacher.pdf" : "level-of-expectations.pdf";
+					final String pupilPath = all ? "" : "pupils/" + PUPIL.id() + "/";
+					final String filePrefix = teacher ? "lehrerversion-" : "";
+					final String fileName = all ? filePrefix + "ergebnisboegen-klausur.pdf"
+							: filePrefix + "erwartungshorizont-klausur-" + PUPIL.surname().toLowerCase() + "-" + PUPIL.name().toLowerCase() + ".pdf";
+					components(dialog, Button.class).stream().filter(button -> button.getText().equals("Laden")).findFirst().orElseThrow().click();
+					verify(page).executeJs(org.mockito.ArgumentMatchers.anyString(),
+							org.mockito.ArgumentMatchers.eq("/export/exams/" + EXAM.id() + "/" + pupilPath + endpoint),
+							org.mockito.ArgumentMatchers.eq(fileName));
+				}
+			}
+		} finally {
+			UI.setCurrent(previousUi);
+		}
+	}
+
+	@Test
 	void savesAdjustmentOnlyWhenToolbarSaveIsClicked() {
 		final LevelOfExpectationsRepository levelOfExpectationsRepository = levelOfExpectationsRepository();
 		final CourseRepository courseRepository = courseRepository();
@@ -190,7 +233,7 @@ class ExamResultsEditorTests {
 			pdfDownload.click();
 			final var dialog = components(UI.getCurrent(), Dialog.class).getFirst();
 			assertThat(dialog.getClassNames()).contains("tt-dialog");
-			assertThat(components(dialog, RadioButtonGroup.class).getFirst().getLabel()).isEqualTo("Für:");
+			assertThat(components(dialog, RadioButtonGroup.class).getFirst().getLabel()).isEqualTo("Version");
 			dialog.close();
 		});
 		assertThat(pointsText(editor)).containsExactly("1 von 5 Pkt.");

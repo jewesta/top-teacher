@@ -9,15 +9,20 @@ values defined in
 
 ## Download dialogs
 
-The individual result-sheet download icon in `Ergebnisse` opens `Ergebnisbogen
-laden` directly for the currently selected pupil. The shared application dialog
-has a radio group labeled `Für:` with `Schüler:innen` (default) and
-`Lehrer:innen`. `Laden` downloads that version; `Abbrechen` cancels. The action
-remains unavailable without a selected pupil or while results are unsaved.
+The result-sheet download icon in `Ergebnisse` opens `Ergebnisbogen laden`
+directly. Its shared application dialog contains two radio groups in this order:
 
-In `Auswertungen`, the download menu keeps `Punktetabelle` as a separate direct
-action and offers one `Alle Ergebnisbögen...` entry. It opens `Alle Ergebnisbögen
-laden` with the same audience choice and `Laden` action for the combined output.
+- `Version`: `Schüler:innen` (default) and `Lehrer:innen`.
+- `Schüler:in`: the current pupil as `Surname, Name (Aktuell ausgewählt)`
+  (default), then `Alle Schüler:innen` for all pupils assigned to the exam.
+
+Neither group label has a colon. `Laden` downloads the selected version for
+one pupil or as a combined document for the whole exam; `Abbrechen` cancels.
+The action remains unavailable without a selected pupil or while results are
+unsaved. Changing export scope does not change the pupil selected in the editor.
+
+In `Auswertungen`, the download icon directly downloads `Punktetabelle` without
+a menu or dialog. Result-sheet downloads are offered only in `Ergebnisse`.
 
 ## Variants
 

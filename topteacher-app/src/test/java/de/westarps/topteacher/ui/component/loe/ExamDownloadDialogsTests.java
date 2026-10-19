@@ -22,6 +22,8 @@ import com.vaadin.flow.data.provider.Query;
 import de.westarps.topteacher.model.Lifecycle;
 import de.westarps.topteacher.model.Pupil;
 import de.westarps.topteacher.ui.component.loe.ExamDownloadDialogs.Audience;
+import de.westarps.topteacher.ui.component.loe.ExamDownloadDialogs.ResultSheetScope;
+import de.westarps.topteacher.ui.component.loe.ExamDownloadDialogs.ResultSheetSelection;
 import de.westarps.topteacher.ui.component.loe.ExamDownloadDialogs.TaskSheetScope;
 
 class ExamDownloadDialogsTests {
@@ -114,23 +116,37 @@ class ExamDownloadDialogsTests {
 	}
 
 	@Test
-	void resultSheetsUseTheSameAudienceChoiceForIndividualAndCombinedDownloads() {
-		for (final String title : List.of("Ergebnisbogen laden", "Alle Ergebnisbögen laden")) {
-			final List<Boolean> downloads = new ArrayList<>();
-			ExamDownloadDialogs.openResultSheet(title, downloads::add);
-			Dialog dialog = dialog();
-			assertThat(dialog.getClassNames()).contains("tt-dialog");
-			assertThat(audience(dialog).getLabel()).isEqualTo("Für:");
-			assertThat(audience(dialog).getDataProvider().fetch(new Query<>()).map(audience(dialog).getItemLabelGenerator()::apply))
-					.containsExactly("Schüler:innen", "Lehrer:innen");
-			assertThat(audience(dialog).getValue()).isEqualTo(Audience.PUPILS);
-			button(dialog, "Laden").click();
-			assertThat(downloads).containsExactly(false);
-			ExamDownloadDialogs.openResultSheet(title, downloads::add);
-			dialog = dialog();
-			audience(dialog).setValue(Audience.TEACHERS);
-			button(dialog, "Laden").click();
-			assertThat(downloads).containsExactly(false, true);
+	void resultSheetOffersVersionAndPupilScopeWithCurrentSelectionByDefault() {
+		final List<ResultSheetSelection> downloads = new ArrayList<>();
+		ExamDownloadDialogs.openResultSheet(PUPIL, downloads::add);
+		final Dialog dialog = dialog();
+		assertThat(dialog.getClassNames()).contains("tt-dialog");
+		assertThat(components(dialog, RadioButtonGroup.class)).extracting(RadioButtonGroup::getLabel)
+				.containsExactly("Version", "Schüler:in");
+		assertThat(audience(dialog).getDataProvider().fetch(new Query<>()).map(audience(dialog).getItemLabelGenerator()::apply))
+				.containsExactly("Schüler:innen", "Lehrer:innen");
+		assertThat(resultScope(dialog).getDataProvider().fetch(new Query<>()).map(resultScope(dialog).getItemLabelGenerator()::apply))
+				.containsExactly("Weber, Mia (Aktuell ausgewählt)", "Alle Schüler:innen");
+		assertThat(audience(dialog).getValue()).isEqualTo(Audience.PUPILS);
+		assertThat(resultScope(dialog).getValue()).isEqualTo(ResultSheetScope.CURRENT_PUPIL);
+		button(dialog, "Laden").click();
+		assertThat(downloads).containsExactly(new ResultSheetSelection(false, false));
+	}
+
+	@Test
+	void resultSheetsCombineBothVersionsAndBothPupilScopes() {
+		for (final Audience version : Audience.values()) {
+			for (final ResultSheetScope scope : ResultSheetScope.values()) {
+				final List<ResultSheetSelection> downloads = new ArrayList<>();
+				ExamDownloadDialogs.openResultSheet(PUPIL, downloads::add);
+				final Dialog dialog = dialog();
+				audience(dialog).setValue(version);
+				resultScope(dialog).setValue(scope);
+				button(dialog, "Laden").click();
+				assertThat(downloads).containsExactly(new ResultSheetSelection(version == Audience.TEACHERS,
+						scope == ResultSheetScope.ALL_PUPILS));
+				assertThat(dialog.isOpened()).isFalse();
+			}
 		}
 	}
 
@@ -139,7 +155,7 @@ class ExamDownloadDialogsTests {
 		final List<Object> downloads = new ArrayList<>();
 		ExamDownloadDialogs.openTaskSheet(List.of(PUPIL), downloads::add);
 		button(dialog(), "Abbrechen").click();
-		ExamDownloadDialogs.openResultSheet("Ergebnisbogen laden", downloads::add);
+		ExamDownloadDialogs.openResultSheet(PUPIL, downloads::add);
 		button(dialog(), "Abbrechen").click();
 		assertThat(downloads).isEmpty();
 		assertThat(components(ui, Dialog.class)).noneMatch(Dialog::isOpened);
@@ -157,6 +173,11 @@ class ExamDownloadDialogsTests {
 	@SuppressWarnings("unchecked")
 	private static RadioButtonGroup<Audience> audience(final Dialog dialog) {
 		return components(dialog, RadioButtonGroup.class).getFirst();
+	}
+
+	@SuppressWarnings("unchecked")
+	private static RadioButtonGroup<ResultSheetScope> resultScope(final Dialog dialog) {
+		return components(dialog, RadioButtonGroup.class).get(1);
 	}
 
 	@SuppressWarnings("unchecked")

@@ -120,8 +120,8 @@ changes use the owning editor's normal save/discard and locking behavior.
 
 PDF options are selected in shared application dialogs with the standard
 `Abbrechen`/primary `Laden` button bar. The Aufgabenblatt and individual
-Ergebnisbogen download icons open their dialogs directly. Auswertungen keeps
-Punktetabelle as a separate menu action and combines both result-sheet audiences
-under `Alle Ergebnisbögen...`. See
+Ergebnisbogen download icons open their dialogs directly. The Ergebnisbogen
+dialog offers version and current-pupil/all-pupils choices. The Auswertungen
+download icon directly loads Punktetabelle without a menu. See
 [Pupil task-sheet PDF export](ExamTaskSheetPdfExport.md) and
 [Level of expectations PDF export](LevelOfExpectationsPdfExport.md#download-dialogs).

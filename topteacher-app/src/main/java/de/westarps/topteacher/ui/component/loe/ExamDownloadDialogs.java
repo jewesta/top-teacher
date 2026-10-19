@@ -39,6 +39,13 @@ final class ExamDownloadDialogs {
 		}
 	}
 
+	enum ResultSheetScope {
+		CURRENT_PUPIL, ALL_PUPILS
+	}
+
+	record ResultSheetSelection(boolean teacherVersion, boolean allPupils) {
+	}
+
 	private ExamDownloadDialogs() {
 	}
 
@@ -82,15 +89,23 @@ final class ExamDownloadDialogs {
 		open(dialog);
 	}
 
-	static void openResultSheet(final String title, final Consumer<Boolean> download) {
+	static void openResultSheet(final Pupil currentPupil, final Consumer<ResultSheetSelection> download) {
 		final RadioButtonGroup<Audience> audience = new RadioButtonGroup<>();
-		audience.setLabel("Für:");
+		audience.setLabel("Version");
 		audience.setItems(Audience.values());
 		audience.setItemLabelGenerator(value -> value.label);
 		audience.setValue(Audience.PUPILS);
-		final Dialog dialog = create(title, content(audience));
+		final RadioButtonGroup<ResultSheetScope> scope = new RadioButtonGroup<>();
+		scope.setLabel("Schüler:in");
+		scope.setItems(ResultSheetScope.values());
+		scope.setItemLabelGenerator(value -> value == ResultSheetScope.CURRENT_PUPIL
+				? currentPupil.surname() + ", " + currentPupil.name() + " (Aktuell ausgewählt)" : "Alle Schüler:innen");
+		scope.addThemeVariants(RadioGroupVariant.LUMO_VERTICAL);
+		scope.setValue(ResultSheetScope.CURRENT_PUPIL);
+		final Dialog dialog = create("Ergebnisbogen laden", content(audience, scope));
 		actions(dialog, () -> {
-			download.accept(audience.getValue() == Audience.TEACHERS);
+			download.accept(new ResultSheetSelection(audience.getValue() == Audience.TEACHERS,
+					scope.getValue() == ResultSheetScope.ALL_PUPILS));
 			dialog.close();
 		});
 		open(dialog);
