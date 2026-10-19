@@ -95,8 +95,7 @@ final class LoeSectionComponents {
 		editor.setWidthFull();
 		editor.setHeight("14rem");
 		editor.showToolbarCommand(MarkdownToolbarCommand.ALERT);
-		editor.addAlertRequestListener(selection -> new MarkdownAlertDialog(editor.selectedBlockText(selection),
-				(type, text) -> editor.insertAlert(selection, type, text)).open());
+		editor.addAlertRequestListener(selection -> MarkdownAlertDialog.forSelection(editor, selection).open());
 		return editor;
 	}
 

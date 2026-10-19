@@ -52,6 +52,14 @@ the reusable Markdown module rather than to either application extension.
 Optional toolbar commands can be enabled independently. TopTeacher owns their
 dialogs and decides which editors offer each command.
 
+Existing alerts are located in the shared Java editor using CommonMark block
+source spans. This gives cursor/selection containment without matching fenced
+code examples, handles lazy quote continuation, and retains outer quote/list
+prefixes. The application alert dialog uses that context for its initial type
+and body; confirming calls the same insertion API, which replaces a containing
+alert instead of inserting another. Keep the full block range and preserve the
+surrounding source, including CRLF line endings.
+
 `ws-markdown-blocks.ts` transforms recognized blockquote markers before HTML
 sanitization. The preview's `pluginsFilter` moves this transform before the
 library's built-in alert parser so it cannot consume the markers first.
@@ -83,8 +91,10 @@ and external-resource requests are disabled. SVGs become vector form objects
 in the PDF, not raster images or font-dependent symbols. Tests cover bundled
 resources, sanitization, and vector objects in actual PDF output.
 
-This does not implement
-the deferred pupil exam-sheet layout or its numbered-text print rendering.
+Pupil task-sheet composition is implemented separately; see
+[Pupil task-sheet PDF export](../ops/ExamTaskSheetPdfExport.md). Its alert icon
+placeholders use this same trusted SVG embedding pipeline and must remain
+visible in the task-sheet stylesheet.
 
 ## MCP faithful rendering
 

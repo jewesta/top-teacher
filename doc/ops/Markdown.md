@@ -17,8 +17,15 @@ All current Markdown editors provide a separate `Hinweisblock einfügen...`
 toolbar command. Its dialog offers the five GitHub alert types with German
 labels: `NOTE` (Hinweis), `TIP` (Tipp), `IMPORTANT` (Wichtig), `WARNING`
 (Warnung), and `CAUTION` (Vorsicht). The dialog accepts Markdown text and can
-prefill selected complete source lines. Cancel stays on the left and insert on
-the right, following the shared dialog convention.
+prefill selected complete source lines. With the cursor or selection inside an
+existing alert, the same command opens `Hinweisblock bearbeiten`, prefilled with
+its current type and unquoted Markdown body. `Übernehmen` replaces that complete
+alert; it does not insert or nest a second alert. Neighbouring content, paragraph
+breaks, formatting, and outer quote/list containers are retained. Cancelling
+leaves the source and dirty state unchanged. Ordinary quotes, unknown types and
+code examples are not treated as existing alerts. Outside an alert the original
+insertion workflow remains available. Cancel stays on the left and insert/apply
+on the right, following the shared dialog convention.
 
 ```markdown
 > [!TIP]
@@ -35,8 +42,8 @@ references. Ordinary quotes, unknown alert types, and examples inside code
 blocks keep their ordinary Markdown behavior.
 
 Alert rendering is shared by editable previews and read-only views. The
-existing level-of-expectations PDFs also render these alerts as styled boxes
-with vector icons. All five SVGs are bundled locally; rendering needs no GitHub
+level-of-expectations and pupil Aufgabenblatt PDFs render these alerts as styled
+boxes with visible vector icons for all five types. All five SVGs are bundled locally; rendering needs no GitHub
 connection. Labels and borders preserve their meaning in monochrome printing. The future
 pupil-facing exam-sheet export remains outside this implementation.
 

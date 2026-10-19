@@ -140,3 +140,19 @@ tests exercise both native Vaadin and custom SVG icons, both initial modes,
 repeated changes, action-bar integration, neutral styling, accessible labels and
 pressed state, notification behavior and disabled clicks. Both editor suites
 verify use of the shared control and retain save/discard/locking coverage.
+
+## Existing alert editing and PDF icons
+
+The shared Markdown editor now detects an alert containing the cursor/selection
+using CommonMark source spans. Its dialog preloads the original type and body,
+and confirmation replaces the entire alert while preserving surrounding content.
+The Aufgabenblatt stylesheet no longer hides alert icons; the existing trusted
+SVG embedding pipeline supplies all five vector symbols. See
+[Markdown](../doc/ops/Markdown.md#alerts) for the functional contract.
+
+Verification: all 753 Maven tests and `git diff --check` pass. Regression
+coverage includes all five alert types, cursor/selection editing, type changes,
+cancellation, adjacent content, nested quotes/lists, code examples, numbered
+source blocks, Markdown formatting and CRLF preservation. Actual Aufgabenblatt
+PDFs contain all six expected vector icons (five test alerts and the existing
+demo NOTE); the source NOTE and all five test symbols were visually inspected.

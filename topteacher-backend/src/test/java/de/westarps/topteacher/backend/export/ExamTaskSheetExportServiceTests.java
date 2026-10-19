@@ -117,6 +117,32 @@ class ExamTaskSheetExportServiceTests {
 		assertThat(personalized.subList(1, personalized.size())).isEqualTo(anonymous.subList(1, anonymous.size()));
 	}
 
+	@Test
+	void taskSheetAlertsRenderAllFiveVectorIcons() throws Exception {
+		final var exam = spanishExam();
+		final String alerts = java.util.stream.Stream.of("NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION")
+				.map(type -> "> [!" + type + "]\n> PDF alert " + type).collect(java.util.stream.Collectors.joining("\n\n"));
+		design.saveExamFooterMarkdown(exam.id(), alerts);
+		final var model = service.createModel(exam.id(), null);
+		int icons = 0;
+		try (final var document = PDDocument.load(service.renderA5Pdf(model))) {
+			assertThat(new PDFTextStripper().getText(document)).contains("PDF alert NOTE", "PDF alert TIP", "PDF alert IMPORTANT", "PDF alert WARNING", "PDF alert CAUTION");
+			for (final var page : document.getPages()) {
+				for (final var name : page.getResources().getXObjectNames()) {
+					assertThat(page.getResources().getXObject(name)).isInstanceOf(org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject.class);
+					icons++;
+				}
+			}
+		}
+		/* Five test alerts plus the demo source's existing NOTE. */
+		assertThat(icons).isEqualTo(6);
+		final String review = System.getProperty("tt.pdfReviewDirectory");
+		if (review != null) {
+			Files.createDirectories(Path.of(review));
+			Files.write(Path.of(review, "alerts.pdf"), service.renderA4LandscapePdf(model));
+		}
+	}
+
 	private Exam spanishExam() {
 		return courses.findAll().stream().filter(item -> item.subject().name().equals("Spanisch") && item.schoolYear().getCalendarYear() == 2026)
 				.flatMap(course -> exams.findByCourseId(course.id()).stream())
