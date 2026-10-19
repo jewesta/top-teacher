@@ -7,6 +7,23 @@ defined in [LevelOfExpectations.md](LevelOfExpectations.md) and the awarded
 values defined in
 [LevelOfExpectationsResults.md](LevelOfExpectationsResults.md).
 
+## Download dialogs
+
+The result-sheet download icon in `Ergebnisse` opens `Ergebnisbogen laden`
+directly. Its shared application dialog contains two radio groups in this order:
+
+- `Version für`: `Schüler:innen` (default) and `Lehrer:innen`.
+- `Schüler:in`: the current pupil as `Surname, Name (Aktuell ausgewählt)`
+  (default), then `Alle Schüler:innen` for all pupils assigned to the exam.
+
+Both groups stack their options vertically. Neither group label has a colon. `Laden` downloads the selected version for
+one pupil or as a combined document for the whole exam; `Abbrechen` cancels.
+The action remains unavailable without a selected pupil or while results are
+unsaved. Changing export scope does not change the pupil selected in the editor.
+
+In `Auswertungen`, the download icon directly downloads `Punktetabelle` without
+a menu or dialog. Result-sheet downloads are offered only in `Ergebnisse`.
+
 ## Variants
 
 TopTeacher produces a pupil version and a teacher version from the same level
@@ -106,23 +123,10 @@ not resemble interactive checkboxes or controls.
 - PDF output must contain no controls, popovers, hover behavior, or internal
   criterion keys.
 
-## Deferred exam-sheet export
+## Pupil task-sheet export
 
-GitHub-style Markdown alerts in exported EH content already render as bordered
-boxes with German headings and print-safe symbols. This shared Markdown
-behavior is specified in [Markdown.md](Markdown.md#alerts).
-
-Generating the pupil-facing exam sheet from `Aufgaben` and `Material` is
-outside the current scope. That future output starts with the exam heading and
-groups all pupil-facing Aufgaben content and Material by part. A part begins
-with its heading and ordered material on separate pages, followed by the
-performance categories, their descriptions, task titles, and task text in tree
-order. Each subsequent part starts on a new page. The optional exam-level
-`Abschlusstext` appears exactly once at the end, outside every part; empty
-closing text is omitted. It is not a repeated page footer and does not change
-the existing EH result PDFs.
-
-Detailed print layout, image handling, footnotes, line numbering, and any
-separate teacher variant remain deferred; this does not remove or change the
-existing pupil and teacher variants of the level-of-expectations result PDF
-described above.
+The separate pupil-facing exam sheet generated from `Aufgaben` and `Material`
+is specified in [Pupil task-sheet PDF export](ExamTaskSheetPdfExport.md).
+It reuses the A5-to-A4 imposition without altering the existing pupil and teacher
+EH result PDFs. GitHub-style Markdown alerts retain their shared semantics,
+as specified in [Markdown.md](Markdown.md#alerts).

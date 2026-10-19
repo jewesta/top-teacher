@@ -35,8 +35,8 @@ public class ExamMaterialEditor extends AbstractDesigner {
 
 		@Override
 		public LoeMaterial save(final LoeMaterial material, final String title, final String descriptionMarkdown,
-				final Collection<LoeMaterialImage> pendingImages) {
-			return ExamMaterialEditor.this.save(material, title, descriptionMarkdown, pendingImages);
+				final Collection<LoeMaterialImage> pendingImages, final boolean dedicatedPage) {
+			return ExamMaterialEditor.this.save(material, title, descriptionMarkdown, pendingImages, dedicatedPage);
 		}
 
 		@Override
@@ -212,9 +212,9 @@ public class ExamMaterialEditor extends AbstractDesigner {
 	}
 
 	private LoeMaterial save(final LoeMaterial material, final String title, final String descriptionMarkdown,
-			final Collection<LoeMaterialImage> pendingImages) {
+			final Collection<LoeMaterialImage> pendingImages, final boolean dedicatedPage) {
 		final LoeMaterial updated = new LoeMaterial(material.id(), material.partId(), title, descriptionMarkdown,
-				material.sortOrder());
+				material.sortOrder(), dedicatedPage);
 		final LoeMaterial saved = repository.saveMaterialWithImages(updated, List.copyOf(pendingImages));
 		materials = materials.stream().map(current -> current.id().equals(saved.id()) ? saved : current).toList();
 		final List<LoeMaterialImage> loadedImages = repository.findMaterialImagesByIds(materials.stream()

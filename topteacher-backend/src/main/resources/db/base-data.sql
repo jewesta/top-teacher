@@ -1,5 +1,6 @@
 /* MCP credentials are created interactively; no base or demo token grants access. */
 /* Base data defines no exams; new exams inherit empty footer and revision 0 from schema.sql. */
+/* Categories default to printing their task details; base data defines no categories. */
 /* Retry receipts are empty; the shared image-lock singleton is maintained by schema.sql. */
 insert into app_setting (setting_key, setting_value)
 select base.setting_key, base.setting_value
@@ -191,3 +192,5 @@ update course
 set grading_scale_id = (select gs.id from grading_scale gs where gs.name = 'Einführungsphase')
 where grading_scale_id is null;
 /* Exam creation retry receipts are empty in a newly initialized dataset. */
+
+-- Materials default to dedicated pages in pupil task sheets (loe_material.dedicated_page).

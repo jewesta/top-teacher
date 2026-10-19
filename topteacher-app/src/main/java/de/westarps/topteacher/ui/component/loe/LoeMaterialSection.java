@@ -12,6 +12,7 @@ import java.util.Set;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.icon.SvgIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.upload.Upload;
@@ -19,6 +20,9 @@ import com.vaadin.flow.component.upload.Upload;
 import de.westarps.topteacher.model.loe.LoeMaterial;
 import de.westarps.topteacher.model.loe.LoeMaterialImage;
 import de.westarps.topteacher.model.loe.LoeMaterialImageReferences;
+import de.westarps.topteacher.ui.UiUrls;
+import de.westarps.topteacher.ui.component.IconToggleButton;
+import de.westarps.topteacher.ui.component.IconToggleButton.State;
 import de.westarps.vaadin.markdown.MarkdownEditor;
 
 final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
@@ -31,6 +35,8 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 	private final MaterialImageProcessor imageProcessor = new MaterialImageProcessor();
 	private final SecureRandom random = new SecureRandom();
 	private MaterialMarkdownEditor.InsertionPoint droppedInsertionPoint;
+	private final IconToggleButton pageToggle;
+	private boolean savedDedicatedPage;
 	private String savedTitle;
 	private String savedDescriptionMarkdown;
 
@@ -52,6 +58,15 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 		this.handler = handler;
 		this.storedImages = new ArrayList<>(images == null ? List.of() : images);
 		this.savedTitle = material.title();
+		this.savedDedicatedPage = material.dedicatedPage();
+		this.pageToggle = new IconToggleButton(material.dedicatedPage(),
+				new State(new SvgIcon(UiUrls.contextRelative("/icons/page-break.svg")), "Im laufenden Text platzieren"),
+				new State(new SvgIcon(UiUrls.contextRelative("/icons/page-flow.svg")), "Auf eigener Seite platzieren"),
+				value -> components.updateDirty());
+		pageToggle.getElement().setAttribute("data-action", "toggle-dedicated-page");
+		if (locked) {
+			components.lockCorrectionModeAction(pageToggle);
+		}
 		this.savedDescriptionMarkdown = normalized(material.descriptionMarkdown());
 		title.setReadOnly(locked);
 		components.trackDirty(title);
@@ -74,7 +89,7 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 			description.addFileDropListener(drop -> handleFileDrop(drop, dropUpload));
 			descriptionBlock = components.markdownBlock("Inhalt", description);
 		}
-		final Component actions = editorBlockWithMoveButtons(components, siblings, handler, List.of(), List.of(delete),
+		final Component actions = editorBlockWithMoveButtons(components, siblings, handler, List.of(pageToggle), List.of(delete),
 				locked);
 		if (dropUpload == null) {
 			addToBody(actions, descriptionBlock);
@@ -85,7 +100,7 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 
 	@Override
 	protected boolean isSectionDirty() {
-		return !Objects.equals(savedTitle, title.getValue())
+		return savedDedicatedPage != pageToggle.getValue() || !Objects.equals(savedTitle, title.getValue())
 				|| description != null
 						&& !Objects.equals(savedDescriptionMarkdown, normalized(description.getValue()));
 	}
@@ -100,7 +115,8 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 			return false;
 		}
 		final String descriptionMarkdown = normalized(description.getValue());
-		final LoeMaterial saved = handler.save(item(), title.getValue(), descriptionMarkdown, pendingImages.values());
+		final LoeMaterial saved = handler.save(item(), title.getValue(), descriptionMarkdown, pendingImages.values(), pageToggle.getValue());
+		savedDedicatedPage = saved.dedicatedPage();
 		description.setValue(saved.descriptionMarkdown());
 		savedTitle = title.getValue();
 		savedDescriptionMarkdown = saved.descriptionMarkdown();
@@ -244,7 +260,7 @@ final class LoeMaterialSection extends AbstractLoeSection<LoeMaterial> {
 	interface Handler extends LoeSectionHandler<LoeMaterial> {
 
 		LoeMaterial save(LoeMaterial material, String title, String descriptionMarkdown,
-				Collection<LoeMaterialImage> pendingImages);
+				Collection<LoeMaterialImage> pendingImages, boolean dedicatedPage);
 
 		Optional<LoeMaterialImage> findImageByContentHash(String contentHash);
 

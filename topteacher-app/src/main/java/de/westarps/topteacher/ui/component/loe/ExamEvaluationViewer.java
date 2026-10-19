@@ -5,13 +5,11 @@ import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import com.vaadin.flow.component.contextmenu.MenuItem;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.ColumnTextAlign;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.menubar.MenuBar;
-import com.vaadin.flow.component.menubar.MenuBarVariant;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
 import de.westarps.topteacher.backend.repo.ExamRepository;
@@ -31,6 +29,7 @@ import de.westarps.topteacher.model.loe.LoeRequirementResult;
 import de.westarps.topteacher.model.loe.LoeTask;
 import de.westarps.topteacher.ui.UiUrls;
 import de.westarps.topteacher.ui.component.AbstractDesigner;
+import de.westarps.topteacher.ui.component.Buttons;
 import de.westarps.topteacher.ui.component.FullscreenButton;
 import de.westarps.topteacher.ui.component.SpreadsheetGrid;
 
@@ -44,7 +43,8 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 	private final LevelOfExpectationsRepository levelOfExpectationsRepository;
 	private final GradingScaleRepository gradingScaleRepository;
 	private final SpreadsheetGrid<EvaluationRow> grid = new SpreadsheetGrid<>(EvaluationRow.class, false);
-	private final MenuBar downloadMenu = new MenuBar();
+	private final Button downloadButton = Buttons.icon("Punktetabelle laden", VaadinIcon.DOWNLOAD,
+			event -> download(this::excelUrl, this::excelFileName));
 	private final FullscreenButton fullscreenButton;
 
 	private Exam exam;
@@ -67,23 +67,7 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 		grid.setSelectionMode(Grid.SelectionMode.NONE);
 		grid.setSizeFull();
 
-		configureDownloadMenu();
-
 		fullscreenButton = new FullscreenButton(this);
-	}
-
-	private void configureDownloadMenu() {
-		downloadMenu.addThemeVariants(MenuBarVariant.LUMO_SMALL);
-		final MenuItem downloadItem = downloadMenu.addItem("");
-		downloadItem.addComponentAsFirst(VaadinIcon.DOWNLOAD.create());
-		downloadItem.setAriaLabel("Dateien herunterladen");
-		downloadMenu.setTooltipText(downloadItem, "Dateien herunterladen");
-
-		downloadItem.getSubMenu().addItem("Punktetabelle", event -> download(this::excelUrl, this::excelFileName));
-		downloadItem.getSubMenu().addItem("Alle Ergebnisbögen (Schüler:innen-Version)",
-				event -> download(this::pupilResultSheetsUrl, this::pupilResultSheetsFileName));
-		downloadItem.getSubMenu().addItem("Alle Ergebnisbögen (Lehrer:innen-Version)",
-				event -> download(this::teacherResultSheetsUrl, this::teacherResultSheetsFileName));
 	}
 
 	public void setExam(final Exam exam) {
@@ -123,7 +107,7 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 		configureGrid(LoeAggregationColumns.from(parts, categories, tasks, requirements));
 		grid.setItems(pupils.stream().map(this::evaluationRow).toList());
 
-		toolbar().add(downloadMenu, fullscreenButton);
+		toolbar().add(downloadButton, fullscreenButton);
 		content().add(grid);
 		content().expand(grid);
 		showDesigner();
@@ -195,22 +179,6 @@ public class ExamEvaluationViewer extends AbstractDesigner {
 
 	private String excelFileName() {
 		return "punktetabelle-" + fileNamePart(exam.title()) + ".xlsx";
-	}
-
-	private String pupilResultSheetsUrl() {
-		return UiUrls.contextRelative("/export/exams/" + exam.id() + "/level-of-expectations.pdf");
-	}
-
-	private String pupilResultSheetsFileName() {
-		return "ergebnisboegen-" + fileNamePart(exam.title()) + ".pdf";
-	}
-
-	private String teacherResultSheetsUrl() {
-		return UiUrls.contextRelative("/export/exams/" + exam.id() + "/level-of-expectations-teacher.pdf");
-	}
-
-	private String teacherResultSheetsFileName() {
-		return "lehrerversion-ergebnisboegen-" + fileNamePart(exam.title()) + ".pdf";
 	}
 
 	private String gradeDisplayName(final EvaluationRow row) {

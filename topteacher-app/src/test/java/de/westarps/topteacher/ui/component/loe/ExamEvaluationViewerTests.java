@@ -13,12 +13,12 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.contextmenu.MenuItem;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.page.Page;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.menubar.MenuBar;
 import com.vaadin.flow.data.provider.Query;
 
 import de.westarps.topteacher.backend.repo.CourseRepository;
@@ -99,13 +99,28 @@ class ExamEvaluationViewerTests {
 		assertThat(grid.getColumns().subList(0, 3)).allMatch(Grid.Column::isFrozen);
 		assertThat(grid.getColumns().subList(3, grid.getColumns().size())).noneMatch(Grid.Column::isFrozen);
 		assertThat(itemCount(grid)).isEqualTo(2);
-		final MenuItem downloadItem = components(viewer, MenuBar.class).getFirst().getItems().getFirst();
-		assertThat(downloadItem.getText()).isEmpty();
-		assertThat(iconName(downloadItem)).isEqualTo(VaadinIcon.DOWNLOAD.create().getIcon());
-		assertThat(downloadItem.getSubMenu().getItems().stream().map(MenuItem::getText)).containsExactly(
-				"Punktetabelle", "Alle Ergebnisbögen (Schüler:innen-Version)",
-				"Alle Ergebnisbögen (Lehrer:innen-Version)");
-		assertThat(downloadItem.getSubMenu().getItems()).allMatch(item -> item.getChildren().findAny().isEmpty());
+		final Button download = components(viewer, Button.class).stream()
+				.filter(button -> button.getAriaLabel().orElse("").equals("Punktetabelle laden")).findFirst().orElseThrow();
+		assertThat(((Icon) download.getIcon()).getIcon()).isEqualTo(VaadinIcon.DOWNLOAD.create().getIcon());
+		final Page page = mock(Page.class);
+		final UI ui = new UI() {
+			@Override
+			public Page getPage() {
+				return page;
+			}
+		};
+		final UI previousUi = UI.getCurrent();
+		UI.setCurrent(ui);
+		try {
+			ui.add(viewer);
+			download.click();
+			verify(page).executeJs(org.mockito.ArgumentMatchers.anyString(),
+					org.mockito.ArgumentMatchers.eq("/export/exams/1/evaluation.xlsx"),
+					org.mockito.ArgumentMatchers.eq("punktetabelle-klausur.xlsx"));
+		} finally {
+			UI.setCurrent(previousUi);
+		}
+
 		assertThat(
 				components(viewer, Button.class).stream().map(button -> button.getElement().getAttribute("aria-label")))
 						.contains("Vollbild");
@@ -192,11 +207,6 @@ class ExamEvaluationViewerTests {
 		final ExamRepository repository = mock(ExamRepository.class);
 		when(repository.findPupils(EXAM.id())).thenReturn(pupils);
 		return repository;
-	}
-
-	private static String iconName(final MenuItem item) {
-		return item.getChildren().filter(Icon.class::isInstance).map(Icon.class::cast).map(Icon::getIcon).findFirst()
-				.orElseThrow();
 	}
 
 	private static <T extends Component> List<T> components(final Component root, final Class<T> type) {

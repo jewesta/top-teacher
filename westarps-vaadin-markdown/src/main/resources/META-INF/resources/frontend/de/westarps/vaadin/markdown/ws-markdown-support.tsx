@@ -2,6 +2,7 @@ import { commands, type ICommand } from '@uiw/react-md-editor/nohighlight';
 import React from 'react';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import type { PluggableList } from 'unified';
+import type { Element } from 'hast';
 import {
   type MarkdownExtension,
   type MarkdownExtensionContext,
@@ -141,7 +142,7 @@ export function markdownPreviewConfiguration(extensions: MarkdownExtension[], co
         [rehypeSanitize, schema],
       ] as PluggableList,
       components: Object.assign(
-        { a: MarkdownAnchor, div: MarkdownDiv },
+        { a: MarkdownAnchor, div: MarkdownDiv, section: MarkdownSection },
         ...contributions.map((contribution) => contribution.components ?? {}),
       ),
       remarkRehypeOptions: {
@@ -153,6 +154,25 @@ export function markdownPreviewConfiguration(extensions: MarkdownExtension[], co
       (wrapped, contribution) => contribution.wrap?.(wrapped, context) ?? wrapped, content,
     ),
   };
+}
+
+type MarkdownSectionProperties = React.HTMLAttributes<HTMLElement> & {
+  node?: Element;
+  'data-footnotes'?: unknown;
+};
+
+function MarkdownSection({ node, children, ...properties }: MarkdownSectionProperties): React.ReactElement {
+  if (!Object.prototype.hasOwnProperty.call(properties, 'data-footnotes')) {
+    return <section {...properties}>{children}</section>;
+  }
+  const list = node?.children.find((child): child is Element =>
+    child.type === 'element' && child.tagName === 'ol');
+  const count = list?.children.filter((child) => child.type === 'element' && child.tagName === 'li').length ?? 0;
+  const style = {
+    ...properties.style,
+    '--ws-footnote-marker-digits': String(count).length,
+  } as React.CSSProperties;
+  return <section {...properties} style={style}>{children}</section>;
 }
 
 type MarkdownDivProperties = React.HTMLAttributes<HTMLDivElement> & { node?: unknown };

@@ -66,6 +66,18 @@ class ExamAuthoringServiceTests {
 	@Autowired private NamedParameterJdbcTemplate jdbc;
 
 	@Test
+	void materialPageSettingSurvivesAuthoringEditsAndReordering() {
+		final Exam exam = exam();
+		final var initial = initial(exam, 6);
+		final int materialId = id(initial, "material");
+		final var material = repository.findMaterialByExamIdAndId(exam.id(), materialId).orElseThrow();
+		repository.saveMaterial(new LoeMaterial(material.id(), material.partId(), material.title(), material.descriptionMarkdown(), material.sortOrder(), false));
+		apply(exam, "inline-edit", List.of(update(Type.UPDATE_MATERIAL, materialId, "Revised material", "Revised body", null)));
+		apply(exam, "inline-reorder", List.of(reorder(Type.REORDER_MATERIALS, material.partId(), List.of(ref(materialId)))));
+		assertThat(repository.findMaterialByExamIdAndId(exam.id(), materialId).orElseThrow().dedicatedPage()).isFalse();
+	}
+
+	@Test
 	void createsPupilContentByLocalParentKeysWithoutGeneratingRequirements() {
 		final Exam exam = exam();
 		final var result = apply(exam, "initial", List.of(
@@ -195,6 +207,22 @@ class ExamAuthoringServiceTests {
 		}
 		assertThat(repository.findTasksByExamId(exam.id())).extracting(LoeTask::id).containsExactly(first, second);
 		assertThat(guard.revision(exam.id())).isEqualTo(revision);
+	}
+
+	@Test
+	void contentUpdatesAndReorderingPreserveCategoryPrintSettings() {
+		final Exam exam = exam();
+		final var initial = initial(exam, 6);
+		final LoeCategory category = repository.findCategoriesByExamId(exam.id()).getFirst();
+		repository.saveCategory(new LoeCategory(category.id(), category.partId(), category.title(),
+				category.descriptionMarkdown(), category.sortOrder(), false));
+		apply(exam, "rename-category", List.of(update(Type.UPDATE_CATEGORY, category.id(), "Sprache", "Hinweis", null)));
+		assertThat(repository.findCategoriesByExamId(exam.id()).getFirst().printTasksOnExamSheet()).isFalse();
+		final var sibling = apply(exam, "category-sibling", List.of(
+				create(Type.CREATE_CATEGORY, "sibling", id(initial, "part"), null, "Inhalt", null, null)));
+		apply(exam, "category-order", List.of(reorder(Type.REORDER_CATEGORIES, id(initial, "part"),
+				List.of(ref(id(sibling, "sibling")), ref(category.id())))));
+		assertThat(repository.findCategoriesByExamId(exam.id()).getLast().printTasksOnExamSheet()).isFalse();
 	}
 
 	@Test

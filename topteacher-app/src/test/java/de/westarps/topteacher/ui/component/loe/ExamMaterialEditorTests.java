@@ -31,6 +31,7 @@ import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.model.Exam;
 import de.westarps.topteacher.model.loe.LoeMaterial;
 import de.westarps.topteacher.model.loe.LoePart;
+import de.westarps.topteacher.ui.component.IconToggleButton;
 import de.westarps.vaadin.markdown.MarkdownEditor;
 import de.westarps.vaadin.markdown.MarkdownViewer;
 
@@ -51,6 +52,62 @@ class ExamMaterialEditorTests {
 	void clearUi() {
 		UI.setCurrent(null);
 		ui = null;
+	}
+
+	@Test
+	void materialPageSettingUsesDirtySaveAndCorrectionLock() {
+		final var repository = repository(false);
+		final var editor = new ExamMaterialEditor(repository);
+		editor.setExam(EXAM);
+		final Button toggle = pageToggle(editor);
+		final Component icon = toggle.getIcon();
+		final MarkdownEditor source = components(editor, MarkdownEditor.class).getFirst();
+		assertThat(toggle.getElement().getAttribute("aria-pressed")).isEqualTo("true");
+		assertThat(toggle.getAriaLabel()).contains("Im laufenden Text platzieren");
+		assertThat(toggle.getThemeNames()).contains("icon");
+		assertThat(icon.getElement().getAttribute("src")).isEqualTo("/icons/page-break.svg");
+		toggle.click();
+		assertThat(toggle).isInstanceOf(IconToggleButton.class);
+		assertThat(toggle.getIcon().getElement().getAttribute("src")).isEqualTo("/icons/page-flow.svg");
+		assertThat(toggle.getThemeNames()).contains("icon");
+		assertThat(toggle.getElement().getAttribute("aria-pressed")).isEqualTo("false");
+		assertThat(toggle.getAriaLabel()).contains("Auf eigener Seite platzieren");
+		assertThat(toggle.getTooltip().getText()).isEqualTo("Auf eigener Seite platzieren");
+		assertThat(components(editor, MarkdownEditor.class).getFirst()).isSameAs(source);
+		assertThat(editor.hasUnsavedChanges()).isTrue();
+		buttonsByAriaLabel(editor, "Speichern").getFirst().click();
+		verify(repository).saveMaterialWithImages(new LoeMaterial(MATERIAL.id(), MATERIAL.partId(), MATERIAL.title(), MATERIAL.descriptionMarkdown(), MATERIAL.sortOrder(), false), List.of());
+		assertThat(editor.hasUnsavedChanges()).isFalse();
+		final var locked = new ExamMaterialEditor(repository(true));
+		locked.setExam(EXAM);
+		assertThat(pageToggle(locked).isEnabled()).isFalse();
+	}
+
+	@Test
+	void pageToggleCanRestoreCleanStateAndDiscardRestoresItsSavedState() {
+		final var editor = new ExamMaterialEditor(repository(false));
+		editor.setExam(EXAM);
+		final Button toggle = pageToggle(editor);
+		toggle.click();
+		assertThat(editor.hasUnsavedChanges()).isTrue();
+		toggle.click();
+		assertThat(editor.hasUnsavedChanges()).isFalse();
+		assertThat(toggle.getElement().getAttribute("aria-pressed")).isEqualTo("true");
+		assertThat(toggle.getIcon().getElement().getAttribute("src")).isEqualTo("/icons/page-break.svg");
+		assertThat(toggle.getThemeNames()).contains("icon");
+		toggle.click();
+		buttonsByAriaLabel(editor, "Verwerfen...").getFirst().click();
+		final ConfirmDialog confirmation = components(editor, ConfirmDialog.class).getFirst();
+		ComponentUtil.fireEvent(confirmation, new ConfirmDialog.ConfirmEvent(confirmation, false));
+		assertThat(editor.hasUnsavedChanges()).isFalse();
+		assertThat(pageToggle(editor).getElement().getAttribute("aria-pressed")).isEqualTo("true");
+		assertThat(pageToggle(editor).getIcon().getElement().getAttribute("src")).isEqualTo("/icons/page-break.svg");
+	}
+
+	private static Button pageToggle(final Component root) {
+		return components(root, Button.class).stream()
+				.filter(button -> "toggle-dedicated-page".equals(button.getElement().getAttribute("data-action")))
+				.findFirst().orElseThrow();
 	}
 
 	@Test

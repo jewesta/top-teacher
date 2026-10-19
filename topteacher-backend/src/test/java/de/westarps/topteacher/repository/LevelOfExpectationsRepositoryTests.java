@@ -72,6 +72,42 @@ class LevelOfExpectationsRepositoryTests {
 	private NamedParameterJdbcTemplate jdbc;
 
 	@Test
+	void materialPageSettingSurvivesSaveLookupReorderAndCopy() {
+		final Exam source = createExam(2087, "Material source");
+		final Exam target = createExam(2088, "Material copy");
+		final var part = levelOfExpectationsRepository.savePart(new LoePart(null, source.id(), "A", 0));
+		final var first = levelOfExpectationsRepository.saveMaterial(new LoeMaterial(null, part.id(), "Inline", "Text", 0, false));
+		final var second = levelOfExpectationsRepository.saveMaterial(new LoeMaterial(null, part.id(), "Dedicated", "Text", 1));
+		assertThat(levelOfExpectationsRepository.findMaterialByExamIdAndId(source.id(), first.id()).orElseThrow().dedicatedPage()).isFalse();
+		assertThat(second.dedicatedPage()).isTrue();
+		levelOfExpectationsRepository.moveMaterial(first, 1);
+		assertThat(levelOfExpectationsRepository.findMaterialsByExamId(source.id()).getLast().dedicatedPage()).isFalse();
+		levelOfExpectationsRepository.copyDesign(source.id(), target.id());
+		assertThat(levelOfExpectationsRepository.findMaterialsByExamId(target.id())).extracting(LoeMaterial::dedicatedPage).containsExactly(true, false);
+		levelOfExpectationsRepository.saveMaterial(new LoeMaterial(first.id(), first.partId(), first.title(), first.descriptionMarkdown(), 1, true));
+		assertThat(levelOfExpectationsRepository.findMaterialByExamIdAndId(source.id(), first.id()).orElseThrow().dedicatedPage()).isTrue();
+	}
+
+	@Test
+	void storesCategoryPrintSettingWithoutChangingTaskBudgetsOrTheAssessmentTree() {
+		final Exam exam = createExam(2059, "Category print setting");
+		final LoePart part = levelOfExpectationsRepository.savePart(new LoePart(null, exam.id(), "A", 0));
+		final LoeCategory category = levelOfExpectationsRepository.saveCategory(new LoeCategory(null, part.id(),
+				"Sprache", "Beschreibung", 0));
+		assertThat(category.printTasksOnExamSheet()).isTrue();
+		final LoeTask task = levelOfExpectationsRepository.saveTask(new LoeTask(null, category.id(), "Gestaltung", "Text", 100, 0));
+		final LoeRequirement requirement = levelOfExpectationsRepository.saveRequirement(new LoeRequirement(null,
+				task.id(), "Struktur", 100, false, 0));
+		levelOfExpectationsRepository.saveCategory(new LoeCategory(category.id(), part.id(), category.title(),
+				category.descriptionMarkdown(), 0, false));
+		assertThat(levelOfExpectationsRepository.findCategoriesByExamId(exam.id()).getFirst().printTasksOnExamSheet()).isFalse();
+		assertThat(levelOfExpectationsRepository.findTasksByExamId(exam.id())).containsExactly(task);
+		assertThat(levelOfExpectationsRepository.findRequirementsByExamId(exam.id())).containsExactly(requirement);
+		levelOfExpectationsRepository.saveCategory(category);
+		assertThat(levelOfExpectationsRepository.findCategoriesByExamId(exam.id()).getFirst().printTasksOnExamSheet()).isTrue();
+	}
+
+	@Test
 	void storesAnOptionalExamFooterWithoutPartsAndKeepsItWhenMetadataChanges() {
 		final Exam exam = createExam(2050, "Exam Footer");
 		final String footer = "  **Viel Erfolg!**\n\nPrüfe Deine Antworten.\n";
@@ -487,6 +523,9 @@ class LevelOfExpectationsRepositoryTests {
 		assertThatThrownBy(() -> levelOfExpectationsRepository
 				.saveCategory(new LoeCategory(category.id(), category.partId(), "Stil", "Neue Beschreibung", 0)))
 						.isInstanceOf(IllegalStateException.class).hasMessage(CORRECTION_MODE_MESSAGE);
+		assertThatThrownBy(() -> levelOfExpectationsRepository.saveCategory(new LoeCategory(category.id(),
+				category.partId(), category.title(), category.descriptionMarkdown(), category.sortOrder(), false)))
+				.isInstanceOf(IllegalStateException.class).hasMessage(CORRECTION_MODE_MESSAGE);
 		assertThatThrownBy(() -> levelOfExpectationsRepository.saveTask(new LoeTask(task.id(), task.categoryId(),
 				"Aufgabe 1", task.descriptionMarkdown(), task.maxPoints(), task.sortOrder())))
 						.isInstanceOf(IllegalStateException.class).hasMessage(CORRECTION_MODE_MESSAGE);
@@ -600,14 +639,14 @@ class LevelOfExpectationsRepositoryTests {
 		final LoePart part = levelOfExpectationsRepository
 				.savePart(new LoePart(null, sourceExam.id(), "Klausurteil A", 0));
 		final LoeCategory category = levelOfExpectationsRepository
-				.saveCategory(new LoeCategory(null, part.id(), "Sprache", "**Fokus**", 0));
+				.saveCategory(new LoeCategory(null, part.id(), "Sprache", "**Fokus**", 0, false));
 		final LoeTask task = levelOfExpectationsRepository
 				.saveTask(new LoeTask(null, category.id(), "Teilaufgabe 1", "Aufgabentext", 100, 0));
 		final LoeMaterial material = levelOfExpectationsRepository
-				.saveMaterial(new LoeMaterial(null, part.id(), "Quelle 1", "Quellentext", 0));
+				.saveMaterial(new LoeMaterial(null, part.id(), "Quelle 1", "Quellentext", 0, false));
 		final LoeMaterial materialWithImage = levelOfExpectationsRepository.saveMaterialWithImages(
 				new LoeMaterial(material.id(), material.partId(), material.title(),
-						"Quellentext\n\n![Diagramm](img:copyimg1?width=75)", material.sortOrder()),
+						"Quellentext\n\n![Diagramm](img:copyimg1?width=75)", material.sortOrder(), material.dedicatedPage()),
 				List.of(image("copyimg1", "b".repeat(64))));
 		final LoeRequirement requirement = levelOfExpectationsRepository.saveRequirement(
 				new LoeRequirement(null, task.id(), "Nutzt die [korrekte Zeitform](crit:1).", 100, false, 0));
@@ -637,12 +676,12 @@ class LevelOfExpectationsRepositoryTests {
 		assertThat(copiedPart).isEqualTo(new LoePart(copiedPart.id(), targetExam.id(), part.title(), part.sortOrder()));
 		assertThat(copiedPart.id()).isNotEqualTo(part.id());
 		assertThat(copiedCategory).isEqualTo(new LoeCategory(copiedCategory.id(), copiedPart.id(), category.title(),
-				category.descriptionMarkdown(), category.sortOrder()));
+				category.descriptionMarkdown(), category.sortOrder(), category.printTasksOnExamSheet()));
 		assertThat(copiedTask)
 				.isEqualTo(new LoeTask(copiedTask.id(), copiedCategory.id(), task.title(), task.descriptionMarkdown(),
 						task.maxPoints(), task.sortOrder()));
 		assertThat(copiedMaterial).isEqualTo(new LoeMaterial(copiedMaterial.id(), copiedPart.id(), material.title(),
-				materialWithImage.descriptionMarkdown(), material.sortOrder()));
+				materialWithImage.descriptionMarkdown(), material.sortOrder(), material.dedicatedPage()));
 		assertThat(levelOfExpectationsRepository.findMaterialImagesByIds(List.of("copyimg1"))).hasSize(1);
 		assertThat(copiedRequirement).isEqualTo(
 				new LoeRequirement(copiedRequirement.id(), copiedTask.id(), requirement.descriptionMarkdown(),

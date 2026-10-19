@@ -8,7 +8,9 @@
   bulk status changes,
   grading-scale editing, backup settings, and file-access mappings.
   Task and requirement reorder/delete bars appear above their Markdown content
-  within the section, below its header.
+  within the section, below its header. The `Aufgaben` category action bar also
+  appears below its header and before `Beschreibung`; its eye toggle controls
+  future task-sheet details for that category.
 - Action bars adapt to their visible elements. A lone action shows its icon
   and German label as a neutral secondary button. With two or more visible
   elements, actions show only their icons, without a persistent button
@@ -93,3 +95,33 @@ visible but disabled. Archive is still hidden for a new or already archived
 scale. Selecting an unused scale removes the lock and enables archive;
 creating a new scale restores the new-record plus and the lone labeled
 `Anlegen` action.
+
+## Unexpected display errors
+
+Unexpected errors while rendering a page show a German application error page
+instead of framework instructions, stack traces, or exception details. Technical
+diagnostics remain available in the browser console.
+
+The page says `Das hat leider nicht geklappt` and explains that an error occurred
+while displaying the page. `Seite neu laden` reloads the current URL, including
+when the application is deployed under a context path. Before reloading, the page
+warns that unsaved input may be lost. Reloading is always an explicit user action.
+
+## Icon state toggles
+
+The category eye toggle and material page-mode toggle use the same icon-toggle
+component. Each mode has its own glyph and German action tooltip. Both modes
+retain the same centered icon-only button layout and normal toolbar styling,
+without a persistent selected-state background. Ordinary hover feedback stays
+available. The accessible `aria-pressed` state follows the current draft value;
+changes use the owning editor's normal save/discard and locking behavior.
+
+## Export dialogs
+
+PDF options are selected in shared application dialogs with the standard
+`Abbrechen`/primary `Laden` button bar. The Aufgabenblatt and individual
+Ergebnisbogen download icons open their dialogs directly. The Ergebnisbogen
+dialog offers version and current-pupil/all-pupils choices. The Auswertungen
+download icon directly loads Punktetabelle without a menu. See
+[Pupil task-sheet PDF export](ExamTaskSheetPdfExport.md) and
+[Level of expectations PDF export](LevelOfExpectationsPdfExport.md#download-dialogs).

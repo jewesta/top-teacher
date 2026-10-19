@@ -159,6 +159,8 @@ public class ExamsView extends SplitListDetailView<Exam> implements BeforeEnterO
 		this.gradingScaleRepository = gradingScaleRepository;
 		this.examTasksEditor = new ExamTasksEditor(levelOfExpectationsRepository);
 		this.examMaterialEditor = new ExamMaterialEditor(levelOfExpectationsRepository);
+		this.examTasksEditor.configureTaskSheetExport(examRepository::findPupils,
+				() -> !examMaterialEditor.hasUnsavedChanges());
 		this.levelOfExpectationsEditor = new LevelOfExpectationsEditor(levelOfExpectationsRepository,
 				gradingScaleRepository);
 		this.examResultsEditor = new ExamResultsEditor(courseRepository, examRepository, levelOfExpectationsRepository,

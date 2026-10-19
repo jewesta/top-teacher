@@ -3,6 +3,8 @@ package de.westarps.topteacher.ui.component.loe;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.BooleanSupplier;
+import java.util.function.IntFunction;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
@@ -12,10 +14,13 @@ import com.vaadin.flow.component.notification.Notification;
 
 import de.westarps.topteacher.backend.repo.LevelOfExpectationsRepository;
 import de.westarps.topteacher.model.Exam;
+import de.westarps.topteacher.model.Pupil;
 import de.westarps.topteacher.model.loe.LoeCategory;
 import de.westarps.topteacher.model.loe.LoePart;
 import de.westarps.topteacher.model.loe.LoeTask;
+import de.westarps.topteacher.ui.UiUrls;
 import de.westarps.topteacher.ui.component.AbstractDesigner;
+import de.westarps.topteacher.ui.component.Buttons;
 import de.westarps.topteacher.ui.component.DesignerViewport;
 import de.westarps.topteacher.ui.component.FullscreenButton;
 import de.westarps.vaadin.markdown.MarkdownEditor;
@@ -55,12 +60,13 @@ public class ExamTasksEditor extends AbstractDesigner {
 
 		@Override
 		public void saveTitle(final LoeCategory category, final String title) {
-			ExamTasksEditor.this.save(category, title, category.descriptionMarkdown());
+			ExamTasksEditor.this.save(category, title, category.descriptionMarkdown(), category.printTasksOnExamSheet());
 		}
 
 		@Override
-		public void save(final LoeCategory category, final String title, final String descriptionMarkdown) {
-			ExamTasksEditor.this.save(category, title, descriptionMarkdown);
+		public void save(final LoeCategory category, final String title, final String descriptionMarkdown,
+				final boolean printTasksOnExamSheet) {
+			ExamTasksEditor.this.save(category, title, descriptionMarkdown, printTasksOnExamSheet);
 		}
 
 		@Override
@@ -107,6 +113,8 @@ public class ExamTasksEditor extends AbstractDesigner {
 	private MarkdownEditor footerEditor;
 	private String savedFooterMarkdown = "";
 	private boolean locked;
+	private IntFunction<List<Pupil>> pupilSupplier = id -> List.of();
+	private BooleanSupplier exportReady = () -> true;
 	private long loadedRevision;
 	private Runnable changeHandler = () -> {
 	};
@@ -141,6 +149,41 @@ public class ExamTasksEditor extends AbstractDesigner {
 	public void setChangeHandler(final Runnable changeHandler) {
 		this.changeHandler = changeHandler == null ? () -> {
 		} : changeHandler;
+	}
+
+	public void configureTaskSheetExport(final IntFunction<List<Pupil>> pupilSupplier, final BooleanSupplier exportReady) {
+		this.pupilSupplier = pupilSupplier;
+		this.exportReady = exportReady;
+	}
+
+	private Button taskSheetDownload() {
+		return Buttons.dialogIcon("Aufgabenblatt laden", VaadinIcon.DOWNLOAD, event -> {
+			if (canExportTaskSheet()) {
+				ExamDownloadDialogs.openTaskSheet(pupilSupplier.apply(exam.id()), this::downloadTaskSheet);
+			}
+		});
+	}
+
+	private boolean canExportTaskSheet() {
+		if (exam == null || isDirty() || !exportReady.getAsBoolean()) {
+			Notification.show("Speichere oder verwirf zuerst die ungespeicherten Aufgaben und Materialien.");
+			return false;
+		}
+		return true;
+	}
+
+	private void downloadTaskSheet(final String path) {
+		if (!canExportTaskSheet()) {
+			return;
+		}
+		getUI().ifPresent(ui -> ui.getPage().executeJs("""
+			const anchor = document.createElement('a');
+			anchor.href = $0;
+			anchor.download = '';
+			document.body.appendChild(anchor);
+			anchor.click();
+			anchor.remove();
+			""", UiUrls.contextRelative("/export/exams/" + exam.id() + "/" + path)));
 	}
 
 	public boolean hasUnsavedChanges() {
@@ -234,7 +277,7 @@ public class ExamTasksEditor extends AbstractDesigner {
 		examPointsBadge = components.pointBadge("Gesamt", () -> new LoePoints(totalTaskPoints(), 0));
 		breadcrumb.addClassName("tt-designer-breadcrumb");
 		toolbar().add(addPart, save, discard, collapseState.toggleAllButton(allDetailKeys()), fullscreenButton,
-				components.discardConfirmation(), reload);
+				components.discardConfirmation(), taskSheetDownload(), reload);
 		toolbarSummary().add(breadcrumb, examPointsBadge);
 		toolbarSummary().expand(breadcrumb);
 		viewport.bindBreadcrumb(breadcrumb, "Aufgaben", "Aufgaben");
@@ -292,9 +335,10 @@ public class ExamTasksEditor extends AbstractDesigner {
 		viewport.updateBreadcrumbSegment(detailKey("part", part.id()), title);
 	}
 
-	private void save(final LoeCategory category, final String title, final String descriptionMarkdown) {
+	private void save(final LoeCategory category, final String title, final String descriptionMarkdown,
+			final boolean printTasksOnExamSheet) {
 		final LoeCategory updated = new LoeCategory(category.id(), category.partId(), title, descriptionMarkdown,
-				category.sortOrder());
+				category.sortOrder(), printTasksOnExamSheet);
 		repository.saveCategory(updated);
 		categories = categories.stream().map(current -> current.id().equals(updated.id()) ? updated : current).toList();
 		viewport.updateBreadcrumbSegment(detailKey("category", category.id()), title);

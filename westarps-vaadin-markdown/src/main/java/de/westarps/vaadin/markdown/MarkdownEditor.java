@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -129,10 +130,27 @@ public class MarkdownEditor extends AbstractCompositeField<MarkdownEditorCompone
 		return getValue().substring(range.start(), range.end());
 	}
 
+	public Optional<AlertBlock> findAlert(final BlockSelection selection) {
+		return MarkdownAlertSource.find(getValue(), Objects.requireNonNull(selection, "selection must not be null"));
+	}
+
 	public void insertAlert(final BlockSelection selection, final MarkdownAlertType type, final String text) {
 		Objects.requireNonNull(type, "type must not be null");
 		if (text == null || text.isBlank()) {
 			throw new IllegalArgumentException("alert text must not be blank");
+		}
+		final var existing = findAlert(selection);
+		if (existing.isPresent()) {
+			final AlertBlock alert = existing.orElseThrow();
+			final String current = getValue();
+			final String original = current.substring(alert.selection().start(), alert.selection().end());
+			final String newline = original.contains("\r\n") ? "\r\n" : "\n";
+			final String body = text.replace("\r\n", "\n").replace('\r', '\n')
+					.replace("\n", newline + alert.continuationPrefix() + "> ");
+			final String block = "> [!" + type.name() + "]" + newline + alert.continuationPrefix() + "> " + body;
+			setValue(current.substring(0, alert.selection().start()) + block + current.substring(alert.selection().end()));
+			getElement().executeJs("this.focusAt($0)", alert.selection().start() + block.length());
+			return;
 		}
 		final BlockSelection range = blockRange(selection);
 		final String current = getValue();
@@ -215,6 +233,9 @@ public class MarkdownEditor extends AbstractCompositeField<MarkdownEditorCompone
 	}
 
 	public record InsertionPoint(int position) {
+	}
+
+	public record AlertBlock(BlockSelection selection, MarkdownAlertType type, String text, String continuationPrefix) {
 	}
 
 	public record BlockSelection(int start, int end) {

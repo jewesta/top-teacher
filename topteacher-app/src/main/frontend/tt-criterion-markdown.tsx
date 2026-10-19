@@ -191,7 +191,7 @@ function applicableSelection(state: TextState): boolean {
 }
 
 function effectiveSelection(state: TextState): TextRange {
-  return state.selection.start === state.selection.end
+  return state.text && state.selection.start === state.selection.end
     ? getSurroundingWord(state.text, state.selection.start)
     : state.selection;
 }

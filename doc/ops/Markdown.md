@@ -4,14 +4,36 @@ TopTeacher's Markdown editors and read-only views share the following rendering
 conventions. Material-specific footnotes and managed images are specified in
 [LevelOfExpectations.md](LevelOfExpectations.md#material).
 
+## Headings and dividers
+
+Authored Markdown headings have no automatic divider in editable previews,
+read-only views or pupil task-sheet PDFs. Authors can insert a separate thematic
+break explicitly (for example, `---` on its own line with surrounding blank
+lines). TT's own Klausurteil headings retain their divider in the task-sheet
+PDF. The short footnote divider is independent of Markdown heading styling.
+
+## Empty criterion editors
+
+An empty criterion editor is valid. Opening its point selector must not cause
+an error. Point options stay disabled and show `Text markieren` until a word
+or suitable text selection is available. Existing word and selection behavior
+remains unchanged for non-empty text.
+
 ## Alerts
 
 All current Markdown editors provide a separate `Hinweisblock einfügen...`
 toolbar command. Its dialog offers the five GitHub alert types with German
 labels: `NOTE` (Hinweis), `TIP` (Tipp), `IMPORTANT` (Wichtig), `WARNING`
 (Warnung), and `CAUTION` (Vorsicht). The dialog accepts Markdown text and can
-prefill selected complete source lines. Cancel stays on the left and insert on
-the right, following the shared dialog convention.
+prefill selected complete source lines. With the cursor or selection inside an
+existing alert, the same command opens `Hinweisblock bearbeiten`, prefilled with
+its current type and unquoted Markdown body. `Übernehmen` replaces that complete
+alert; it does not insert or nest a second alert. Neighbouring content, paragraph
+breaks, formatting, and outer quote/list containers are retained. Cancelling
+leaves the source and dirty state unchanged. Ordinary quotes, unknown types and
+code examples are not treated as existing alerts. Outside an alert the original
+insertion workflow remains available. Cancel stays on the left and insert/apply
+on the right, following the shared dialog convention.
 
 ```markdown
 > [!TIP]
@@ -28,10 +50,9 @@ references. Ordinary quotes, unknown alert types, and examples inside code
 blocks keep their ordinary Markdown behavior.
 
 Alert rendering is shared by editable previews and read-only views. The
-existing level-of-expectations PDFs also render these alerts as styled boxes
-with vector icons. All five SVGs are bundled locally; rendering needs no GitHub
-connection. Labels and borders preserve their meaning in monochrome printing. The future
-pupil-facing exam-sheet export remains outside this implementation.
+level-of-expectations and pupil Aufgabenblatt PDFs render these alerts as styled
+boxes with visible vector icons for all five types. All five SVGs are bundled locally; rendering needs no GitHub
+connection. Labels and borders preserve their meaning in monochrome printing.
 
 ## Literal numbered source lines
 
@@ -55,20 +76,33 @@ marker and quote prefixes are hidden. The left margin shows only the first
 counted line number and multiples of five: 1, 5, 10, 15, and so on. All other
 non-empty lines still count, and the number column keeps the same width on
 unlabelled and empty lines.
-Line numbers use normal text at the source line's font size and baseline, not
-superscript styling; footnote references remain superscript.
+In the preview, line numbers use normal text at the source line's font size and
+baseline, not superscript styling; footnote references remain superscript.
 Inline formatting, links, and footnote references remain supported. Footnote
 definitions stay outside the block and appear in the local footnote list.
 
-Numbered lines never wrap. Text that exceeds the rendering area's width is
-clipped on the right while the complete source remains stored. The preview
-identifies affected counted line numbers, excluding blank lines, so the author
-can insert deliberate breaks.
-The preview's available width is not a guarantee that a line fits the eventual
-printed page. Font, size, and print width will determine how much fits, but
-literal numbering must remain stable when exam-sheet export is implemented.
+Numbered lines never wrap. In the preview, text that exceeds the rendering
+area's width is clipped on the right while the complete source remains stored.
+The preview identifies affected counted line numbers, excluding blank lines,
+so the author can insert deliberate breaks.
+
+The pupil task-sheet PDF starts numbered source text at 9 pt and fits each block
+to its actual available width. Only an overflowing block shrinks, uniformly
+across all its lines, according to its longest rendered line. The gutter's
+smaller line numbers scale with the text. Source lines never wrap in the PDF;
+authored breaks and numbering remain unchanged across page breaks. The
+preview's width and font size do not determine the printed size. See
+[Pupil task-sheet PDF export](ExamTaskSheetPdfExport.md).
 
 Block formatting such as lists and headings does not create additional lines
 inside a numbered block. Numbered blocks cannot be nested. Other Markdown
 surfaces can render manually authored numbered blocks; their toolbar command
 is currently enabled only for Material.
+
+## Footnote list numbering
+
+Editor previews and read-only views reserve enough font-relative space for the
+complete footnote number, including two or more digits. The marker column grows
+with the number of footnotes. Numbers must not be clipped or overlap the text;
+wrapped footnote text keeps the normal hanging list indentation. Ordinary lists
+and section layouts remain unchanged.

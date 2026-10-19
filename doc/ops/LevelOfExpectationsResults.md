@@ -198,7 +198,9 @@ rounding, without changing result limits or grading.
 Result changes are collected for the selected pupil and saved together.
 
 The result toolbar follows the shared icon-only action convention, including
-save and download, while download menu entries remain labeled. Every discard
+save and download. The download icon opens the shared `Ergebnisbogen laden`
+dialog with `Version für` and `Schüler:in` radio groups and a `Laden` action. The
+second group selects the current pupil or all assigned pupils. Every discard
 action requires confirmation; canceling preserves the pupil's pending results.
 
 - Save is enabled only while the selected pupil has pending valid changes.

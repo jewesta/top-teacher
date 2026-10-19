@@ -3,6 +3,7 @@ package de.westarps.topteacher.ui.component;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -12,6 +13,7 @@ import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.value.ValueChangeMode;
 
 import de.westarps.vaadin.markdown.MarkdownAlertType;
+import de.westarps.vaadin.markdown.MarkdownEditor;
 
 public final class MarkdownAlertDialog {
 
@@ -22,10 +24,24 @@ public final class MarkdownAlertDialog {
 	private final TextArea text = new TextArea("Text");
 	private final Button insert = TopTeacherDialogs.primaryButton("Einfügen");
 
+	public static MarkdownAlertDialog forSelection(final MarkdownEditor editor, final MarkdownEditor.BlockSelection selection) {
+		final var alert = editor.findAlert(selection);
+		return new MarkdownAlertDialog(alert.map(MarkdownEditor.AlertBlock::type).orElse(MarkdownAlertType.NOTE),
+				alert.map(MarkdownEditor.AlertBlock::text).orElseGet(() -> editor.selectedBlockText(selection)),
+				alert.isPresent(), (type, text) -> editor.insertAlert(selection, type, text));
+	}
+
 	public MarkdownAlertDialog(final String initialText,
+			final BiConsumer<MarkdownAlertType, String> resultHandler) {
+		this(MarkdownAlertType.NOTE, initialText, false, resultHandler);
+	}
+
+	private MarkdownAlertDialog(final MarkdownAlertType initialType, final String initialText, final boolean editing,
 			final BiConsumer<MarkdownAlertType, String> resultHandler) {
 		Objects.requireNonNull(resultHandler, "resultHandler must not be null");
 		details.setText(initialText == null ? "" : initialText);
+		details.setType(initialType);
+		insert.setText(editing ? "Übernehmen" : "Einfügen");
 		type.setItems(MarkdownAlertType.values());
 		type.setItemLabelGenerator(MarkdownAlertDialog::label);
 		type.setAllowCustomValue(false);
@@ -49,7 +65,7 @@ public final class MarkdownAlertDialog {
 		content.setPadding(false);
 		content.setWidthFull();
 		final Button cancel = new Button("Abbrechen");
-		dialog = TopTeacherDialogs.create("Hinweisblock einfügen", content,
+		dialog = TopTeacherDialogs.create(editing ? "Hinweisblock bearbeiten" : "Hinweisblock einfügen", content,
 				TopTeacherDialogs.buttonBar(cancel, insert));
 		dialog.setWidth("36rem");
 		dialog.setCloseOnEsc(true);
@@ -66,10 +82,15 @@ public final class MarkdownAlertDialog {
 				text.focus();
 			}
 		});
+		dialog.addClosedListener(event -> dialog.getElement().removeFromParent());
 		insert.setEnabled(!details.getText().isBlank());
 	}
 
 	public void open() {
+		final var ui = UI.getCurrent();
+		if (ui != null) {
+			ui.add(dialog);
+		}
 		dialog.open();
 	}
 

@@ -139,7 +139,7 @@ public class LevelOfExpectationsRepository {
 
 	public List<LoeCategory> findCategoriesByExamId(final int examId) {
 		return jdbc.query("""
-			select c.id, c.part_id, c.title, c.description_markdown, c.sort_order
+			select c.id, c.part_id, c.title, c.description_markdown, c.sort_order, c.print_tasks_on_exam_sheet
 			from eh_category c
 			join eh_part p on p.id = c.part_id
 			where p.exam_id = :examId
@@ -195,7 +195,7 @@ public class LevelOfExpectationsRepository {
 
 	public List<LoeMaterial> findMaterialsByExamId(final int examId) {
 		return jdbc.query("""
-			select material.id, material.part_id, material.title, material.description_markdown, material.sort_order
+			select material.id, material.part_id, material.title, material.description_markdown, material.sort_order, material.dedicated_page
 			from loe_material material
 			join eh_part part on part.id = material.part_id
 			where part.exam_id = :examId
@@ -216,7 +216,7 @@ public class LevelOfExpectationsRepository {
 
 	public Optional<LoeMaterial> findMaterialByExamIdAndId(final int examId, final int materialId) {
 		return jdbc.query("""
-			select material.id, material.part_id, material.title, material.description_markdown, material.sort_order
+			select material.id, material.part_id, material.title, material.description_markdown, material.sort_order, material.dedicated_page
 			from loe_material material
 			join eh_part part on part.id = material.part_id
 			join exam e on e.id = part.exam_id
@@ -395,12 +395,13 @@ public class LevelOfExpectationsRepository {
 
 		for (final LoeMaterial material : findMaterialsByExamId(sourceExamId)) {
 			saveMaterial(new LoeMaterial(null, partIds.get(material.partId()), material.title(),
-					material.descriptionMarkdown(), material.sortOrder()));
+					material.descriptionMarkdown(), material.sortOrder(), material.dedicatedPage()));
 		}
 
 		for (final LoeCategory category : findCategoriesByExamId(sourceExamId)) {
 			final LoeCategory copiedCategory = saveCategory(new LoeCategory(null, partIds.get(category.partId()),
-					category.title(), category.descriptionMarkdown(), category.sortOrder()));
+					category.title(), category.descriptionMarkdown(), category.sortOrder(),
+					category.printTasksOnExamSheet()));
 			categoryIds.put(category.id(), copiedCategory.id());
 		}
 
@@ -454,11 +455,13 @@ public class LevelOfExpectationsRepository {
 			update eh_category
 			set title = :title,
 			    description_markdown = :descriptionMarkdown,
+			    print_tasks_on_exam_sheet = :printTasksOnExamSheet,
 			    sort_order = :sortOrder
 			where id = :id
 			""",
 				new MapSqlParameterSource().addValue("id", category.id()).addValue("title", category.title())
 						.addValue("descriptionMarkdown", category.descriptionMarkdown())
+						.addValue("printTasksOnExamSheet", category.printTasksOnExamSheet())
 						.addValue("sortOrder", category.sortOrder()));
 		return category;
 	}
@@ -510,11 +513,12 @@ public class LevelOfExpectationsRepository {
 			set part_id = :partId,
 			    title = :title,
 			    description_markdown = :descriptionMarkdown,
-			    sort_order = :sortOrder
+			    sort_order = :sortOrder,
+			    dedicated_page = :dedicatedPage
 			where id = :id
 			""", new MapSqlParameterSource().addValue("id", material.id()).addValue("partId", material.partId())
 			.addValue("title", material.title()).addValue("descriptionMarkdown", material.descriptionMarkdown())
-			.addValue("sortOrder", material.sortOrder()));
+			.addValue("sortOrder", material.sortOrder()).addValue("dedicatedPage", material.dedicatedPage()));
 		return material;
 	}
 
@@ -894,7 +898,7 @@ public class LevelOfExpectationsRepository {
 
 	private LoeCategory findCategoryById(final int id) {
 		return jdbc.queryForObject("""
-			select id, part_id, title, description_markdown, sort_order
+			select id, part_id, title, description_markdown, sort_order, print_tasks_on_exam_sheet
 			from eh_category
 			where id = :id
 			""", Map.of("id", id), categoryRowMapper);
@@ -910,7 +914,7 @@ public class LevelOfExpectationsRepository {
 
 	private LoeMaterial findMaterialById(final int id) {
 		return jdbc.queryForObject("""
-			select id, part_id, title, description_markdown, sort_order
+			select id, part_id, title, description_markdown, sort_order, dedicated_page
 			from loe_material
 			where id = :id
 			""", Map.of("id", id), materialRowMapper);
@@ -997,17 +1001,18 @@ public class LevelOfExpectationsRepository {
 	private LoeCategory insertCategory(final LoeCategory category) {
 		final KeyHolder keyHolder = new GeneratedKeyHolder();
 		jdbc.update("""
-			insert into eh_category (part_id, title, description_markdown, sort_order)
-			values (:partId, :title, :descriptionMarkdown, :sortOrder)
+			insert into eh_category (part_id, title, description_markdown, sort_order, print_tasks_on_exam_sheet)
+			values (:partId, :title, :descriptionMarkdown, :sortOrder, :printTasksOnExamSheet)
 			""",
 				new MapSqlParameterSource().addValue("partId", category.partId()).addValue("title", category.title())
 						.addValue("descriptionMarkdown", category.descriptionMarkdown())
+						.addValue("printTasksOnExamSheet", category.printTasksOnExamSheet())
 						.addValue("sortOrder", category.sortOrder()),
 				keyHolder, new String[] {
 						"id"
 				});
 		return new LoeCategory(generatedId(keyHolder, "EH category"), category.partId(), category.title(),
-				category.descriptionMarkdown(), category.sortOrder());
+				category.descriptionMarkdown(), category.sortOrder(), category.printTasksOnExamSheet());
 	}
 
 	private LoeTask insertTask(final LoeTask task) {
@@ -1029,15 +1034,15 @@ public class LevelOfExpectationsRepository {
 	private LoeMaterial insertMaterial(final LoeMaterial material) {
 		final KeyHolder keyHolder = new GeneratedKeyHolder();
 		jdbc.update("""
-			insert into loe_material (part_id, title, description_markdown, sort_order)
-			values (:partId, :title, :descriptionMarkdown, :sortOrder)
+			insert into loe_material (part_id, title, description_markdown, sort_order, dedicated_page)
+			values (:partId, :title, :descriptionMarkdown, :sortOrder, :dedicatedPage)
 			""", new MapSqlParameterSource().addValue("partId", material.partId())
 			.addValue("title", material.title()).addValue("descriptionMarkdown", material.descriptionMarkdown())
-			.addValue("sortOrder", material.sortOrder()), keyHolder, new String[] {
+			.addValue("sortOrder", material.sortOrder()).addValue("dedicatedPage", material.dedicatedPage()), keyHolder, new String[] {
 					"id"
 			});
 		return new LoeMaterial(generatedId(keyHolder, "material"), material.partId(), material.title(),
-				material.descriptionMarkdown(), material.sortOrder());
+				material.descriptionMarkdown(), material.sortOrder(), material.dedicatedPage());
 	}
 
 	private void insertMaterialImage(final LoeMaterialImage image) {
@@ -1108,7 +1113,7 @@ public class LevelOfExpectationsRepository {
 
 	private static LoeMaterial withDescription(final LoeMaterial material, final String descriptionMarkdown) {
 		return new LoeMaterial(material.id(), material.partId(), material.title(), descriptionMarkdown,
-				material.sortOrder());
+				material.sortOrder(), material.dedicatedPage());
 	}
 
 	private static LoeMaterial replaceMaterialImageId(final LoeMaterial material, final String currentId,
@@ -1346,7 +1351,8 @@ public class LevelOfExpectationsRepository {
 
 	private LoeCategory mapCategory(final ResultSet resultSet, final int rowNumber) throws SQLException {
 		return new LoeCategory(resultSet.getInt("id"), resultSet.getInt("part_id"), resultSet.getString("title"),
-				resultSet.getString("description_markdown"), resultSet.getInt("sort_order"));
+				resultSet.getString("description_markdown"), resultSet.getInt("sort_order"),
+				resultSet.getBoolean("print_tasks_on_exam_sheet"));
 	}
 
 	private LoeTask mapTask(final ResultSet resultSet, final int rowNumber) throws SQLException {
@@ -1357,7 +1363,7 @@ public class LevelOfExpectationsRepository {
 
 	private LoeMaterial mapMaterial(final ResultSet resultSet, final int rowNumber) throws SQLException {
 		return new LoeMaterial(resultSet.getInt("id"), resultSet.getInt("part_id"), resultSet.getString("title"),
-				resultSet.getString("description_markdown"), resultSet.getInt("sort_order"));
+				resultSet.getString("description_markdown"), resultSet.getInt("sort_order"), resultSet.getBoolean("dedicated_page"));
 	}
 
 	private LoeMaterialImage mapMaterialImage(final ResultSet resultSet, final int rowNumber) throws SQLException {

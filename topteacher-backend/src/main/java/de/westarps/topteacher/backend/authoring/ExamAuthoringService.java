@@ -238,7 +238,8 @@ public class ExamAuthoringService {
 				}
 				case CATEGORY -> {
 					final LoeCategory old = state.categories().get(id);
-					repository.saveCategory(new LoeCategory(id, old.partId(), title, markdown, old.sortOrder()));
+					repository.saveCategory(new LoeCategory(id, old.partId(), title, markdown, old.sortOrder(),
+							old.printTasksOnExamSheet()));
 				}
 				case TASK -> {
 					final LoeTask old = state.tasks().get(id);
@@ -247,7 +248,7 @@ public class ExamAuthoringService {
 				}
 				case MATERIAL -> {
 					final LoeMaterial old = state.materials().get(id);
-					repository.saveMaterialWithImages(new LoeMaterial(id, old.partId(), title, markdown, old.sortOrder()), List.of());
+					repository.saveMaterialWithImages(new LoeMaterial(id, old.partId(), title, markdown, old.sortOrder(), old.dedicatedPage()), List.of());
 				}
 				case REQUIREMENT -> throw new IllegalArgumentException("Use the requirement operations for EH");
 			}
@@ -353,7 +354,8 @@ public class ExamAuthoringService {
 				}
 				case CATEGORY -> {
 					final LoeCategory old = state.categories().get(id);
-					repository.saveCategory(new LoeCategory(id, old.partId(), old.title(), old.descriptionMarkdown(), index));
+					repository.saveCategory(new LoeCategory(id, old.partId(), old.title(), old.descriptionMarkdown(),
+							index, old.printTasksOnExamSheet()));
 				}
 				case TASK -> {
 					final LoeTask old = state.tasks().get(id);
@@ -361,7 +363,7 @@ public class ExamAuthoringService {
 				}
 				case MATERIAL -> {
 					final LoeMaterial old = state.materials().get(id);
-					repository.saveMaterialWithImages(new LoeMaterial(id, old.partId(), old.title(), old.descriptionMarkdown(), index), List.of());
+					repository.saveMaterialWithImages(new LoeMaterial(id, old.partId(), old.title(), old.descriptionMarkdown(), index, old.dedicatedPage()), List.of());
 				}
 				case REQUIREMENT -> {
 					final LoeRequirement old = state.requirements().get(id);
