@@ -4,6 +4,14 @@ TopTeacher's Markdown editors and read-only views share the following rendering
 conventions. Material-specific footnotes and managed images are specified in
 [LevelOfExpectations.md](LevelOfExpectations.md#material).
 
+## Headings and dividers
+
+Authored Markdown headings have no automatic divider in editable previews,
+read-only views or pupil task-sheet PDFs. Authors can insert a separate thematic
+break explicitly (for example, `---` on its own line with surrounding blank
+lines). TT's own Klausurteil headings retain their divider in the task-sheet
+PDF. The short footnote divider is independent of Markdown heading styling.
+
 ## Empty criterion editors
 
 An empty criterion editor is valid. Opening its point selector must not cause

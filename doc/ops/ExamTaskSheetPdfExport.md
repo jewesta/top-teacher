@@ -55,6 +55,9 @@ Assessment requirements, criteria, bonus rubric rows, grades and results are not
 part of a pupil task sheet. The task budget is authoritative for printed points.
 No writing spaces or alternative-task mechanism are introduced.
 
+TT's Klausurteil headings retain their horizontal divider. Authored Markdown
+headings have no automatic divider; explicit thematic breaks remain supported.
+
 Material Markdown uses the shared safe renderer, including authored logical
 source lines, line markers at 1 and every fifth line, annotations, source links,
 tables, local footnotes and managed images. Alert boxes have a wider left border

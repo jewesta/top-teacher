@@ -11,12 +11,12 @@
     <div class="name-line">Name: <span class="pupil-name" th:style="${model.nameStyle()}" th:text="${model.pupilName}"></span></div>
 </header>
 <section class="part" th:each="part, state : ${model.parts}" th:classappend="${state.first ? 'first-part' : ''}">
-    <h2 th:text="${part.title + ' · ' + part.points + ' Punkte'}"></h2>
+    <h2 class="part-heading" th:text="${part.title + ' · ' + part.points + ' Punkte'}"></h2>
     <section class="material" th:each="material : ${part.materials}" th:classappend="${material.newPage ? 'new-page' : ''}">
         <h3 th:if="${material.showTitle}" th:text="${material.title}"></h3><div th:utext="${material.html}"></div>
     </section>
     <section class="tasks" th:classappend="${part.tasksOnNewPage ? 'new-page' : ''}">
-        <h2 th:if="${part.tasksOnNewPage}" th:text="${part.title + ' · ' + part.points + ' Punkte'}"></h2>
+        <h2 class="part-heading" th:if="${part.tasksOnNewPage}" th:text="${part.title + ' · ' + part.points + ' Punkte'}"></h2>
         <h3>Aufgaben</h3>
         <section class="category" th:each="category : ${part.categories}">
             <h4 th:text="${category.title + ' · ' + category.points + ' Punkte'}"></h4>

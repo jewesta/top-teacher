@@ -190,3 +190,16 @@ instead of spanning the page. See
 
 Verification: all 757 Maven tests and `git diff --check` pass. The rendered PDF
 was visually checked; the divider and label widths match (34.5 pt).
+
+## Markdown heading dividers
+
+Removed automatic heading borders from shared Markdown previews/read-only views
+and the Aufgabenblatt PDF. A dedicated class preserves dividers on TT's own
+Klausurteil headings, including repeated headings before tasks. Explicit
+Markdown thematic breaks and the short footnote divider remain available. See
+[Markdown](../doc/ops/Markdown.md#headings-and-dividers).
+
+Verification: all 757 Maven tests and `git diff --check` pass. The demo PDF was
+visually checked: Markdown source titles have no divider, while Klausurteil
+headings retain theirs. The local app was rebuilt with the shared preview CSS;
+browser automation was unavailable for a live preview check.
