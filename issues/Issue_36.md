@@ -228,3 +228,13 @@ Verification: all 757 Maven tests and `git diff --check` pass. Anonymous and
 personalized PDFs were visually checked. Course, date, label and name share
 one baseline and the same 8 pt size; the underline starts after the label.
 Long-name fitting and matching pagination remain covered. Local TT was updated.
+
+## Date beside the course
+
+Combined course and date as `course · date` on the left of the opening row.
+The 8 pt size and right-hand name entry remain unchanged. See
+[Pupil task-sheet PDF export](../doc/ops/ExamTaskSheetPdfExport.md#page-format-and-reading-order).
+
+Verification: all 757 Maven tests and `git diff --check` pass. The rendered
+header was visually checked. Local TT was updated with the existing review
+database retained.

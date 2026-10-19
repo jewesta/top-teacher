@@ -6,10 +6,9 @@
 <div class="page-footer">Seite <span class="page-number"></span> / <span class="page-count"></span></div>
 <header>
     <table class="opening-line">
-        <colgroup><col class="course-column"/><col class="date-column"/><col class="name-gap"/><col class="name-label-column"/><col/></colgroup>
+        <colgroup><col class="course-date-column"/><col class="name-gap"/><col class="name-label-column"/><col/></colgroup>
         <tr>
-            <td class="course" th:text="${model.course}"></td>
-            <td class="exam-date" th:text="${model.date}"></td><td></td>
+            <td th:text="${model.course + ' · ' + model.date}"></td><td></td>
             <td class="name-label">Name:</td>
             <td class="name-line"><span class="pupil-name" th:style="${model.nameStyle()}" th:text="${model.pupilName}"></span></td>
         </tr>

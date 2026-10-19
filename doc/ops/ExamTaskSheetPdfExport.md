@@ -14,9 +14,8 @@ reading order, not booklet imposition. An odd final A5 page leaves the right hal
 blank. Combined personalized output imposes each pupil's copy separately before
 merging, so two pupils never share a physical sheet.
 
-The opening starts with one 8 pt row: course on the left, date centered across
-the A5 content width without a date label, and `Name:` just after the date with
-a small gap. The name underline starts after the label and extends to the right
+The opening starts with one 8 pt row: course followed directly by ` · ` and
+the date on the left, and the name field on the right. The date has no label. The name underline starts after the label and extends to the right
 margin. Anonymous copies leave it blank; personalized names shrink from 8 pt
 only when needed to fit without changing pagination. The exam title and regular
 maximum for the entire exam follow below. Each part starts on a fresh A5 page
