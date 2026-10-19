@@ -110,7 +110,7 @@ class ExamTaskSheetExportServiceTests {
 		final var surname = "Mustermann".repeat(8);
 		pupilRepository.save(new de.westarps.topteacher.model.Pupil(pupil.id(), name, surname, pupil.lifecycle()));
 		final var model = service.createModel(exam.id(), pupil.id());
-		assertThat(model.nameStyle()).doesNotContain("9.000pt");
+		assertThat(model.nameStyle()).doesNotContain("8.000pt");
 		final var personalized = pages(service.renderA5Pdf(model));
 		assertThat(personalized).hasSize(anonymous.size());
 		assertThat(personalized.getFirst()).contains(name, surname);

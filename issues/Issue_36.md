@@ -215,3 +215,16 @@ Verification: all 757 Maven tests and `git diff --check` pass, including long
 pupil names and matching anonymous/personalized pagination. Both header
 variants were visually checked in the rendered PDFs. Local TT was updated
 without resetting its review database.
+
+## Single-row course, date and name header
+
+The opening row now places the course on the left, the date in the center and
+the name on the right, all at the former course size of 8 pt. Only the name
+entry area is underlined; `Name:` remains outside the line. Personalized name
+fitting starts at 8 pt. See
+[Pupil task-sheet PDF export](../doc/ops/ExamTaskSheetPdfExport.md#page-format-and-reading-order).
+
+Verification: all 757 Maven tests and `git diff --check` pass. Anonymous and
+personalized PDFs were visually checked. Course, date, label and name share
+one baseline and the same 8 pt size; the underline starts after the label.
+Long-name fitting and matching pagination remain covered. Local TT was updated.

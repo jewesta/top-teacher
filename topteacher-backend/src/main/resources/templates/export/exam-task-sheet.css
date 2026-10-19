@@ -16,16 +16,18 @@ h4 { font-size: 9.5pt; margin: 4mm 0 2mm; }
 h5 { font-size: 9pt; margin: 3mm 0 1mm; }
 h1, h2, h3, h4, h5 { page-break-after: avoid; }
 p { margin: 1.5mm 0; orphans: 3; widows: 3; }
-.course { font-size: 8pt; }
 .metadata { width: 100%; border-collapse: collapse; margin-bottom: 4mm; }
 .metadata td { padding: 0; }
 .points { text-align: right; }
-.opening-line { table-layout: fixed; margin-bottom: 3mm; }
-.opening-line td { padding: 0; vertical-align: bottom; }
-.opening-side { width: 56mm; }
+.opening-line { table-layout: fixed; font-size: 8pt; margin-bottom: 3mm; }
+.opening-line td { padding: 0; line-height: 1.3; vertical-align: baseline; }
+.course-column { width: 56mm; }
 .date-column { width: 20mm; }
-.exam-date { text-align: center; height: 6mm; line-height: 6mm; white-space: nowrap; }
-.name-line { margin-left: 3mm; height: 6mm; line-height: 6mm; border-bottom: 0.2mm solid #555; white-space: nowrap; overflow: hidden; }
+.name-gap { width: 3mm; }
+.name-label-column { width: 9mm; }
+.exam-date { text-align: center; white-space: nowrap; }
+.name-label { white-space: nowrap; }
+.name-line { border-bottom: 0.2mm solid #555; white-space: nowrap; overflow: hidden; }
 .pupil-name { white-space: nowrap; }
 .part, .new-page { page-break-before: always; }
 .first-part { page-break-before: auto; }

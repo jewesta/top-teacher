@@ -40,7 +40,7 @@ public class ExamTaskSheetExportService {
 
 	private static Font loadNameFont() {
 		try (final var stream = ExamTaskSheetExportService.class.getResourceAsStream("/templates/frugal-sans/FrugalSansLight.ttf")) {
-			return Font.createFont(Font.TRUETYPE_FONT, Objects.requireNonNull(stream)).deriveFont(9f);
+			return Font.createFont(Font.TRUETYPE_FONT, Objects.requireNonNull(stream)).deriveFont(8f);
 		} catch (final IOException | FontFormatException exception) {
 			throw new IllegalStateException("Task-sheet font could not be loaded.", exception);
 		}
@@ -163,7 +163,7 @@ public class ExamTaskSheetExportService {
 			List<PartModel> parts, String footerHtml) {
 		public String nameStyle() {
 			final double width = NAME_FONT.getStringBounds(pupilName, new FontRenderContext(null, true, true)).getWidth();
-			final double points = Math.min(9, 9 * (42 * 72 / 25.4) / Math.max(1, width));
+			final double points = Math.min(8, 8 * (42 * 72 / 25.4) / Math.max(1, width));
 			return String.format(Locale.ROOT, "font-size: %.3fpt", points);
 		}
 	}
